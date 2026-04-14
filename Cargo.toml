@@ -1,0 +1,39 @@
+[workspace]
+resolver = "2"
+members = ["zixy", "zixy-py"]
+default-members = ["zixy", "zixy-py"]
+
+[workspace.package]
+rust-version = "1.88"
+edition = "2021"
+homepage = "https://github.com/quantinuum/zixy"
+repository = "https://github.com/quantinuum/zixy"
+license = "Apache-2.0"
+
+[workspace.lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [
+    # Set by our CI
+    'cfg(ci_run)',
+    # Set by codecov
+    'cfg(coverage,coverage_nightly)',
+] }
+missing_docs = "warn"
+
+[workspace.dependencies]
+pyo3 = { version = "0.27.2", features = ["extension-module", "multiple-pymethods"] }
+ndarray = "0.16.1"
+sprs = "0.11"
+itertools = "0.14.0"
+rand = "0.9.1"
+indexmap = "2.9.0"
+num-complex = { version = "0.4", features = ["serde"] }
+rstest = "0.26.1"
+serde = { version = "1.0.219", features = ["derive"] }
+bincode = { version = "2.0.1", features = ["derive", "serde"] }
+pluralizer = "0.5.0"
+numpy = "0.27.1"
+enum_dispatch = "0.3.13"
+
+[workspace.features]
+abi3 = ["pyo3/abi3-py37", "generate-import-lib"]
+generate-import-lib = ["pyo3/generate-import-lib"]

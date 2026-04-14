@@ -1,0 +1,32 @@
+[package]
+name = "zixy-py"
+version = "0.1.0"
+edition = { workspace = true }
+rust-version = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = false
+
+[lints]
+workspace = true
+
+[lib]
+name = "zixy"
+crate-type = ["cdylib"]
+doc = false
+test = false
+bench = false
+
+[dependencies]
+zixy = { path = "../zixy", version = "0.1.0"}
+pyo3 = { workspace = true, features = ["py-clone", "abi3-py310", "num-complex"] }
+numpy = { workspace = true }
+itertools = { workspace = true }
+sprs = { workspace = true }
+serde = {workspace = true}
+bincode = {workspace = true}
+num-complex = {workspace = true}
+ndarray = {workspace = true}
+
+[dev-dependencies]
+rstest = { workspace = true }

@@ -16,7 +16,7 @@
 
 from __future__ import annotations
 
-from typing import Generic, cast
+from typing import Any, Generic, cast
 
 from zixy._zixy import Qubits
 from zixy.container.cmpnts import SpecT
@@ -63,6 +63,17 @@ class Term(Generic[ImplT, SpecT, CoeffT, ElemT], TermBase[ImplT, SpecT, CoeffT])
     def qubits(self) -> Qubits:
         """Get the qubits corresponding to :param:`self`."""
         return self.string._impl.qubits
+    
+    def to_sparse_matrix(self, big_endian: bool = False) -> Any:
+        """Return :param:`self` as a sparse matrix.
+
+        Args:
+            big_endian: Whether to use big-endian basis ordering.
+
+        Returns:
+            The sparse matrix representation of :param:`self`.
+        """
+        return self.string.to_sparse_matrix(big_endian) * complex(self.coeff)
 
 
 class Terms(Generic[ImplT, SpecT, CoeffT, ElemT], TermsBase[ImplT, SpecT, CoeffT]):

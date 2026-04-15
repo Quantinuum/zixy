@@ -395,6 +395,12 @@ impl Array {
         Ok(self.0.get_elem_ref(i).to_string())
     }
 
+    /// Get the indexed cmpnt as a complex sparse matrix.
+    pub fn cmpnt_to_sparse_matrix(&self, i: isize, big_endian: bool) -> PyResult<Py<PyAny>> {
+        let i = try_py_index(i, self.len())?;
+        to_scipy_sparse(self.0.get_elem_ref(i).to_sparse_matrix(big_endian))
+    }
+
     /// Take the indexed cmpnts of `self` and write them contiguously to a new instance.
     pub fn cmpnts_clone(&self, indices: Option<Vec<isize>>) -> PyResult<Self> {
         Ok(match indices {

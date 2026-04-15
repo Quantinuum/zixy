@@ -68,10 +68,7 @@ class Term(Generic[ImplT, SpecT, CoeffT, ElemT], TermBase[ImplT, SpecT, CoeffT])
         """Return :param:`self` as a sparse matrix.
 
         Args:
-            big_endian: Whether to use big endian ordering for the resulting matrix. If ``False``,
-                little endian ordering is used. In big (little) endian ordering, the least
-                significant bit in the basis index integer is determined by the last (first) qubit
-                in the register.
+            big_endian: Whether to use big-endian basis ordering.
 
         Returns:
             The sparse matrix representation of :param:`self`.

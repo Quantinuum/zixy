@@ -1,6 +1,6 @@
 [project]
 name = "zixy"
-version = "0.3.7"
+version = "0.1.0-alpha.1"
 requires-python = ">=3.10"
 description = "Quantinuum's library for fast Pauli operator processing"
 license = { file = "LICENCE" }

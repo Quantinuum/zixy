@@ -17,6 +17,9 @@ on:
 permissions:
   contents: read
 
+env:
+  MODULE_DIR: zixy-py
+
 jobs:
   # Check if the tag matches the package name,
   # or if the workflow is running on a non-release event.
@@ -60,8 +63,9 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          working-directory: ${{ env.MODULE_DIR }}
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --find-interpreter
+          args: --release --out ../dist --find-interpreter
           sccache: 'true'
           manylinux: auto
       - name: Upload wheels
@@ -93,8 +97,9 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          working-directory: ${{ env.MODULE_DIR }}
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --find-interpreter
+          args: --release --out ../dist --find-interpreter
           sccache: 'true'
           manylinux: musllinux_1_2
       - name: Upload wheels
@@ -123,8 +128,9 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          working-directory: ${{ env.MODULE_DIR }}
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --find-interpreter
+          args: --release --out ../dist --find-interpreter
           sccache: 'true'
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -149,8 +155,9 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          working-directory: ${{ env.MODULE_DIR }}
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --find-interpreter
+          args: --release --out ../dist --find-interpreter
           sccache: 'true'
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -167,8 +174,9 @@ jobs:
       - name: Build sdist
         uses: PyO3/maturin-action@v1
         with:
+          working-directory: ${{ env.MODULE_DIR }}
           command: sdist
-          args: --out dist
+          args: --out ../dist
       - name: Upload sdist
         uses: actions/upload-artifact@v4
         with:

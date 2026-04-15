@@ -2,14 +2,18 @@
 name = "zixy"
 version = "0.1.0-alpha.1"
 requires-python = ">=3.10"
-description = "Quantinuum's library for fast Pauli operator processing"
+description = "Quantinuum's high performance library for the manipulation of Pauli strings and other quantum algebraic objects"
 license = { file = "LICENCE" }
-readme = "README.md"
+readme = "../README.md"
 authors = [
     { name = "Robert Anderson", email = "robert.anderson@quantinuum.com" },
+    { name = "Oliver Backhouse", email = "oliver.backhouse@quantinuum.com" },
+    { name = "Andrew Tranter", email = "andrew.tranter@quantinuum.com" },
 ]
 maintainers = [
     { name = "Robert Anderson", email = "robert.anderson@quantinuum.com" },
+    { name = "Oliver Backhouse", email = "oliver.backhouse@quantinuum.com" },
+    { name = "Andrew Tranter", email = "andrew.tranter@quantinuum.com" },
 ]
 classifiers = [
     "Environment :: Console",
@@ -25,7 +29,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering",
 ]
-
 dependencies = [
     "numpy>=1.26.4",
     "scipy>=1.15.2",
@@ -35,8 +38,8 @@ dependencies = [
 ]
 
 [project.urls]
-homepage = "https://github.com/quantinuum/zixy/tree/main/zixy-py"
-repository = "https://github.com/quantinuum/zixy/tree/main/zixy-py"
+homepage = "https://github.com/quantinuum/zixy/tree/main"
+repository = "https://github.com/quantinuum/zixy/tree/main"
 
 [build-system]
 requires = ["maturin~=1.7"]

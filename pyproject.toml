@@ -1,3 +1,35 @@
+[project]
+name = "zixy"
+version = "0.1.0-alpha.1"
+requires-python = ">=3.10"
+description = "Quantinuum's high performance library for the manipulation of Pauli strings and other quantum algebraic objects"
+license = { file = "LICENCE" }
+readme = "README.md"
+authors = [
+    { name = "Robert Anderson", email = "robert.anderson@quantinuum.com" },
+    { name = "Oliver Backhouse", email = "oliver.backhouse@quantinuum.com" },
+    { name = "Andrew Tranter", email = "andrew.tranter@quantinuum.com" },
+]
+maintainers = [
+    { name = "Robert Anderson", email = "robert.anderson@quantinuum.com" },
+    { name = "Oliver Backhouse", email = "oliver.backhouse@quantinuum.com" },
+    { name = "Andrew Tranter", email = "andrew.tranter@quantinuum.com" },
+]
+classifiers = [
+    "Environment :: Console",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+]
+
 [tool.uv.workspace]
 members = ["zixy-py"]
 

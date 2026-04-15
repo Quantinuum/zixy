@@ -24,4 +24,4 @@ from zixy import qubit
 
 __all__ = ["container", "fermion", "qubit"]
 
-__version__ = "0.1.0a"
+__version__ = "0.1.0-alpha.1"

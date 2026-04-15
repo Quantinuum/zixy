@@ -1,6 +1,6 @@
 [package]
 name = "zixy-py"
-version = "0.1.0-alpha.1"
+version = "0.1.0"
 edition = { workspace = true }
 rust-version = { workspace = true }
 homepage = { workspace = true }
@@ -18,7 +18,7 @@ test = false
 bench = false
 
 [dependencies]
-zixy = { path = "../zixy", version = "0.1.0-alpha.1"}
+zixy = { path = "../zixy", version = "0.1.0"}
 pyo3 = { workspace = true, features = ["py-clone", "abi3-py310", "num-complex"] }
 numpy = { workspace = true }
 itertools = { workspace = true }

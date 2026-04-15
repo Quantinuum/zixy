@@ -1,6 +1,6 @@
 [project]
 name = "zixy"
-version = "0.1.0-alpha.1"
+version = "0.1.0"
 requires-python = ">=3.10"
 description = "Quantinuum's high performance library for the manipulation of Pauli strings and other quantum algebraic objects"
 license = { file = "LICENCE" }

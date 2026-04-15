@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 from zixy.container.coeffs import ComplexSign, Sign
@@ -43,6 +44,35 @@ def test_term():
     assert type(term * other) is ComplexSignTerm
     # out-of-place mul should return a string equal to the original value of term
     assert (term * other).string.get_tuple() == (X, Y) * 3
+
+
+def test_sign_term_to_sparse_matrix():
+    mat = SignTerm(1, (Y,)).to_sparse_matrix()
+    assert np.allclose(mat.toarray(), np.array([[0, -1j], [1j, 0]]))
+
+    mat = SignTerm(2, (Y, X)).to_sparse_matrix()
+    assert np.allclose(
+        mat.toarray(),
+        np.array(
+            [
+                [0, 0, 0, -1j],
+                [0, 0, 1j, 0],
+                [0, -1j, 0, 0],
+                [1j, 0, 0, 0],
+            ]
+        ),
+    )
+
+    mat = SignTerm(4, (Z, I, X, Y)).to_sparse_matrix()
+    mat_i = np.eye(2)
+    mat_x = np.array([[0, 1], [1, 0]])
+    mat_y = np.array([[0, -1j], [1j, 0]])
+    mat_z = np.array([[1, 0], [0, -1]])
+    expected = np.kron(np.kron(np.kron(mat_y, mat_x), mat_i), mat_z)
+    assert np.allclose(mat.toarray(), expected)
+
+    mat = SignTerm(4, ((Z, I, X, Y), -1)).to_sparse_matrix()
+    assert np.allclose(mat.toarray(), -expected)
 
 
 def test_append_iterable():

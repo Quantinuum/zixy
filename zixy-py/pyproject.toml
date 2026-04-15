@@ -1,15 +1,18 @@
 [project]
 name = "zixy"
-version = "0.3.7"
+version = "0.1.0a"
 requires-python = ">=3.10"
-description = "Quantinuum's library for fast Pauli operator processing"
-license = { file = "LICENCE" }
-readme = "README.md"
+description = "Quantinuum's high performance library for the manipulation of Pauli strings and other quantum algebraic objects."
+license = { file = "LICENSE" }
+readme = "../README.md"
 authors = [
     { name = "Robert Anderson", email = "robert.anderson@quantinuum.com" },
+    { name = "Oliver Backhouse", email = "oliver.backhouse@quantinuum.com" },
 ]
 maintainers = [
     { name = "Robert Anderson", email = "robert.anderson@quantinuum.com" },
+    { name = "Oliver Backhouse", email = "oliver.backhouse@quantinuum.com" },
+    { name = "Andrew Tranter", email = "andrew.tranter@quantinuum.com" },
 ]
 classifiers = [
     "Environment :: Console",

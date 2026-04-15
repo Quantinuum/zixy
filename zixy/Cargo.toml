@@ -1,6 +1,6 @@
 [package]
 name = "zixy"
-version = "0.1.0"
+version = "0.1.0a"
 edition = { workspace = true }
 rust-version = { workspace = true }
 

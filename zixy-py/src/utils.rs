@@ -1,7 +1,7 @@
 //! Utilities useful across many binding modules.
 use std::fmt::Display;
 
-use numpy::{IntoPyArray, PyArray1};
+use numpy::{PyArray1, PyArray2};
 use pyo3::exceptions::{PyIndexError, PyValueError};
 use pyo3::types::PyDict;
 use pyo3::{prelude::*, IntoPyObjectExt};
@@ -80,7 +80,7 @@ pub fn to_scipy_sparse<C: numpy::Element>(src: sprs::CsMat<C>) -> PyResult<Py<Py
 
 /// Convert a `ndarray::Array2<C>` to the numpy equivalent.
 pub fn to_numpy_dense_matrix<C: numpy::Element>(src: ndarray::Array2<C>) -> Py<numpy::PyArray2<C>> {
-    Python::attach(|py| src.into_pyarray(py).unbind())
+    Python::attach(|py| PyArray2::from_owned_array(py, src).unbind())
 }
 
 /// Supported types for pandas DataFrame columns

@@ -150,6 +150,17 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
         """
         return self._impl.cmpnt_count(self.index, elem)
 
+    def to_sparse_matrix(self, big_endian: bool = False) -> Any:
+        """Return :param:`self` as a sparse matrix.
+
+        Args:
+            big_endian: Whether to use big-endian basis ordering.
+
+        Returns:
+            The sparse matrix representation of :param:`self`.
+        """
+        return self._impl.cmpnt_to_sparse_matrix(self.index, big_endian)  # type: ignore[attr-defined]
+
 
 class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
     """A collection of strings.

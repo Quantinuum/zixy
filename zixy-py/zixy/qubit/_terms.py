@@ -63,7 +63,7 @@ class Term(Generic[ImplT, SpecT, CoeffT, ElemT], TermBase[ImplT, SpecT, CoeffT])
     def qubits(self) -> Qubits:
         """Get the qubits corresponding to :param:`self`."""
         return self.string._impl.qubits
-    
+
     def to_sparse_matrix(self, big_endian: bool = False) -> Any:
         """Return :param:`self` as a sparse matrix.
 

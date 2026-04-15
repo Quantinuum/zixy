@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 from zixy.container.coeffs import ComplexSign
@@ -84,6 +85,32 @@ def test_string_from_str():
     assert str(err.value) == "There should be exactly one Pauli string in the input, not 5."
     a = String.from_str("X0 Z1 Y2 Z3", 4)
     assert a.get_tuple() == (X, Z, Y, Z)
+
+
+def test_string_to_sparse_matrix():
+    mat = String(1, (Y,)).to_sparse_matrix()
+    assert np.allclose(mat.toarray(), np.array([[0, -1j], [1j, 0]]))
+
+    mat = String(2, (Y, X)).to_sparse_matrix()
+    assert np.allclose(
+        mat.toarray(),
+        np.array(
+            [
+                [0, 0, 0, -1j],
+                [0, 0, 1j, 0],
+                [0, -1j, 0, 0],
+                [1j, 0, 0, 0],
+            ]
+        ),
+    )
+
+    mat = String(4, (Z, I, X, Y)).to_sparse_matrix()
+    mat_i = np.eye(2)
+    mat_x = np.array([[0, 1], [1, 0]])
+    mat_y = np.array([[0, -1j], [1j, 0]])
+    mat_z = np.array([[1, 0], [0, -1]])
+    expected = np.kron(np.kron(np.kron(mat_y, mat_x), mat_i), mat_z)
+    assert np.allclose(mat.toarray(), expected)
 
 
 def test_string_array_from_str():
@@ -295,7 +322,3 @@ def test_string_set():
 def test_string_set_from_iterable():
     s = StringSet.from_iterable(((X,), (Y,), (X,), (I,), (Z,), (Y,), (X,)), 1)
     assert len(s) == 4
-
-
-def test_string_set_from_cmpnts():
-    pass

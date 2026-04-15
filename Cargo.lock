@@ -1205,7 +1205,7 @@ dependencies = [
 
 [[package]]
 name = "zixy"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bincode",
  "criterion",
@@ -1225,7 +1225,7 @@ dependencies = [
 
 [[package]]
 name = "zixy-py"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bincode",
  "itertools 0.14.0",

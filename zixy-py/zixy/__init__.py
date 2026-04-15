@@ -26,4 +26,4 @@ __all__ = ["container", "fermion", "qubit"]
 
 # This is updated by our release-please workflow, triggered by this
 # annotation: x-release-please-version
-__version__ = "0.1.0"
+__version__ = "0.1.0-alpha.1"

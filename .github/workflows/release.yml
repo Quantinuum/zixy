@@ -188,5 +188,4 @@ jobs:
           MATURIN_PYPI_TOKEN: ${{ secrets.TESTPYPI_PUBLISH_ZIXY }}
         with:
           command: upload
-          repository-url: https://test.pypi.org/legacy/
-          args: --non-interactive --skip-existing wheels-*/*
+          args: --non-interactive --skip-existing wheels-*/* --repository-url="https://test.pypi.org/legacy/"

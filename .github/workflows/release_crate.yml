@@ -40,8 +40,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
-      - name: Sync package README
-        run: cp README.md ${{ env.CRATE_DIR }}/README.md
       - name: Report
         run: |
           echo "Publishing Rust crate from '${{ env.CRATE_DIR }}' to crates.io..."

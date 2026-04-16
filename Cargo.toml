@@ -9,6 +9,7 @@ edition = "2021"
 homepage = "https://github.com/quantinuum/zixy"
 repository = "https://github.com/quantinuum/zixy"
 license = "Apache-2.0"
+description = "Quantinuum's high performance library for the manipulation of Pauli strings and other quantum algebraic objects."
 
 [workspace.lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [

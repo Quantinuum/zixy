@@ -1,0 +1,56 @@
+name: Release Rust crate
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CRATE_DIR: zixy
+
+jobs:
+  check-tag:
+    name: Check tag
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.check-tag.outputs.run }}
+    steps:
+      - name: Check tag
+        id: check-tag
+        run: |
+          echo "run=$SHOULD_RUN" >> $GITHUB_OUTPUT
+        env:
+          SHOULD_RUN: ${{ github.event_name != 'release' || ( github.ref_type == 'tag' && startsWith(github.ref, 'refs/tags/v') ) }}
+
+  release-crate:
+    name: Release Rust crate
+    runs-on: ubuntu-latest
+    needs: check-tag
+    if: ${{ needs.check-tag.outputs.run == 'true' && ((github.event_name == 'release' && github.ref_type == 'tag' && startsWith(github.ref, 'refs/tags/v') ) || (github.event_name == 'workflow_dispatch' && github.ref_type == 'tag' && startsWith(github.ref, 'refs/tags/v') )) }}
+    environment: release
+    permissions:
+      # Required for crates.io trusted publishing.
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Report
+        run: |
+          echo "Publishing Rust crate from '${{ env.CRATE_DIR }}' to crates.io..."
+          echo "  - event_name: ${{ github.event_name }}"
+          echo "  - ref_type: ${{ github.ref_type }}"
+          echo "  - ref: ${{ github.ref }}"
+      - name: Authenticate with crates.io
+        id: auth
+        uses: rust-lang/crates-io-auth-action@v1
+      - name: Publish to crates.io
+        working-directory: ${{ env.CRATE_DIR }}
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+        run: cargo publish --locked

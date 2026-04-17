@@ -664,7 +664,6 @@ mod tests {
         assert_eq!(out.borrow().get_pauli_vec(), ov);
     }
 
-    /*
     #[rstest]
     #[case(vec![X, Y, I, Z], vec![0, 0, 0, 0], vec![1, 1, 0, 0], ComplexSign(1))]
     #[case(vec![X, Y, I, Z], vec![0, 1, 0, 0], vec![1, 0, 0, 0], ComplexSign(3))]
@@ -676,7 +675,7 @@ mod tests {
         #[case] ov: Vec<u8>,
         #[case] phase: ComplexSign,
     ) {
-        use crate::{cmpnt::bitset_cmpnt_list::AsCmpntRef, qubit::state::cmpnt::BasisState};
+        use crate::{container::bit_matrix::AsRowRef, qubit::state::cmpnt::BasisState};
 
         let lhs = PauliWord::from_vec_default(lv);
         let rhs = BasisState::from_vec_default(rv.iter().map(|x| *x != 0).collect());
@@ -689,7 +688,6 @@ mod tests {
         let ov = ov.iter().map(|x| *x != 0).collect::<Vec<_>>();
         assert_eq!(out.borrow().to_vec(), ov);
     }
-    */
 
     #[rstest]
     #[case("X1 X3 Y7", "X1 X3 Y7", vec![0])]

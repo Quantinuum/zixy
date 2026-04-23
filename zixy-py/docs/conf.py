@@ -9,14 +9,11 @@ from datetime import datetime
 # Alias needed here to prevent naming clash with something else sphinx is doing.
 from importlib.metadata import version as check_version
 
-
 # Checking the version used in the Python environment means that pyproject.toml
 #  serves as the single source of truth for the version of zixy.
-def _check_zixy_version() -> str:
-    return check_version("zixy")
 
 
-project = f"zixy-py v{_check_zixy_version()}"
+project = f"zixy-py v{check_version('zixy')}"
 copyright = f"{datetime.now().year}, Quantinuum"
 author = "Quantinuum"
 

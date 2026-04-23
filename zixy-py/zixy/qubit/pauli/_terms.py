@@ -107,11 +107,7 @@ class Term(TermBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
         impl, phases = QubitPauliArray.with_phases(qubits, PauliSprings(source))
         cmpnts = cls.cmpnts_type._create(impl)
         coeffs_type = get_coeffs_type(cls.coeff_type)
-        coeffs = (
-            coeffs_type.parse(source)
-            if "(" in source
-            else coeffs_type.from_size(len(phases))
-        )
+        coeffs = coeffs_type.parse(source) if "(" in source else coeffs_type.from_size(len(phases))
         coeffs *= ComplexSignCoeffs._create(phases)
         return TermData(cmpnts, coeffs)
 
@@ -230,21 +226,15 @@ class Terms(TermsBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
         """
         coeffs = self._data.coeffs
         if isinstance(coeffs, SignCoeffs):
-            self._data.cmpnts._impl.lexicographic_sort_with_sign_vec(
-                coeffs._impl, ascending
-            )
+            self._data.cmpnts._impl.lexicographic_sort_with_sign_vec(coeffs._impl, ascending)
         elif isinstance(coeffs, ComplexSignCoeffs):
             self._data.cmpnts._impl.lexicographic_sort_with_complex_sign_vec(
                 coeffs._impl, ascending
             )
         elif isinstance(coeffs, RealCoeffs):
-            self._data.cmpnts._impl.lexicographic_sort_with_real_vec(
-                coeffs._impl, ascending
-            )
+            self._data.cmpnts._impl.lexicographic_sort_with_real_vec(coeffs._impl, ascending)
         elif isinstance(coeffs, ComplexCoeffs):
-            self._data.cmpnts._impl.lexicographic_sort_with_complex_vec(
-                coeffs._impl, ascending
-            )
+            self._data.cmpnts._impl.lexicographic_sort_with_complex_vec(coeffs._impl, ascending)
         else:
             raise TypeError(f"Sort not implemented for coefficient type {type(coeffs)}")
 
@@ -358,6 +348,7 @@ class Terms(TermsBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
         else:
             raise TypeError(f"Canonicalization not valid for coefficient type {type(coeffs)}")
 
+
 class TermSet(TermSetBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
     """A collection of unique terms consisting of Pauli strings and coefficients.
 
@@ -372,9 +363,7 @@ class TermSet(TermSetBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
     terms_type: type[Terms[CoeffT]]
 
 
-class TermSum(
-    TermSumBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix], TermSet[CoeffT]
-):
+class TermSum(TermSumBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix], TermSet[CoeffT]):
     """A sum of terms consisting of Pauli strings and coefficients.
 
     A set-like container of qubit-based terms that may be used to store unique terms and perform
@@ -409,9 +398,7 @@ class TermSum(
         out = cast(Any, self) * other - cast(Any, other) * self
         return cast(TermSum[Any], out)
 
-    def commutes_with(
-        self, other: TermSum[CoeffT], atol: float = DEFAULT_COMMUTES_ATOL
-    ) -> bool:
+    def commutes_with(self, other: TermSum[CoeffT], atol: float = DEFAULT_COMMUTES_ATOL) -> bool:
         """Check whether :param:`self` commutes with :param:`other`.
 
         .. math::
@@ -450,9 +437,7 @@ class TermSum(
             cast(Any, create_num_op(cast(Any, type(self)), self.qubits)), atol
         )
 
-    def conserves_odd_bit_hamming_weight(
-        self, atol: float = DEFAULT_COMMUTES_ATOL
-    ) -> bool:
+    def conserves_odd_bit_hamming_weight(self, atol: float = DEFAULT_COMMUTES_ATOL) -> bool:
         """Check whether :param:`self` conserves odd-bit Hamming weight.
 
         Args:
@@ -683,9 +668,7 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         lhs_coeffs = self._impl._coeffs._impl
         rhs_impl = other._impl._cmpnts._impl
         rhs_coeffs = other._impl._coeffs._impl
-        out = ComplexTermSum._create(
-            TermData(other._impl._cmpnts._empty_clone(), ComplexCoeffs())
-        )
+        out = ComplexTermSum._create(TermData(other._impl._cmpnts._empty_clone(), ComplexCoeffs()))
         assert isinstance(out._impl._coeffs, ComplexCoeffs)
         out_impl = out._impl._cmpnts._impl
         out_map = out._cmpnt_set._map
@@ -695,9 +678,7 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         )
         return out
 
-    def project_into_ortho_subspace(
-        self, subspace: StateStrings
-    ) -> NDArray[np.float64]:
+    def project_into_ortho_subspace(self, subspace: StateStrings) -> NDArray[np.float64]:
         """Project the term into an orthogonal subspace defined by an ordered sequence of states.
 
         Args:
@@ -874,9 +855,7 @@ class ComplexTermSet(TermSet[complex]):
     terms_type = ComplexTerms
 
 
-class ComplexTermSum(
-    NumericTermSum[QubitPauliArray, StringSpec, complex], TermSum[complex]
-):
+class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermSum[complex]):
     """A sum of terms consisting of Pauli strings and complex coefficients.
 
     A set-like container of qubit-based terms with ``complex`` coefficients that may be used to
@@ -934,9 +913,7 @@ class ComplexTermSum(
         lhs_coeffs = self._impl._coeffs._impl
         rhs_impl = other._impl._cmpnts._impl
         rhs_coeffs = other._impl._coeffs._impl
-        out = ComplexTermSum._create(
-            TermData(other._impl._cmpnts._empty_clone(), ComplexCoeffs())
-        )
+        out = ComplexTermSum._create(TermData(other._impl._cmpnts._empty_clone(), ComplexCoeffs()))
         assert isinstance(out._impl._coeffs, ComplexCoeffs)
         out_impl = out._impl._cmpnts._impl
         out_map = out._cmpnt_set._map
@@ -946,9 +923,7 @@ class ComplexTermSum(
         )
         return out
 
-    def project_into_ortho_subspace(
-        self, subspace: StateStrings
-    ) -> NDArray[np.complex128]:
+    def project_into_ortho_subspace(self, subspace: StateStrings) -> NDArray[np.complex128]:
         """Project the term into an orthogonal subspace defined by a set of states.
 
         Args:
@@ -1096,9 +1071,7 @@ class SymbolicTerm(Term[Expr]):
             :meth:`~zixy.container.coeffs.SymbolicCoeffs.try_to_real`
         """
         cmpnts = RealTerm.cmpnts_type.from_cmpnt(self.string.clone())
-        coeffs = get_coeffs_type(RealTerm.coeff_type).from_scalar(
-            float(self.coeff.evalf())
-        )
+        coeffs = get_coeffs_type(RealTerm.coeff_type).from_scalar(float(self.coeff.evalf()))
         return RealTerm._create(TermData(cmpnts, coeffs))
 
     def try_to_complex(self) -> ComplexTerm:
@@ -1115,9 +1088,7 @@ class SymbolicTerm(Term[Expr]):
             :meth:`~zixy.container.coeffs.SymbolicCoeffs.try_to_complex`
         """
         cmpnts = ComplexTerm.cmpnts_type.from_cmpnt(self.string.clone())
-        coeffs = get_coeffs_type(ComplexTerm.coeff_type).from_scalar(
-            complex(self.coeff.evalf())
-        )
+        coeffs = get_coeffs_type(ComplexTerm.coeff_type).from_scalar(complex(self.coeff.evalf()))
         return ComplexTerm._create(TermData(cmpnts, coeffs))
 
 
@@ -1166,9 +1137,7 @@ class SymbolicTerms(Terms[Expr]):
         Returns:
             A new contiguously stored instance with the substitution applied.
         """
-        return SymbolicTerms._create(
-            TermData(self.strings.clone(), self.coeffs.subs(values))
-        )
+        return SymbolicTerms._create(TermData(self.strings.clone(), self.coeffs.subs(values)))
 
     def idiff(self, variable: Symbol | str) -> None:
         """Differentiate partially with respect to :param:`variable` in-place.
@@ -1192,9 +1161,7 @@ class SymbolicTerms(Terms[Expr]):
         Returns:
             A new contiguously stored instance with the differentiation applied.
         """
-        return SymbolicTerms._create(
-            TermData(self.strings.clone(), self.coeffs.diff(variable))
-        )
+        return SymbolicTerms._create(TermData(self.strings.clone(), self.coeffs.diff(variable)))
 
     def try_to_real(self) -> RealTerms:
         """Try to evaluate :param:`self` as terms containing a vector of real coefficients.
@@ -1206,9 +1173,7 @@ class SymbolicTerms(Terms[Expr]):
         Raises:
             TypeError: A coefficient is not representable as real or there are free symbols.
         """
-        return RealTerms._create(
-            TermData(self.strings.clone(), self.coeffs.try_to_real())
-        )
+        return RealTerms._create(TermData(self.strings.clone(), self.coeffs.try_to_real()))
 
     def try_to_complex(self) -> ComplexTerms:
         """Try to evaluate :param:`self` as terms containing a vector of complex coefficients.
@@ -1220,9 +1185,7 @@ class SymbolicTerms(Terms[Expr]):
         Raises:
             TypeError: A coefficient is not representable as complex or there are free symbols.
         """
-        return ComplexTerms._create(
-            TermData(self.strings.clone(), self.coeffs.try_to_complex())
-        )
+        return ComplexTerms._create(TermData(self.strings.clone(), self.coeffs.try_to_complex()))
 
 
 class SymbolicTermSet(TermSet[Expr]):

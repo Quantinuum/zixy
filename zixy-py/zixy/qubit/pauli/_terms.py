@@ -342,9 +342,9 @@ class Terms(TermsBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
     def canonicalize_all(self) -> Sequence[tuple[int, int]]:
         coeffs = self._data.coeffs
         if isinstance(coeffs, SignCoeffs):
-            return self._data._cmpnts._impl.canonicalize_all_sign(self._data.coeffs._impl)
+            return self._data._cmpnts._impl.canonicalize_all_sign(coeffs._impl)
         elif isinstance(coeffs, ComplexSignCoeffs):
-            return self._data._cmpnts._impl.canonicalize_all_complex_sign(self._data.coeffs._impl)
+            return self._data._cmpnts._impl.canonicalize_all_complex_sign(coeffs._impl)
         else:
             raise TypeError(f"Canonicalization not valid for coefficient type {type(coeffs)}")
 

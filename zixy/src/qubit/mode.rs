@@ -5,7 +5,7 @@ use std::fmt::Display;
 use std::hash::Hash;
 
 pub use crate::cmpnt::mode::*;
-use crate::container::errors::OutOfBounds;
+use crate::container::errors::{Dimension, OutOfBounds};
 use crate::container::{coeffs::complex_sign::ComplexSign, traits::Elements};
 use crate::utils::arith::ceil_log2;
 use num_enum::TryFromPrimitive;
@@ -68,6 +68,30 @@ pub fn pauli_matrix_product(lhs: PauliMatrix, rhs: PauliMatrix) -> (PauliMatrix,
     (pauli, ComplexSign(phase))
 }
 
+/// Symbols representing the Pauli X and Z
+/// Used to identify the X or Z part of the symplectic representation of Paulis
+#[derive(Debug, Clone, Copy, PartialEq, Eq, TryFromPrimitive)]
+#[repr(u8)]
+pub enum SymplecticPart {
+    /// X part
+    X = 0,
+    /// Z part
+    Z = 1,
+}
+
+impl Display for SymplecticPart {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                SymplecticPart::X => "X",
+                SymplecticPart::Z => "Z",
+            }
+        )
+    }
+}
+
 /// The valid representations of the qubits field of objects acting on qubit spaces
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Kind {
@@ -128,12 +152,8 @@ impl Qubits {
     }
 
     /// Return the index of a mode from a given order index with bounds checking.
-    pub fn get(&self, i: usize) -> Option<usize> {
-        if i < self.len() {
-            Some(self.get_unchecked(i))
-        } else {
-            None
-        }
+    pub fn get(&self, i: usize) -> Result<usize, OutOfBounds> {
+        OutOfBounds::check(i, self.len(), Dimension::Mode).map(|()| self.get_unchecked(i))
     }
 
     /// Return all indices as a vector.

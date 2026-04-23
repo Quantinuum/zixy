@@ -1,18 +1,21 @@
 //! Extends `CmpntList` with a vector of associated coefficients.
 
+use itertools::{chain, Itertools};
 use num_complex::Complex64;
 
 use crate::cmpnt::parse::ParseError;
 use crate::cmpnt::springs::ModeSettings;
+use crate::container::bit_matrix::AsBitMatrix;
 use crate::container::coeffs::traits::{
     ComplexSigned, HasCoeffsMut, IMulResult, NumRepr, NumReprVec, Signed,
 };
+use crate::container::errors::OutOfBounds;
 use crate::container::traits::proj::{self, AsRef};
 use crate::container::traits::{Elements, EmptyFrom, MutRefElements};
 use crate::container::utils::DistinctPair;
 use crate::container::word_iters::{terms, WordIters};
 use crate::qubit::clifford;
-use crate::qubit::mode::{pauli_matrix_product, PauliMatrix, Qubits};
+use crate::qubit::mode::{pauli_matrix_product, PauliMatrix, Qubits, SymplecticPart};
 use crate::qubit::pauli::cmpnt_major::cmpnt_list::{CmpntList, CmpntRef};
 use crate::qubit::pauli::springs::Springs;
 use crate::qubit::traits::{
@@ -75,6 +78,119 @@ pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<CmpntList, C> {
         C: Signed,
     {
         gates.into_iter().for_each(|gate| self.conj_clifford(gate));
+    }
+
+    /// In place canonicalization with respect to a given ordering of the binary entries in the symplectic form
+    /// `mode_order` the order of binary entries to try reducing to at most one non-zero entry
+    /// `to_solve` the subset of the components to canonicalise over (e.g. if some partial canonicalization has already been done, skip those components)
+    /// `additional_reduces` components outside of `to_solve` to include in the reduction step (e.g. if some partial canonicalization has already been done, reduce the components that already have leading entries)
+    /// Errors if any of the qubit or component indices provided are out of bounds
+    /// Returns the sequence of imul operations as pairs (lhs_written, rhs_read)
+    fn canonicalize(
+        &mut self,
+        mode_order: &Vec<(usize, SymplecticPart)>,
+        to_solve: &Vec<usize>,
+        additional_reduces: &Vec<usize>,
+    ) -> Result<Vec<(usize, usize)>, OutOfBounds> {
+        let mut imul_ops = vec![];
+        let mut pivot_cmpnt = 0;
+        let mut self_mut_ref = self.view_mut();
+        for (qubit, part) in mode_order {
+            let qubit_idx = self_mut_ref.word_iters.qubits().get(*qubit)?;
+            match part {
+                SymplecticPart::X => {
+                    for cmp_idx in &to_solve[pivot_cmpnt..] {
+                        if self_mut_ref
+                            .word_iters
+                            .x_part()
+                            .get_bit(*cmp_idx, qubit_idx)?
+                        {
+                            let pivot_idx = to_solve[pivot_cmpnt];
+                            match DistinctPair::new(pivot_idx, *cmp_idx) {
+                                Some(inds) => {
+                                    let (mut lhs, rhs) = self_mut_ref.get_semi_mut_refs(inds);
+                                    lhs.imul_unchecked(rhs);
+                                    imul_ops.push((pivot_idx, *cmp_idx));
+                                }
+                                None => {}
+                            }
+                            for red_idx in chain!(to_solve, additional_reduces) {
+                                if self_mut_ref
+                                    .word_iters
+                                    .x_part()
+                                    .get_bit(*red_idx, qubit_idx)?
+                                {
+                                    match DistinctPair::new(*red_idx, pivot_idx) {
+                                        Some(inds) => {
+                                            let (mut lhs, rhs) =
+                                                self_mut_ref.get_semi_mut_refs(inds);
+                                            lhs.imul_unchecked(rhs);
+                                            imul_ops.push((*red_idx, pivot_idx));
+                                        }
+                                        None => {}
+                                    }
+                                }
+                            }
+                            pivot_cmpnt += 1;
+                            break;
+                        }
+                    }
+                }
+                SymplecticPart::Z => {
+                    for cmp_idx in &to_solve[pivot_cmpnt..] {
+                        if self_mut_ref
+                            .word_iters
+                            .z_part()
+                            .get_bit(*cmp_idx, qubit_idx)?
+                        {
+                            let pivot_idx = to_solve[pivot_cmpnt];
+                            match DistinctPair::new(pivot_idx, *cmp_idx) {
+                                Some(inds) => {
+                                    let (mut lhs, rhs) = self_mut_ref.get_semi_mut_refs(inds);
+                                    lhs.imul_unchecked(rhs);
+                                    imul_ops.push((pivot_idx, *cmp_idx));
+                                }
+                                None => {}
+                            }
+                            for red_idx in chain!(to_solve, additional_reduces) {
+                                if self_mut_ref
+                                    .word_iters
+                                    .z_part()
+                                    .get_bit(*red_idx, qubit_idx)?
+                                {
+                                    match DistinctPair::new(*red_idx, pivot_idx) {
+                                        Some(inds) => {
+                                            let (mut lhs, rhs) =
+                                                self_mut_ref.get_semi_mut_refs(inds);
+                                            lhs.imul_unchecked(rhs);
+                                            imul_ops.push((*red_idx, pivot_idx));
+                                        }
+                                        None => {}
+                                    }
+                                }
+                            }
+                            pivot_cmpnt += 1;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        Ok(imul_ops)
+    }
+
+    /// In place canonicalization of the entire Terms with respect to solving X parts first (in qubit order), then Z parts
+    /// Returns the sequence of imul operations as pairs (lhs_written, rhs_read)
+    fn canonicalize_all(&mut self) -> Vec<(usize, usize)> {
+        let n_qubits = self.view().word_iters.qubits().n_qubit();
+        let mode_order = chain!(
+            (0..n_qubits).map(|i| (i, SymplecticPart::X)),
+            (0..n_qubits).map(|i| (i, SymplecticPart::Z))
+        )
+        .collect_vec();
+        let to_solve = (0..self.view().word_iters.len()).collect_vec();
+        // All ranges are guaranteed to be in bounds, so we can safely unwrap without error
+        self.canonicalize(&mode_order, &to_solve, &vec![]).unwrap()
     }
 }
 
@@ -508,5 +624,32 @@ mod tests {
             .assign_mul_cmpnt_refs_unchecked(lhs.borrow(), rhs.borrow());
         assert_eq!(out.get_elem_ref(0).get_word_iter_ref().get_pauli_vec(), ov);
         assert_eq!(out.get_elem_ref(0).get_coeff(), phase);
+    }
+
+    #[rstest]
+    #[case(0, vec![], vec![], vec![], vec![], vec![], vec![])]
+    #[case(3, vec![vec![Z, Z, Z], vec![X, X, I], vec![I, X, X]], vec![(0, SymplecticPart::X), (1, SymplecticPart::X), (0, SymplecticPart::Z)], vec![0, 1, 2], vec![], vec![(0, 1), (1, 0), (1, 2), (0, 1), (2, 1), (1, 2)], vec![vec![X, I, X], vec![I, X, X], vec![Z, Z, Z]])]
+    #[case(3, vec![vec![Z, Z, Z], vec![X, X, I], vec![Y, Z, X]], vec![(0, SymplecticPart::X), (1, SymplecticPart::X), (0, SymplecticPart::Z)], vec![0, 1], vec![2], vec![(0, 1), (1, 0), (2, 0), (0, 1)], vec![vec![X, X, I], vec![Z, Z, Z], vec![I, X, Y]])]
+    fn test_canonicalize(
+        #[case] n_qubits: usize,
+        #[case] strings: Vec<Vec<PauliMatrix>>,
+        #[case] q_order: Vec<(usize, SymplecticPart)>,
+        #[case] to_solve: Vec<usize>,
+        #[case] to_reduce: Vec<usize>,
+        #[case] expected_imuls: Vec<(usize, usize)>,
+        #[case] expected_strings: Vec<Vec<PauliMatrix>>,
+    ) {
+        let mut tab = Terms::<Sign>::new(Qubits::from_count(n_qubits));
+        for pv in strings {
+            tab.push_pauli_vec(pv).unwrap();
+        }
+        let mut exp = Terms::<Sign>::new(Qubits::from_count(n_qubits));
+        for pv in expected_strings {
+            exp.push_pauli_vec(pv).unwrap();
+        }
+        let res = tab.canonicalize(&q_order, &to_solve, &to_reduce);
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), expected_imuls);
+        assert_eq!(tab, exp);
     }
 }

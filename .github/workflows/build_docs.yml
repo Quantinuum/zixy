@@ -1,4 +1,4 @@
-name: Test sphinx docs and landing page build
+name: Test sphinx docs build
 
 on:
   push:

@@ -330,15 +330,12 @@ pub trait AsViewMut<T: WordIters, C: NumRepr>: AsView<T, C> {
     /// Remove the term identified by `u64it` if it is present.
     fn drop_u64it(&mut self, u64it: impl Iterator<Item = u64> + Clone) -> bool {
         match self.as_mapped_word_iters().lookup(u64it) {
-            Some(i) => {
-                if self.as_mapped_word_iters_mut().drop(i) {
-                    self.as_terms_mut().sync_sizes();
-                    true
-                } else {
-                    false
-                }
+            Some(i) if self.as_mapped_word_iters_mut().drop(i) => {
+                self.as_terms_mut().sync_sizes();
+                true
             }
             None => false,
+            Some(_) => false,
         }
     }
 

@@ -209,6 +209,7 @@ pub trait AsRowRef: HasIndex {
 
     /// Return the next set bit at or above `(i_word, i_bit)`, as `(word_index, bit_index)`.
     /// Returns `None` when no further set bit exists.
+    #[allow(clippy::explicit_counter_loop)]
     fn lowest_set_word_bit_not_before(
         &self,
         i_word: usize,
@@ -481,7 +482,7 @@ pub struct BitMatrix {
 impl BitMatrix {
     /// Create an empty `CmpntList` on the given number of bits.
     pub fn new(n_bit: usize) -> Self {
-        let row_size = divceil(n_bit, 64) as usize;
+        let row_size = divceil(n_bit, 64);
         Self {
             table: Table::new(row_size),
             n_bit,

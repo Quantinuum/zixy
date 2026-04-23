@@ -106,13 +106,10 @@ pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<CmpntList, C> {
                             .get_bit(*cmp_idx, qubit_idx)?
                         {
                             let pivot_idx = to_solve[pivot_cmpnt];
-                            match DistinctPair::new(pivot_idx, *cmp_idx) {
-                                Some(inds) => {
-                                    let (mut lhs, rhs) = self_mut_ref.get_semi_mut_refs(inds);
-                                    lhs.imul_unchecked(rhs);
-                                    imul_ops.push((pivot_idx, *cmp_idx));
-                                }
-                                None => {}
+                            if let Some(inds) = DistinctPair::new(pivot_idx, *cmp_idx) {
+                                let (mut lhs, rhs) = self_mut_ref.get_semi_mut_refs(inds);
+                                lhs.imul_unchecked(rhs);
+                                imul_ops.push((pivot_idx, *cmp_idx));
                             }
                             for red_idx in chain!(to_solve, additional_reduces) {
                                 if self_mut_ref
@@ -120,14 +117,10 @@ pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<CmpntList, C> {
                                     .x_part()
                                     .get_bit(*red_idx, qubit_idx)?
                                 {
-                                    match DistinctPair::new(*red_idx, pivot_idx) {
-                                        Some(inds) => {
-                                            let (mut lhs, rhs) =
-                                                self_mut_ref.get_semi_mut_refs(inds);
-                                            lhs.imul_unchecked(rhs);
-                                            imul_ops.push((*red_idx, pivot_idx));
-                                        }
-                                        None => {}
+                                    if let Some(inds) = DistinctPair::new(*red_idx, pivot_idx) {
+                                        let (mut lhs, rhs) = self_mut_ref.get_semi_mut_refs(inds);
+                                        lhs.imul_unchecked(rhs);
+                                        imul_ops.push((*red_idx, pivot_idx));
                                     }
                                 }
                             }
@@ -144,13 +137,10 @@ pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<CmpntList, C> {
                             .get_bit(*cmp_idx, qubit_idx)?
                         {
                             let pivot_idx = to_solve[pivot_cmpnt];
-                            match DistinctPair::new(pivot_idx, *cmp_idx) {
-                                Some(inds) => {
-                                    let (mut lhs, rhs) = self_mut_ref.get_semi_mut_refs(inds);
-                                    lhs.imul_unchecked(rhs);
-                                    imul_ops.push((pivot_idx, *cmp_idx));
-                                }
-                                None => {}
+                            if let Some(inds) = DistinctPair::new(pivot_idx, *cmp_idx) {
+                                let (mut lhs, rhs) = self_mut_ref.get_semi_mut_refs(inds);
+                                lhs.imul_unchecked(rhs);
+                                imul_ops.push((pivot_idx, *cmp_idx));
                             }
                             for red_idx in chain!(to_solve, additional_reduces) {
                                 if self_mut_ref
@@ -158,14 +148,10 @@ pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<CmpntList, C> {
                                     .z_part()
                                     .get_bit(*red_idx, qubit_idx)?
                                 {
-                                    match DistinctPair::new(*red_idx, pivot_idx) {
-                                        Some(inds) => {
-                                            let (mut lhs, rhs) =
-                                                self_mut_ref.get_semi_mut_refs(inds);
-                                            lhs.imul_unchecked(rhs);
-                                            imul_ops.push((*red_idx, pivot_idx));
-                                        }
-                                        None => {}
+                                    if let Some(inds) = DistinctPair::new(*red_idx, pivot_idx) {
+                                        let (mut lhs, rhs) = self_mut_ref.get_semi_mut_refs(inds);
+                                        lhs.imul_unchecked(rhs);
+                                        imul_ops.push((*red_idx, pivot_idx));
                                     }
                                 }
                             }

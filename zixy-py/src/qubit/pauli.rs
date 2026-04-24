@@ -296,6 +296,46 @@ impl Array {
         Ok((out, ComplexSign(phase)))
     }
 
+    /// Multiply each Pauli string in `self` by the corresponding Pauli string in `rhs` 
+    /// at the same position, returning the resulting array and phase of each product.
+    pub fn cmpnt_mul_pairwise(
+        &self,
+        i_lhs: isize,
+        rhs: &Self,
+        i_rhs: isize,
+    ) -> PyResult<(Self, ComplexSign)> {
+
+        // Check 1 - same qubit space
+        DifferentQubbits::check(&self.0, &rhs.0).to_py_result()?;
+
+        // Check 2 - same length
+        if self.len() != rhs.len() {
+            return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                "Input arrays must have the same length",
+            ));
+        }
+        
+        //create output array and phase vector
+        let mut out = self.empty_clone();
+        out.resize(self.len());
+        let mut phases = ComplexSignVec::new_units_with_len(self.len());
+
+        // Iterate through the arrays and multiply pairwise
+        for i in 0..self.len() {
+            let lhs = self.0.get_elem_ref(i);
+            let rhs = rhs.0.get_elem_ref(i);
+            let phase = out
+                .0
+                .get_elem_mut_ref(i)
+                .assign_mul(lhs, rhs)
+                .to_py_result()?;
+            phases.0.set_unchecked(i,phase);
+        }
+
+        // Return the output array and the phases
+        Ok((out, phases))
+     }
+
     /// Multiply the `i_lhs` cmpnt of `self` by the `i_rhs` cmpnt of `self` and store the resulting cmpnt in
     /// cmpnt `i_lhs` of `self`
     pub fn cmpnt_matrices_imul_internal(&mut self, i_lhs: isize, i_rhs: isize) -> PyResult<()> {

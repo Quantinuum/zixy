@@ -11,7 +11,9 @@ use zixy::cmpnt::springs::ModeSettings;
 use zixy::container::coeffs::traits::{NewUnitsWithLen, NumReprVec};
 use zixy::container::coeffs::unity::UnityVec;
 use zixy::container::quicksort::LexicographicSort;
-use zixy::container::traits::{Compatible, Elements, EmptyClone, MutRefElements, NewWithLen, RefElements};
+use zixy::container::traits::{
+    Compatible, Elements, EmptyClone, MutRefElements, NewWithLen, RefElements,
+};
 use zixy::container::utils::DistinctPair;
 use zixy::container::word_iters::set::{AsView as _, AsViewMut as _};
 use zixy::container::word_iters::{self, WordIters};
@@ -100,10 +102,14 @@ impl Array {
 
     #[staticmethod]
     fn from_dict<'py>(dict: pyo3::Bound<'py, PyDict>) -> PyResult<Self> {
-        let qubits_item = dict.get_item("qubits")?.ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>("missing 'qubits' key"))?;
+        let qubits_item = dict.get_item("qubits")?.ok_or_else(|| {
+            PyErr::new::<pyo3::exceptions::PyValueError, _>("missing 'qubits' key")
+        })?;
         let qubits: Vec<usize> = qubits_item.extract()?;
         let qubits = Qubits(Qubits_::from_inds(qubits).to_py_result()?);
-        let cmpnts_item = dict.get_item("cmpnts")?.ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>("missing 'cmpnts' key"))?;
+        let cmpnts_item = dict.get_item("cmpnts")?.ok_or_else(|| {
+            PyErr::new::<pyo3::exceptions::PyValueError, _>("missing 'cmpnts' key")
+        })?;
         let cmpnts: String = cmpnts_item.extract()?;
         let cmpnts = zixy::qubit::pauli::springs::Springs::from_str(&cmpnts).to_py_result()?;
         Ok(Self(
@@ -298,14 +304,11 @@ impl Array {
         Ok((out, ComplexSign(phase)))
     }
 
-    /// Multiply each Pauli string in `self` by the corresponding Pauli string in `rhs` 
+    /// Multiply each Pauli string in `self` by the corresponding Pauli string in `rhs`
     /// Computes the element-wise product of two equally-sized QubitPauliArray instances,
     /// returning the result QubitPauliArray and a ComplexSignVec of phases.
     #[staticmethod]
-    pub fn cmpnts_mul_pairwise(
-        lhs: &Self,
-        rhs: &Self,
-    ) -> PyResult<(Self, ComplexSignVec)> {
+    pub fn cmpnts_mul_pairwise(lhs: &Self, rhs: &Self) -> PyResult<(Self, ComplexSignVec)> {
         // Check 1 - same qubit space
         DifferentQubits::check(&lhs.0, &rhs.0).to_py_result()?;
 
@@ -315,7 +318,7 @@ impl Array {
                 "Input arrays must have the same length",
             ));
         }
-        
+
         // Create output array and phase vector
         let mut out = lhs.empty_clone();
         out.resize(lhs.len());

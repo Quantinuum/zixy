@@ -6,12 +6,12 @@ use bincode::config;
 use itertools::izip;
 use num_complex::Complex64;
 use pyo3::types::{PyAnyMethods, PyDict, PyDictMethods};
-use pyo3::{pyclass, pymethods, Py, PyAny, PyResult, Python};
+use pyo3::{pyclass, pymethods, Py, PyAny, PyErr, PyResult, Python};
 use zixy::cmpnt::springs::ModeSettings;
 use zixy::container::coeffs::traits::{NewUnitsWithLen, NumReprVec};
 use zixy::container::coeffs::unity::UnityVec;
 use zixy::container::quicksort::LexicographicSort;
-use zixy::container::traits::{Compatible, Elements, EmptyClone, MutRefElements, RefElements};
+use zixy::container::traits::{Compatible, Elements, EmptyClone, MutRefElements, NewWithLen, RefElements};
 use zixy::container::utils::DistinctPair;
 use zixy::container::word_iters::set::{AsView as _, AsViewMut as _};
 use zixy::container::word_iters::{self, WordIters};
@@ -100,9 +100,11 @@ impl Array {
 
     #[staticmethod]
     fn from_dict<'py>(dict: pyo3::Bound<'py, PyDict>) -> PyResult<Self> {
-        let qubits: Vec<usize> = dict.get_item("qubits")?.unwrap().extract()?;
+        let qubits_item = dict.get_item("qubits")?.ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>("missing 'qubits' key"))?;
+        let qubits: Vec<usize> = qubits_item.extract()?;
         let qubits = Qubits(Qubits_::from_inds(qubits).to_py_result()?);
-        let cmpnts: String = dict.get_item("cmpnts")?.unwrap().extract()?;
+        let cmpnts_item = dict.get_item("cmpnts")?.ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>("missing 'cmpnts' key"))?;
+        let cmpnts: String = cmpnts_item.extract()?;
         let cmpnts = zixy::qubit::pauli::springs::Springs::from_str(&cmpnts).to_py_result()?;
         Ok(Self(
             CmpntList::from_springs(qubits.0, &cmpnts).to_py_result()?.0,
@@ -297,44 +299,43 @@ impl Array {
     }
 
     /// Multiply each Pauli string in `self` by the corresponding Pauli string in `rhs` 
-    /// at the same position, returning the resulting array and phase of each product.
-    pub fn cmpnt_mul_pairwise(
-        &self,
-        i_lhs: isize,
+    /// Computes the element-wise product of two equally-sized QubitPauliArray instances,
+    /// returning the result QubitPauliArray and a ComplexSignVec of phases.
+    #[staticmethod]
+    pub fn cmpnts_mul_pairwise(
+        lhs: &Self,
         rhs: &Self,
-        i_rhs: isize,
-    ) -> PyResult<(Self, ComplexSign)> {
-
+    ) -> PyResult<(Self, ComplexSignVec)> {
         // Check 1 - same qubit space
-        DifferentQubbits::check(&self.0, &rhs.0).to_py_result()?;
+        DifferentQubits::check(&lhs.0, &rhs.0).to_py_result()?;
 
         // Check 2 - same length
-        if self.len() != rhs.len() {
+        if lhs.len() != rhs.len() {
             return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
                 "Input arrays must have the same length",
             ));
         }
         
-        //create output array and phase vector
-        let mut out = self.empty_clone();
-        out.resize(self.len());
-        let mut phases = ComplexSignVec::new_units_with_len(self.len());
+        // Create output array and phase vector
+        let mut out = lhs.empty_clone();
+        out.resize(lhs.len());
+        let mut phases = ComplexSignVec::new_with_len(lhs.len());
 
         // Iterate through the arrays and multiply pairwise
-        for i in 0..self.len() {
-            let lhs = self.0.get_elem_ref(i);
-            let rhs = rhs.0.get_elem_ref(i);
+        for i in 0..lhs.len() {
+            let lhs_elem = lhs.0.get_elem_ref(i);
+            let rhs_elem = rhs.0.get_elem_ref(i);
             let phase = out
                 .0
                 .get_elem_mut_ref(i)
-                .assign_mul(lhs, rhs)
+                .assign_mul(lhs_elem, rhs_elem)
                 .to_py_result()?;
-            phases.0.set_unchecked(i,phase);
+            phases.0.set_unchecked(i, phase);
         }
 
         // Return the output array and the phases
         Ok((out, phases))
-     }
+    }
 
     /// Multiply the `i_lhs` cmpnt of `self` by the `i_rhs` cmpnt of `self` and store the resulting cmpnt in
     /// cmpnt `i_lhs` of `self`

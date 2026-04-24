@@ -1,6 +1,6 @@
 import pytest
 
-from zixy._zixy import QubitPauliArray, PauliSprings
+from zixy._zixy import PauliSprings, QubitPauliArray
 from zixy.qubit import Qubits
 from zixy.qubit.pauli import I, String, X, Y, Z
 

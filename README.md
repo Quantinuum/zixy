@@ -1,6 +1,6 @@
 # Zixy
 
-[![CI](https://github.com/quantinuum/zixy/workflows/Unit%20tests/badge.svg)](https://github.com/quantinuum/zixy/actions?query=workflow%3A%22Unit+tests%22+branch%3Amain)
+[![CI](https://github.com/quantinuum/zixy/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/quantinuum/zixy/actions?query=workflow%3A%22Unit+tests%22+branch%3Amain)
 [![PyPI version](https://badge.fury.io/py/zixy.svg)](https://badge.fury.io/py/zixy)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache%20License%202.0-blue)](https://opensource.org/license/apache-2.0)
 

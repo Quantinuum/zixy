@@ -1,0 +1,10 @@
+build:
+	uv run sphinx-build -b html . build
+
+serve: build
+	npm exec serve build
+
+clean:
+	rm -rf build
+	rm -rf generated
+	rm -rf jupyter_execute

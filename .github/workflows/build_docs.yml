@@ -1,0 +1,34 @@
+name: Test sphinx docs build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '**'
+  workflow_dispatch: {}
+jobs:
+    test:
+      name: Test sphinx docs
+      runs-on: ubuntu-latest
+      env:
+          UV_FROZEN: 1
+      steps:
+        - uses: actions/checkout@v4
+          with:
+            submodules: true
+
+        - uses: extractions/setup-just@v3
+          with:
+            just-version: '1.40.0'
+
+        - name: Install uv
+          uses: astral-sh/setup-uv@v7
+          with:
+              enable-cache: true
+              version: "0.11.3"
+
+        - name: Run the docs build
+          run: |
+            cd zixy-py/docs && just build

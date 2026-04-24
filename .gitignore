@@ -1,3 +1,8 @@
 **/target
 **/__pycache__
 **.so
+
+zixy-py/docs/build
+zixy-py/docs/generated
+zixy-py/docs/jupyter_execute
+.DS_Store

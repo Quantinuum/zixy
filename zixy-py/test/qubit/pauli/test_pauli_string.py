@@ -1,9 +1,8 @@
 import pytest
 
-from zixy._zixy import QubitPauliArray
+from zixy._zixy import QubitPauliArray, PauliSprings
 from zixy.qubit import Qubits
 from zixy.qubit.pauli import I, String, X, Y, Z
-from zixy.qubit.springs import PauliSprings
 
 
 def test_from_str():
@@ -43,12 +42,15 @@ def test_cmpnts_mul_pairwise():
     expected_springs = PauliSprings("Z0, X0, Y0")
     expected = QubitPauliArray(qubits, expected_springs)
 
-    assert str(result) == str(expected)
+    # Compare using equality operator
+    assert result == expected
 
-    # All phases should be i (represented as 1 in the phase encoding)
-    assert phases[0] == 1  # i from X*Y
-    assert phases[1] == 1  # i from Y*Z
-    assert phases[2] == 1  # i from Z*X
+    # Verify phases are returned (they represent the complex sign of each product)
+    assert len(phases) == 3
+    # Phases should be: i from X*Y, i from Y*Z, i from Z*X
+    assert str(phases[0]) == "+i"
+    assert str(phases[1]) == "+i"
+    assert str(phases[2]) == "+i"
 
 
 def test_cmpnts_mul_pairwise_different_lengths():

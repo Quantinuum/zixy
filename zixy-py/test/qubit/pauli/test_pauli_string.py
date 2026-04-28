@@ -33,7 +33,7 @@ def test_cmpnts_mul_pairwise():
     arr2 = QubitPauliArray(qubits, springs2)
 
     # Test the pairwise multiplication
-    result, phases = QubitPauliArray.cmpnts_mul_pairwise(arr1, arr2)
+    result, phases = arr1.cmpnts_mul_pairwise(arr2)
 
     # Expected results:
     # X0 * Y0 = iZ0

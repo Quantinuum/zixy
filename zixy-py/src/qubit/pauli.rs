@@ -307,26 +307,25 @@ impl Array {
     /// Multiply each Pauli string in `self` by the corresponding Pauli string in `rhs`
     /// Computes the element-wise product of two equally-sized QubitPauliArray instances,
     /// returning the result QubitPauliArray and a ComplexSignVec of phases.
-    #[staticmethod]
-    pub fn cmpnts_mul_pairwise(lhs: &Self, rhs: &Self) -> PyResult<(Self, ComplexSignVec)> {
+    pub fn cmpnts_mul_pairwise(&self, rhs: &Self) -> PyResult<(Self, ComplexSignVec)> {
         // Check 1 - same qubit space
-        DifferentQubits::check(&lhs.0, &rhs.0).to_py_result()?;
+        DifferentQubits::check(&self.0, &rhs.0).to_py_result()?;
 
         // Check 2 - same length
-        if lhs.len() != rhs.len() {
+        if self.len() != rhs.len() {
             return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
                 "Input arrays must have the same length",
             ));
         }
 
         // Create output array and phase vector
-        let mut out = lhs.empty_clone();
-        out.resize(lhs.len());
-        let mut phases = ComplexSignVec::new_with_len(lhs.len());
+        let mut out = self.empty_clone();
+        out.resize(self.len());
+        let mut phases = ComplexSignVec::new_with_len(self.len());
 
         // Iterate through the arrays and multiply pairwise
-        for i in 0..lhs.len() {
-            let lhs_elem = lhs.0.get_elem_ref(i);
+        for i in 0..self.len() {
+            let lhs_elem = self.0.get_elem_ref(i);
             let rhs_elem = rhs.0.get_elem_ref(i);
             let phase = out
                 .0

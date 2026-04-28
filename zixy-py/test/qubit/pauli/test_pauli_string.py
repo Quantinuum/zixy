@@ -61,4 +61,4 @@ def test_cmpnts_mul_pairwise_different_lengths():
     arr2 = QubitPauliArray(qubits, PauliSprings("Z0"))  # 1 string
 
     with pytest.raises(ValueError, match="Input arrays must have the same length"):
-        QubitPauliArray.cmpnts_mul_pairwise(arr1, arr2)
+        arr1.cmpnts_mul_pairwise(arr2)

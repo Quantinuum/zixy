@@ -8,6 +8,7 @@ from zixy.qubit.pauli import (
     I,
     RealTerm,
     SignTerm,
+    SignTerms,
     String,
     SymbolicTerm,
     X,
@@ -108,3 +109,26 @@ def test_sign_term_products():
     prod = SignTerm(2, (X, X)) * SignTerm(2, (Z, Z))
     assert type(prod) is ComplexSignTerm
     assert str(prod) == "(-1, Y0 Y1)"
+
+
+def test_sign_terms_canonicalize():
+    tuples = (
+        (Z, Z, Z),
+        (X, X, I),
+        (I, X, X),
+    )
+    terms = SignTerms(3)
+    terms.append_iterable(tuples)
+    imul_ops = terms.canonicalize_all()
+    correct_ops = [
+        (0, 1),
+        (1, 0),
+        (1, 2),
+        (0, 1),
+        (2, 1),
+        (1, 2),
+    ]
+    assert imul_ops == correct_ops
+    assert terms[0].string.get_tuple() == (X, I, X)
+    assert terms[1].string.get_tuple() == (I, X, X)
+    assert terms[2].string.get_tuple() == (Z, Z, Z)

@@ -18,6 +18,7 @@ use zixy::container::word_iters::{self, WordIters};
 use zixy::qubit::mode::Qubits as Qubits_;
 use zixy::qubit::pauli::cmpnt_major as pauli;
 use zixy::qubit::pauli::cmpnt_major::cmpnt_list::CmpntList;
+use zixy::qubit::pauli::cmpnt_major::terms::AsViewMut;
 use zixy::qubit::state;
 use zixy::qubit::traits::{
     DifferentQubits, PauliWordMutRef, PauliWordRef, QubitsBased, QubitsRelabel, QubitsStandardized,
@@ -27,7 +28,7 @@ use zixy::utils::io::{BinFileReader, BinFileWriter};
 use crate::container::coeffs::{ComplexSign, ComplexSignVec, ComplexVec, RealVec, SignVec};
 use crate::container::map::Map;
 use crate::qubit::clifford::CliffordGateList;
-use crate::qubit::mode::{PauliMatrix, Qubits};
+use crate::qubit::mode::{PauliMatrix, Qubits, SymplecticPart};
 use crate::qubit::springs::PauliSprings;
 use crate::qubit::state::Array as StateArray;
 use crate::utils::{
@@ -878,6 +879,102 @@ impl Array {
             out.set_unchecked(i, sign);
         }
         SignVec(out)
+    }
+
+    /// In place canonicalization with respect to a given ordering of the binary entries in the symplectic form
+    /// `mode_order` the order of binary entries to try reducing to at most one non-zero entry
+    /// `to_solve` the subset of the components to canonicalise over (e.g. if some partial canonicalization has already been done, skip those components)
+    /// `additional_reduces` components outside of `to_solve` to include in the reduction step (e.g. if some partial canonicalization has already been done, reduce the components that already have leading entries)
+    /// Errors if any of the qubit or component indices provided are out of bounds
+    /// Returns the sequence of imul operations as pairs (lhs_written, rhs_read)
+    pub fn canonicalize_sign(
+        &mut self,
+        coeffs: &mut SignVec,
+        mode_order: Vec<(isize, SymplecticPart)>,
+        to_solve: Vec<usize>,
+        additional_reduces: Vec<usize>,
+    ) -> PyResult<Vec<(usize, usize)>> {
+        use zixy::container::coeffs::complex_sign::ComplexSign as ComplexSign_;
+        use zixy::container::coeffs::complex_sign::ComplexSignVec as ComplexSignVec_;
+        use zixy::container::coeffs::sign::SignVec as SignVec_;
+        use zixy::qubit::mode::SymplecticPart as SymplecticPart_;
+        let mut ccoeffs: ComplexSignVec_ =
+            ComplexSignVec_::try_represent(&coeffs.0).to_py_result()?;
+        let mut tmp: pauli::terms::ViewMut<ComplexSign_> = pauli::terms::ViewMut {
+            word_iters: &mut self.0,
+            coeffs: &mut ccoeffs,
+        };
+        let n_qubits = tmp.qubits().n_qubit();
+        // Build up manually rather than by map so errors from try_py_index can be passed on
+        let mut tmp_mode_order: Vec<(usize, SymplecticPart_)> = vec![];
+        for (idx, sp) in mode_order {
+            tmp_mode_order.push((try_py_index(idx, n_qubits)?, sp.into()));
+        }
+        let imul_ops = tmp
+            .canonicalize(&tmp_mode_order, &to_solve, &additional_reduces)
+            .to_py_result()?;
+        coeffs.0 = SignVec_::try_represent(&ccoeffs).to_py_result()?;
+        Ok(imul_ops)
+    }
+
+    /// In place canonicalization with respect to a given ordering of the binary entries in the symplectic form
+    /// `mode_order` the order of binary entries to try reducing to at most one non-zero entry
+    /// `to_solve` the subset of the components to canonicalise over (e.g. if some partial canonicalization has already been done, skip those components)
+    /// `additional_reduces` components outside of `to_solve` to include in the reduction step (e.g. if some partial canonicalization has already been done, reduce the components that already have leading entries)
+    /// Errors if any of the qubit or component indices provided are out of bounds
+    /// Returns the sequence of imul operations as pairs (lhs_written, rhs_read)
+    pub fn canonicalize_complex_sign(
+        &mut self,
+        coeffs: &mut ComplexSignVec,
+        mode_order: Vec<(isize, SymplecticPart)>,
+        to_solve: Vec<usize>,
+        additional_reduces: Vec<usize>,
+    ) -> PyResult<Vec<(usize, usize)>> {
+        use zixy::container::coeffs::complex_sign::ComplexSign as ComplexSign_;
+        use zixy::qubit::mode::SymplecticPart as SymplecticPart_;
+        let mut tmp: pauli::terms::ViewMut<ComplexSign_> = pauli::terms::ViewMut {
+            word_iters: &mut self.0,
+            coeffs: &mut coeffs.0,
+        };
+        let n_qubits = tmp.qubits().n_qubit();
+        // Build up manually rather than by map so errors from try_py_index can be passed on
+        let mut tmp_mode_order: Vec<(usize, SymplecticPart_)> = vec![];
+        for (idx, sp) in mode_order {
+            tmp_mode_order.push((try_py_index(idx, n_qubits)?, sp.into()));
+        }
+        tmp.canonicalize(&tmp_mode_order, &to_solve, &additional_reduces)
+            .to_py_result()
+    }
+
+    /// In place canonicalization of the entire QubitPauliArray with respect to solving X parts first (in qubit order), then Z parts
+    /// Returns the sequence of imul operations as pairs (lhs_written, rhs_read)
+    pub fn canonicalize_all_sign(&mut self, coeffs: &mut SignVec) -> PyResult<Vec<(usize, usize)>> {
+        use zixy::container::coeffs::complex_sign::ComplexSign as ComplexSign_;
+        use zixy::container::coeffs::complex_sign::ComplexSignVec as ComplexSignVec_;
+        use zixy::container::coeffs::sign::SignVec as SignVec_;
+        let mut ccoeffs: ComplexSignVec_ =
+            ComplexSignVec_::try_represent(&coeffs.0).to_py_result()?;
+        let mut tmp: pauli::terms::ViewMut<ComplexSign_> = pauli::terms::ViewMut {
+            word_iters: &mut self.0,
+            coeffs: &mut ccoeffs,
+        };
+        let imul_ops = tmp.canonicalize_all();
+        coeffs.0 = SignVec_::try_represent(&ccoeffs).to_py_result()?;
+        Ok(imul_ops)
+    }
+
+    /// In place canonicalization of the entire QubitPauliArray with respect to solving X parts first (in qubit order), then Z parts
+    /// Returns the sequence of imul operations as pairs (lhs_written, rhs_read)
+    pub fn canonicalize_all_complex_sign(
+        &mut self,
+        coeffs: &mut ComplexSignVec,
+    ) -> Vec<(usize, usize)> {
+        use zixy::container::coeffs::complex_sign::ComplexSign as ComplexSign_;
+        let mut tmp: pauli::terms::ViewMut<ComplexSign_> = pauli::terms::ViewMut {
+            word_iters: &mut self.0,
+            coeffs: &mut coeffs.0,
+        };
+        tmp.canonicalize_all()
     }
 
     /// Save in binary format

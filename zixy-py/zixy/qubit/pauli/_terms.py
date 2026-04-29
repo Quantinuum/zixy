@@ -29,7 +29,13 @@ from numpy.typing import NDArray
 from sympy import Expr, Symbol
 from typing_extensions import Self
 
-from zixy._zixy import PauliMatrix, PauliSprings, QubitPauliArray, Qubits
+from zixy._zixy import (
+    PauliMatrix,
+    PauliSprings,
+    QubitPauliArray,
+    Qubits,
+    SymplecticPart,
+)
 from zixy.container import terms
 from zixy.container.coeffs import (
     Coeff,
@@ -57,7 +63,10 @@ from zixy.qubit._terms import (
 from zixy.qubit.clifford import GateList
 from zixy.qubit.pauli._strings import String, Strings, StringSpec
 from zixy.qubit.state._strings import Strings as StateStrings
-from zixy.qubit.state._terms import ComplexTermSum as ComplexState, RealTermSum as RealState
+from zixy.qubit.state._terms import (
+    ComplexTermSum as ComplexState,
+    RealTermSum as RealState,
+)
 from zixy.utils import DEFAULT_COMMUTES_ATOL
 
 TermSpec: TypeAlias = String | tuple[StringSpec | String | None, CoeffT | None] | None
@@ -311,6 +320,33 @@ class Terms(TermsBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
         out = self.clone()
         out.strings.standardize(n_qubit)
         return out
+
+    def canonicalize(
+        self,
+        mode_order: Sequence[tuple[int, SymplecticPart]],
+        to_solve: Sequence[int],
+        additional_reduces: Sequence[int],
+    ) -> Sequence[tuple[int, int]]:
+        coeffs = self._data.coeffs
+        if isinstance(coeffs, SignCoeffs):
+            return self._data._cmpnts._impl.canonicalize_sign(
+                coeffs._impl, mode_order, to_solve, additional_reduces
+            )
+        elif isinstance(coeffs, ComplexSignCoeffs):
+            return self._data._cmpnts._impl.canonicalize_complex_sign(
+                coeffs._impl, mode_order, to_solve, additional_reduces
+            )
+        else:
+            raise TypeError(f"Canonicalization not valid for coefficient type {type(coeffs)}")
+
+    def canonicalize_all(self) -> Sequence[tuple[int, int]]:
+        coeffs = self._data.coeffs
+        if isinstance(coeffs, SignCoeffs):
+            return self._data._cmpnts._impl.canonicalize_all_sign(coeffs._impl)
+        elif isinstance(coeffs, ComplexSignCoeffs):
+            return self._data._cmpnts._impl.canonicalize_all_complex_sign(coeffs._impl)
+        else:
+            raise TypeError(f"Canonicalization not valid for coefficient type {type(coeffs)}")
 
 
 class TermSet(TermSetBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):

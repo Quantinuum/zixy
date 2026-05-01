@@ -135,19 +135,19 @@ class Term(
         return get_coeffs_type(self.coeff_type)
 
     @classmethod
-    def _create(cls, data: TermData[ImplT, SpecT, CoeffT], index: int | None = None) -> Self:
+    def _create(cls, data: TermData[ImplT, SpecT, CoeffT], indexer: int | None = None) -> Self:
         """Create an instance of :param:`cls`.
 
         Args:
             data: Raw term data object containing the data for this item.
-            index: Index of the item within :param:`data`. If ``None``, this instance is
+            indexer: Index of the item within :param:`data`. If ``None``, this instance is
                 considered to be owning.
 
         Returns:
             A new instance of :param:`cls`.
         """
         out = cls.__new__(cls)
-        Term.__init__(out, data, index)
+        Term.__init__(out, data, indexer)
         return out
 
     @classmethod
@@ -304,19 +304,19 @@ class Terms(
         return self._impl
 
     @classmethod
-    def _create(cls, data: TermData[ImplT, SpecT, CoeffT], s: slice = slice(None)) -> Self:
+    def _create(cls, data: TermData[ImplT, SpecT, CoeffT], indexer: slice = slice(None)) -> Self:
         """Create a new instance of :param:`cls`.
 
         Args:
             data: Raw term data object containing the data for this sequence.
-            s: Slice of the data in :param:`data` that this instance should view. If ``None``, this
-                instance is considered to be owning.
+            indexer: Slice of the data in :param:`data` that this instance should view. If ``None``,
+                this instance is considered to be owning.
 
         Returns:
             A new instance of :param:`cls`.
         """
         out = cls.__new__(cls)
-        Terms.__init__(out, data, s)
+        Terms.__init__(out, data, indexer)
         return out
 
     def clone(self) -> Self:

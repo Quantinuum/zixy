@@ -771,20 +771,20 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
             self[i] = convert(c, self.coeff_type)
 
     @classmethod
-    def _create(cls, data: _zixy.BaseVec, s: slice = slice(None)) -> Self:
+    def _create(cls, data: _zixy.BaseVec, indexer: slice = slice(None)) -> Self:
         """Create a new instance of :param:`cls`.
 
         Args:
             data: Rust-bound object containing the data for this sequence.
-            s: Slice of the data in :param:`data` that this instance should view. If ``None``, this
-                instance is considered to be owning.
+            indexer: Slice of the data in :param:`data` that this instance should view. If ``None``,
+                this instance is considered to be owning.
 
         Returns:
             A new instance of :param:`cls`.
         """
         out = cls.__new__(cls)
         assert type(data) is cls.coeffs_type, (type(data), cls.coeffs_type)
-        Coeffs.__init__(out, data, s)
+        Coeffs.__init__(out, data, indexer)
         return out
 
     def clone(self) -> Self:

@@ -87,19 +87,19 @@ class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT]):
         self._check_bounds()
 
     @classmethod
-    def _create(cls, impl: ImplT, index: int | None = None) -> Self:
+    def _create(cls, impl: ImplT, indexer: int | None = None) -> Self:
         """Create an instance of :param:`cls`.
 
         Args:
             impl: Rust-bound object containing the data for this item.
-            index: Index of the item within :param:`impl`. If ``None``, this instance is
+            indexer: Index of the item within :param:`impl`. If ``None``, this instance is
                 considered to be owning.
 
         Returns:
             A new instance of :param:`cls`.
         """
         out = cls.__new__(cls)
-        Cmpnt.__init__(out, impl, index)
+        Cmpnt.__init__(out, impl, indexer)
         return out
 
     def clone(self) -> Self:
@@ -467,20 +467,20 @@ class Cmpnts(Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT]
         self._slice = s
 
     @classmethod
-    def _create(cls, impl: ImplT, s: slice = slice(None)) -> Self:
+    def _create(cls, impl: ImplT, indexer: slice = slice(None)) -> Self:
         """Create a new instance of :param:`cls`.
 
         Args:
             impl: Rust-bound object containing the data for this sequence.
-            s: Slice of the data in :param:`impl` that this instance should view. If ``None``, this
-                instance is considered to be owning.
+            indexer: Slice of the data in :param:`impl` that this instance should view. If ``None``,
+                this instance is considered to be owning.
 
         Returns:
             A new instance of :param:`cls`.
         """
         assert isinstance(impl, cls.cmpnt_type.impl_type)
         out = cls.__new__(cls)
-        Cmpnts.__init__(out, impl, s)
+        Cmpnts.__init__(out, impl, indexer)
         return out
 
     @classmethod

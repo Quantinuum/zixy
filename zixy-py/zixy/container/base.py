@@ -95,22 +95,53 @@ class Resizable(Sized, Protocol):
 
 T = TypeVar("T")
 ImplT = TypeVar("ImplT", bound=Resizable)
+IndexerT = TypeVar("IndexerT", int | None, slice)
 
 
-class ViewableItem(Generic[ImplT]):
-    """Abstract base class for items with an ownership model and underlying Rust-bound data."""
+class ViewableBase(Generic[ImplT, IndexerT]):
+    """Abstract base class for classes with an ownership model and underlying Rust-bound data."""
 
     _impl: ImplT
+
+    @classmethod
+    @abstractmethod
+    def _create(cls, impl: ImplT, indexer: IndexerT) -> Self:
+        """Create an instance of :param:`cls`.
+
+        Args:
+            impl: Rust-bound object containing the data for this instance.
+            indexer: Index or slice of the data in :param:`impl` that this instance should view. If
+                ``None``, this instance is considered to be owning.
+
+        Returns:
+            A new instance of :param:`cls`.
+        """
+        pass
+
+    @abstractmethod
+    def is_owning(self) -> bool:
+        """Check if :param:`self` is owning (i.e. not a view)."""
+        pass
+
+    @abstractmethod
+    def clone(self) -> Self:
+        """Return a deep copy of :param:`self`."""
+        pass
+
+
+class ViewableItem(ViewableBase[ImplT, int | None]):
+    """Abstract base class for items with an ownership model and underlying Rust-bound data."""
+
     _index: int | None
 
     @classmethod
     @abstractmethod
-    def _create(cls, impl: ImplT, index: int | None = None) -> Self:
+    def _create(cls, impl: ImplT, indexer: int | None = None) -> Self:
         """Create an instance of :param:`cls`.
 
         Args:
             impl: Rust-bound object containing the data for this item.
-            index: Index of the item within :param:`impl`. If ``None``, this instance is
+            indexer: Index of the item within :param:`impl`. If ``None``, this instance is
                 considered to be owning.
 
         Returns:
@@ -127,27 +158,21 @@ class ViewableItem(Generic[ImplT]):
         """Get the index of :param:`self` within its underlying data."""
         return 0 if self._index is None else self._index
 
-    @abstractmethod
-    def clone(self) -> Self:
-        """Return a deep copy of :param:`self`."""
-        pass
 
-
-class ViewableSequence(Generic[T, ImplT], Sequence[T]):
+class ViewableSequence(ViewableBase[ImplT, slice], Generic[T, ImplT], Sequence[T]):
     """Abstract base class for sequences with an ownership model and underlying Rust-bound data."""
 
-    _impl: ImplT
     _slice: slice
 
     @classmethod
     @abstractmethod
-    def _create(cls, impl: ImplT, s: slice = slice(None)) -> Self:
+    def _create(cls, impl: ImplT, indexer: slice = slice(None)) -> Self:
         """Create a new instance of :param:`cls`.
 
         Args:
             impl: Rust-bound object containing the data for this sequence.
-            s: Slice of the data in :param:`impl` that this instance should view. If ``None``, this
-                instance is considered to be owning.
+            indexer: Slice of the data in :param:`impl` that this instance should view. If ``None``,
+                this instance is considered to be owning.
 
         Returns:
             A new instance of :param:`cls`.
@@ -224,11 +249,6 @@ class ViewableSequence(Generic[T, ImplT], Sequence[T]):
             return self._create_view(self._impl)
         else:
             return self
-
-    @abstractmethod
-    def clone(self) -> Self:
-        """Return a deep copy of :param:`self`."""
-        pass
 
     def is_owning(self) -> bool:
         """Check if :param:`self` is owning (i.e. not a view)."""

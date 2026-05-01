@@ -4,7 +4,7 @@
 [![PyPI version](https://badge.fury.io/py/zixy.svg)](https://badge.fury.io/py/zixy)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache%20License%202.0-blue)](https://opensource.org/license/apache-2.0)
 
-Zixy is a high performance library for the manipulation of Pauli strings and other quantum algebraic objects.
+Zixy™ is a high performance library for the manipulation of Pauli strings and other quantum algebraic objects.
 
 ## Installation
 

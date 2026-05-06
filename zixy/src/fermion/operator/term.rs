@@ -5,10 +5,11 @@ use std::fmt::Display;
 use crate::container::coeffs::traits::NumRepr;
 use crate::container::traits::proj::Borrow;
 use crate::container::word_iters::terms;
+use crate::container::word_iters::terms::AsViewMut;
 use crate::fermion::mode::Modes;
 use crate::fermion::operator::cmpnt_list::CmpntList;
-use crate::fermion::operator::term::Terms;
-use crate::fermion::traits::ModesBased
+use crate::fermion::operator::terms::Terms;
+use crate::fermion::traits::ModesBased;
 
 /// A single fermion operator with a generically-typed coefficient.
 pub type Term<C /*: NumRepr*/> = terms::Term<CmpntList, C>;
@@ -45,7 +46,7 @@ mod tests {
 
     #[test]
     fn test_new_has_one_term() {
-        let term = Term::<Unity>::new(Modes::from_count(3));
-        assert_eq!(term.len(), 1);
+        let term = Term::<Unity>::new(Modes::from_count(4));
+        assert_eq!(term.coeffs.len(), 1);
     }
 }

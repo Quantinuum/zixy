@@ -35,7 +35,7 @@ impl<C: NumRepr> Terms<C> {
     }
 }
 
-impl<'a, C: NumRepr> ModesBased for Terms<C> {
+impl<C: NumRepr> ModesBased for Terms<C> {
     fn modes(&self) -> &Modes {
         self.word_iters.modes()
     }

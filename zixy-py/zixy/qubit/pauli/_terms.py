@@ -327,7 +327,9 @@ class Terms(TermsBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
         to_solve: Sequence[int],
         additional_reduces: Sequence[int],
     ) -> Sequence[tuple[int, int]]:
-        """In place canonicalization with respect to a given ordering of the binary entries in the
+        """In place tableau canonicalization.
+
+        Canonicalizes a given subset with respect to a given ordering of the binary entries in the
         symplectic form.
 
         Args:
@@ -354,8 +356,10 @@ class Terms(TermsBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
             raise TypeError(f"Canonicalization not valid for coefficient type {type(coeffs)}")
 
     def canonicalize_all(self) -> Sequence[tuple[int, int]]:
-        """In place canonicalization of the entire Terms with respect to solving X parts first
-        (in qubit order), then Z parts.
+        """In place tableau canonicalization.
+
+        Canonicalizes the entire Terms with respect to solving X parts first (in qubit order),
+        then Z parts.
 
         Returns:
             The sequence of imul operations as pairs `(lhs_written, rhs_read)`.

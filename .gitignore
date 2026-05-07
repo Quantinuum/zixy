@@ -5,4 +5,6 @@
 zixy-py/docs/build
 zixy-py/docs/generated
 zixy-py/docs/jupyter_execute
+
+.ipynb_checkpoints
 .DS_Store

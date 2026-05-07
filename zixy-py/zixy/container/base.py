@@ -21,6 +21,7 @@ from abc import abstractmethod
 from collections.abc import Callable, Iterator, Sequence, Sized
 from functools import wraps
 from typing import (
+    Any,
     Concatenate,
     Generic,
     ParamSpec,
@@ -37,6 +38,7 @@ from zixy.utils import slice_index, slice_len
 P = ParamSpec("P")
 R = TypeVar("R")
 OwnT = TypeVar("OwnT", bound="SupportsOwnership")
+OutT = TypeVar("OutT", bound="ViewableBase[Any, Any]")
 
 
 class SupportsOwnership(Protocol):
@@ -127,6 +129,19 @@ class ViewableBase(Generic[ImplT, IndexerT]):
     def clone(self) -> Self:
         """Return a deep copy of :param:`self`."""
         pass
+
+    def into(self, t: type[OutT]) -> OutT:
+        """Clone :param:`self` into a new related container of type :param:`t`.
+
+        Args:
+            t: Type of the new container to create.
+
+        Returns:
+            A new instance of :param:`t` containing the same data as :param:`self`.
+        """
+        from zixy.container.convert import into  # noqa: PLC0415
+
+        return into(self, t)
 
 
 class ViewableItem(ViewableBase[ImplT, int | None]):

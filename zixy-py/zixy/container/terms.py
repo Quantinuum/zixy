@@ -57,6 +57,7 @@ from zixy.container.coeffs import (
     ComplexSign,
     Number,
     NumberT,
+    OtherCoeffT,
     RootOfUnity,
     Sign,
     _is_complex,
@@ -192,26 +193,6 @@ class Term(
         """
         self._data.coeffs[self.index] = convert(value, self._data.coeff_type)
 
-    def into(self, t: type[Term[Any, Any, Any]]) -> Term[Any, Any, Any]:
-        """Clone :param:`self` into a new term of type :param:`t`.
-
-        Args:
-            t: Type to return, must have the same
-                :attr:`~zixy.container.terms.Term.cmpnt_type` as :param:`self`.
-
-        Returns:
-            A new instance of :param:`t`.
-        """
-        coeff = convert(self.coeff, t.coeff_type)
-        out = t.from_cmpnt_coeff(self.cmpnt, coeff)
-        if out.cmpnt_type is not self.cmpnt_type:
-            raise TypeError(
-                f"Cannot convert a term with component type "
-                f"{self.cmpnt_type} into one with a different component "
-                f"type {out.cmpnt_type}."
-            )
-        return out
-
     def aliases(self, other: Term[Any, Any, Any]) -> bool:
         """Determine whether :param:`self` is a view of the same component as :param:`other`."""
         if type(self) is not type(other):
@@ -322,26 +303,6 @@ class Terms(
     def clone(self) -> Self:
         """Return a deep copy of :param:`self`."""
         return self._create(self._impl.clone(self.slice))
-
-    def into(self, t: type[Terms[Any, Any, Any]]) -> Terms[Any, Any, Any]:
-        """Clone :param:`self` into a new collection of terms with type :param:`t`.
-
-        Args:
-            t: Type to return, must have the same
-                :attr:`~zixy.container.terms.Terms.cmpnt_type` as :param:`self`.
-
-        Returns:
-            A new instance of :param:`t`.
-        """
-        coeffs = convert_vec(self.coeffs, get_coeffs_type(t.term_type.coeff_type))
-        out = t._create(TermData(self.cmpnts.clone(), coeffs))
-        if out.cmpnt_type is not self.cmpnt_type:
-            raise TypeError(
-                f"Cannot convert terms with component type "
-                f"{out.cmpnt_type} into an instance with a different "
-                f"component type {self.cmpnt_type}."
-            )
-        return out
 
     def __eq__(self, other: object) -> bool:
         """Return whether :param:`self` and :param:`other` are equal."""
@@ -748,29 +709,45 @@ class TermSet(Generic[ImplT, SpecT, CoeffT]):
         """Get a collection of terms containing the same data as :param:`self`."""
         return self.terms_type._create(self._impl.clone())
 
+    @classmethod
+    def from_terms(cls, terms: Terms[ImplT, SpecT, CoeffT]) -> Self:
+        """Create a new instance of :param:`cls` from :param:`terms`.
+
+        Args:
+            terms: Terms-derived object from which to construct the set of terms.
+
+        Returns:
+            A new instance of :param:`cls` containing the terms in :param:`terms`.
+        """
+        out = cls.__new__(cls)
+        TermSet.__init__(out, terms)
+        return out
+
+    def into(
+        self, t: type[TermSet[ImplT, SpecT, OtherCoeffT]]
+    ) -> TermSet[ImplT, SpecT, OtherCoeffT]:
+        """Clone :param:`self` into a new related container of type :param:`t`.
+
+        Args:
+            t: Type of the new container to create.
+
+        Returns:
+            A new instance of :param:`t` containing the same data as :param:`self`.
+        """
+        if issubclass(t, TermSet):
+            coeff_type = t.terms_type.term_type.coeff_type
+            coeffs_type = get_coeffs_type(coeff_type)
+            cmpnts = self._impl.cmpnts
+            coeffs = convert_vec(self._impl.coeffs, coeffs_type)
+            return t._create(TermData(cmpnts, coeffs))
+        try:
+            return self.to_terms().into(t)
+        except (TypeError, ValueError) as e:
+            raise TypeError(f"Cannot convert {type(self)} into unsupported target type {t}.") from e
+
     def to_dataframe(self) -> pd.DataFrame:
         """Convert :param:`self` to a :class:`~pandas.DataFrame`."""
         return self.to_terms().to_dataframe()
-
-    def into(self, t: type[TermSet[Any, Any, Any]]) -> TermSet[Any, Any, Any]:
-        """Clone :param:`self` into a new set of terms with type :param:`t`.
-
-        Args:
-            t: Type to return, must have the same
-                :attr:`~zixy.container.terms.TermSet.cmpnt_type` as :param:`self`.
-
-        Returns:
-            A new instance of :param:`t`.
-        """
-        terms = self.to_terms().into(t.terms_type)
-        out = t._create(terms._impl)
-        if out.cmpnt_type is not self.cmpnt_type:
-            raise TypeError(
-                f"Cannot convert a term with component type "
-                f"{self.cmpnt_type} into one with a different component "
-                f"type {out.cmpnt_type}."
-            )
-        return out
 
     def __repr__(self) -> str:
         """Return a string representation of :param:`self`."""

@@ -1,11 +1,37 @@
 from __future__ import annotations
 
 import pytest
-from mock_cmpnts import Strings, StringSet, StringsImplArray
+from mock_cmpnts import String, Strings, StringSet, StringsImplArray
 
 from zixy.container.coeffs import ComplexSign, RealCoeffs, Sign, SignCoeffs
 from zixy.container.data import TermData
 from zixy.container.terms import NumericTerms, Term, Terms, TermSet
+
+
+class RealMockTerm(Term[StringsImplArray, str, float]):
+    cmpnts_type = Strings
+    coeff_type = float
+
+
+class RealMockTerms(NumericTerms[StringsImplArray, str, float]):
+    term_type = RealMockTerm
+
+
+class RealMockTermSet(TermSet[StringsImplArray, str, float]):
+    terms_type = RealMockTerms
+
+
+class ComplexMockTerm(Term[StringsImplArray, str, complex]):
+    cmpnts_type = Strings
+    coeff_type = complex
+
+
+class ComplexMockTerms(NumericTerms[StringsImplArray, str, complex]):
+    term_type = ComplexMockTerm
+
+
+class ComplexMockTermSet(TermSet[StringsImplArray, str, complex]):
+    terms_type = ComplexMockTerms
 
 
 def test_sign_terms():
@@ -200,3 +226,77 @@ def test_real_terms():
 
     assert terms_1[4::-1] == terms_2[4::-1]
     assert terms_1[4::-1].allclose(terms_2[4::-1])
+
+
+def test_container_into_shape_conversions():
+    cmpnts = Strings.from_iterable(("alpha", "beta", "alpha"))
+    terms = cmpnts.into(RealMockTerms)
+    assert type(terms) is RealMockTerms
+    assert terms.cmpnts == cmpnts
+    assert tuple(terms.coeffs) == (1.0, 1.0, 1.0)
+    assert terms.cmpnts is not cmpnts
+
+    cmpnt_set = StringSet.from_cmpnts(cmpnts)
+    assert type(cmpnt_set) is StringSet
+    assert len(cmpnt_set) == 2
+    assert str(cmpnt_set.to_cmpnts()) == "alpha, beta"
+
+    term_set = RealMockTermSet.from_terms(terms)
+    assert type(term_set) is RealMockTermSet
+    assert len(term_set) == 2
+    assert term_set["alpha"] == 1.0
+    assert term_set["beta"] == 1.0
+
+    complex_term_set = term_set.into(ComplexMockTermSet)
+    assert type(complex_term_set) is ComplexMockTermSet
+    assert len(complex_term_set) == 2
+    assert complex_term_set["alpha"] == 1.0 + 0j
+    assert complex_term_set["beta"] == 1.0 + 0j
+
+    round_trip_cmpnts = term_set.to_terms().into(Strings)
+    assert type(round_trip_cmpnts) is Strings
+    assert str(round_trip_cmpnts) == "alpha, beta"
+    round_trip_cmpnts[0] = "changed"
+    assert str(term_set.to_terms().into(Strings)) == "alpha, beta"
+
+
+def test_single_container_into_shape_conversions():
+    cmpnt = String("alpha")
+    term = cmpnt.into(ComplexMockTerm)
+    assert type(term) is ComplexMockTerm
+    assert term.cmpnt == cmpnt
+    assert term.coeff == 1 + 0j
+    assert not term.cmpnt.aliases(cmpnt)
+
+    converted_cmpnt = term.into(String)
+    assert type(converted_cmpnt) is String
+    assert converted_cmpnt == cmpnt
+    converted_cmpnt.set("changed")
+    assert term.cmpnt == cmpnt
+
+
+def test_terms_into_converts_coefficients_and_clones_once_at_surface():
+    terms = RealMockTerms(
+        TermData(
+            Strings.from_iterable(("alpha", "beta")),
+            RealCoeffs.from_sequence((1.5, -2.0)),
+        )
+    )
+    complex_terms = terms.into(ComplexMockTerms)
+    assert type(complex_terms) is ComplexMockTerms
+    assert complex_terms.cmpnts == terms.cmpnts
+    assert tuple(complex_terms.coeffs) == (1.5 + 0j, -2.0 + 0j)
+    assert complex_terms.cmpnts is not terms.cmpnts
+
+    complex_terms.coeffs[0] = 1.5j
+    with pytest.raises(ValueError):
+        complex_terms.into(RealMockTerms)
+
+
+def test_into_rejects_unsupported_targets():
+    cmpnts = Strings.from_iterable(("alpha", "beta"))
+    with pytest.raises(TypeError):
+        cmpnts.into(dict)
+    with pytest.raises(TypeError):
+        cmpnts.into(StringSet)
+    assert not hasattr(StringSet, "into")

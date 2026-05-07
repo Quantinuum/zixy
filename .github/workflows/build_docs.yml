@@ -1,9 +1,14 @@
 name: Test sphinx docs build
 
 on:
-  workflow_dispatch:
-  release:
-    types: [published]
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '**'
+  workflow_dispatch: {}
+  
 jobs:
     test:
       name: Test sphinx docs

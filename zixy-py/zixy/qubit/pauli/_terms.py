@@ -327,12 +327,16 @@ class Terms(TermsBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
         to_solve: Sequence[int],
         additional_reduces: Sequence[int],
     ) -> Sequence[tuple[int, int]]:
-        """In place canonicalization with respect to a given ordering of the binary entries in the symplectic form.
+        """In place canonicalization with respect to a given ordering of the binary entries in the
+        symplectic form.
 
         Args:
             mode_order: The order of binary entries to try reducing to at most one non-zero entry.
-            to_solve: The subset of the components to canonicalize over (e.g. if some partial canonicalization has already been done, skip those components).
-            additional_reduces: Components outside of `to_solve` to include in the reduction step (e.g. if some partial canonicalization has already been done, reduce the components that already have leading entries).
+            to_solve: The subset of the components to canonicalize over (e.g. if some partial
+                canonicalization has already been done, skip those components).
+            additional_reduces: Components outside of `to_solve` to include in the reduction step
+                (e.g. if some partial canonicalization has already been done, reduce the
+                components that already have leading entries).
 
         Returns:
             The sequence of imul operations as pairs `(lhs_written, rhs_read)`.
@@ -350,7 +354,8 @@ class Terms(TermsBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
             raise TypeError(f"Canonicalization not valid for coefficient type {type(coeffs)}")
 
     def canonicalize_all(self) -> Sequence[tuple[int, int]]:
-        """In place canonicalization of the entire Terms with respect to solving X parts first (in qubit order), then Z parts.
+        """In place canonicalization of the entire Terms with respect to solving X parts first
+        (in qubit order), then Z parts.
 
         Returns:
             The sequence of imul operations as pairs `(lhs_written, rhs_read)`.

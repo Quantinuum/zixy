@@ -1,7 +1,7 @@
 [project]
 name ="zixy-docs"
 version = "0.1.0"
-description = "Add your description here"
+description = "Documentation for the Python API of the Zixy package"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

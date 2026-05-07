@@ -24,9 +24,7 @@ jobs:
               --base develop \
               --head main \
               --title "chore: back-merge main into develop" \
-              --body "Back merge \`main\` into \`develop\`.
-
-Merge using **Create a merge commit**. Do not squash or rebase."
+              --body "Back merge \`main\` into \`develop\`."
             gh pr edit main \
               --base develop \
               --add-label "back-merge"

@@ -27,6 +27,7 @@ extensions = [
     "sphinx_copybutton",
     "sphinx.ext.intersphinx",
     "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
     "sphinx_autodoc_typehints",
 ]
 
@@ -38,6 +39,8 @@ templates_path = ["_templates"]
 
 autosummary_generate = True
 autosummary_ignore_module_all = False  # Respect __all__ if specified
+
+napoleon_google_docstring = True
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

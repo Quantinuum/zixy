@@ -1601,7 +1601,7 @@ def convert_vec(source: Coeffs[Any], t: type[Coeffs[CoeffT]]) -> Coeffs[CoeffT]:
     return out
 
 
-    def get_coeffs_type(t: type[CoeffT]) -> type[Coeffs[CoeffT]]:
+def get_coeffs_type(t: type[CoeffT]) -> type[Coeffs[CoeffT]]:
     """Get the coefficient vector type corresponding to a given coefficient type.
 
     Args:

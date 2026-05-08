@@ -37,10 +37,12 @@ typehints_use_signature_return = True  # show return type in signature
 typehints_document_rtype = False
 
 
-def typehints_formatter(annotation, config):
+def typehints_formatter(annotation, config=None):
     """Format type hints so ``slice`` resolves unambiguously in the docs."""
     if annotation is builtins.slice:
-        return ":py:class:`builtins.slice`"
+        # The extension calls this both from signature formatting and from
+        # docstring formatting, so keep the signature path plain-text.
+        return "builtins.slice" if config is None else ":py:class:`builtins.slice`"
     return None
 
 templates_path = ["_templates"]

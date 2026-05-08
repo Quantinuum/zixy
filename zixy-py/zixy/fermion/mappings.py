@@ -152,27 +152,27 @@ class Contribution(CoeffMulMixin[CoeffT], CoeffDivMixin[CoeffT]):
         return self._c
 
     def __pos__(self) -> Self:
-        """Return :param:`self`."""
+        """Return ``self``."""
         return self
 
     def __neg__(self) -> Contribution[CoeffT]:
-        """Return the negation of :param:`self`."""
+        """Return the negation of ``self``."""
         return Contribution(self._mapper, -self.coeff)
 
     def __mul__(self, scalar: OtherCoeffT) -> Contribution[Any]:
-        """Multiply :param:`self` by the scalar value :param:`scalar`."""
+        """Multiply ``self`` by the scalar value ``scalar``."""
         if not isinstance(scalar, Coeff):
             return NotImplemented
         return Contribution(self._mapper, self.coeff * scalar)
 
     def __truediv__(self, scalar: OtherCoeffT) -> Contribution[Any]:
-        """Divide :param:`self` by the scalar value :param:`scalar`."""
+        """Divide ``self`` by the scalar value ``scalar``."""
         if not isinstance(scalar, Coeff):
             return NotImplemented
         return Contribution(self._mapper, self.coeff / scalar)
 
     def __rtruediv__(self, scalar: OtherCoeffT) -> Contribution[Any]:
-        """Divide the scalar value :param:`scalar` by :param:`self`."""
+        """Divide the scalar value ``scalar`` by ``self``."""
         if not isinstance(scalar, Coeff):
             return NotImplemented
         return Contribution(self._mapper, scalar / self.coeff)

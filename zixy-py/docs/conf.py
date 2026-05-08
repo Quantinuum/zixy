@@ -4,6 +4,7 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+import builtins
 from datetime import datetime
 
 # Alias needed here to prevent naming clash with something else sphinx is doing.
@@ -34,6 +35,13 @@ extensions = [
 typehints_use_signature = True  # show parameter types in signature
 typehints_use_signature_return = True  # show return type in signature
 typehints_document_rtype = False
+
+
+def typehints_formatter(annotation, config):
+    """Format type hints so ``slice`` resolves unambiguously in the docs."""
+    if annotation is builtins.slice:
+        return ":py:class:`builtins.slice`"
+    return None
 
 templates_path = ["_templates"]
 

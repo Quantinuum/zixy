@@ -6,6 +6,7 @@
 
 import builtins
 from datetime import datetime
+from typing import Any
 
 # Alias needed here to prevent naming clash with something else sphinx is doing.
 from importlib.metadata import version as check_version
@@ -35,14 +36,11 @@ extensions = [
 typehints_use_signature = True  # show parameter types in signature
 typehints_use_signature_return = True  # show return type in signature
 typehints_document_rtype = False
+typehints_fully_qualified = True
 
-
-def typehints_formatter(annotation, config=None):
-    """Format type hints so ``slice`` resolves unambiguously in the docs."""
+def typehints_formatter(annotation: Any, config: Any | None = None) -> str | None:
     if annotation is builtins.slice:
-        # The extension calls this both from signature formatting and from
-        # docstring formatting, so keep the signature path plain-text.
-        return "builtins.slice" if config is None else ":py:class:`builtins.slice`"
+        return ":external+python:py:class:`slice`"
     return None
 
 templates_path = ["_templates"]

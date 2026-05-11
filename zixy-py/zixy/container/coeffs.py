@@ -1607,7 +1607,7 @@ def get_coeffs_type(t: type[CoeffT]) -> type[Coeffs[CoeffT]]:
     Args:
         t: The coefficient type for which to get the corresponding vector type.
 
-        Returns:
+    Returns:
         The coefficient vector type corresponding to ``t``.
     """
     if _is_sign(t):

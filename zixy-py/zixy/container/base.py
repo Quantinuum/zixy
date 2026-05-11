@@ -167,7 +167,7 @@ class ViewableSequence(Generic[T, ImplT], Sequence[T]):
         return cls._create(impl, slice(None, len(impl)))
 
     @property
-    def slice(self) -> slice:
+    def slice(self) -> builtins.slice:
         """Get the slice of the underlying data that ``self`` views."""
         return self._slice
 

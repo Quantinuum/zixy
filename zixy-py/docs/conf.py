@@ -33,22 +33,19 @@ extensions = [
     "sphinx_autodoc_typehints",
 ]
 
+napoleon_google_docstring = True
+napoleon_use_param = False  # don't show parameter types in description (they're in the signature)
+napoleon_use_rtype = False  # don't show return types in description (they're in the signature)
+
 typehints_use_signature = True  # show parameter types in signature
 typehints_use_signature_return = True  # show return type in signature
 typehints_document_rtype = False
-typehints_fully_qualified = True
-
-def typehints_formatter(annotation: Any, config: Any | None = None) -> str | None:
-    if annotation is builtins.slice:
-        return ":external+python:py:class:`slice`"
-    return None
+typehints_fully_qualified = False
 
 templates_path = ["_templates"]
 
 autosummary_generate = True
 autosummary_ignore_module_all = False  # Respect __all__ if specified
-
-napoleon_google_docstring = True
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -80,3 +77,7 @@ intersphinx_mapping = {
     "scipy": ("https://docs.scipy.org/doc/scipy/", None),
     "sympy": ("https://docs.sympy.org/latest/", None),
 }
+
+
+def setup(app: Any) -> dict[str, bool]:
+    return {"parallel_read_safe": True, "parallel_write_safe": True}

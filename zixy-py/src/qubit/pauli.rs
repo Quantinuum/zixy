@@ -83,10 +83,16 @@ impl Array {
         UnityVec::try_represent(&phases.0).to_py_result()?;
         Ok(list)
     }
-    
-    fn parse_mode_order(&self, mode_order: Vec<(isize, SymplecticPart)>) -> PyResult<Vec<(usize, zixy::qubit::mode::SymplecticPart)>> {
+
+    fn parse_mode_order(
+        &self,
+        mode_order: Vec<(isize, SymplecticPart)>,
+    ) -> PyResult<Vec<(usize, zixy::qubit::mode::SymplecticPart)>> {
         let n_qubits = self.get_qubits().0.n_qubit();
-        mode_order.into_iter().map(|(idx, sp)| try_py_index(idx, n_qubits).map(|i| (i, sp.into()))).collect()
+        mode_order
+            .into_iter()
+            .map(|(idx, sp)| try_py_index(idx, n_qubits).map(|i| (i, sp.into())))
+            .collect()
     }
 }
 

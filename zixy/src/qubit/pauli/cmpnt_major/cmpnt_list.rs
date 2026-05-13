@@ -10,7 +10,7 @@ use crate::cmpnt::parse::ParseError;
 use crate::cmpnt::springs::ModeSettings;
 use crate::container::bit_matrix::{AsBitMatrix, BitMatrix};
 use crate::container::coeffs::complex_sign::{ComplexSign, ComplexSignVec};
-use crate::container::coeffs::traits::NumReprVec;
+use crate::container::coeffs::traits::{NewUnitsWithLen, NumReprVec};
 use crate::container::errors::{Dimension, OutOfBounds};
 use crate::container::traits::{
     Compatible, Elements, EmptyClone, HasIndex, MutRefElements, RefElements,
@@ -143,6 +143,48 @@ impl CmpntList {
     /// Get an iterator over the elements of the centralizer.
     pub fn centralizer_members(&self) -> impl Iterator<Item = usize> + '_ {
         (0..self.len()).filter(|i| self.belongs_to_centralizer(*i))
+    }
+
+    /// Multiply each Pauli string in `self` by the corresponding Pauli string in `rhs`
+    /// Computes the element-wise product of two equally-sized QubitPauliArray instances,
+    /// returning the result QubitPauliArray and a ComplexSignVec of phases.
+    pub fn cmpnts_mul_pairwise(
+        &self,
+        rhs: &Self,
+    ) -> Result<(Self, ComplexSignVec), Box<dyn std::error::Error>> {
+        // Check 1 - same qubit space
+        DifferentQubits::check(self, rhs)?;
+
+        // Check 2 - same length
+        if self.len() != rhs.len() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!(
+                    "Input arrays must have the same length: {} != {}",
+                    self.len(),
+                    rhs.len()
+                ),
+            )
+            .into());
+        }
+
+        // Create output array and phase vector
+        let mut out = self.empty_clone();
+        out.resize(self.len());
+        let mut phases = ComplexSignVec::new_units_with_len(self.len());
+
+        // Iterate through the arrays and multiply pairwise
+        for i in 0..self.len() {
+            let lhs_elem = self.get_elem_ref(i);
+            let rhs_elem = rhs.get_elem_ref(i);
+            let mut out_elem = out.get_elem_mut_ref(i);
+
+            let phase = out_elem.assign_mul(lhs_elem, rhs_elem)?;
+            phases.set_unchecked(i, phase);
+        }
+
+        // Return the output array and the phases
+        Ok((out, phases))
     }
 }
 
@@ -831,5 +873,52 @@ mod tests {
             bincode::serde::decode_from_slice(&encoded[..], config::standard()).unwrap();
         assert_eq!(len, encoded.len());
         assert_eq!(op_vec, decoded);
+    }
+
+    #[test]
+    fn test_cmpnts_mul_pairwise_single_element() {
+        let mut arr1 = CmpntList::new(Qubits::from_count(4));
+        let mut arr2 = CmpntList::new(Qubits::from_count(4));
+
+        arr1.push_pauli_vec(vec![X, Y, I, Z]).unwrap();
+        arr2.push_pauli_vec(vec![I, Z, I, Z]).unwrap();
+
+        let (result_arr, phases) = arr1.cmpnts_mul_pairwise(&arr2).unwrap();
+
+        // Check output array length
+        assert_eq!(result_arr.len(), 1);
+
+        // Check phases vector length
+        assert_eq!(phases.len(), 1);
+    }
+
+    #[test]
+    fn test_cmpnts_mul_pairwise_multiple_elements() {
+        let mut arr1 = CmpntList::new(Qubits::from_count(4));
+        let mut arr2 = CmpntList::new(Qubits::from_count(4));
+
+        // Add two elements to each
+        arr1.push_pauli_vec(vec![X, Y, I, Z]).unwrap();
+        arr1.push_pauli_vec(vec![I, Z, I, Z]).unwrap();
+
+        arr2.push_pauli_vec(vec![I, Z, I, Z]).unwrap();
+        arr2.push_pauli_vec(vec![X, Y, I, Z]).unwrap();
+
+        let (result_arr, phases) = arr1.cmpnts_mul_pairwise(&arr2).unwrap();
+
+        // Check output array length matches input
+        assert_eq!(result_arr.len(), 2);
+
+        // Check phases vector length matches input
+        assert_eq!(phases.len(), 2);
+    }
+
+    #[test]
+    fn test_cmpnts_mul_pairwise_different_qubits_error() {
+        let arr1 = CmpntList::new(Qubits::from_count(4));
+        let arr2 = CmpntList::new(Qubits::from_count(5));
+
+        let result = arr1.cmpnts_mul_pairwise(&arr2);
+        assert!(result.is_err());
     }
 }

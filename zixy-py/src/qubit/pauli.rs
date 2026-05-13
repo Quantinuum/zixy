@@ -906,10 +906,11 @@ impl Array {
         };
         let n_qubits = tmp.qubits().n_qubit();
         // Build up manually rather than by map so errors from try_py_index can be passed on
-        let mut tmp_mode_order: Vec<(usize, SymplecticPart_)> = vec![];
-        for (idx, sp) in mode_order {
-            tmp_mode_order.push((try_py_index(idx, n_qubits)?, sp.into()));
-        }
+        let tmp_mode_order: PyResult<Vec<_>> = mode_order 
+            .into_iter() 
+            .map(|(idx, sp)| try_py_index(idx, n_qubits).map(|i| (i, sp.into()))) 
+            .collect(); 
+         let tmp_mode_order = tmp_mode_order?;
         let imul_ops = tmp
             .canonicalize(&tmp_mode_order, &to_solve, &additional_reduces)
             .to_py_result()?;
@@ -968,13 +969,13 @@ impl Array {
     pub fn canonicalize_all_complex_sign(
         &mut self,
         coeffs: &mut ComplexSignVec,
-    ) -> Vec<(usize, usize)> {
+    ) -> PyResult<Vec<(usize, usize)>> {
         use zixy::container::coeffs::complex_sign::ComplexSign as ComplexSign_;
         let mut tmp: pauli::terms::ViewMut<ComplexSign_> = pauli::terms::ViewMut {
             word_iters: &mut self.0,
             coeffs: &mut coeffs.0,
         };
-        tmp.canonicalize_all()
+        Ok(tmp.canonicalize_all())
     }
 
     /// Save in binary format

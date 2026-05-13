@@ -6,7 +6,7 @@ use bincode::config;
 use itertools::izip;
 use num_complex::Complex64;
 use pyo3::types::{PyAnyMethods, PyDict, PyDictMethods};
-use pyo3::{pyclass, pymethods, Py, PyAny, PyResult, Python};
+use pyo3::{Py, PyAny, PyResult, Python, pyclass, pymethods};
 use zixy::cmpnt::springs::ModeSettings;
 use zixy::container::coeffs::traits::{NewUnitsWithLen, NumReprVec};
 use zixy::container::coeffs::unity::UnityVec;
@@ -80,6 +80,11 @@ impl Array {
         let (list, phases) = Array::new_with_phases(qubits, springs)?;
         UnityVec::try_represent(&phases.0).to_py_result()?;
         Ok(list)
+    }
+    
+    fn parse_mode_order(&self, mode_order: Vec<(isize, SymplecticPart)>) -> PyResult<Vec<(usize, zixy::qubit::mode::SymplecticPart)>> {
+        let n_qubits = self.get_qubits().0.n_qubit();
+        mode_order.into_iter().map(|(idx, sp)| try_py_index(idx, n_qubits).map(|i| (i, sp.into()))).collect()
     }
 }
 
@@ -897,20 +902,13 @@ impl Array {
         use zixy::container::coeffs::complex_sign::ComplexSign as ComplexSign_;
         use zixy::container::coeffs::complex_sign::ComplexSignVec as ComplexSignVec_;
         use zixy::container::coeffs::sign::SignVec as SignVec_;
-        use zixy::qubit::mode::SymplecticPart as SymplecticPart_;
+        let tmp_mode_order = self.parse_mode_order(mode_order)?;
         let mut ccoeffs: ComplexSignVec_ =
             ComplexSignVec_::try_represent(&coeffs.0).to_py_result()?;
         let mut tmp: pauli::terms::ViewMut<ComplexSign_> = pauli::terms::ViewMut {
             word_iters: &mut self.0,
             coeffs: &mut ccoeffs,
         };
-        let n_qubits = tmp.qubits().n_qubit();
-        // Build up manually rather than by map so errors from try_py_index can be passed on
-        let tmp_mode_order: PyResult<Vec<_>> = mode_order 
-            .into_iter() 
-            .map(|(idx, sp)| try_py_index(idx, n_qubits).map(|i| (i, sp.into()))) 
-            .collect(); 
-         let tmp_mode_order = tmp_mode_order?;
         let imul_ops = tmp
             .canonicalize(&tmp_mode_order, &to_solve, &additional_reduces)
             .to_py_result()?;
@@ -932,17 +930,11 @@ impl Array {
         additional_reduces: Vec<usize>,
     ) -> PyResult<Vec<(usize, usize)>> {
         use zixy::container::coeffs::complex_sign::ComplexSign as ComplexSign_;
-        use zixy::qubit::mode::SymplecticPart as SymplecticPart_;
+        let tmp_mode_order = self.parse_mode_order(mode_order)?;
         let mut tmp: pauli::terms::ViewMut<ComplexSign_> = pauli::terms::ViewMut {
             word_iters: &mut self.0,
             coeffs: &mut coeffs.0,
         };
-        let n_qubits = tmp.qubits().n_qubit();
-        // Build up manually rather than by map so errors from try_py_index can be passed on
-        let mut tmp_mode_order: Vec<(usize, SymplecticPart_)> = vec![];
-        for (idx, sp) in mode_order {
-            tmp_mode_order.push((try_py_index(idx, n_qubits)?, sp.into()));
-        }
         tmp.canonicalize(&tmp_mode_order, &to_solve, &additional_reduces)
             .to_py_result()
     }

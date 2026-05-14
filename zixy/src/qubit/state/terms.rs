@@ -166,10 +166,11 @@ mod tests {
     }
 
     #[test]
-    fn test_terms_from_springs_out_of_bounds() {
+    fn test_terms_from_springs_out_of_bounds() -> Result<(), ParseError> {
         let qubits = Qubits::from_count(2);
-        let springs = BinarySprings::from_str("[1, 0, 1, 0]").unwrap();
+        let springs = BinarySprings::from_str("[1, 0, 1, 0]")?;
         assert!(Terms::<f64>::from_springs(qubits, &springs).is_err());
+        Ok(())
     }
 
     #[test]

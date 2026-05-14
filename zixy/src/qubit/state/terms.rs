@@ -118,4 +118,20 @@ pub type TermRef<'a, C /*: NumRepr*/> = terms::TermRef<'a, CmpntList, C>;
 pub type TermMutRef<'a, C /*: NumRepr*/> = terms::TermMutRef<'a, CmpntList, C>;
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_hamming_weight() -> Result<(), OutOfBounds> {
+        let mut terms = Terms::<f64>::new(Qubits::from_count(4));
+        terms.push_set(HashSet::from([2, 3]))?; // 0011 has a hamming weight of 2
+        assert_eq!(terms.hamming_weight(), Some(2));
+        terms.push_set(HashSet::from([0, 3]))?; // 1001 has a hamming weight of 2
+        assert_eq!(terms.hamming_weight(), Some(2));
+        terms.push_set(HashSet::from([0, 1]))?; // 1100 has a hamming weight of 2
+        assert_eq!(terms.hamming_weight(), Some(2));
+        terms.push_set(HashSet::from([0, 1, 2]))?; // 1110 has a hamming weight of 3
+        assert_eq!(terms.hamming_weight(), None);
+        Ok(())
+    }
+}

@@ -119,6 +119,9 @@ pub type TermMutRef<'a, C /*: NumRepr*/> = terms::TermMutRef<'a, CmpntList, C>;
 
 #[cfg(test)]
 mod tests {
+    use crate::container::bit_matrix::AsRowRef;
+    use crate::container::traits::RefElements;
+
     use super::*;
 
     #[test]
@@ -146,6 +149,62 @@ mod tests {
         assert_eq!(terms.hamming_weight(), Some(2));
         terms.push_vec(vec![true, true, true, false])?; // 1110 has a hamming weight of 3
         assert_eq!(terms.hamming_weight(), None);
+        Ok(())
+    }
+
+    #[test]
+    fn test_push_vec_out_of_bounds() {
+        let mut terms = Terms::<f64>::new(Qubits::from_count(2));
+        assert!(terms.push_vec(vec![true, true, true, true]).is_err());
+    }
+
+    #[test]
+    fn test_push_set_out_of_bounds() {
+        let mut terms = Terms::<f64>::new(Qubits::from_count(2));
+        assert!(terms.push_set(HashSet::from([0, 1, 2, 3])).is_err());
+    }
+
+    #[test]
+    fn test_terms_from_springs() -> Result<(), ParseError> {
+        use crate::container::word_iters::terms::AsView;
+        let qubits = Qubits::from_count(3);
+        let springs = BinarySprings::from_str("[1, 0, 1]")?;
+        let terms = Terms::<f64>::from_springs(qubits, &springs)?;
+        assert_eq!(terms.len(), 1);
+        assert_eq!(
+            terms.view().get_elem_ref(0).get_word_iter_ref().to_vec(),
+            vec![true, false, true]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_terms_from_springs_default() -> Result<(), ParseError> {
+        use crate::container::word_iters::terms::AsView;
+        let springs = BinarySprings::from_str("[1, 0, 1]")?;
+        let terms = Terms::<f64>::from_springs_default(&springs)?;
+        assert_eq!(terms.len(), 1);
+        assert_eq!(
+            terms.view().get_elem_ref(0).get_word_iter_ref().to_vec(),
+            vec![true, false, true]
+        );
+        assert_eq!(terms.coeffs[0], 1.0);
+        Ok(())
+    }
+
+    #[test]
+    fn test_terms_from_springs_coeffs() -> Result<(), ParseError> {
+        use crate::container::word_iters::terms::AsView;
+        let qubits = Qubits::from_count(3);
+        let springs = BinarySprings::from_str("[1, 0, 1]")?;
+        let coeffs = vec![0.5];
+        let terms = Terms::<f64>::from_springs_coeffs(qubits, springs, coeffs)?;
+        assert_eq!(terms.len(), 1);
+        assert_eq!(
+            terms.view().get_elem_ref(0).get_word_iter_ref().to_vec(),
+            vec![true, false, true]
+        );
+        assert_eq!(terms.coeffs[0], 0.5);
         Ok(())
     }
 }

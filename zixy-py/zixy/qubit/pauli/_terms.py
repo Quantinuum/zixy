@@ -336,12 +336,12 @@ class Terms(TermsBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
             mode_order: The order of binary entries to try reducing to at most one non-zero entry.
             to_solve: The subset of the components to canonicalize over (e.g. if some partial
                 canonicalization has already been done, skip those components).
-            additional_reduces: Components outside of `to_solve` to include in the reduction step
+            additional_reduces: Components outside of ``to_solve`` to include in the reduction step
                 (e.g. if some partial canonicalization has already been done, reduce the
                 components that already have leading entries).
 
         Returns:
-            The sequence of imul operations as pairs `(lhs_written, rhs_read)`.
+            The sequence of imul operations as pairs ``(lhs_written, rhs_read)``.
         """
         coeffs = self._data.coeffs
         if isinstance(coeffs, SignCoeffs):
@@ -362,7 +362,7 @@ class Terms(TermsBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
         then Z parts.
 
         Returns:
-            The sequence of imul operations as pairs `(lhs_written, rhs_read)`.
+            The sequence of imul operations as pairs ``(lhs_written, rhs_read)``.
         """
         coeffs = self._data.coeffs
         if isinstance(coeffs, SignCoeffs):

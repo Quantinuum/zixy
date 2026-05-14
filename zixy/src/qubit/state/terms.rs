@@ -122,7 +122,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_hamming_weight() -> Result<(), OutOfBounds> {
+    fn test_hamming_weight_sets() -> Result<(), OutOfBounds> {
         let mut terms = Terms::<f64>::new(Qubits::from_count(4));
         terms.push_set(HashSet::from([2, 3]))?; // 0011 has a hamming weight of 2
         assert_eq!(terms.hamming_weight(), Some(2));
@@ -131,6 +131,20 @@ mod tests {
         terms.push_set(HashSet::from([0, 1]))?; // 1100 has a hamming weight of 2
         assert_eq!(terms.hamming_weight(), Some(2));
         terms.push_set(HashSet::from([0, 1, 2]))?; // 1110 has a hamming weight of 3
+        assert_eq!(terms.hamming_weight(), None);
+        Ok(())
+    }
+
+    #[test]
+    fn test_hamming_weight_vector() -> Result<(), OutOfBounds> {
+        let mut terms = Terms::<f64>::new(Qubits::from_count(4));
+        terms.push_vec(vec![false, false, true, true])?; // 0011 has a hamming weight of 2
+        assert_eq!(terms.hamming_weight(), Some(2));
+        terms.push_vec(vec![true, false, false, true])?; // 1001 has a hamming weight of 2
+        assert_eq!(terms.hamming_weight(), Some(2));
+        terms.push_vec(vec![true, true, false, false])?; // 1100 has a hamming weight of 2
+        assert_eq!(terms.hamming_weight(), Some(2));
+        terms.push_vec(vec![true, true, true, false])?; // 1110 has a hamming weight of 3
         assert_eq!(terms.hamming_weight(), None);
         Ok(())
     }

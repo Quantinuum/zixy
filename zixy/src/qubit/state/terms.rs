@@ -165,6 +165,13 @@ mod tests {
     }
 
     #[test]
+    fn test_terms_from_springs_out_of_bounds() {
+        let qubits = Qubits::from_count(2);
+        let springs = BinarySprings::from_str("[1, 0, 1, 0]").unwrap();
+        assert!(Terms::<f64>::from_springs(qubits, &springs).is_err());
+    }
+
+    #[test]
     fn test_terms_from_springs() -> Result<(), ParseError> {
         use crate::container::word_iters::terms::AsView;
         let qubits = Qubits::from_count(3);

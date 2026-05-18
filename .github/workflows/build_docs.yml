@@ -32,4 +32,4 @@ jobs:
 
         - name: Run the docs build
           run: |
-            cd zixy-py/docs && just build
+            cd zixy-py/docs && just build-strict

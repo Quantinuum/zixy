@@ -1,6 +1,10 @@
 build:
 	uv run sphinx-build -b html . build
 
+
+build-strict:
+	uv run sphinx-build -b html . build -W
+
 serve: build
 	npm exec serve build
 

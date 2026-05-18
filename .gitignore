@@ -8,3 +8,4 @@ zixy-py/docs/jupyter_execute
 
 .ipynb_checkpoints
 .DS_Store
+.python-version

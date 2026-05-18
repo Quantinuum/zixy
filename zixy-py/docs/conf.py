@@ -4,7 +4,6 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-import builtins
 from datetime import datetime
 from typing import Any
 
@@ -34,7 +33,7 @@ extensions = [
 ]
 
 suppress_warnings = [
-    "spinx_autodoc_typehints.guarded_import",  # suppress warnings about typecheck-time imports
+    "sphinx_autodoc_typehints.guarded_import",  # suppress warnings about typecheck-time imports
 ]
 
 templates_path = ["_templates"]
@@ -81,7 +80,3 @@ intersphinx_mapping = {
     "scipy": ("https://docs.scipy.org/doc/scipy/", None),
     "sympy": ("https://docs.sympy.org/latest/", None),
 }
-
-
-def setup(app: Any) -> dict[str, bool]:
-    return {"parallel_read_safe": True, "parallel_write_safe": True}

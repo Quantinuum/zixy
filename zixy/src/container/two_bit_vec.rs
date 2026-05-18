@@ -43,11 +43,11 @@ impl BitVec {
 
     /// `Set` the value of the i-indexed bit with bounds checking.
     pub fn set(&mut self, i: usize, value: bool) -> Option<()> {
-        if i > self.size {
-            None
-        } else {
+        if i < self.len() {
             self.set_unchecked(i, value);
             Some(())
+        } else {
+            None
         }
     }
 
@@ -60,10 +60,10 @@ impl BitVec {
 
     /// Get the value of the i-indexed bit with bounds checking.
     pub fn get(&self, i: usize) -> Option<bool> {
-        if i > self.size {
-            None
-        } else {
+        if i < self.len() {
             Some(self.get_unchecked(i))
+        } else {
+            None
         }
     }
 
@@ -120,7 +120,7 @@ impl BitVec {
     /// If one vec is longer than the other, the function behaves as though the shorter one is padded with zeros
     /// to match the other in length.
     pub fn add_elemwise(&self, other: &BitVec) -> Self {
-        let mut out = Self::new_with_len(self.len().max(other.len()));
+        let mut out = self.clone();
         out.iadd_elemwise(other);
         out
     }
@@ -519,5 +519,43 @@ mod tests {
         // The last two elements of v1 should be unchanged since v2 is shorter and treated as padded with zeros.
         assert_eq!(v1.get_unchecked(2), 2u8);
         assert_eq!(v1.get_unchecked(3), 3u8);
+    }
+
+    #[test]
+    fn test_bv_get_checked() {
+        let v = BitVec::new_with_len(2);
+        for i in 0..2 {
+            assert!(v.get(i).is_some());
+        }
+        assert!(v.get(2).is_none());
+    }
+
+    #[test]
+    fn test_bv_iadd() {
+        let mut v = BitVec::new_with_len(2);
+        assert!(v.iadd(0, true).is_some());
+        assert!(v.get_unchecked(0));
+        assert!(v.iadd(2, true).is_none());
+        assert!(v.iadd(0, true).is_some());
+        // Adding true twice should flip the bit back to false.
+        assert!(!v.get_unchecked(0));
+    }
+
+    #[test]
+    fn test_bv_iadd_elemwise() {
+        let mut v1 = BitVec::new_with_len(4);
+        let mut v2 = BitVec::new_with_len(2);
+        for i in 0..2 {
+            v1.set_unchecked(i, i % 2 == 0);
+            v2.set_unchecked(i, (i + 1) % 2 == 0);
+        }
+        for i in 2..4 {
+            v1.set_unchecked(i, i % 2 == 0);
+        }
+        v1.iadd_elemwise(&v2);
+        assert!(v1.get_unchecked(0));
+        assert!(v1.get_unchecked(1));
+        assert!(v1.get_unchecked(2));
+        assert!(!v1.get_unchecked(3));
     }
 }

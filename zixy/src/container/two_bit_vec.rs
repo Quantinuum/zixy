@@ -189,7 +189,7 @@ impl TwoBitVec {
     }
 
     /// Get the value of the i-indexed two-bit integer as a byte with bounds checking.
-    pub fn get(&mut self, i: usize) -> Option<u8> {
+    pub fn get(&self, i: usize) -> Option<u8> {
         if i < self.len() {
             Some(self.get_unchecked(i))
         } else {
@@ -439,5 +439,66 @@ mod tests {
         for (i, item) in items.iter().copied().enumerate() {
             assert_eq!(v.get_unchecked(i), item);
         }
+    }
+
+    #[test]
+    fn test_tbv_get_checked() {
+        let v = TwoBitVec::new_with_len(2);
+        for i in 0..2 {
+            assert!(v.get(i).is_some());
+        }
+        assert!(v.get(2).is_none());
+    }
+
+    #[test]
+    fn test_tbv_all_clear() {
+        let mut v = TwoBitVec::new_with_len(2);
+        assert!(v.all_clear());
+        v.set_unchecked(1, 1);
+        assert!(!v.all_clear());
+        v.set_unchecked(1, 0);
+        assert!(v.all_clear());
+    }
+
+    #[test]
+    fn test_tbv_iadd() {
+        let mut v = TwoBitVec::new_with_len(2);
+        assert!(v.iadd(0, 1).is_some());
+        assert_eq!(v.get_unchecked(0), 1u8);
+        assert!(v.iadd(2, 1).is_none());
+        assert!(v.iadd(0, 10).is_some());
+        assert_eq!(v.get_unchecked(0), 3u8);
+    }
+
+    #[test]
+    fn test_tbv_imul() {
+        let mut v = TwoBitVec::new_with_len(2);
+        assert!(v.imul(0, 1).is_some());
+        assert_eq!(v.get_unchecked(0), 0u8);
+        assert!(v.imul(2, 1).is_none());
+        v.set_unchecked(0, 2);
+        assert!(v.imul(0, 3).is_some());
+        // Only store the least significant two bits of the product, so 2*3=6 becomes 2 mod 4.
+        assert_eq!(v.get_unchecked(0), 2u8);
+    }
+
+    #[test]
+    fn test_tbv_iadd_elemwise() {
+        let mut v1 = TwoBitVec::new_with_len(4);
+        let mut v2 = TwoBitVec::new_with_len(2);
+        for i in 0..2 {
+            v1.set_unchecked(i, i as u8);
+            v2.set_unchecked(i, (10 + 2 * i) as u8);
+        }
+        for i in 2..4 {
+            v1.set_unchecked(i, i as u8);
+        }
+        v1.iadd_elemwise(&v2);
+        // The element-wise sum mod 4 of i + (10 + 2*i) = 2-i (mod 4) for i=0,1
+        assert_eq!(v1.get_unchecked(0), 2u8);
+        assert_eq!(v1.get_unchecked(1), 1u8);
+        // The last two elements of v1 should be unchanged since v2 is shorter and treated as padded with zeros.
+        assert_eq!(v1.get_unchecked(2), 2u8);
+        assert_eq!(v1.get_unchecked(3), 3u8);
     }
 }

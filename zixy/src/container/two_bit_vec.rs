@@ -258,7 +258,7 @@ impl TwoBitVec {
     /// If one vec is longer than the other, the function behaves as though the shorter one is padded with zeros
     /// to match the other in length.
     pub fn add_elemwise(&self, other: &TwoBitVec) -> Self {
-        let mut out = Self::new_with_len(self.len().max(other.len()));
+        let mut out = self.clone();
         out.iadd_elemwise(other);
         out
     }
@@ -482,6 +482,25 @@ mod tests {
         assert_eq!(v.get_unchecked(0), 2u8);
     }
 
+    #[test]
+    fn test_tbv_add_elemwise() {
+        let mut v1 = TwoBitVec::new_with_len(4);
+        let mut v2 = TwoBitVec::new_with_len(2);
+        for i in 0..2 {
+            v1.set_unchecked(i, i as u8);
+            v2.set_unchecked(i, (10 + 2 * i) as u8);
+        }
+        for i in 2..4 {
+            v1.set_unchecked(i, i as u8);
+        }
+        let v3 = v1.add_elemwise(&v2);
+        // The element-wise sum mod 4 of i + (10 + 2*i) = 2-i (mod 4) for i=0,1
+        assert_eq!(v3.get_unchecked(0), 2u8);
+        assert_eq!(v3.get_unchecked(1), 1u8);
+        // The last two elements of v3 should be the last two elements of v1 since v2 is shorter and treated as padded with zeros.
+        assert_eq!(v3.get_unchecked(2), 2u8);
+        assert_eq!(v3.get_unchecked(3), 3u8);
+    }
     #[test]
     fn test_tbv_iadd_elemwise() {
         let mut v1 = TwoBitVec::new_with_len(4);

@@ -38,6 +38,8 @@ suppress_warnings = [
 
 templates_path = ["_templates"]
 
+warning_is_error = True  # treat warnings as errors to ensure clean builds
+
 napoleon_google_docstring = True
 napoleon_use_param = False  # don't show parameter types in description (they're in the signature)
 napoleon_use_rtype = False  # don't show return types in description (they're in the signature)
@@ -69,6 +71,7 @@ exclude_patterns = [
     "**.py",
     ".venv",
     ".env",
+    "README.md",
     "**/README.md",
     ".jupyter_cache",
     "jupyter_execute",

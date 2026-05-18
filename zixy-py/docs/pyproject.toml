@@ -10,8 +10,11 @@ dependencies = [
     "sphinx-copybutton",
     "pandas>=2.3.3",
     "scipy",
-    "zixy==0.2.2",
+    "zixy",
     "sphinx-autodoc-typehints>=3.6.3",
     "jupyterlab",
     "ipykernel>=7.2.0",
 ]
+
+[tool.uv.sources]
+zixy = { path = ".." }

@@ -5,6 +5,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 from datetime import datetime
+from typing import Any
 
 # Alias needed here to prevent naming clash with something else sphinx is doing.
 from importlib.metadata import version as check_version
@@ -27,14 +28,24 @@ extensions = [
     "sphinx_copybutton",
     "sphinx.ext.intersphinx",
     "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
     "sphinx_autodoc_typehints",
 ]
+
+suppress_warnings = [
+    "sphinx_autodoc_typehints.guarded_import",  # suppress warnings about typecheck-time imports
+]
+
+templates_path = ["_templates"]
+
+napoleon_google_docstring = True
+napoleon_use_param = False  # don't show parameter types in description (they're in the signature)
+napoleon_use_rtype = False  # don't show return types in description (they're in the signature)
 
 typehints_use_signature = True  # show parameter types in signature
 typehints_use_signature_return = True  # show return type in signature
 typehints_document_rtype = False
-
-templates_path = ["_templates"]
+typehints_fully_qualified = False
 
 autosummary_generate = True
 autosummary_ignore_module_all = False  # Respect __all__ if specified
@@ -58,6 +69,7 @@ exclude_patterns = [
     "**.py",
     ".venv",
     ".env",
+    "README.md",
     "**/README.md",
     ".jupyter_cache",
     "jupyter_execute",

@@ -75,5 +75,5 @@ class GateList:
         return self
 
     def __repr__(self) -> str:
-        """Return a string representation of :param:`self`."""
+        """Return a string representation of ``self``."""
         return str(self._impl)

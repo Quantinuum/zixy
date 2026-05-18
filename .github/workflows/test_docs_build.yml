@@ -33,17 +33,3 @@ jobs:
         - name: Run the docs build
           run: |
             cd zixy-py/docs && just build-strict
-
-publish:
-    name: Publish docs.
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    if: ${{github.event_name == 'push' }}
-    steps:
-      - name: Setup Pages
-        uses: actions/configure-pages@v6
-      - name: Deploy to GitHub Pages.
-        id: deployment
-        uses: actions/deploy-pages@v5

@@ -1,4 +1,4 @@
-ame: Publish docs to GitHub Pages
+name: Publish docs to GitHub Pages
 
 on:
   release:

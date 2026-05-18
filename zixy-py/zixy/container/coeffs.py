@@ -1104,7 +1104,7 @@ class RootOfUnityCoeffs(Coeffs[CoeffT]):
 
 
 class SignCoeffs(RootOfUnityCoeffs[Sign]):
-    """A collection of :class:`Sign`s.
+    """A collection of :class:`Sign`.
 
     A resizable vector-like container of coefficients that may be an owning instance referencing a
     contiguous Rust-bound data object, or a view on a slice of the elements in another collection.
@@ -1146,7 +1146,7 @@ class SignCoeffs(RootOfUnityCoeffs[Sign]):
 
 
 class ComplexSignCoeffs(RootOfUnityCoeffs[ComplexSign]):
-    """A collection of :class:`ComplexSign`s.
+    """A collection of :class:`ComplexSign`.
 
     A resizable vector-like container of coefficients that may be an owning instance referencing a
     contiguous Rust-bound data object, or a view on a slice of the elements in another collection.
@@ -1224,7 +1224,7 @@ class NumericalCoeffs(Coeffs[NumberT]):
 
 
 class RealCoeffs(NumericalCoeffs[float]):
-    """A collection of ``float``s.
+    """A collection of ``float``.
 
     A resizable vector-like container of coefficients that may be an owning instance referencing a
     contiguous Rust-bound data object, or a view on a slice of the elements in another collection.
@@ -1246,7 +1246,7 @@ class RealCoeffs(NumericalCoeffs[float]):
 
 
 class ComplexCoeffs(NumericalCoeffs[complex]):
-    """A collection of ``complex``s.
+    """A collection of ``complex``.
 
     A resizable vector-like container of coefficients that may be an owning instance referencing a
     contiguous Rust-bound data object, or a view on a slice of the elements in another collection.
@@ -1435,7 +1435,7 @@ class ExprListWrapper(BaseVec):
 
 
 class SymbolicCoeffs(Coeffs[Expr]):
-    """A collection of :class:`~sympy.Expr`s.
+    """A collection of :class:`~sympy.Expr`.
 
     A resizable vector-like container of coefficients that may be an owning instance referencing a
     contiguous Rust-bound data object, or a view on a slice of the elements in another collection.

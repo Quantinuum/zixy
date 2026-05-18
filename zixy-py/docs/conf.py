@@ -33,6 +33,12 @@ extensions = [
     "sphinx_autodoc_typehints",
 ]
 
+suppress_warnings = [
+    "spinx_autodoc_typehints.guarded_import",  # suppress warnings about typecheck-time imports
+]
+
+templates_path = ["_templates"]
+
 napoleon_google_docstring = True
 napoleon_use_param = False  # don't show parameter types in description (they're in the signature)
 napoleon_use_rtype = False  # don't show return types in description (they're in the signature)
@@ -41,8 +47,6 @@ typehints_use_signature = True  # show parameter types in signature
 typehints_use_signature_return = True  # show return type in signature
 typehints_document_rtype = False
 typehints_fully_qualified = False
-
-templates_path = ["_templates"]
 
 autosummary_generate = True
 autosummary_ignore_module_all = False  # Respect __all__ if specified

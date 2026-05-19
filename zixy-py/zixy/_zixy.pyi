@@ -133,6 +133,7 @@ class QubitPauliArray(QubitArray[PauliSprings, PauliMatrix]):
     def cmpnt_mul(
         self, index: int, rhs: QubitPauliArray, rhs_index: int
     ) -> tuple[QubitPauliArray, ComplexSign]: ...
+    def cmpnts_mul_pairwise(self, rhs: QubitPauliArray) -> tuple[QubitPauliArray, ComplexSignVec]: ...
     def cmpnt_to_sparse_matrix(self, index: int, big_endian: bool = ...) -> Any: ...
     def cmpnt_phase_of_mul(
         self, index: int, rhs: QubitPauliArray, rhs_index: int
@@ -258,6 +259,28 @@ class QubitPauliArray(QubitArray[PauliSprings, PauliMatrix]):
         ket_impl: QubitStateArray,
         ket_coeffs: ComplexVec,
     ) -> complex: ...
+    def canonicalize_sign(
+        self,
+        coeffs: SignVec,
+        mode_order: Sequence[tuple[int, SymplecticPart]],
+        to_solve: Sequence[int],
+        additional_reduces: Sequence[int],
+    ) -> Sequence[tuple[int, int]]: ...
+    def canonicalize_complex_sign(
+        self,
+        coeffs: ComplexSignVec,
+        mode_order: Sequence[tuple[int, SymplecticPart]],
+        to_solve: Sequence[int],
+        additional_reduces: Sequence[int],
+    ) -> Sequence[tuple[int, int]]: ...
+    def canonicalize_all_sign(
+        self,
+        coeffs: SignVec,
+    ) -> Sequence[tuple[int, int]]: ...
+    def canonicalize_all_complex_sign(
+        self,
+        coeffs: ComplexSignVec,
+    ) -> Sequence[tuple[int, int]]: ...
     def save_to_file(self, path: str) -> None: ...
     @classmethod
     def load_from_file(cls, path: str) -> Self: ...
@@ -309,6 +332,10 @@ class PauliMatrix:
     X: ClassVar[PauliMatrix]
     Y: ClassVar[PauliMatrix]
     Z: ClassVar[PauliMatrix]
+
+class SymplecticPart:
+    X: ClassVar[SymplecticPart]
+    Z: ClassVar[SymplecticPart]
 
 class Springs(Sized):
     def __init__(self, source: str) -> None: ...

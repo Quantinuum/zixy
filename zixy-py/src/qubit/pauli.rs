@@ -6,18 +6,21 @@ use bincode::config;
 use itertools::izip;
 use num_complex::Complex64;
 use pyo3::types::{PyAnyMethods, PyDict, PyDictMethods};
-use pyo3::{pyclass, pymethods, Py, PyAny, PyResult, Python};
+use pyo3::{pyclass, pymethods, Py, PyAny, PyErr, PyResult, Python};
 use zixy::cmpnt::springs::ModeSettings;
 use zixy::container::coeffs::traits::{NewUnitsWithLen, NumReprVec};
 use zixy::container::coeffs::unity::UnityVec;
 use zixy::container::quicksort::LexicographicSort;
-use zixy::container::traits::{Compatible, Elements, EmptyClone, MutRefElements, RefElements};
+use zixy::container::traits::{
+    Compatible, Elements, EmptyClone, MutRefElements, NewWithLen, RefElements,
+};
 use zixy::container::utils::DistinctPair;
 use zixy::container::word_iters::set::{AsView as _, AsViewMut as _};
 use zixy::container::word_iters::{self, WordIters};
 use zixy::qubit::mode::Qubits as Qubits_;
 use zixy::qubit::pauli::cmpnt_major as pauli;
 use zixy::qubit::pauli::cmpnt_major::cmpnt_list::CmpntList;
+use zixy::qubit::pauli::cmpnt_major::terms::AsViewMut;
 use zixy::qubit::state;
 use zixy::qubit::traits::{
     DifferentQubits, PauliWordMutRef, PauliWordRef, QubitsBased, QubitsRelabel, QubitsStandardized,
@@ -27,7 +30,7 @@ use zixy::utils::io::{BinFileReader, BinFileWriter};
 use crate::container::coeffs::{ComplexSign, ComplexSignVec, ComplexVec, RealVec, SignVec};
 use crate::container::map::Map;
 use crate::qubit::clifford::CliffordGateList;
-use crate::qubit::mode::{PauliMatrix, Qubits};
+use crate::qubit::mode::{PauliMatrix, Qubits, SymplecticPart};
 use crate::qubit::springs::PauliSprings;
 use crate::qubit::state::Array as StateArray;
 use crate::utils::{
@@ -80,6 +83,17 @@ impl Array {
         UnityVec::try_represent(&phases.0).to_py_result()?;
         Ok(list)
     }
+
+    fn parse_mode_order(
+        &self,
+        mode_order: Vec<(isize, SymplecticPart)>,
+    ) -> PyResult<Vec<(usize, zixy::qubit::mode::SymplecticPart)>> {
+        let n_qubits = self.get_qubits().0.n_qubit();
+        mode_order
+            .into_iter()
+            .map(|(idx, sp)| try_py_index(idx, n_qubits).map(|i| (i, sp.into())))
+            .collect()
+    }
 }
 
 #[pymethods]
@@ -100,9 +114,15 @@ impl Array {
 
     #[staticmethod]
     fn from_dict<'py>(dict: pyo3::Bound<'py, PyDict>) -> PyResult<Self> {
-        let qubits: Vec<usize> = dict.get_item("qubits")?.unwrap().extract()?;
+        let qubits_item = dict.get_item("qubits")?.ok_or_else(|| {
+            PyErr::new::<pyo3::exceptions::PyValueError, _>("missing 'qubits' key")
+        })?;
+        let qubits: Vec<usize> = qubits_item.extract()?;
         let qubits = Qubits(Qubits_::from_inds(qubits).to_py_result()?);
-        let cmpnts: String = dict.get_item("cmpnts")?.unwrap().extract()?;
+        let cmpnts_item = dict.get_item("cmpnts")?.ok_or_else(|| {
+            PyErr::new::<pyo3::exceptions::PyValueError, _>("missing 'cmpnts' key")
+        })?;
+        let cmpnts: String = cmpnts_item.extract()?;
         let cmpnts = zixy::qubit::pauli::springs::Springs::from_str(&cmpnts).to_py_result()?;
         Ok(Self(
             CmpntList::from_springs(qubits.0, &cmpnts).to_py_result()?.0,
@@ -294,6 +314,41 @@ impl Array {
             .assign_mul(lhs, rhs)
             .to_py_result()?;
         Ok((out, ComplexSign(phase)))
+    }
+
+    /// Multiply each Pauli string in `self` by the corresponding Pauli string in `rhs`
+    /// Computes the element-wise product of two equally-sized QubitPauliArray instances,
+    /// returning the result QubitPauliArray and a ComplexSignVec of phases.
+    pub fn cmpnts_mul_pairwise(&self, rhs: &Self) -> PyResult<(Self, ComplexSignVec)> {
+        // Check 1 - same qubit space
+        DifferentQubits::check(&self.0, &rhs.0).to_py_result()?;
+
+        // Check 2 - same length
+        if self.len() != rhs.len() {
+            return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                "Input arrays must have the same length",
+            ));
+        }
+
+        // Create output array and phase vector
+        let mut out = self.empty_clone();
+        out.resize(self.len());
+        let mut phases = ComplexSignVec::new_with_len(self.len());
+
+        // Iterate through the arrays and multiply pairwise
+        for i in 0..self.len() {
+            let lhs_elem = self.0.get_elem_ref(i);
+            let rhs_elem = rhs.0.get_elem_ref(i);
+            let phase = out
+                .0
+                .get_elem_mut_ref(i)
+                .assign_mul(lhs_elem, rhs_elem)
+                .to_py_result()?;
+            phases.0.set_unchecked(i, phase);
+        }
+
+        // Return the output array and the phases
+        Ok((out, phases))
     }
 
     /// Multiply the `i_lhs` cmpnt of `self` by the `i_rhs` cmpnt of `self` and store the resulting cmpnt in
@@ -878,6 +933,90 @@ impl Array {
             out.set_unchecked(i, sign);
         }
         SignVec(out)
+    }
+
+    /// In place canonicalization with respect to a given ordering of the binary entries in the symplectic form
+    /// `mode_order` the order of binary entries to try reducing to at most one non-zero entry
+    /// `to_solve` the subset of the components to canonicalise over (e.g. if some partial canonicalization has already been done, skip those components)
+    /// `additional_reduces` components outside of `to_solve` to include in the reduction step (e.g. if some partial canonicalization has already been done, reduce the components that already have leading entries)
+    /// Errors if any of the qubit or component indices provided are out of bounds
+    /// Returns the sequence of imul operations as pairs (lhs_written, rhs_read)
+    pub fn canonicalize_sign(
+        &mut self,
+        coeffs: &mut SignVec,
+        mode_order: Vec<(isize, SymplecticPart)>,
+        to_solve: Vec<usize>,
+        additional_reduces: Vec<usize>,
+    ) -> PyResult<Vec<(usize, usize)>> {
+        use zixy::container::coeffs::complex_sign::ComplexSign as ComplexSign_;
+        use zixy::container::coeffs::complex_sign::ComplexSignVec as ComplexSignVec_;
+        use zixy::container::coeffs::sign::SignVec as SignVec_;
+        let tmp_mode_order = self.parse_mode_order(mode_order)?;
+        let mut ccoeffs: ComplexSignVec_ =
+            ComplexSignVec_::try_represent(&coeffs.0).to_py_result()?;
+        let mut tmp: pauli::terms::ViewMut<ComplexSign_> = pauli::terms::ViewMut {
+            word_iters: &mut self.0,
+            coeffs: &mut ccoeffs,
+        };
+        let imul_ops = tmp
+            .canonicalize(&tmp_mode_order, &to_solve, &additional_reduces)
+            .to_py_result()?;
+        coeffs.0 = SignVec_::try_represent(&ccoeffs).to_py_result()?;
+        Ok(imul_ops)
+    }
+
+    /// In place canonicalization with respect to a given ordering of the binary entries in the symplectic form
+    /// `mode_order` the order of binary entries to try reducing to at most one non-zero entry
+    /// `to_solve` the subset of the components to canonicalise over (e.g. if some partial canonicalization has already been done, skip those components)
+    /// `additional_reduces` components outside of `to_solve` to include in the reduction step (e.g. if some partial canonicalization has already been done, reduce the components that already have leading entries)
+    /// Errors if any of the qubit or component indices provided are out of bounds
+    /// Returns the sequence of imul operations as pairs (lhs_written, rhs_read)
+    pub fn canonicalize_complex_sign(
+        &mut self,
+        coeffs: &mut ComplexSignVec,
+        mode_order: Vec<(isize, SymplecticPart)>,
+        to_solve: Vec<usize>,
+        additional_reduces: Vec<usize>,
+    ) -> PyResult<Vec<(usize, usize)>> {
+        use zixy::container::coeffs::complex_sign::ComplexSign as ComplexSign_;
+        let tmp_mode_order = self.parse_mode_order(mode_order)?;
+        let mut tmp: pauli::terms::ViewMut<ComplexSign_> = pauli::terms::ViewMut {
+            word_iters: &mut self.0,
+            coeffs: &mut coeffs.0,
+        };
+        tmp.canonicalize(&tmp_mode_order, &to_solve, &additional_reduces)
+            .to_py_result()
+    }
+
+    /// In place canonicalization of the entire QubitPauliArray with respect to solving X parts first (in qubit order), then Z parts
+    /// Returns the sequence of imul operations as pairs (lhs_written, rhs_read)
+    pub fn canonicalize_all_sign(&mut self, coeffs: &mut SignVec) -> PyResult<Vec<(usize, usize)>> {
+        use zixy::container::coeffs::complex_sign::ComplexSign as ComplexSign_;
+        use zixy::container::coeffs::complex_sign::ComplexSignVec as ComplexSignVec_;
+        use zixy::container::coeffs::sign::SignVec as SignVec_;
+        let mut ccoeffs: ComplexSignVec_ =
+            ComplexSignVec_::try_represent(&coeffs.0).to_py_result()?;
+        let mut tmp: pauli::terms::ViewMut<ComplexSign_> = pauli::terms::ViewMut {
+            word_iters: &mut self.0,
+            coeffs: &mut ccoeffs,
+        };
+        let imul_ops = tmp.canonicalize_all();
+        coeffs.0 = SignVec_::try_represent(&ccoeffs).to_py_result()?;
+        Ok(imul_ops)
+    }
+
+    /// In place canonicalization of the entire QubitPauliArray with respect to solving X parts first (in qubit order), then Z parts
+    /// Returns the sequence of imul operations as pairs (lhs_written, rhs_read)
+    pub fn canonicalize_all_complex_sign(
+        &mut self,
+        coeffs: &mut ComplexSignVec,
+    ) -> PyResult<Vec<(usize, usize)>> {
+        use zixy::container::coeffs::complex_sign::ComplexSign as ComplexSign_;
+        let mut tmp: pauli::terms::ViewMut<ComplexSign_> = pauli::terms::ViewMut {
+            word_iters: &mut self.0,
+            coeffs: &mut coeffs.0,
+        };
+        Ok(tmp.canonicalize_all())
     }
 
     /// Save in binary format

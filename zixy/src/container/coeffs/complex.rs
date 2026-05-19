@@ -183,6 +183,7 @@ impl Represent<f64> for Complex64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
     #[test]
     fn test_parse() {
@@ -214,46 +215,25 @@ mod tests {
         assert_eq!(c, Complex64::new(1.0, 0.0));
     }
 
-    #[test]
-    fn test_try_represent_any() -> Result<(), Unrepresentable> {
-        assert_eq!(
-            Complex64::try_represent_any(AnyNumRepr::Unity(Unity {}))?,
-            Complex64::ONE
-        );
-        assert_eq!(
-            Complex64::try_represent_any(AnyNumRepr::Sign(Sign(false)))?,
-            Complex64::ONE
-        );
-        assert_eq!(
-            Complex64::try_represent_any(AnyNumRepr::Sign(Sign(true)))?,
-            -Complex64::ONE
-        );
-        assert_eq!(
-            Complex64::try_represent_any(AnyNumRepr::ComplexSign(ComplexSign(0)))?,
-            Complex64::ONE
-        );
-        assert_eq!(
-            Complex64::try_represent_any(AnyNumRepr::ComplexSign(ComplexSign(1)))?,
-            Complex64::I
-        );
-        assert_eq!(
-            Complex64::try_represent_any(AnyNumRepr::ComplexSign(ComplexSign(2)))?,
-            -Complex64::ONE
-        );
-        assert_eq!(
-            Complex64::try_represent_any(AnyNumRepr::ComplexSign(ComplexSign(3)))?,
-            -Complex64::I
-        );
-        assert_eq!(
-            Complex64::try_represent_any(AnyNumRepr::Whole(42))?,
-            Complex64::new(42.0, 0.0)
-        );
-        assert_eq!(
-            Complex64::try_represent_any(AnyNumRepr::Real(-3.14))?,
-            Complex64::new(-3.14, 0.0)
-        );
-        let c = Complex64::new(1.0, -2.0);
-        assert_eq!(Complex64::try_represent_any(AnyNumRepr::Complex(c))?, c);
+    #[rstest]
+    #[case(AnyNumRepr::Unity(Unity {}), Complex64::ONE)]
+    #[case(AnyNumRepr::Sign(Sign(false)), Complex64::ONE)]
+    #[case(AnyNumRepr::Sign(Sign(true)), -Complex64::ONE)]
+    #[case(AnyNumRepr::ComplexSign(ComplexSign(0)), Complex64::ONE)]
+    #[case(AnyNumRepr::ComplexSign(ComplexSign(1)), Complex64::I)]
+    #[case(AnyNumRepr::ComplexSign(ComplexSign(2)), -Complex64::ONE)]
+    #[case(AnyNumRepr::ComplexSign(ComplexSign(3)), -Complex64::I)]
+    #[case(AnyNumRepr::Whole(42), Complex64::new(42.0, 0.0))]
+    #[case(AnyNumRepr::Real(-1.52), Complex64::new(-1.52, 0.0))]
+    #[case(
+        AnyNumRepr::Complex(Complex64::new(1.0, -2.0)),
+        Complex64::new(1.0, -2.0)
+    )]
+    fn test_try_represent_any(
+        #[case] input: AnyNumRepr,
+        #[case] expected: Complex64,
+    ) -> Result<(), Unrepresentable> {
+        assert_eq!(Complex64::try_represent_any(input)?, expected);
         Ok(())
     }
 }

@@ -180,15 +180,37 @@ impl Represent<f64> for Complex64 {
     }
 }
 
-#[test]
-fn test_parse() {
-    assert!(Complex64::parse("ad").is_err());
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    assert!(Complex64::parse("1.234").is_ok_and(|x| x == Complex64::new(1.234, 0.0)));
-    assert!(Complex64::parse(" 1.234").is_ok_and(|x| x == Complex64::new(1.234, 0.0)));
-    assert!(Complex64::parse("+1.234").is_ok_and(|x| x == Complex64::new(1.234, 0.0)));
-    assert!(Complex64::parse("-1.234").is_ok_and(|x| x == Complex64::new(-1.234, 0.0)));
-    assert!(Complex64::parse("i-1.234").is_ok_and(|x| x == Complex64::new(-1.234, 1.0)));
-    assert!(Complex64::parse("i - 1.234").is_ok_and(|x| x == Complex64::new(-1.234, 1.0)));
-    assert!(Complex64::parse(" +i - 1.234").is_ok_and(|x| x == Complex64::new(-1.234, 1.0)));
+    #[test]
+    fn test_parse() {
+        assert!(Complex64::parse("ad").is_err());
+
+        assert!(Complex64::parse("1.234").is_ok_and(|x| x == Complex64::new(1.234, 0.0)));
+        assert!(Complex64::parse(" 1.234").is_ok_and(|x| x == Complex64::new(1.234, 0.0)));
+        assert!(Complex64::parse("+1.234").is_ok_and(|x| x == Complex64::new(1.234, 0.0)));
+        assert!(Complex64::parse("-1.234").is_ok_and(|x| x == Complex64::new(-1.234, 0.0)));
+        assert!(Complex64::parse("i-1.234").is_ok_and(|x| x == Complex64::new(-1.234, 1.0)));
+        assert!(Complex64::parse("i - 1.234").is_ok_and(|x| x == Complex64::new(-1.234, 1.0)));
+        assert!(Complex64::parse(" +i - 1.234").is_ok_and(|x| x == Complex64::new(-1.234, 1.0)));
+    }
+
+    #[test]
+    fn test_conj() {
+        let c = Complex64::new(1.0, 2.0);
+        assert_eq!(c.conj(), Complex64::new(1.0, -2.0));
+    }
+
+    #[test]
+    fn test_ipow() {
+        let mut c = Complex64::new(1.0, 1.0);
+        c.ipow(2);
+        assert_eq!(c, Complex64::new(0.0, 2.0));
+        c.ipow(2);
+        assert_eq!(c, Complex64::new(-4.0, 0.0));
+        c.ipow(0);
+        assert_eq!(c, Complex64::new(1.0, 0.0));
+    }
 }

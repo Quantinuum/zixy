@@ -213,4 +213,47 @@ mod tests {
         c.ipow(0);
         assert_eq!(c, Complex64::new(1.0, 0.0));
     }
+
+    #[test]
+    fn test_try_represent_any() -> Result<(), Unrepresentable> {
+        assert_eq!(
+            Complex64::try_represent_any(AnyNumRepr::Unity(Unity {}))?,
+            Complex64::ONE
+        );
+        assert_eq!(
+            Complex64::try_represent_any(AnyNumRepr::Sign(Sign(false)))?,
+            Complex64::ONE
+        );
+        assert_eq!(
+            Complex64::try_represent_any(AnyNumRepr::Sign(Sign(true)))?,
+            -Complex64::ONE
+        );
+        assert_eq!(
+            Complex64::try_represent_any(AnyNumRepr::ComplexSign(ComplexSign(0)))?,
+            Complex64::ONE
+        );
+        assert_eq!(
+            Complex64::try_represent_any(AnyNumRepr::ComplexSign(ComplexSign(1)))?,
+            Complex64::I
+        );
+        assert_eq!(
+            Complex64::try_represent_any(AnyNumRepr::ComplexSign(ComplexSign(2)))?,
+            -Complex64::ONE
+        );
+        assert_eq!(
+            Complex64::try_represent_any(AnyNumRepr::ComplexSign(ComplexSign(3)))?,
+            -Complex64::I
+        );
+        assert_eq!(
+            Complex64::try_represent_any(AnyNumRepr::Whole(42))?,
+            Complex64::new(42.0, 0.0)
+        );
+        assert_eq!(
+            Complex64::try_represent_any(AnyNumRepr::Real(-3.14))?,
+            Complex64::new(-3.14, 0.0)
+        );
+        let c = Complex64::new(1.0, -2.0);
+        assert_eq!(Complex64::try_represent_any(AnyNumRepr::Complex(c))?, c);
+        Ok(())
+    }
 }

@@ -74,22 +74,22 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
         assert len(self._impl) == 1
 
     def __repr__(self) -> str:
-        """Return a string representation of :param:`self`."""
+        """Return a string representation of ``self``."""
         return self._impl.cmpnt_to_string(self.index)
 
     @property
     def qubits(self) -> Qubits:
-        """Get the qubits corresponding to :param:`self`."""
+        """Get the qubits corresponding to ``self``."""
         return self._impl.qubits
 
     @abstractmethod
     def __getitem__(self, i: int) -> ElemT:
-        """Return the element of the string at index :param:`i`."""
+        """Return the element of the string at index ``i``."""
         pass
 
     @abstractmethod
     def __setitem__(self, i: int, elem: ElemT | Any) -> None:
-        """Set the element of the string at index :param:`i`."""
+        """Set the element of the string at index ``i``."""
         pass
 
     def get_list(self) -> list[ElemT]:
@@ -101,7 +101,7 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
         return tuple(self.get_list())
 
     def _set_copy(self, source: String[ImplT, SpecT, ElemT]) -> None:
-        """Set the value of :param:`self` to that of :param:`source`."""
+        """Set the value of ``self`` to that of ``source``."""
         if not isinstance(source, String):
             raise TypeError("Source object must be a String.")
         if self._impl.same_as(source._impl):
@@ -140,24 +140,24 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
             raise TypeError("Source object is of an unsupported type.")
 
     def count(self, elem: ElemT) -> int:
-        """Return the number of occurrences of :param:`elem` in the string.
+        """Return the number of occurrences of ``elem`` in the string.
 
         Args:
             elem: The element to count.
 
         Returns:
-            The number of occurrences of :param:`elem` in the string.
+            The number of occurrences of ``elem`` in the string.
         """
         return self._impl.cmpnt_count(self.index, elem)
 
     def to_sparse_matrix(self, big_endian: bool = False) -> Any:
-        """Return :param:`self` as a sparse matrix.
+        """Return ``self`` as a sparse matrix.
 
         Args:
             big_endian: Whether to use big-endian basis ordering.
 
         Returns:
-            The sparse matrix representation of :param:`self`.
+            The sparse matrix representation of ``self``.
         """
         return self._impl.cmpnt_to_sparse_matrix(self.index, big_endian)  # type: ignore[attr-defined]
 
@@ -185,7 +185,7 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
 
     @property
     def qubits(self) -> Qubits:
-        """Get the qubits corresponding to :param:`self`."""
+        """Get the qubits corresponding to ``self``."""
         return self._impl.qubits
 
     @overload
@@ -195,13 +195,13 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
     def __getitem__(self, indexer: slice) -> Self: ...
 
     def __getitem__(self, indexer: int | slice) -> String[ImplT, SpecT, ElemT] | Self:
-        """Get the element or elements selected by :param:`indexer`.
+        """Get the element or elements selected by ``indexer``.
 
         Args:
             indexer: Index or slice selecting the element(s) to return.
 
         Returns:
-            Element or slice selected by :param:`indexer`.
+            Element or slice selected by ``indexer``.
         """
         return super().__getitem__(indexer)  # type: ignore[return-value]
 
@@ -212,7 +212,7 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
             qubits: The qubit register or qubit count.
 
         Returns:
-            :param:`self` for chaining.
+            ``self`` for chaining.
 
         Note:
             This method operates in-place.
@@ -238,15 +238,15 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
 
         Reorders the contents of the strings such that the associated qubit register can be
         reassigned to ``Qubits.from_count(n_qubit)`` without semantic relabelling. The given
-        :param:`n_qubit` may differ from the size of the original register. If larger, clear qubits
+        ``n_qubit`` may differ from the size of the original register. If larger, clear qubits
         are appended after the reordered contents; if smaller, only contents at qubit indices less
-        than :param:`n_qubit` will be retained.
+        than ``n_qubit`` will be retained.
 
         Args:
             n_qubit: The number of qubits.
 
         Returns:
-            :param:`self` for chaining.
+            ``self`` for chaining.
 
         Note:
             This method operates in-place.
@@ -259,9 +259,9 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
 
         Reorders the contents of the strings such that the associated qubit register can be
         reassigned to ``Qubits.from_count(n_qubit)`` without semantic relabelling. The given
-        :param:`n_qubit` may differ from the size of the original register. If larger, clear qubits
+        ``n_qubit`` may differ from the size of the original register. If larger, clear qubits
         are appended after the reordered contents; if smaller, only contents at qubit indices less
-        than :param:`n_qubit` will be retained.
+        than ``n_qubit`` will be retained.
 
         Args:
             n_qubit: The number of qubits.
@@ -303,21 +303,21 @@ class StringSet(Generic[ImplT, SpecT, ElemT], CmpntSet[ImplT, SpecT]):
 
     @classmethod
     def from_strings(cls, strings: Strings[ImplT, SpecT, ElemT]) -> StringSet[ImplT, SpecT, ElemT]:
-        """Create a new instance of :param:`cls` from the strings in :param:`strings`.
+        """Create a new instance of ``cls`` from the strings in ``strings``.
 
         Args:
             strings: Owned or viewed strings with which to populate the new instance.
 
         Returns:
-            A new instance of :param:`cls` containing the strings in :param:`strings`.
+            A new instance of ``cls`` containing the strings in ``strings``.
         """
         return cls.from_cmpnts(strings)
 
     def to_strings(self) -> Strings[ImplT, SpecT, ElemT]:
-        """Create a new array of strings owning copies of all those contained in :param:`self`.
+        """Create a new array of strings owning copies of all those contained in ``self``.
 
         Returns:
-            New :class:`Strings` instance containing copies of the strings in :param:`self`. The
+            New :class:`Strings` instance containing copies of the strings in ``self``. The
             type is determined by :attr:`~zixy.qubit._strings.StringSet.cmpnts_type`.
         """
         return cast(Strings[ImplT, SpecT, ElemT], self.to_cmpnts())

@@ -2,5 +2,15 @@
 **/__pycache__
 **.so
 
+zixy-py/docs/build
+zixy-py/docs/generated
+zixy-py/docs/jupyter_execute
+
+.ipynb_checkpoints
+.DS_Store
+
+# UV file to set Python version
+.python-version
+
 # IDE environment files
 .vscode/

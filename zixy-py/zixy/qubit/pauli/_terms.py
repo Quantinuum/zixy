@@ -113,7 +113,7 @@ class Term(TermBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
 
     @classmethod
     def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Self:
-        """Create a new instance of :param:`cls` by parsing an input string.
+        """Create a new instance of ``cls`` by parsing an input string.
 
         Args:
             source: Input string to parse.
@@ -121,7 +121,7 @@ class Term(TermBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
                 index in the input string.
 
         Returns:
-            A new instance containing the Pauli string and coefficient in the :param:`source`.
+            A new instance containing the Pauli string and coefficient in the ``source``.
         """
         data = cls.term_data_from_str(source, qubits)
         if len(data) != 1:
@@ -136,7 +136,7 @@ class Term(TermBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
         return cast(String, self.cmpnt)
 
     def __imul__(self, rhs: Coeff | String | Term[CoeffT]) -> Self:  # type: ignore[misc,override]
-        """In-place multiplication of :param:`self` by :param:`rhs`."""
+        """In-place multiplication of ``self`` by ``rhs``."""
         init_coeff = None
         different_qubits = True
         try:
@@ -174,7 +174,7 @@ class Term(TermBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
         return self
 
     def conj_clifford_list(self, gates: GateList) -> None:
-        """Conjugate :param:`self` by a list of Clifford gates.
+        """Conjugate ``self`` by a list of Clifford gates.
 
         Args:
             gates: The Clifford gates to conjugate by.
@@ -198,7 +198,7 @@ class Terms(TermsBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
 
     @classmethod
     def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Self:
-        """Create a new instance of :param:`cls` by parsing an input string.
+        """Create a new instance of ``cls`` by parsing an input string.
 
         Args:
             source: Input string to parse.
@@ -206,13 +206,13 @@ class Terms(TermsBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
                 index in the input string.
 
         Returns:
-            A new instance containing the Pauli strings and coefficients in the :param:`source`.
+            A new instance containing the Pauli strings and coefficients in the ``source``.
         """
         return cls._create(cls.term_type.term_data_from_str(source, qubits))
 
     @property
     def strings(self) -> Strings:
-        """Get the components of :param:`self`."""
+        """Get the components of ``self``."""
         return cast(Strings, self.cmpnts)
 
     def lexicographic_sort(self, ascending: bool = False) -> None:
@@ -239,7 +239,7 @@ class Terms(TermsBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
             raise TypeError(f"Sort not implemented for coefficient type {type(coeffs)}")
 
     def conj_clifford_list(self, gates: GateList) -> None:
-        """Conjugate :param:`self` by a list of Clifford gates.
+        """Conjugate ``self`` by a list of Clifford gates.
 
         Args:
             gates: The Clifford gates to conjugate by.
@@ -260,7 +260,7 @@ class Terms(TermsBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
             qubits: The qubit register or qubit count.
 
         Returns:
-            :param:`self` for chaining.
+            ``self`` for chaining.
 
         Note:
             This method operates in-place.
@@ -294,7 +294,7 @@ class Terms(TermsBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
             n_qubit: The number of qubits.
 
         Returns:
-            :param:`self` for chaining.
+            ``self`` for chaining.
 
         Note:
             This method operates in-place.
@@ -400,7 +400,7 @@ class TermSum(TermSumBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix], Ter
 
     @classmethod
     def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Self:
-        """Create a new instance of :param:`cls` by parsing an input string.
+        """Create a new instance of ``cls`` by parsing an input string.
 
         Args:
             source: Input string to parse.
@@ -408,13 +408,13 @@ class TermSum(TermSumBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix], Ter
                 index in the input string.
 
         Returns:
-            A new instance containing the Pauli strings and coefficients in the :param:`source`.
+            A new instance containing the Pauli strings and coefficients in the ``source``.
         """
         terms = cls.terms_type.from_str(source, qubits)
         return cls.from_iterable(terms, terms.qubits)
 
     def commutator(self, other: TermSum[CoeffT]) -> TermSum[Any]:
-        """Compute the commutator of :param:`self` with :param:`other`.
+        """Compute the commutator of ``self`` with ``other``.
 
         .. math::
             [A, B] = AB - BA.
@@ -423,7 +423,7 @@ class TermSum(TermSumBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix], Ter
         return cast(TermSum[Any], out)
 
     def commutes_with(self, other: TermSum[CoeffT], atol: float = DEFAULT_COMMUTES_ATOL) -> bool:
-        """Check whether :param:`self` commutes with :param:`other`.
+        """Check whether ``self`` commutes with ``other``.
 
         .. math::
             [A, B] = 0.
@@ -433,7 +433,7 @@ class TermSum(TermSumBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix], Ter
             atol: The absolute tolerance.
 
         Returns:
-            Whether :param:`self` commutes with :param:`other`.
+            Whether ``self`` commutes with ``other``.
 
         See Also:
             :meth:`commutator`
@@ -444,13 +444,13 @@ class TermSum(TermSumBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix], Ter
         return len(coeffs) == 0
 
     def conserves_hamming_weight(self, atol: float = DEFAULT_COMMUTES_ATOL) -> bool:
-        """Check whether :param:`self` conserves Hamming weight.
+        """Check whether ``self`` conserves Hamming weight.
 
         Args:
             atol: The absolute tolerance to use.
 
         Returns:
-            Whether :param:`self` conserves Hamming weight.
+            Whether ``self`` conserves Hamming weight.
 
         See Also:
             :meth:`~zixy.qubit.pauli.num_ops.create_num_op`
@@ -462,13 +462,13 @@ class TermSum(TermSumBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix], Ter
         )
 
     def conserves_odd_bit_hamming_weight(self, atol: float = DEFAULT_COMMUTES_ATOL) -> bool:
-        """Check whether :param:`self` conserves odd-bit Hamming weight.
+        """Check whether ``self`` conserves odd-bit Hamming weight.
 
         Args:
             atol: The absolute tolerance to use.
 
         Returns:
-            Whether :param:`self` conserves odd-bit Hamming weight.
+            Whether ``self`` conserves odd-bit Hamming weight.
 
         See Also:
             :meth:`~zixy.qubit.pauli.num_ops.create_num_op_odd_bits`
@@ -628,7 +628,7 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
     terms_type = RealTerms
 
     def to_sparse_matrix(self, big_endian: bool = False) -> Any:
-        """Convert :param:`self` to a sparse matrix.
+        """Convert ``self`` to a sparse matrix.
 
         Args:
             big_endian: Whether to use big endian ordering for the resulting matrix. If ``False``,
@@ -653,7 +653,7 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         mapper: mappings.Mapper,
         fermion_ops: Sequence[tuple[Sequence[tuple[int, bool]], float]],
     ) -> Self:
-        """Create an instance of :param:`cls` from a fermionic operator given a mapping.
+        """Create an instance of ``cls`` from a fermionic operator given a mapping.
 
         Args:
             qubits: The qubit register or qubit count.
@@ -681,7 +681,7 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
     def __mul__(self, other: Self) -> ComplexTermSum: ...
 
     def __mul__(self, other: Self | Coeff) -> Self | ComplexTermSum:
-        """Multiplication of :param:`self` by :param:`other`."""
+        """Multiplication of ``self`` by ``other``."""
         if isinstance(other, Coeff):
             return super().__mul__(other)
         elif not isinstance(other, RealTermSum):
@@ -746,7 +746,7 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         )
 
     def __iadd__(self, rhs: RealTerm | Self | mappings.Contribution[float]) -> Self:  # type: ignore[override,misc]
-        """In-place addition of :param:`self` by :param:`rhs`."""
+        """In-place addition of ``self`` by ``rhs``."""
         if isinstance(rhs, mappings.Contribution):
             assert isinstance(self._impl._coeffs, RealCoeffs)  # TODO: resolve
             rhs._mapper._impl.op_contribute_real(
@@ -760,7 +760,7 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         return self
 
     def __isub__(self, rhs: RealTerm | Self | mappings.Contribution[float]) -> Self:  # type: ignore[override,misc]
-        """In-place subtraction of :param:`self` by :param:`rhs`."""
+        """In-place subtraction of ``self`` by ``rhs``."""
         if isinstance(rhs, mappings.Contribution):
             self.__iadd__(-rhs)
         else:
@@ -768,7 +768,7 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         return self
 
     def apply(self, state: RealState) -> ComplexState:
-        """Apply :param:`self` to a state.
+        """Apply ``self`` to a state.
 
         Args:
             state: The state to apply to.
@@ -791,7 +791,7 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         return out
 
     def mat_elem(self, bra: RealState, ket: RealState) -> float:
-        """Evaluate the matrix element of :param:`self` between a bra and ket state.
+        """Evaluate the matrix element of ``self`` between a bra and ket state.
 
         Args:
             bra: The bra state.
@@ -814,7 +814,7 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         )
 
     def exp_val(self, state: RealState) -> float:
-        """Evaluate the expectation value of :param:`self` with respect to a state.
+        """Evaluate the expectation value of ``self`` with respect to a state.
 
         Args:
             state: The state to evaluate with respect to.
@@ -894,20 +894,20 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
 
     @property
     def real_part(self) -> RealTermSum:
-        """Return the real part of :param:`self`."""
+        """Return the real part of ``self``."""
         assert isinstance(self._data.coeffs, ComplexCoeffs)
         data = TermData(self._data.cmpnts, self._data.coeffs.real_part)
         return RealTermSum._create(data)
 
     @property
     def imag_part(self) -> RealTermSum:
-        """Return the imaginary part of :param:`self`."""
+        """Return the imaginary part of ``self``."""
         assert isinstance(self._data.coeffs, ComplexCoeffs)
         data = TermData(self._data.cmpnts, self._data.coeffs.imag_part)
         return RealTermSum._create(data)
 
     def to_sparse_matrix(self, big_endian: bool = False) -> Any:
-        """Convert :param:`self` to a sparse matrix.
+        """Convert ``self`` to a sparse matrix.
 
         Args:
             big_endian: Whether to use big endian ordering for the resulting matrix. If ``False``,
@@ -926,7 +926,7 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         )
 
     def __mul__(self, other: Self | Coeff) -> Self | ComplexTermSum:
-        """Multiplication of :param:`self` by :param:`other`."""
+        """Multiplication of ``self`` by ``other``."""
         if isinstance(other, Coeff):
             return super().__mul__(other)
         elif not isinstance(other, ComplexTermSum):
@@ -964,7 +964,7 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         )
 
     def __iadd__(self, rhs: ComplexTerm | Self | mappings.Contribution[complex]) -> Self:  # type: ignore[override,misc]
-        """In-place addition of :param:`self` by :param:`rhs`."""
+        """In-place addition of ``self`` by ``rhs``."""
         if isinstance(rhs, mappings.Contribution):
             assert isinstance(self._impl._coeffs, ComplexCoeffs)  # TODO: resolve
             rhs._mapper._impl.op_contribute_complex(
@@ -978,7 +978,7 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         return self
 
     def __isub__(self, rhs: ComplexTerm | Self | mappings.Contribution[complex]) -> Self:  # type: ignore[override,misc]
-        """In-place subtraction of :param:`self` by :param:`rhs`."""
+        """In-place subtraction of ``self`` by ``rhs``."""
         if isinstance(rhs, mappings.Contribution):
             self.__iadd__(-rhs)
         else:
@@ -986,7 +986,7 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         return self
 
     def apply(self, state: ComplexState) -> ComplexState:
-        """Apply :param:`self` to a state.
+        """Apply ``self`` to a state.
 
         Args:
             state: The state to apply to.
@@ -1009,7 +1009,7 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         return out
 
     def mat_elem(self, bra: ComplexState, ket: ComplexState) -> complex:
-        """Evaluate the matrix element of :param:`self` between a bra and ket state.
+        """Evaluate the matrix element of ``self`` between a bra and ket state.
 
         Args:
             bra: The bra state.
@@ -1032,7 +1032,7 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         )
 
     def exp_val(self, state: ComplexState) -> complex:
-        """Evaluate the expectation value of :param:`self` with respect to a state.
+        """Evaluate the expectation value of ``self`` with respect to a state.
 
         Args:
             state: The state to evaluate with respect to.
@@ -1082,7 +1082,7 @@ class SymbolicTerm(Term[Expr]):
         return out
 
     def try_to_real(self) -> RealTerm:
-        """Try to evaluate :param:`self` as a term containing a vector of real coefficients.
+        """Try to evaluate ``self`` as a term containing a vector of real coefficients.
 
         Returns:
             An instance of :class:`~zixy.qubit.pauli._terms.RealTerm` with the evaluated
@@ -1099,7 +1099,7 @@ class SymbolicTerm(Term[Expr]):
         return RealTerm._create(TermData(cmpnts, coeffs))
 
     def try_to_complex(self) -> ComplexTerm:
-        """Try to evaluate :param:`self` as a term containing a vector of complex coefficients.
+        """Try to evaluate ``self`` as a term containing a vector of complex coefficients.
 
         Returns:
             An instance of :class:`~zixy.qubit.pauli._terms.ComplexTerm` with the evaluated
@@ -1129,15 +1129,15 @@ class SymbolicTerms(Terms[Expr]):
 
     @property
     def coeffs(self) -> SymbolicCoeffs:
-        """Get the coefficients of :param:`self`."""
+        """Get the coefficients of ``self``."""
         return cast(SymbolicCoeffs, self._data.coeffs[self.slice])
 
     @property
     def free_symbols(self) -> set[Symbol]:
-        """Get the set of free (unsubstituted) symbols in :param:`self`.
+        """Get the set of free (unsubstituted) symbols in ``self``.
 
         Returns:
-            Union of the sets of free symbols across all coefficients in :param:`self`.
+            Union of the sets of free symbols across all coefficients in ``self``.
         """
         return self.coeffs.free_symbols
 
@@ -1164,7 +1164,7 @@ class SymbolicTerms(Terms[Expr]):
         return SymbolicTerms._create(TermData(self.strings.clone(), self.coeffs.subs(values)))
 
     def idiff(self, variable: Symbol | str) -> None:
-        """Differentiate partially with respect to :param:`variable` in-place.
+        """Differentiate partially with respect to ``variable`` in-place.
 
         Args:
             variable: Symbol or name of symbol by which to differentiate the viewed symbolic
@@ -1176,7 +1176,7 @@ class SymbolicTerms(Terms[Expr]):
         self.coeffs.idiff(variable)
 
     def diff(self, variable: Symbol | str) -> SymbolicTerms:
-        """Differentiate partially with respect to :param:`variable` out of place.
+        """Differentiate partially with respect to ``variable`` out of place.
 
         Args:
             variable: Symbol or name of symbol by which to differentiate the viewed symbolic
@@ -1188,7 +1188,7 @@ class SymbolicTerms(Terms[Expr]):
         return SymbolicTerms._create(TermData(self.strings.clone(), self.coeffs.diff(variable)))
 
     def try_to_real(self) -> RealTerms:
-        """Try to evaluate :param:`self` as terms containing a vector of real coefficients.
+        """Try to evaluate ``self`` as terms containing a vector of real coefficients.
 
         Returns:
             An instance of :class:`~zixy.qubit.pauli._terms.RealTerms` with the evaluated
@@ -1200,7 +1200,7 @@ class SymbolicTerms(Terms[Expr]):
         return RealTerms._create(TermData(self.strings.clone(), self.coeffs.try_to_real()))
 
     def try_to_complex(self) -> ComplexTerms:
-        """Try to evaluate :param:`self` as terms containing a vector of complex coefficients.
+        """Try to evaluate ``self`` as terms containing a vector of complex coefficients.
 
         Returns:
             An instance of :class:`~zixy.qubit.pauli._terms.ComplexTerms` with the evaluated
@@ -1246,7 +1246,7 @@ class SymbolicTermSum(TermSum[Expr]):
     def __mul__(self, other: Self) -> Self: ...
 
     def __mul__(self, other: Self | Coeff) -> Self | SymbolicTermSum:
-        """Multiplication of :param:`self` by :param:`other`."""
+        """Multiplication of ``self`` by ``other``."""
         if isinstance(other, Coeff):
             return super().__mul__(other)
         elif not isinstance(other, SymbolicTermSum):
@@ -1272,7 +1272,7 @@ class TermRegistry(terms.TermRegistry[QubitPauliArray, StringSpec]):
     term_type_symbolic: type[SymbolicTerm]
 
     def __getitem__(self, coeff_type: type[CoeffT]) -> type[Term[CoeffT]]:
-        """Get the term type corresponding to :param:`coeff_type`."""
+        """Get the term type corresponding to ``coeff_type``."""
         return cast(type[Term[CoeffT]], super().__getitem__(coeff_type))
 
 

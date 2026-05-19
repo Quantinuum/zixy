@@ -69,15 +69,15 @@ class String(StringBase[ImplT, SpecT, ElemT]):
 
     @staticmethod
     def _get_default_qubits(source: SpecT | None = None) -> Qubits:
-        """Get the default qubit space for :param:`source`."""
+        """Get the default qubit space for ``source``."""
         return _default_qubits(source)
 
     def __getitem__(self, i: int) -> bool:
-        """Return the bit value of the string at index :param:`i`."""
+        """Return the bit value of the string at index ``i``."""
         return self._impl.cmpnt_get_bit(self.index, i)
 
     def __setitem__(self, i: int, bit: bool | int) -> None:
-        """Set the bit value of the string at index :param:`i`."""
+        """Set the bit value of the string at index ``i``."""
         if isinstance(bit, int):
             if not (bit == 0 or bit == 1):
                 raise ValueError("Integer bit argument must be either 0 or 1")
@@ -124,7 +124,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         return int(self == other)
 
     def imul_get_phase(self, op: PauliString) -> ComplexSign:
-        """In-place multiplication of :param:`self` by :param:`op`, returning the phase."""
+        """In-place multiplication of ``self`` by ``op``, returning the phase."""
         return ComplexSign(self._impl.cmpnt_pauli_string_imul(self.index, op._impl, op.index))
 
 
@@ -160,13 +160,13 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
     def __getitem__(self, indexer: slice) -> Strings: ...
 
     def __getitem__(self, indexer: int | slice) -> String | Strings:
-        """Get the element or elements selected by :param:`indexer`.
+        """Get the element or elements selected by ``indexer``.
 
         Args:
             indexer: Index or slice selecting the element(s) to return.
 
         Returns:
-            Element or slice selected by :param:`indexer`.
+            Element or slice selected by ``indexer``.
         """
         return super().__getitem__(indexer)  # type: ignore[return-value]
 

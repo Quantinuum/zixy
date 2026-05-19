@@ -112,7 +112,7 @@ def _clone_coeffs_as(
 ) -> Coeffs[OtherCoeffT]:
     """Clone coefficient data from :param:`source` as :param:`target_type`."""
     if type(source) is target_type:
-        return target_type._create(source.clone()._impl)
+        return source.clone()
     return convert_vec(source, target_type)
 
 

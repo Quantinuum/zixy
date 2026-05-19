@@ -186,8 +186,9 @@ class ViewableSequence(ViewableBase[ImplT, slice], Generic[T, ImplT], Sequence[T
 
         Args:
             impl: Rust-bound object containing the data for this sequence.
-            indexer: Slice of the data in :param:`impl` that this instance should view. If ``None``,
-                this instance is considered to be owning.
+            indexer: Slice of the data in :param:`impl` that this instance should view. The
+                default value of ``slice(None)`` indicates that this instance is considered to be
+                owning.
 
         Returns:
             A new instance of :param:`cls`.

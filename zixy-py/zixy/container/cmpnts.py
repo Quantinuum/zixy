@@ -457,9 +457,10 @@ class Cmpnts(Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT]
 
         Args:
             impl: Rust-bound object storing the data.
-            s: Slice of elements within Rust-bound array that are to be viewed by :param:`self`.
-                When :param:`s` is ``None``, :param:`self` is taken to be an owning view on all
-                elements of :param:`impl`.
+            s: Slice of elements within the Rust-bound array that are to be viewed by
+                :param:`self`. The default value of ``slice(None)`` indicates that
+                :param:`self` is taken to be an owning view on all elements of
+                :param:`impl`.
         """
         assert self._set_type.cmpnts_type is type(self)
         assert isinstance(impl, self.cmpnt_type.impl_type), type(impl)
@@ -472,8 +473,9 @@ class Cmpnts(Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT]
 
         Args:
             impl: Rust-bound object containing the data for this sequence.
-            indexer: Slice of the data in :param:`impl` that this instance should view. If ``None``,
-                this instance is considered to be owning.
+            indexer: Slice of the data in :param:`impl` that this instance should view. The
+                default value of ``slice(None)`` indicates that this instance is considered to be
+                owning.
 
         Returns:
             A new instance of :param:`cls`.

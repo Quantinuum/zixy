@@ -273,8 +273,8 @@ class Terms(
 
         Args:
             data: Raw term data object, of which :param:`self` views a slice.
-            s: Slice of the data in :param:`data` that :param:`self` will view. If ``None``, this
-                instance is considered to be owning.
+            s: Slice of the data in :param:`data` that :param:`self` will view. The default
+                value of ``slice(None)`` indicates that this instance is considered to be owning.
         """
         self._impl = data
         self._slice = s
@@ -290,8 +290,9 @@ class Terms(
 
         Args:
             data: Raw term data object containing the data for this sequence.
-            indexer: Slice of the data in :param:`data` that this instance should view. If ``None``,
-                this instance is considered to be owning.
+            indexer: Slice of the data in :param:`data` that this instance should view. The
+                default value of ``slice(None)`` indicates that this instance is considered to be
+                owning.
 
         Returns:
             A new instance of :param:`cls`.

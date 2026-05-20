@@ -977,4 +977,138 @@ mod tests {
         assert_eq!(deselected.coeffs[1], 1.5);
         assert_eq!(deselected.coeffs[2], 2.5);
     }
+
+    #[test]
+    fn test_bipartition() {
+        let terms: Terms<TestContainer, f64> = Terms {
+            word_iters: TestContainer {
+                elements: vec![vec![1, 2], vec![3, 4], vec![5, 6]],
+            },
+            coeffs: vec![0.5, 1.5, 2.5],
+        };
+        let iter = [0_usize].into_iter();
+        let (selected, deselected) = terms.bipartition(iter);
+        assert_eq!(selected.len(), 1);
+        assert_eq!(selected.coeffs[0], 0.5);
+        assert_eq!(deselected.len(), 2);
+        assert_eq!(deselected.coeffs[0], 1.5);
+        assert_eq!(deselected.coeffs[1], 2.5);
+    }
+
+    #[test]
+    fn test_swap() {
+        let mut terms: Terms<TestContainer, f64> = Terms {
+            word_iters: TestContainer {
+                elements: vec![vec![1, 2], vec![3, 4], vec![5, 6]],
+            },
+            coeffs: vec![0.5, 1.5, 2.5],
+        };
+        terms.swap(0, 2);
+        assert_eq!(terms.coeffs[0], 2.5);
+        assert_eq!(terms.coeffs[1], 1.5);
+        assert_eq!(terms.coeffs[2], 0.5);
+        assert_eq!(
+            terms.word_iters.elem_u64it(0).collect::<Vec<u64>>(),
+            vec![5, 6]
+        );
+        assert_eq!(
+            terms.word_iters.elem_u64it(1).collect::<Vec<u64>>(),
+            vec![3, 4]
+        );
+        assert_eq!(
+            terms.word_iters.elem_u64it(2).collect::<Vec<u64>>(),
+            vec![1, 2]
+        );
+    }
+
+    #[test]
+    fn test_copy() {
+        let mut terms: Terms<TestContainer, f64> = Terms {
+            word_iters: TestContainer {
+                elements: vec![vec![1, 2], vec![3, 4], vec![5, 6]],
+            },
+            coeffs: vec![0.5, 1.5, 2.5],
+        };
+        terms.copy(0, 2);
+        assert_eq!(terms.coeffs[0], 2.5);
+        assert_eq!(terms.coeffs[1], 1.5);
+        assert_eq!(terms.coeffs[2], 2.5);
+        assert_eq!(
+            terms.word_iters.elem_u64it(0).collect::<Vec<u64>>(),
+            vec![5, 6]
+        );
+        assert_eq!(
+            terms.word_iters.elem_u64it(1).collect::<Vec<u64>>(),
+            vec![3, 4]
+        );
+        assert_eq!(
+            terms.word_iters.elem_u64it(2).collect::<Vec<u64>>(),
+            vec![5, 6]
+        );
+    }
+    #[test]
+    fn test_push_u64it() {
+        let mut terms: Terms<TestContainer, f64> = Terms {
+            word_iters: TestContainer {
+                elements: vec![vec![1, 2], vec![3, 4]],
+            },
+            coeffs: vec![0.5, 1.5],
+        };
+        terms.push_u64it(vec![5, 6].into_iter(), 2.5);
+        assert_eq!(terms.len(), 3);
+        assert_eq!(terms.coeffs[2], 2.5);
+        assert_eq!(
+            terms.word_iters.elem_u64it(2).collect::<Vec<u64>>(),
+            vec![5, 6]
+        );
+    }
+
+    #[test]
+    fn test_push_term_ref() {
+        let mut terms: Terms<TestContainer, f64> = Terms {
+            word_iters: TestContainer {
+                elements: vec![vec![1, 2], vec![3, 4]],
+            },
+            coeffs: vec![0.5, 1.5],
+        };
+
+        let words: Vec<u64> = terms.word_iters.elem_u64it(0).collect();
+        let coeff = terms.coeffs[0];
+        terms.push_u64it(words.into_iter(), coeff);
+
+        assert_eq!(terms.len(), 3);
+        assert_eq!(terms.coeffs[2], 0.5);
+        assert_eq!(
+            terms.word_iters.elem_u64it(2).collect::<Vec<u64>>(),
+            vec![1, 2]
+        );
+    }
+
+    #[test]
+    fn test_append() {
+        let mut terms1: Terms<TestContainer, f64> = Terms {
+            word_iters: TestContainer {
+                elements: vec![vec![1, 2], vec![3, 4]],
+            },
+            coeffs: vec![0.5, 1.5],
+        };
+        let terms2: Terms<TestContainer, f64> = Terms {
+            word_iters: TestContainer {
+                elements: vec![vec![5, 6], vec![7, 8]],
+            },
+            coeffs: vec![2.5, 3.5],
+        };
+        terms1.append(&terms2);
+        assert_eq!(terms1.len(), 4);
+        assert_eq!(terms1.coeffs[2], 2.5);
+        assert_eq!(terms1.coeffs[3], 3.5);
+        assert_eq!(
+            terms1.word_iters.elem_u64it(2).collect::<Vec<u64>>(),
+            vec![5, 6]
+        );
+        assert_eq!(
+            terms1.word_iters.elem_u64it(3).collect::<Vec<u64>>(),
+            vec![7, 8]
+        );
+    }
 }

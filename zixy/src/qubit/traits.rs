@@ -190,11 +190,7 @@ pub trait PauliWordRef: QubitsBased + Display {
     fn get_pauli_unchecked(&self, i_mode: usize) -> PauliMatrix;
     /// Return the Pauli matrix at `i_mode`, or `OutOfBounds` if `i_mode` is invalid.
     fn get_pauli(&self, i_mode: usize) -> Result<PauliMatrix, OutOfBounds> {
-        OutOfBounds::check(
-            i_mode,
-            self.get_container().qubits().len(),
-            Dimension::Cmpnt,
-        )?;
+        OutOfBounds::check(i_mode, self.get_container().qubits().len(), Dimension::Mode)?;
         Ok(self.get_pauli_unchecked(i_mode))
     }
 
@@ -329,6 +325,7 @@ pub trait PauliWordMutRef: QubitsBased {
 
     /// Assign from a vector of Pauli matrices, with bounds checking on the highest index used.
     fn set_pauli_vec(&mut self, paulis: Vec<PauliMatrix>) -> Result<(), OutOfBounds> {
+        // TODO: For a zero-qubit pauli word this fails. It would feel more intuitive if it was a no-op instead.
         OutOfBounds::check(
             paulis.len().saturating_sub(1),
             self.qubits().len(),
@@ -506,5 +503,145 @@ pub trait PauliWordMutRef: QubitsBased {
         } else {
             Ok(ComplexSign(0))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Clone)]
+    struct TestContainer {
+        qubits: Qubits,
+        calls: Vec<&'static str>,
+    }
+
+    impl QubitsBased for TestContainer {
+        fn qubits(&self) -> &Qubits {
+            &self.qubits
+        }
+    }
+
+    impl proj::ToOwned for TestContainer {
+        type OwnedType = Self;
+        fn to_owned(&self) -> Self {
+            self.clone()
+        }
+    }
+
+    impl QubitsStandardized for TestContainer {}
+
+    impl QubitsStandardize for TestContainer {
+        fn general_standardize(&mut self, n_qubit: usize) {
+            self.calls.push("general");
+            self.qubits = Qubits::from_count(n_qubit);
+        }
+
+        fn resize_standardize(&mut self, n_qubit: usize) {
+            self.calls.push("resize");
+            self.qubits = Qubits::from_count(n_qubit);
+        }
+    }
+
+    impl QubitsRelabel for TestContainer {
+        fn qubits_mut(&mut self) -> &mut Qubits {
+            &mut self.qubits
+        }
+    }
+
+    #[test]
+    fn test_standardize_calls() {
+        let mut test = TestContainer {
+            qubits: Qubits::from_count(3),
+            calls: vec![],
+        };
+
+        test.standardize(5);
+        assert_eq!(test.calls, vec!["resize"]);
+        assert_eq!(test.qubits, Qubits::from_count(5));
+    }
+
+    #[test]
+    fn test_standardize_uses_general() {
+        let mut test = TestContainer {
+            qubits: Qubits::from_offset(2, 3),
+            calls: vec![],
+        };
+
+        test.standardize(3);
+        assert_eq!(test.calls, vec!["general"]);
+        assert_eq!(test.qubits, Qubits::from_count(3));
+    }
+
+    #[test]
+    fn test_standardize_no_op() {
+        let mut test = TestContainer {
+            qubits: Qubits::from_count(3),
+            calls: vec![],
+        };
+
+        test.standardize(3);
+        assert!(test.calls.is_empty());
+        assert_eq!(test.qubits, Qubits::from_count(3));
+    }
+
+    #[test]
+    fn test_general_standardized() {
+        let test = TestContainer {
+            qubits: Qubits::from_count(3),
+            calls: vec![],
+        };
+
+        let standardized = test.general_standardized(4);
+        assert!(test.calls.is_empty());
+        assert_eq!(standardized.calls, vec!["general"]);
+        assert_eq!(standardized.qubits, Qubits::from_count(4));
+    }
+
+    #[test]
+    fn test_resize_standardized() {
+        let test = TestContainer {
+            qubits: Qubits::from_count(3),
+            calls: vec![],
+        };
+        let standardized = test.resize_standardized(2);
+        assert!(test.calls.is_empty());
+        assert_eq!(standardized.calls, vec!["resize"]);
+        assert_eq!(standardized.qubits, Qubits::from_count(2));
+        assert_eq!(test.qubits, Qubits::from_count(3));
+    }
+
+    #[test]
+    fn test_push_standardized() {
+        let test = TestContainer {
+            qubits: Qubits::from_count(3),
+            calls: vec![],
+        };
+        let standardized = test.push_standardized();
+        assert!(test.calls.is_empty());
+        assert_eq!(standardized.calls, vec!["resize"]);
+        assert_eq!(standardized.qubits, Qubits::from_count(4));
+        assert_eq!(test.qubits, Qubits::from_count(3));
+    }
+
+    #[test]
+    fn test_relabelled() -> Result<(), BasisError> {
+        let mut test = TestContainer {
+            qubits: Qubits::from_count(3),
+            calls: vec![],
+        };
+        test.relabel(Qubits::from_offset(4, 3))?;
+        assert_eq!(test.qubits, Qubits::from_offset(4, 3));
+        Ok(())
+    }
+
+    #[test]
+    fn test_relabelled_invalid() {
+        let mut test = TestContainer {
+            qubits: Qubits::from_count(3),
+            calls: vec![],
+        };
+        let result = test.relabel(Qubits::from_count(4));
+        assert!(matches!(result, Err(BasisError::Counts(_))));
     }
 }

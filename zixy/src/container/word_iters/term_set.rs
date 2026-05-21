@@ -761,7 +761,7 @@ pub mod test_defs {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use super::test_defs::StringCmpnts;
     use crate::container::{
         traits::EmptyFrom,

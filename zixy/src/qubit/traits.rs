@@ -325,7 +325,6 @@ pub trait PauliWordMutRef: QubitsBased {
 
     /// Assign from a vector of Pauli matrices, with bounds checking on the highest index used.
     fn set_pauli_vec(&mut self, paulis: Vec<PauliMatrix>) -> Result<(), OutOfBounds> {
-        // TODO: For a zero-qubit pauli word this fails. It would feel more intuitive if it was a no-op instead.
         OutOfBounds::check(
             paulis.len().saturating_sub(1),
             self.qubits().len(),
@@ -508,12 +507,31 @@ pub trait PauliWordMutRef: QubitsBased {
 
 #[cfg(test)]
 mod tests {
+    use core::fmt;
+
     use super::*;
 
     #[derive(Clone)]
     struct TestContainer {
         qubits: Qubits,
         calls: Vec<&'static str>,
+    }
+
+    impl TestContainer {
+        fn new(qubits: Qubits) -> Self {
+            Self {
+                qubits,
+                calls: vec![],
+            }
+        }
+
+        fn new_from_count(n: usize) -> Self {
+            Self::new(Qubits::from_count(n))
+        }
+
+        fn new_from_offset(i: usize, n: usize) -> Self {
+            Self::new(Qubits::from_offset(i, n))
+        }
     }
 
     impl QubitsBased for TestContainer {
@@ -549,12 +567,64 @@ mod tests {
         }
     }
 
+    struct TestPauliWord {
+        qubits: Qubits,
+        paulis: Vec<PauliMatrix>,
+    }
+
+    impl TestPauliWord {
+        fn new(paulis: Vec<PauliMatrix>) -> Self {
+            Self {
+                qubits: Qubits::from_count(paulis.len()),
+                paulis,
+            }
+        }
+    }
+
+    impl QubitsBased for TestPauliWord {
+        fn qubits(&self) -> &Qubits {
+            &self.qubits
+        }
+    }
+
+    impl PauliWordMutRef for TestPauliWord {
+        fn set_pauli_unchecked(&mut self, i_mode: usize, pauli: PauliMatrix) {
+            self.paulis[i_mode] = pauli;
+        }
+
+        fn get_pauli_unchecked(&self, i_mode: usize) -> PauliMatrix {
+            self.paulis[i_mode]
+        }
+    }
+
+    impl fmt::Display for TestPauliWord {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(
+                f,
+                "TestPauliWord with qubits {:?} and paulis {:?}",
+                self.qubits, self.paulis
+            )
+        }
+    }
+
+    impl PauliWordRef for TestPauliWord {
+        type T = Self;
+        fn get_container(&self) -> &Self::T {
+            self
+        }
+
+        fn get_pauli_unchecked(&self, i_mode: usize) -> PauliMatrix {
+            self.paulis[i_mode]
+        }
+
+        fn count(&self, pauli: PauliMatrix) -> usize {
+            self.paulis.iter().filter(|&&p| p == pauli).count()
+        }
+    }
+
     #[test]
     fn test_standardize_calls() {
-        let mut test = TestContainer {
-            qubits: Qubits::from_count(3),
-            calls: vec![],
-        };
+        let mut test = TestContainer::new_from_count(2);
 
         test.standardize(5);
         assert_eq!(test.calls, vec!["resize"]);
@@ -563,10 +633,7 @@ mod tests {
 
     #[test]
     fn test_standardize_uses_general() {
-        let mut test = TestContainer {
-            qubits: Qubits::from_offset(2, 3),
-            calls: vec![],
-        };
+        let mut test = TestContainer::new_from_offset(2, 3);
 
         test.standardize(3);
         assert_eq!(test.calls, vec!["general"]);
@@ -575,10 +642,7 @@ mod tests {
 
     #[test]
     fn test_standardize_no_op() {
-        let mut test = TestContainer {
-            qubits: Qubits::from_count(3),
-            calls: vec![],
-        };
+        let mut test = TestContainer::new_from_count(3);
 
         test.standardize(3);
         assert!(test.calls.is_empty());
@@ -587,10 +651,7 @@ mod tests {
 
     #[test]
     fn test_general_standardized() {
-        let test = TestContainer {
-            qubits: Qubits::from_count(3),
-            calls: vec![],
-        };
+        let test = TestContainer::new_from_count(3);
 
         let standardized = test.general_standardized(4);
         assert!(test.calls.is_empty());
@@ -600,10 +661,7 @@ mod tests {
 
     #[test]
     fn test_resize_standardized() {
-        let test = TestContainer {
-            qubits: Qubits::from_count(3),
-            calls: vec![],
-        };
+        let test = TestContainer::new_from_count(3);
         let standardized = test.resize_standardized(2);
         assert!(test.calls.is_empty());
         assert_eq!(standardized.calls, vec!["resize"]);
@@ -613,10 +671,7 @@ mod tests {
 
     #[test]
     fn test_push_standardized() {
-        let test = TestContainer {
-            qubits: Qubits::from_count(3),
-            calls: vec![],
-        };
+        let test = TestContainer::new_from_count(3);
         let standardized = test.push_standardized();
         assert!(test.calls.is_empty());
         assert_eq!(standardized.calls, vec!["resize"]);
@@ -626,22 +681,69 @@ mod tests {
 
     #[test]
     fn test_relabelled() -> Result<(), BasisError> {
-        let mut test = TestContainer {
-            qubits: Qubits::from_count(3),
-            calls: vec![],
-        };
+        let mut test = TestContainer::new_from_count(3);
         test.relabel(Qubits::from_offset(4, 3))?;
         assert_eq!(test.qubits, Qubits::from_offset(4, 3));
         Ok(())
     }
 
     #[test]
-    fn test_relabelled_invalid() {
-        let mut test = TestContainer {
-            qubits: Qubits::from_count(3),
-            calls: vec![],
-        };
+    fn test_relabel_invalid() {
+        let mut test = TestContainer::new_from_count(3);
         let result = test.relabel(Qubits::from_count(4));
         assert!(matches!(result, Err(BasisError::Counts(_))));
+        assert_eq!(test.qubits, Qubits::from_count(3));
+    }
+
+    #[test]
+    fn test_pauliword_clear() {
+        let mut test = TestPauliWord::new(vec![
+            PauliMatrix::X,
+            PauliMatrix::Y,
+            PauliMatrix::Z,
+            PauliMatrix::I,
+        ]);
+        test.clear();
+        assert_eq!(test.paulis, vec![PauliMatrix::I; 4]);
+    }
+
+    #[test]
+    fn test_pauliword_map() {
+        let test = TestPauliWord::new(vec![
+            PauliMatrix::X,
+            PauliMatrix::Y,
+            PauliMatrix::I,
+            PauliMatrix::X,
+            PauliMatrix::I,
+        ]);
+        let map = test.get_pauli_map();
+        assert_eq!(map.len(), 3);
+        assert_eq!(map[&0], PauliMatrix::X);
+        assert_eq!(map[&3], PauliMatrix::X);
+        assert_eq!(map[&1], PauliMatrix::Y);
+    }
+
+    #[test]
+    fn test_setpaulimap() -> Result<(), OutOfBounds> {
+        let mut test = TestPauliWord::new(vec![PauliMatrix::I; 3]);
+        let mut map = HashMap::new();
+        map.insert(1, PauliMatrix::X);
+        map.insert(2, PauliMatrix::Y);
+        test.set_pauli_map(map)?;
+        assert_eq!(
+            test.paulis,
+            vec![PauliMatrix::I, PauliMatrix::X, PauliMatrix::Y]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_setpaulimap_invalid() {
+        let mut test = TestPauliWord::new(vec![PauliMatrix::I; 3]);
+        let mut map = HashMap::new();
+        map.insert(100, PauliMatrix::Y); // invalid for word of length 3
+        let result = test.set_pauli_map(map);
+        assert!(result.is_err());
+        assert_eq!(test.paulis, vec![PauliMatrix::I; 3]);
     }
 }

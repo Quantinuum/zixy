@@ -656,7 +656,8 @@ impl Array {
             word_iters: &cmpnts.0,
             coeffs: &coeffs.0,
         };
-        let sparse = pauli::lincomb::to_sparse_matrix(&lc, SparseBasis::Full, None, big_endian);
+        let sparse = pauli::lincomb::to_sparse_matrix(&lc, SparseBasis::Full, None, big_endian)
+            .to_py_result()?;
         to_scipy_sparse(sparse)
     }
 
@@ -672,7 +673,8 @@ impl Array {
             word_iters: &cmpnts.0,
             coeffs: &coeffs.0,
         };
-        let sparse = pauli::lincomb::to_sparse_matrix(&lc, SparseBasis::Full, None, big_endian);
+        let sparse = pauli::lincomb::to_sparse_matrix(&lc, SparseBasis::Full, None, big_endian)
+            .to_py_result()?;
         to_scipy_sparse(sparse)
     }
 

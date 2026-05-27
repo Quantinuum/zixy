@@ -24,7 +24,7 @@ import numpy
 
 
 def slice_index(s: slice, i: int, length: int) -> int:
-    """Find an index in the original sequence corresponding to index :param:`i` of slice :param:`s`.
+    """Find an index in the original sequence corresponding to index ``i`` of slice ``s``.
 
     Args:
         s: The slice object.
@@ -32,7 +32,7 @@ def slice_index(s: slice, i: int, length: int) -> int:
         length: Length of the sequence being sliced.
 
     Returns:
-        The index in the original sequence corresponding to index :param:`i` of slice :param:`s`.
+        The index in the original sequence corresponding to index ``i`` of slice ``s``.
 
     Raises:
         IndexError: If i is out of the slice bounds.
@@ -63,17 +63,17 @@ def slice_single_item(s: slice, i: int, length: int) -> slice:
 
 
 def slice_len(s: slice, length: int) -> int:
-    """Get the length of slice :param:`s` for a sequence of length :param:`length`."""
+    """Get the length of slice ``s`` for a sequence of length ``length``."""
     return len(range(length)[s])
 
 
 def slice_equal(s1: slice, s2: slice, length: int) -> bool:
-    """Check if two slices are equal for a sequence of length :param:`length`."""
+    """Check if two slices are equal for a sequence of length ``length``."""
     return slice_to_tuple(s1, length) == slice_to_tuple(s2, length)
 
 
 def slice_index_gen(s: slice, length: int) -> Iterator[int]:
-    """Generate indices in the original sequence corresponding to indices of slice :param:`s`.
+    """Generate indices in the original sequence corresponding to indices of slice ``s``.
 
     Args:
         s: The slice object.
@@ -81,21 +81,21 @@ def slice_index_gen(s: slice, length: int) -> Iterator[int]:
 
     Returns:
         An iterator over the indices in the original sequence corresponding to indices of slice
-        :param:`s`.
+        ``s``.
     """
     n = slice_len(s, length)
     return (slice_index(s, i, length) for i in range(n))
 
 
 def slice_to_tuple(s: slice, length: int) -> tuple[int, ...]:
-    """Get all indices in the original sequence corresponding to indices of slice :param:`s`.
+    """Get all indices in the original sequence corresponding to indices of slice ``s``.
 
     Args:
         s: the slice to get as a tuple.
         length: the number of elements in the underlying array.
 
     Returns:
-        A tuple of indices in the original sequence corresponding to indices of slice :param:`s`.
+        A tuple of indices in the original sequence corresponding to indices of slice ``s``.
     """
     return tuple(slice_index_gen(s, length))
 
@@ -109,7 +109,7 @@ def slice_of_slice(s1: slice, s2: slice, length: int) -> slice:
 
         a[slice_of_slice(s1, s2, length)] == a[s1][s2]
 
-    for some sequence ``a`` of length :param:`length`.
+    for some sequence ``a`` of length ``length``.
 
     Args:
         s1: The first slice.

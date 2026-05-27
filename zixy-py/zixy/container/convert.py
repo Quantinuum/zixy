@@ -38,14 +38,14 @@ TargetSpecT = TypeVar("TargetSpecT")
 
 
 def into(source: ViewableBase[Any, Any], t: type[OutT]) -> OutT:
-    """Clone :param:`source` into a new related container of type :param:`t`.
+    """Clone ``source`` into a new related container of type ``t``.
 
     Args:
         source: Container to convert.
         t: Target container type.
 
     Returns:
-        An owning clone represented as :param:`t`.
+        An owning clone represented as ``t``.
 
     Raises:
         TypeError: If the source-target pair is unsupported or has incompatible component types.
@@ -79,7 +79,7 @@ def _check_cmpnt_compatibility(
 
 
 def _require_single_item(source: Sized, t: type[Any]) -> None:
-    """Check that :param:`source` contains exactly one item."""
+    """Check that ``source`` contains exactly one item."""
     if len(source) != 1:
         raise ValueError(
             f"Cannot convert {type(source)} into {t}: source must contain exactly one item."
@@ -87,7 +87,7 @@ def _require_single_item(source: Sized, t: type[Any]) -> None:
 
 
 def _require_unit_coeff(source: Term[ImplT, SpecT, CoeffT], t: type[Any]) -> None:
-    """Check that :param:`source` has the unit coefficient for its coefficient type."""
+    """Check that ``source`` has the unit coefficient for its coefficient type."""
     coeff = source.coeff
     unit_coeff = unit(source.coeff_type)
     if coeff != unit_coeff:
@@ -98,7 +98,7 @@ def _require_unit_coeff(source: Term[ImplT, SpecT, CoeffT], t: type[Any]) -> Non
 
 
 def _require_unit_coeffs(source: Terms[ImplT, SpecT, CoeffT], t: type[Any]) -> None:
-    """Check that all coefficients in :param:`source` are unit values."""
+    """Check that all coefficients in ``source`` are unit values."""
     unit_coeff = unit(source.coeff_type)
     if any(coeff != unit_coeff for coeff in source.coeffs):
         raise ValueError(
@@ -110,7 +110,7 @@ def _require_unit_coeffs(source: Terms[ImplT, SpecT, CoeffT], t: type[Any]) -> N
 def _clone_coeffs_as(
     source: Coeffs[CoeffT], target_type: type[Coeffs[OtherCoeffT]]
 ) -> Coeffs[OtherCoeffT]:
-    """Clone coefficient data from :param:`source` as :param:`target_type`."""
+    """Clone coefficient data from ``source`` as ``target_type``."""
     if type(source) is target_type:
         return source.clone()
     return convert_vec(source, target_type)
@@ -119,7 +119,7 @@ def _clone_coeffs_as(
 def _clone_cmpnts_as(
     source: Cmpnts[ImplT, SpecT], target_type: type[Cmpnts[ImplT, TargetSpecT]]
 ) -> Cmpnts[ImplT, TargetSpecT]:
-    """Clone component data from :param:`source` as :param:`target_type`."""
+    """Clone component data from ``source`` as ``target_type``."""
     _check_cmpnt_compatibility(source.cmpnt_type, target_type.cmpnt_type)
     return target_type._create(source.clone()._impl)
 
@@ -127,7 +127,7 @@ def _clone_cmpnts_as(
 def _clone_cmpnt_as(
     source: Cmpnt[ImplT, SpecT], target_type: type[Cmpnt[ImplT, TargetSpecT]]
 ) -> Cmpnt[ImplT, TargetSpecT]:
-    """Clone component data from :param:`source` as :param:`target_type`."""
+    """Clone component data from ``source`` as ``target_type``."""
     _check_cmpnt_compatibility(type(source), target_type)
     return target_type._create(source.clone()._impl)
 

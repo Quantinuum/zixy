@@ -349,21 +349,25 @@ impl Array {
     }
 
     /// Convert to a real dense vector
-    pub fn to_dense_real(&self, coeffs: RealVec, big_endian: bool) -> Vec<f64> {
+    pub fn to_dense_real(&self, coeffs: RealVec, big_endian: bool) -> PyResult<Vec<f64>> {
         let refs = state::terms::View {
             word_iters: &self.0,
             coeffs: &coeffs.0,
         };
-        state::lincomb::to_dense(&refs, big_endian)
+        state::lincomb::to_dense(&refs, big_endian).to_py_result()
     }
 
     /// Convert to a complex dense vector
-    pub fn to_dense_complex(&self, coeffs: ComplexVec, big_endian: bool) -> Vec<Complex64> {
+    pub fn to_dense_complex(
+        &self,
+        coeffs: ComplexVec,
+        big_endian: bool,
+    ) -> PyResult<Vec<Complex64>> {
         let refs = state::terms::View {
             word_iters: &self.0,
             coeffs: &coeffs.0,
         };
-        state::lincomb::to_dense(&refs, big_endian)
+        state::lincomb::to_dense(&refs, big_endian).to_py_result()
     }
 
     /// Convert from a real dense vector

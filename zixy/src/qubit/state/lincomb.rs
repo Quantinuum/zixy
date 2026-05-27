@@ -2,6 +2,7 @@
 
 use crate::container::bit_matrix::AsBitMatrix;
 use crate::container::coeffs::traits::FieldElem;
+use crate::container::errors::{Dimension, OutOfBounds};
 use crate::container::traits::proj::BorrowMut;
 use crate::container::traits::RefElements;
 use crate::container::word_iters;
@@ -33,12 +34,14 @@ pub fn vdot<C: FieldElem>(lhs: &impl term_set::AsView<C>, rhs: &impl terms::AsVi
 
 /// If big_endian is true, the bit associated with mode 0 is the most significant in the index integer
 /// Else, the bit associated with mode n_qubit - 1 is the most significant
-pub fn to_dense<C: FieldElem>(state: &impl terms::AsView<C>, big_endian: bool) -> Vec<C> {
+pub fn to_dense<C: FieldElem>(
+    state: &impl terms::AsView<C>,
+    big_endian: bool,
+) -> Result<Vec<C>, OutOfBounds> {
     let state_ref = state.view();
     let n = state_ref.word_iters.n_bit();
-    if n >= 64 {
-        panic!("too many qubits to convert to sparse.");
-    }
+    OutOfBounds::check(n, 64, Dimension::Element)?;
+
     let mut out: Vec<C> = vec![C::ZERO; 1 << n];
     for term in state_ref.iter() {
         let ind = term.get_word_iter_ref().get_u64it().next().unwrap_or(0);
@@ -49,7 +52,7 @@ pub fn to_dense<C: FieldElem>(state: &impl terms::AsView<C>, big_endian: bool) -
         };
         out[ind as usize] = term.get_coeff();
     }
-    out
+    Ok(out)
 }
 
 /// Create a state linear combination from a dense array slice of coefficients.

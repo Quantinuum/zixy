@@ -11,7 +11,7 @@ use crate::container::coeffs::complex_sign::ComplexSign;
 use crate::container::coeffs::traits::{
     ComplexSigned, FieldElem, FieldElemVec, HasCoeffs, NumRepr,
 };
-use crate::container::errors::OutOfBounds;
+use crate::container::errors::{Dimension, OutOfBounds};
 use crate::container::traits::proj::{Borrow, BorrowMut};
 use crate::container::traits::{Elements, RefElements};
 use crate::container::two_bit_vec::ODD_BIT_MASK;
@@ -183,11 +183,9 @@ pub fn to_sparse_matrix<C: FieldElem>(
     basis: SparseBasis,
     sym_atol: Option<f64>,
     big_endian: bool,
-) -> sprs::CsMat<Complex64> {
+) -> Result<sprs::CsMat<Complex64>, OutOfBounds> {
     let n_qubit = terms.word_iters.qubits().len();
-    if n_qubit >= 64 {
-        panic!("too many qubits to convert to sparse.");
-    }
+    OutOfBounds::check(n_qubit, 64, Dimension::Element)?;
 
     let dim = 1_usize << n_qubit;
     let basis_size = if let SparseBasis::Partial(v) = &basis {
@@ -273,7 +271,8 @@ pub fn to_sparse_matrix<C: FieldElem>(
             .into_iter()
             .for_each(|(i_col, c)| trips.add_triplet(i_ket, i_col, c));
     }
-    trips.to_csc()
+
+    Ok(trips.to_csc())
 }
 
 /// Recursively add a matrix with a single non-zero element to terms.
@@ -636,7 +635,7 @@ mod tests {
     }
 
     #[test]
-    fn test_to_sparse() {
+    fn test_to_sparse() -> Result<(), OutOfBounds> {
         let input = HEHP_STO3G_HAM_JW_INPUT;
         let coeffs = Vec::<f64>::try_parse(input);
         assert!(coeffs.is_ok());
@@ -649,7 +648,7 @@ mod tests {
         for big_endian in [true, false] {
             // use the reference configuration as the sole element of the basis set
             let ref_state = SparseBasis::Partial(vec![if big_endian { 0b1100 } else { 0b0011 }]);
-            let sparse = to_sparse_matrix(&ham.borrow(), ref_state, None, big_endian);
+            let sparse = to_sparse_matrix(&ham.borrow(), ref_state, None, big_endian)?;
             assert_eq!(sparse.nnz(), 1);
             assert!(<f64 as FieldElem>::is_close_default(
                 &HEHP_STO3G_HF_ENERGY,
@@ -657,7 +656,7 @@ mod tests {
             ));
             assert_eq!(sparse.data().iter().next().unwrap().im, 0.0);
             // use the full computational basis as the basis set
-            let sparse = to_sparse_matrix(&ham.borrow(), SparseBasis::Full, None, big_endian);
+            let sparse = to_sparse_matrix(&ham.borrow(), SparseBasis::Full, None, big_endian)?;
             // this should be equivalent to summing over the to_sparse results of the individual Pauli words
             let mut sparse_chk = sprs::CsMat::<Complex64>::zero(sparse.shape());
             for term in ham.iter() {
@@ -668,6 +667,7 @@ mod tests {
             }
             assert!(sparse.to_dense() == sparse_chk.to_dense());
         }
+        Ok(())
     }
 
     #[test]

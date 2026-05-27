@@ -21,6 +21,7 @@ from abc import abstractmethod
 from collections.abc import Callable, Iterator, Sequence, Sized
 from functools import wraps
 from typing import (
+    Any,
     Concatenate,
     Generic,
     ParamSpec,
@@ -37,6 +38,7 @@ from zixy.utils import slice_index, slice_len
 P = ParamSpec("P")
 R = TypeVar("R")
 OwnT = TypeVar("OwnT", bound="SupportsOwnership")
+OutT = TypeVar("OutT", bound="ViewableBase[Any, Any]")
 
 
 class SupportsOwnership(Protocol):
@@ -95,23 +97,68 @@ class Resizable(Sized, Protocol):
 
 T = TypeVar("T")
 ImplT = TypeVar("ImplT", bound=Resizable)
+IndexerT = TypeVar("IndexerT", int | None, slice)
 
 
-class ViewableItem(Generic[ImplT]):
-    """Abstract base class for items with an ownership model and underlying Rust-bound data."""
+class ViewableBase(Generic[ImplT, IndexerT]):
+    """Abstract base class for classes with an ownership model and underlying Rust-bound data."""
 
     _impl: ImplT
+
+    @classmethod
+    @abstractmethod
+    def _create(cls, impl: ImplT, indexer: IndexerT) -> Self:
+        """Create an instance of ``cls``.
+
+        Args:
+            impl: Rust-bound object containing the data for this instance.
+            indexer: Index or slice of the data in ``impl`` that this instance should view. The
+                default value of ``None`` for an ``int`` or ``slice(None)`` for a ``slice``
+                indicates that this instance is considered to be owning.
+
+        Returns:
+            A new instance of ``cls``.
+        """
+        pass
+
+    @abstractmethod
+    def is_owning(self) -> bool:
+        """Check if ``self`` is owning (i.e. not a view)."""
+        pass
+
+    @abstractmethod
+    def clone(self) -> Self:
+        """Return a deep copy of ``self``."""
+        pass
+
+    def into(self, t: type[OutT]) -> OutT:
+        """Clone ``self`` into a new related container of type ``t``.
+
+        Args:
+            t: Type of the new container to create.
+
+        Returns:
+            A new instance of ``t`` containing the same data as ``self``.
+        """
+        from zixy.container.convert import into  # noqa: PLC0415
+
+        return into(self, t)
+
+
+class ViewableItem(ViewableBase[ImplT, int | None]):
+    """Abstract base class for items with an ownership model and underlying Rust-bound data."""
+
     _index: int | None
 
     @classmethod
     @abstractmethod
-    def _create(cls, impl: ImplT, index: int | None = None) -> Self:
+    def _create(cls, impl: ImplT, indexer: int | None = None) -> Self:
         """Create an instance of ``cls``.
 
         Args:
             impl: Rust-bound object containing the data for this item.
-            index: Index of the item within ``impl``. If ``None``, this instance is
-                considered to be owning.
+            indexer: Index of the item within ``impl``. If ``None``, this instance is considered to
+                be owning.
 
         Returns:
             A new instance of ``cls``.
@@ -127,27 +174,21 @@ class ViewableItem(Generic[ImplT]):
         """Get the index of ``self`` within its underlying data."""
         return 0 if self._index is None else self._index
 
-    @abstractmethod
-    def clone(self) -> Self:
-        """Return a deep copy of ``self``."""
-        pass
 
-
-class ViewableSequence(Generic[T, ImplT], Sequence[T]):
+class ViewableSequence(ViewableBase[ImplT, slice], Generic[T, ImplT], Sequence[T]):
     """Abstract base class for sequences with an ownership model and underlying Rust-bound data."""
 
-    _impl: ImplT
     _slice: slice
 
     @classmethod
     @abstractmethod
-    def _create(cls, impl: ImplT, s: slice = slice(None)) -> Self:
+    def _create(cls, impl: ImplT, indexer: slice = slice(None)) -> Self:
         """Create a new instance of ``cls``.
 
         Args:
             impl: Rust-bound object containing the data for this sequence.
-            s: Slice of the data in ``impl`` that this instance should view. If ``None``, this
-                instance is considered to be owning.
+            indexer: Slice of the data in ``impl`` that this instance should view. The default
+                value of ``slice(None)`` indicates that this instance is considered to be owning.
 
         Returns:
             A new instance of ``cls``.
@@ -224,11 +265,6 @@ class ViewableSequence(Generic[T, ImplT], Sequence[T]):
             return self._create_view(self._impl)
         else:
             return self
-
-    @abstractmethod
-    def clone(self) -> Self:
-        """Return a deep copy of ``self``."""
-        pass
 
     def is_owning(self) -> bool:
         """Check if ``self`` is owning (i.e. not a view)."""

@@ -740,16 +740,16 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
 
     _impl: _zixy.BaseVec
 
-    def __init__(self, data: _zixy.BaseVec | None = None, s: slice = slice(None)):
+    def __init__(self, data: _zixy.BaseVec | None = None, indexer: slice = slice(None)):
         """Initialize the coefficient vector.
 
         Args:
             data: Rust-bound object storing a vector of coefficients. If ``None``, an empty vector
                 of the appropriate type is initialized.
-            s: Slice over which the data is to be viewed.
+            indexer: Slice over which the data is to be viewed.
         """
         self._impl = data if data is not None else self.coeffs_type(0)
-        self._slice = s
+        self._slice = indexer
 
     def fill(self, coeff: CoeffT) -> None:
         """Set all the coefficients in the vector to the given value.
@@ -771,20 +771,20 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
             self[i] = convert(c, self.coeff_type)
 
     @classmethod
-    def _create(cls, data: _zixy.BaseVec, s: slice = slice(None)) -> Self:
+    def _create(cls, data: _zixy.BaseVec, indexer: slice = slice(None)) -> Self:
         """Create a new instance of ``cls``.
 
         Args:
             data: Rust-bound object containing the data for this sequence.
-            s: Slice of the data in ``data`` that this instance should view. If ``None``, this
-                instance is considered to be owning.
+            indexer: Slice of the data in ``data`` that this instance should view. The default
+                value of ``slice(None)`` indicates that this instance is considered to be owning.
 
         Returns:
             A new instance of ``cls``.
         """
         out = cls.__new__(cls)
         assert type(data) is cls.coeffs_type, (type(data), cls.coeffs_type)
-        Coeffs.__init__(out, data, s)
+        Coeffs.__init__(out, data, indexer)
         return out
 
     def clone(self) -> Self:

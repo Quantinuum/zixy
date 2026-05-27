@@ -72,34 +72,34 @@ class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT]):
     _impl: ImplT
     _index: int | None
 
-    def __init__(self, impl: ImplT, index: int | None = None):
+    def __init__(self, impl: ImplT, indexer: int | None = None):
         """Initialize the component.
 
         Args:
             impl: Rust-bound object storing the data.
-            index: Position within Rust-bound array at which the viewed component is stored. When
-                ``index`` is ``None``, the :class:`Cmpnt` is an owning view on the sole element
+            indexer: Position within Rust-bound array at which the viewed component is stored. When
+                ``indexer`` is ``None``, the :class:`Cmpnt` is an owning view on the sole element
                 of ``impl``.
         """
         assert isinstance(impl, self.impl_type)
         self._impl = impl
-        self._index = index
+        self._index = indexer
         self._check_bounds()
 
     @classmethod
-    def _create(cls, impl: ImplT, index: int | None = None) -> Self:
+    def _create(cls, impl: ImplT, indexer: int | None = None) -> Self:
         """Create an instance of ``cls``.
 
         Args:
             impl: Rust-bound object containing the data for this item.
-            index: Index of the item within ``impl``. If ``None``, this instance is
+            indexer: Index of the item within ``impl``. If ``None``, this instance is
                 considered to be owning.
 
         Returns:
             A new instance of ``cls``.
         """
         out = cls.__new__(cls)
-        Cmpnt.__init__(out, impl, index)
+        Cmpnt.__init__(out, impl, indexer)
         return out
 
     def clone(self) -> Self:
@@ -452,35 +452,35 @@ class Cmpnts(Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT]
     _impl: ImplT
     _set_type: type[CmpntSet[ImplT, SpecT]] = CmpntSet
 
-    def __init__(self, impl: ImplT, s: slice = slice(None)):
+    def __init__(self, impl: ImplT, indexer: slice = slice(None)):
         """Initialize the component array.
 
         Args:
             impl: Rust-bound object storing the data.
-            s: Slice of elements within Rust-bound array that are to be viewed by ``self``.
-                When ``s`` is ``None``, ``self`` is taken to be an owning view on all
-                elements of ``impl``.
+            indexer: Slice of elements within Rust-bound array that are to be viewed by ``self``.
+                The default value of ``slice(None)`` indicates that ``self`` is taken to be an
+                owning view on all elements of ``impl``.
         """
         assert self._set_type.cmpnts_type is type(self)
         assert isinstance(impl, self.cmpnt_type.impl_type), type(impl)
         self._impl = impl
-        self._slice = s
+        self._slice = indexer
 
     @classmethod
-    def _create(cls, impl: ImplT, s: slice = slice(None)) -> Self:
+    def _create(cls, impl: ImplT, indexer: slice = slice(None)) -> Self:
         """Create a new instance of ``cls``.
 
         Args:
             impl: Rust-bound object containing the data for this sequence.
-            s: Slice of the data in ``impl`` that this instance should view. If ``None``, this
-                instance is considered to be owning.
+            indexer: Slice of the data in ``impl`` that this instance should view. The default
+                value of ``slice(None)`` indicates that this instance is considered to be owning.
 
         Returns:
             A new instance of ``cls``.
         """
         assert isinstance(impl, cls.cmpnt_type.impl_type)
         out = cls.__new__(cls)
-        Cmpnts.__init__(out, impl, s)
+        Cmpnts.__init__(out, impl, indexer)
         return out
 
     @classmethod

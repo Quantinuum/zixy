@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "rust",
+      "include-component-in-tag": false,
+      "bump-minor-pre-major": true,
+      "skip-changelog": true
+    }
+  },
+  "extra-files": [
+    {
+      "type": "generic",
+      "path": "zixy-py/zixy/__init__.py"
+    },
+    {
+      "type": "generic",
+      "path": "uv.lock"
+    },
+    {
+      "type": "toml",
+      "path": "zixy-py/pyproject.toml"
+    }
+  ],
+  "plugins": [
+    "cargo-workspace"
+  ]
+}

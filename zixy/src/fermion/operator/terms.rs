@@ -6,7 +6,7 @@ use crate::fermion::mode::Modes;
 use crate::fermion::operator::cmpnt_list::CmpntList;
 use crate::fermion::traits::ModesBased;
 
-/// A Fermion `CmpntList` paired with one coefficient per componenet, plus
+/// A Fermion `CmpntList` paired with one coefficient per component, plus
 // immutable and mutable views into one.
 pub type Terms<C /*: NumRepr*/> = terms::Terms<CmpntList, C>;
 pub type View<'a, C /*: NumRepr*/> = terms::View<'a, CmpntList, C>;
@@ -73,7 +73,11 @@ mod tests {
 
     #[test]
     fn test_empty() {
-        let list = Terms::<Unity>::new(Modes::from_count(3));
-        assert!(list.is_empty());
+        let list_unity = Terms::<Unity>::new(Modes::from_count(3));
+        let list_real = Terms::<Real>::new(Modes::from_count(3));
+        let list_complex = Terms::<Complex>::new(Modes::from_count(3));
+        assert!(list_unity.is_empty());
+        assert!(list_real.is_empty());
+        assert!(list_complex.is_empty());
     }
 }

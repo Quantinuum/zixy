@@ -19,6 +19,7 @@ impl<C: NumRepr> Term<C> {
     pub fn new(modes: Modes) -> Self {
         let mut terms = Terms::<C>::new(modes);
         terms.push_clear();
+        terms.coeffs.set_unchecked(0, C::one()); // Ensure unit coefficient.
         Self {
             word_iters: terms.word_iters,
             coeffs: terms.coeffs,

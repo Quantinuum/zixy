@@ -5,23 +5,24 @@
       "release-type": "rust",
       "include-component-in-tag": false,
       "bump-minor-pre-major": true,
-      "skip-changelog": true
+      "skip-changelog": true,
+      "separate-pull-requests": false,
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "zixy-py/zixy/__init__.py"
+        },
+        {
+          "type": "generic",
+          "path": "uv.lock"
+        },
+        {
+          "type": "toml",
+          "path": "zixy-py/pyproject.toml"
+        }
+      ]
     }
   },
-  "extra-files": [
-    {
-      "type": "generic",
-      "path": "zixy-py/zixy/__init__.py"
-    },
-    {
-      "type": "generic",
-      "path": "uv.lock"
-    },
-    {
-      "type": "toml",
-      "path": "zixy-py/pyproject.toml"
-    }
-  ],
   "plugins": [
     "cargo-workspace"
   ]

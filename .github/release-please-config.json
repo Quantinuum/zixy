@@ -4,7 +4,8 @@
     ".": {
       "release-type": "rust",
       "include-component-in-tag": false,
-      "changelog-path": "CHANGELOG.md"
+      "bump-minor-pre-major": true,
+      "skip-changelog": true
     }
   },
   "extra-files": [

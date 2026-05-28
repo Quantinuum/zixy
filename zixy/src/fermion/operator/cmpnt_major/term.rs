@@ -8,7 +8,7 @@ use crate::container::word_iters::terms;
 use crate::container::word_iters::terms::AsViewMut;
 use crate::fermion::mode::Modes;
 use crate::fermion::operator::cmpnt_list::CmpntList;
-use crate::fermion::operator::terms::Terms;
+use crate::fermion::operator::cmpnt_major::terms::Terms;
 use crate::fermion::traits::ModesBased;
 
 /// A single fermion operator with a generically-typed coefficient.
@@ -19,7 +19,7 @@ impl<C: NumRepr> Term<C> {
     pub fn new(modes: Modes) -> Self {
         let mut terms = Terms::<C>::new(modes);
         terms.push_clear();
-        terms.coeffs.set_unchecked(0, C::one()); // Ensure unit coefficient.
+        terms.coeffs.set_unchecked(0, C::ONE); // Ensure unit coefficient.
         Self {
             word_iters: terms.word_iters,
             coeffs: terms.coeffs,

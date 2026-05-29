@@ -43,11 +43,28 @@ impl<C: NumRepr> ModesBased for Term<C> {
 mod tests {
     use super::*;
     use crate::container::coeffs::unity::Unity;
+    use crate::container::coeffs::complex_sign::ComplexSign;
+    use crate::container::coeffs::real::Real;
     use crate::container::traits::Elements;
 
     #[test]
-    fn test_new_has_one_term() {
+    fn test_new_has_unit_coeff() {
         let term = Term::<Unity>::new(Modes::from_count(4));
         assert_eq!(term.coeffs.len(), 1);
+        assert_eq!(term.coeffs.get_unchecked(0), Unity::ONE);
+    }
+
+    #[test]
+    fn test_new_complex_sign_has_unit_coeff() {
+        let term = Term::<ComplexSign>::new(Modes::from_count(4));
+        assert_eq!(term.coeffs.len(), 1);
+        assert_eq!(term.coeffs.get_unchecked(0), ComplexSign::ONE);
+    }
+
+    #[test]
+    fn test_new_real_has_unit_coeff() {
+        let term = Term::<Real>::new(Modes::from_count(4));
+        assert_eq!(term.coeffs.len(), 1);
+        assert_eq!(term.coeffs.get_unchecked(0), Real::ONE);
     }
 }

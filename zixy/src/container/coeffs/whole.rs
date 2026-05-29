@@ -51,6 +51,7 @@ impl NumRepr for usize {
         }
     }
 
+    // This method computes the power of the whole number. If the exponent is negative, it sets the value to 0.
     fn ipow(&mut self, exp: i32) {
         *self = if exp < 0 {
             0
@@ -128,7 +129,6 @@ mod tests {
     #[case(AnyNumRepr::Real(1.0), 1)]
     #[case(AnyNumRepr::Complex(Complex64::new(0.0, 0.0)), 0)]
     #[case(AnyNumRepr::Complex(Complex64::new(1.0, 0.0)), 1)]
-    #[test]
     fn test_try_represent_any_valid(
         #[case] input: AnyNumRepr,
         #[case] expected: usize,
@@ -153,5 +153,36 @@ mod tests {
             usize::try_represent_any(input),
             Err(Unrepresentable { .. })
         ));
+    }
+
+    #[rstest]
+    #[case(2, 3, 8)]
+    #[case(5, 0, 1)]
+    #[case(7, -1, 0)]
+    fn test_ipow(#[case] base: usize, #[case] exp: i32, #[case] expected: usize) {
+        let mut value = base;
+        value.ipow(exp);
+        assert_eq!(value, expected);
+    }
+
+    #[rstest]
+    #[case("42", 42)]
+    #[case("  123  ", 123)]
+    #[case("0", 0)]
+    fn test_parse_valid(
+        #[case] input: &str,
+        #[case] expected: usize,
+    ) -> Result<(), Unrepresentable> {
+        assert_eq!(usize::parse(input)?, expected);
+        Ok(())
+    }
+
+    #[rstest]
+    #[case("abc")]
+    #[case("-1")]
+    #[case("42.42")]
+    #[case("")]
+    fn test_parse_invalid(#[case] input: &str) {
+        assert!(matches!(usize::parse(input), Err(Unrepresentable { .. })));
     }
 }

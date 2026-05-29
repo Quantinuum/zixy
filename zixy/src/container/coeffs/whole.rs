@@ -29,6 +29,9 @@ impl NumRepr for usize {
             }
             AnyNumRepr::Whole(x) => Ok(x),
             AnyNumRepr::Real(x) => {
+                if x.fract() != 0.0 {
+                    return Err(Unrepresentable::new::<Self, _>(&x));
+                }
                 let truncated = x as usize;
                 if truncated as f64 == x && x >= 0.0 {
                     Ok(truncated)
@@ -38,6 +41,9 @@ impl NumRepr for usize {
             }
             AnyNumRepr::Complex(x) => {
                 if x.im != 0.0 {
+                    return Err(Unrepresentable::new::<Self, _>(&x));
+                }
+                if x.re.fract() != 0.0 {
                     return Err(Unrepresentable::new::<Self, _>(&x));
                 }
                 let truncated = x.re as usize;

@@ -37,13 +37,12 @@ impl NumRepr for usize {
                 }
             }
             AnyNumRepr::Complex(x) => {
-                if x.im == 0.0 {
-                    let truncated = x.re as usize;
-                    if truncated as f64 == x.re && x.re >= 0.0 {
-                        Ok(truncated)
-                    } else {
-                        Err(Unrepresentable::new::<Self, _>(&x))
-                    }
+                if x.im != 0.0 {
+                    return Err(Unrepresentable::new::<Self, _>(&x));
+                }
+                let truncated = x.re as usize;
+                if truncated as f64 == x.re && x.re >= 0.0 {
+                    Ok(truncated)
                 } else {
                     Err(Unrepresentable::new::<Self, _>(&x))
                 }
@@ -119,10 +118,14 @@ impl NumReprVec for Vec<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::container::coeffs::{complex_sign::ComplexSign, sign::Sign, unity::Unity};
     use num_complex::Complex64;
     use rstest::rstest;
 
     #[rstest]
+    #[case(AnyNumRepr::Unity(Unity {}), 1)]
+    #[case(AnyNumRepr::Sign(Sign(false)), 1)]
+    #[case(AnyNumRepr::ComplexSign(ComplexSign(0)), 1)]
     #[case(AnyNumRepr::Whole(0), 0)]
     #[case(AnyNumRepr::Whole(1), 1)]
     #[case(AnyNumRepr::Real(0.0), 0)]
@@ -138,6 +141,10 @@ mod tests {
     }
 
     #[rstest]
+    #[case(AnyNumRepr::Sign(Sign(true)))]
+    #[case(AnyNumRepr::ComplexSign(ComplexSign(1)))]
+    #[case(AnyNumRepr::ComplexSign(ComplexSign(2)))]
+    #[case(AnyNumRepr::ComplexSign(ComplexSign(3)))]
     #[case(AnyNumRepr::Real(1.5))]
     #[case(AnyNumRepr::Real(-1.5))]
     #[case(AnyNumRepr::Real(-1.0))]

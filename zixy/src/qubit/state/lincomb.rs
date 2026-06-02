@@ -91,3 +91,88 @@ pub fn from_dense<C: FieldElem>(
     assign_from_dense(&mut out.borrow_mut(), source, big_endian);
     out
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    use crate::cmpnt::springs::ModeSettings;
+    use crate::cmpnt::state_springs::BinarySprings;
+    use crate::qubit::state::terms::Terms;
+    use num_complex::Complex64;
+    use rstest::rstest;
+
+    #[rstest]
+    #[case(vec![], 0.0)]
+    #[case(vec![2.0], 4.0)]
+    #[case(vec![-3.0], 9.0)]
+    #[case(vec![1.0, 2.0, 3.0], 14.0)]
+    #[case(vec![0.0, 0.0, 0.0], 0.0)]
+    #[case(vec![0.0, 2.0, 0.0], 4.0)]
+    fn test_l2_norm_square(#[case] coeffs: Vec<f64>, #[case] expected: f64) {
+        let qubits = Qubits::from_count(coeffs.len());
+        let mut state: terms::Terms<f64> = Terms::new(qubits);
+        for c in coeffs {
+            state.coeffs.push(c);
+        }
+        assert_eq!(l2_norm_square(&state), expected);
+    }
+
+    #[rstest]
+    #[case(vec![Complex64::new(3.0, 4.0)], 25.0)]
+    #[case(vec![Complex64::new(0.0, 5.0)], 25.0)]
+    #[case(vec![Complex64::new(1.0, 1.0)], 2.0)]
+    #[case(vec![Complex64::new(1.0, 1.0), Complex64::new(2.0, -2.0)], 10.0)]
+    #[case(vec![Complex64::new(-3.0, 4.0)], 25.0)]
+    #[case(vec![Complex64::new(0.0, 0.0), Complex64::new(1.0, 0.0)], 1.0)]
+    #[case(vec![Complex64::new(1e-9, 1e-9)], 2e-18)]
+    fn test_l2_norm_square_complex(
+        #[case] coeffs: Vec<num_complex::Complex<f64>>,
+        #[case] expected: f64,
+    ) {
+        let qubits = Qubits::from_count(coeffs.len());
+        let mut state: terms::Terms<num_complex::Complex<f64>> = Terms::new(qubits);
+        for c in coeffs {
+            state.coeffs.push(c);
+        }
+        assert_eq!(l2_norm_square(&state), expected);
+    }
+
+    #[rstest]
+    #[case(vec![Complex64::new(2.0, 0.0)], "[0]", vec![Complex64::new(3.0, 0.0)], "[0]",  Complex64::new(6.0, 0.0))]
+    #[case(vec![], "", vec![Complex64::new(3.0, 4.0)], "[0]", Complex64::new(0.0, 0.0))]
+    #[case(vec![Complex64::new(1.0, 2.0)], "[0]", vec![], "", Complex64::new(0.0, 0.0))]
+    #[case(vec![Complex64::new(1.0, 2.0)], "[0]", vec![Complex64::new(3.0, 4.0)], "[0]", Complex64::new(11.0, -2.0))]
+    #[case(vec![Complex64::new(1.0, 2.0)], "[1]", vec![Complex64::new(3.0, 4.0)], "[0]", Complex64::new(0.0, 0.0))]
+    #[case(vec![Complex64::new(1.0, 2.0)], "[0]", vec![Complex64::new(3.0, 4.0)], "[1]", Complex64::new(0.0, 0.0))]
+    #[case(vec![Complex64::new(1.0, 2.0), Complex64::new(-1.0, -2.5)], "[0, 1], [1,1]", vec![Complex64::new(3.0, 4.0), Complex64::new(0.0, 1.0)], "[0,1], [0,0]", Complex64::new(11.0, -2.0))]
+    #[case(vec![Complex64::new(1.0, 2.0), Complex64::new(-1.0, -2.5)], "[0, 1], [1,1]", vec![Complex64::new(3.0, 4.0), Complex64::new(0.0, 1.0)], "[0,1], [1,1]", Complex64::new(8.5, -3.0))]
+    fn test_vdot(
+        #[case] lhs_coeffs: Vec<num_complex::Complex<f64>>,
+        #[case] lhs_qubit_labels: &str,
+        #[case] rhs_coeffs: Vec<num_complex::Complex<f64>>,
+        #[case] rhs_qubit_labels: &str,
+        #[case] expected: num_complex::Complex<f64>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let qubits_lhs = Qubits::from_count(lhs_coeffs.len());
+        let qubits_rhs = Qubits::from_count(rhs_coeffs.len());
+        let springs_rhs = BinarySprings::from_str(rhs_qubit_labels)?;
+        let springs_lhs = BinarySprings::from_str(lhs_qubit_labels)?;
+        let rhs_terms = Terms::<num_complex::Complex<f64>>::from_springs_coeffs(
+            qubits_rhs,
+            springs_rhs,
+            rhs_coeffs,
+        )
+        .expect("Failed to generate rhs terms from springs and coefficients.");
+        let lhs_terms = Terms::<num_complex::Complex<f64>>::from_springs_coeffs(
+            qubits_lhs,
+            springs_lhs,
+            lhs_coeffs,
+        )
+        .expect("Failed to generate lhs terms from springs and coefficients.");
+
+        let lhs_term_set: term_set::TermSet<num_complex::Complex<f64>> = lhs_terms.into();
+        assert_eq!(vdot(&lhs_term_set, &rhs_terms), expected);
+        Ok(())
+    }
+}

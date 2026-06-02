@@ -98,6 +98,9 @@ mod tests {
     use super::*;
     use crate::cmpnt::springs::ModeSettings;
     use crate::cmpnt::state_springs::BinarySprings;
+    use crate::container::bit_matrix::AsRowRef;
+    use crate::container::traits::RefElements;
+    use crate::container::word_iters::term_set::AsView;
     use crate::qubit::state::terms::Terms;
     use num_complex::Complex64;
     use rstest::rstest;
@@ -174,5 +177,44 @@ mod tests {
         let lhs_term_set: term_set::TermSet<num_complex::Complex<f64>> = lhs_terms.into();
         assert_eq!(vdot(&lhs_term_set, &rhs_terms), expected);
         Ok(())
+    }
+
+    #[test]
+    fn test_assign_from_dense_endian() {
+        let qubits = Qubits::from_count(3);
+
+        // Dense index 1 (001 in little-endian significance)
+        let source = vec![0.0, 7.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+
+        // little-endian
+        let mut le: term_set::TermSet<f64> = term_set::TermSet::new(qubits.clone());
+        assign_from_dense(&mut le.borrow_mut(), &source, false);
+        assert_eq!(le.view().coeffs.len(), 1);
+        assert_eq!(le.view().coeffs[0], 7.0);
+        assert_eq!(
+            le.view().get_elem_ref(0).get_word_iter_ref().to_vec(),
+            vec![true, false, false], // |001> in this mode ordering
+        );
+
+        // big-endian: index 1 -> bit-reverse(001) = 100
+        let mut be: term_set::TermSet<f64> = term_set::TermSet::new(qubits);
+        assign_from_dense(&mut be.borrow_mut(), &source, true);
+        assert_eq!(be.view().coeffs.len(), 1);
+        assert_eq!(be.view().coeffs[0], 7.0);
+        assert_eq!(
+            be.view().get_elem_ref(0).get_word_iter_ref().to_vec(),
+            vec![false, false, true], // |100>
+        );
+    }
+
+    #[test]
+    fn test_from_dense() {
+        let qubits = Qubits::from_count(2);
+        let source = vec![0.0, 1.0, 2.0, 3.0];
+        let state = from_dense(qubits, &source, false);
+        assert_eq!(state.view().coeffs.len(), 3);
+        assert_eq!(state.view().coeffs[0], 1.0);
+        assert_eq!(state.view().coeffs[1], 2.0);
+        assert_eq!(state.view().coeffs[2], 3.0);
     }
 }

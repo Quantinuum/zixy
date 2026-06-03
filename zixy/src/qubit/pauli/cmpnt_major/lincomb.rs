@@ -671,6 +671,13 @@ mod tests {
     }
 
     #[test]
+    fn test_to_sparse_error_too_many_qubits() {
+        let ham = cmpnt_major::terms::Terms::<f64>::new(Qubits::from_count(65));
+        let result = to_sparse_matrix(&ham.borrow(), SparseBasis::Full, None, false);
+        assert!(result.is_err());
+    }
+
+    #[test]
     fn test_sum_to_from_binary() {
         let input = HEHP_STO3G_HAM_JW_INPUT;
         let coeffs = Vec::<f64>::try_parse(input);

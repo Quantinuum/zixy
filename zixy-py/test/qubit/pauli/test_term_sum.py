@@ -138,3 +138,17 @@ def test_symbolic_term_product():
     assert (
         str(lc_square) == "(a**2 + b**2 + c**2 + 1, ), (-2*a*c, Y0 Z2 Z3), (-2*a, Z3), (2*c, Y0 Z2)"
     )
+
+
+def test_real_term_sum_to_sparse_raises_index_error():
+    op = RealTermSum(65)
+
+    with pytest.raises(IndexError):
+        op.to_sparse_matrix()
+
+
+def test_complex_term_sum_to_sparse_raises_index_error():
+    op = ComplexTermSum(65)
+
+    with pytest.raises(IndexError):
+        op.to_sparse_matrix()

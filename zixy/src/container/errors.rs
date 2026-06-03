@@ -38,6 +38,8 @@ pub enum Dimension {
 #[derive(Debug, PartialEq)]
 pub struct OutOfBounds(usize, usize, Dimension);
 
+impl std::error::Error for OutOfBounds {}
+
 impl OutOfBounds {
     /// Error if i >= n.
     pub fn check(i: usize, n: usize, kind: Dimension) -> Result<(), OutOfBounds> {

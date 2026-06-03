@@ -142,13 +142,21 @@ mod tests {
     }
 
     #[rstest]
+    // Test case: <v1|v2> where |v1> = 2|0> and |v2> = 3|0>, expected <v1|v2> = 6
     #[case(vec![Complex64::new(2.0, 0.0)], "[0]", vec![Complex64::new(3.0, 0.0)], "[0]",  Complex64::new(6.0, 0.0))]
+    // Test case: <v1|v2> where |v1> = null and |v2> = (3+4i)|1>, expected <v1|v2> = 0
     #[case(vec![], "", vec![Complex64::new(3.0, 4.0)], "[0]", Complex64::new(0.0, 0.0))]
+    // Test case: <v1|v2> where |v1> = (1+2i)|0> and |v2> = null, expected <v1|v2> = 0
     #[case(vec![Complex64::new(1.0, 2.0)], "[0]", vec![], "", Complex64::new(0.0, 0.0))]
+    // Test case: <v1|v2> where |v1> = (1+2i)|0> and |v2> = (3+4i)|0>, expected <v1|v2> = (1-2i)(3+4i) = 11-2i
     #[case(vec![Complex64::new(1.0, 2.0)], "[0]", vec![Complex64::new(3.0, 4.0)], "[0]", Complex64::new(11.0, -2.0))]
+    // Test case: <v1|v2> where |v1> = (1+2i)|1> and |v2> = (3+4i)|0>, expected <v1|v2> = 0 since they are orthogonal
     #[case(vec![Complex64::new(1.0, 2.0)], "[1]", vec![Complex64::new(3.0, 4.0)], "[0]", Complex64::new(0.0, 0.0))]
+    // Test case: <v1|v2> where |v1> = (1+2i)|0> and |v2> = (3+4i)|1>, expected <v1|v2> = 0 since they are orthogonal
     #[case(vec![Complex64::new(1.0, 2.0)], "[0]", vec![Complex64::new(3.0, 4.0)], "[1]", Complex64::new(0.0, 0.0))]
+    // Test case: <v1|v2> where |v1> = (1+2i)|01> + (-1+-2.5i)|11> and |v2> = (3+4i)|01> + i|00>, expected <v1|v2> = (1-2i)(3+4i) = 11-2i
     #[case(vec![Complex64::new(1.0, 2.0), Complex64::new(-1.0, -2.5)], "[0, 1], [1,1]", vec![Complex64::new(3.0, 4.0), Complex64::new(0.0, 1.0)], "[0,1], [0,0]", Complex64::new(11.0, -2.0))]
+    // Test case: <v1|v2> where |v1> = (1+2i)|01> + (-1-2.5i)|11> and |v2> = (3+4i)|01> + i|11>, expected <v1|v2> = (1-2i)(3+4i) + (-1+2.5i)(i) = 8.5-3i
     #[case(vec![Complex64::new(1.0, 2.0), Complex64::new(-1.0, -2.5)], "[0, 1], [1,1]", vec![Complex64::new(3.0, 4.0), Complex64::new(0.0, 1.0)], "[0,1], [1,1]", Complex64::new(8.5, -3.0))]
     fn test_vdot(
         #[case] lhs_coeffs: Vec<num_complex::Complex<f64>>,
@@ -165,14 +173,12 @@ mod tests {
             qubits_rhs,
             springs_rhs,
             rhs_coeffs,
-        )
-        .expect("Failed to generate rhs terms from springs and coefficients.");
+        )?;
         let lhs_terms = Terms::<num_complex::Complex<f64>>::from_springs_coeffs(
             qubits_lhs,
             springs_lhs,
             lhs_coeffs,
-        )
-        .expect("Failed to generate lhs terms from springs and coefficients.");
+        )?;
 
         let lhs_term_set: term_set::TermSet<num_complex::Complex<f64>> = lhs_terms.into();
         assert_eq!(vdot(&lhs_term_set, &rhs_terms), expected);
@@ -193,7 +199,7 @@ mod tests {
         assert_eq!(le.view().coeffs[0], 7.0);
         assert_eq!(
             le.view().get_elem_ref(0).get_word_iter_ref().to_vec(),
-            vec![true, false, false], // |001> in this mode ordering
+            vec![true, false, false], // |100> in this mode ordering
         );
 
         // big-endian: index 1 -> bit-reverse(001) = 100
@@ -203,7 +209,7 @@ mod tests {
         assert_eq!(be.view().coeffs[0], 7.0);
         assert_eq!(
             be.view().get_elem_ref(0).get_word_iter_ref().to_vec(),
-            vec![false, false, true], // |100>
+            vec![false, false, true], // |001>
         );
     }
 
@@ -216,5 +222,31 @@ mod tests {
         assert_eq!(state.view().coeffs[0], 1.0);
         assert_eq!(state.view().coeffs[1], 2.0);
         assert_eq!(state.view().coeffs[2], 3.0);
+    }
+
+    #[test]
+    fn test_to_dense_out_of_bounds() {
+        let qubits = Qubits::from_count(65);
+        let lhs = Terms::<num_complex::Complex<f64>>::new(qubits);
+        let result = to_dense(&lhs, false);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_to_dense() -> Result<(), Box<dyn std::error::Error>> {
+        let qubits = Qubits::from_count(3);
+        let springs = BinarySprings::from_str("[1, 0, 1]")?;
+        let terms = Terms::<f64>::from_springs(qubits, &springs)?;
+        let dense = to_dense(&terms, false)?;
+        assert_eq!(dense.len(), 8);
+        assert_eq!(dense[0], 0.0); // |000>
+        assert_eq!(dense[1], 0.0); // |001>
+        assert_eq!(dense[2], 0.0); // |010>
+        assert_eq!(dense[3], 0.0); // |011>
+        assert_eq!(dense[4], 0.0); // |100>
+        assert_eq!(dense[5], 1.0); // |101>
+        assert_eq!(dense[6], 0.0); // |110>
+        assert_eq!(dense[7], 0.0); // |111>
+        Ok(())
     }
 }

@@ -1,5 +1,7 @@
+import pytest
+
 from zixy.container.coeffs import Sign
-from zixy.qubit.state import RealTerm, RealTermSum, SignTerm
+from zixy.qubit.state import ComplexTermSum, RealTerm, RealTermSum, SignTerm
 
 
 def test_term():
@@ -25,3 +27,17 @@ def test_term_real_sum():
     assert str(lc) == "(3.0, [1, 0, 0, 0, 0, 1]), (4.0, [1, 1, 0, 0, 1, 1])"
     assert lc.l1_norm == 3 + 4
     assert lc.l2_norm_square == 3**2 + 4**2
+
+
+def test_real_term_sum_to_dense_matrix_index_error():
+    op = RealTermSum(65)
+
+    with pytest.raises(IndexError):
+        op.to_dense()
+
+
+def test_complex_term_sum_to_dense_matrix_index_error():
+    op = ComplexTermSum(65)
+
+    with pytest.raises(IndexError):
+        op.to_dense()

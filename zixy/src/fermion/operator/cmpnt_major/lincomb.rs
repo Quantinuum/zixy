@@ -95,6 +95,56 @@ pub fn assign_from_anticommutator<C: FieldElem>(
     Ok(())
 }
 
+pub fn commutator<C: FieldElem>(
+    lhs: &terms::View<C>,
+    rhs: &terms::View<C>,
+) -> Result<TermSet<Complex64>, DifferentQubits> {
+    let mut out = TermSet::<Complex64>::new(lhs.to_qubits());
+    assign_from_commutator(&mut out.borrow_mut(), lhs, rhs)?;
+    Ok(out)
+}
+
+pub fn anticommutator<C: FieldElem>(
+    lhs: &terms::View<C>,
+    rhs: &terms::View<C>,
+) -> Result<TermSet<Complex64>, DifferentQubits> {
+    let mut out = TermSet::<Complex64>::new(lhs.to_qubits());
+    assign_from_anticommutator(&mut out.borrow_mut(), lhs, rhs)?;
+    Ok(out)
+}
+
+pub fn commute<C: FieldElem>(
+    lhs: &terms::View<C>,
+    rhs: &terms::View<C>,
+    atol: f64,
+) -> Result<bool, DifferentModes> {
+    Ok(commutator(lhs, rhs)?.get_coeffs().all_insignificant(atol))
+}
+
+pub fn anticommute<C: FieldElem>(
+    lhs: &terms::View<C>,
+    rhs: &terms::View<C>,
+    atol: f64,
+) -> Result<bool, DifferentModes> {
+    Ok(anticommutator(lhs, rhs)?
+        .get_coeffs()
+        .all_insignificant(atol))
+}
+
+pub fn commute_default<C: FieldElem>(
+    lhs: &terms::View<C>,
+    rhs: &terms::View<C>,
+) -> Result<bool, DifferentModes> {
+    commute(lhs, rhs, C::COMMUTES_ATOL_DEFAULT)
+}
+
+pub fn anticommute_default<C: FieldElem>(
+    lhs: &terms::View<C>,
+    rhs: &terms::View<C>,
+) -> Result<bool, DifferentModes> {
+    anticommute(lhs, rhs, C::COMMUTES_ATOL_DEFAULT)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -145,6 +195,25 @@ mod tests {
         //a_0 * a_0^+ = 1 - a_0^+ * a_0 -> two terms in the result
         let result = mul(&lhs.borrow().as_terms(), &rhs.borrow().as_terms()).unwrap();
         assert_eq!(result.len(), 2);
+    }
+
+    #[test]
+    fn test_commute_anticommute() {
+        let modes = Modes::from_count(2);
+
+        // lhs = a_0 annihilate mode 0
+        let mut lhs = TermSet::<f64>::new(modes.clone());
+        let a0 = Cmpnt:: from_sets_unchecked(modes.clone(), HashSet::new(), HashSet::from([0]));
+        scaled_iadd_elem(&mut lhs.borrow_mut(), a0.borrow(), 1.0);
+
+         // rhs = a_0^+ create mode 0
+        let mut rhs = TermSet::<f64>::new(modes.clone());
+        let a0_dag = Cmpnt:: from_sets_unchecked(modes.clone(), HashSet:: from([0]), HashSet::new());
+        scaled_iadd_elem(&mut rhs.borrow_mut(), a0_dag.borrow(), 1.0);
+
+        // a_0 and a_0^+ anticommute, but do not commute
+        assert!(!commute(&lhs.borrow().as_terms(), &rhs.borrow().as_terms(), 1e-10).unwrap());
+        assert!(anticommute(&lhs.borrow().as_terms(), &rhs.borrow().as_terms(), 1e-10).unwrap());
     }
     
 }

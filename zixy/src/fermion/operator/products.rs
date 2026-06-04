@@ -11,7 +11,6 @@ use crate::fermion::operator::cre_or_ann;
 use crate::fermion::traits::ModesBased;
 
 /// Stores variables to support the recursive computation of normal-ordered fermion operator products.
-
 struct ProductHelper {
     cmpnts: CmpntList,
     signs: SignVec,

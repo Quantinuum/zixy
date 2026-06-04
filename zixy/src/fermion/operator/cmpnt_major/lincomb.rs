@@ -64,6 +64,32 @@ pub fn assign_from_add<C: FieldElem>(
     Ok(())
 }
 
+pub fn assign_from_mul<C: FieldElem>(
+    out: &mut term_set::ViewMut<Complex64>,
+    lhs: &terms::View<C>,
+    rhs: &terms::View<C>,
+) -> Result<(), DifferentModes> {
+    DifferentModes::check_transitive(out.word_iters, lhs.word_iters, rhs.word_iters)?;
+    out.clear();
+    let n_lhs = lhs.word_iters.len().min(lhs.coeffs.len());
+    let n_rhs = rhs.word_iters.len().min(rhs.coeffs.len());
+    for (i_lhs, lhs_coeff) in lhs.coeffs.iter().take(n_lhs).enumerate() {
+        let lhs_cmpnt = lhs.word_iters.get_elem_ref(i_lhs);
+        for (i_rhs, rhs_coeff) in rhs.coeffs.iter().take(n_rhs).enumerate() {
+            let rhs_cmpnt = rhs.word_iters.get_elem_ref(i_rhs);
+            let (result_cmpnts, result_signs) = mul_cmpnts(&lhs_cmpnt, &rhs_cmpnt);
+            for (i_res, sign) in result_signs.iter().enumerate() {
+                let result_cmpnt = result_cmpnts.get_elem_ref(i_res);
+                let c = sign.to_complex();
+                let c = lhs_coeff.scaled_complex(c);
+                let c = rhs_coeff.scaled_complex(c);
+                scaled_iadd_elem(out, result_cmpnt, c);
+            }
+        }
+    }
+    Ok(())
+}
+
 pub fn mul<C: FieldElem>(
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,

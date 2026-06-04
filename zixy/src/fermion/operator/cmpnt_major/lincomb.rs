@@ -73,11 +73,38 @@ pub fn mul<C: FieldElem>(
     Ok(out)
 }
 
+pub fn assign_from_commutator<C: FieldElem>(
+    out: &mut term_set::ViewMut<Complex64>,
+    lhs: &terms::View<C>,
+    rhs: &terms::View<C>,
+) -> Result<(), DifferentQubits> {
+    assign_from_mul(out, lhs, rhs)?;
+    let tmp = mul(rhs, lhs)?.terms;
+    isub(out, &tmp.borrow());
+    Ok(())
+}
+
+pub fn assign_from_anticommutator<C: FieldElem>(
+    out: &mut term_set::ViewMut<Complex64>,
+    lhs: &terms::View<C>,
+    rhs: &terms::View<C>,
+) -> Result<(), DifferentQubits> {
+    assign_from_mul(out, lhs, rhs)?;
+    let tmp = mul(rhs, lhs)?.terms;
+    iadd(out, &tmp.borrow());
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::fermion::operator::cmpnt_major::terms::Terms;
     use crate::fermion::mode::Modes;
+    use crate::fermion::operator::cmpnt::Cmpnt;
+    use crate::container::traits::proj::Borrow;
+    use crate::container::word_iters::lincomb::scaled_iadd_elem;
+    use std::collections::HashSet;
+    
 
     #[test]
     fn test_add_sub_scaled_add() {
@@ -100,4 +127,24 @@ mod tests {
         assert_eq!(scaled.len(), 1);
         assert_eq!(scaled.view().get_coeffs()[0], 1.5);
     }
+
+    #[test]
+    fn test_mul_bifurcation(){
+        let modes = Modes::from_count(2);
+
+        // lhs = a_0 annihilate mode 0
+        let mut lhs = TermSet::<f64>::new(modes.clone());
+        let a0 = Cmpnt:: from_sets_unchecked(modes.clone(), Hashset::new(), HashSet::from([0]));
+        scaled_iadd_elem(&mut lhs.borrow_mut(), a0.borrow(), 1.0);
+
+         // rhs = a_0^+ create mode 0
+        let mut rhs = TermSet::<f64>::new(modes.clone());
+        let a0_dag = Cmpnt:: from_sets_unchecked(modes.clone(), Hashset:: from([0]), HashSet::new());
+        scaled_iadd_elem(&mut rhs.borrow_mut(), a0_dag.borrow(), 1.0);
+
+        //a_0 * a_0^+ = 1 - a_0^+ * a_0 -> two terms in the result
+        let result = mul(&lhs.borrow().as_terms(), &rhs.borrow().as_terms()).unwrap();
+        assert_eq!(result.len(), 2);
+    }
+    
 }

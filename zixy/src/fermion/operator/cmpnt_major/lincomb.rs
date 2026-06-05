@@ -37,6 +37,7 @@ pub fn scaled_add<C: FieldElem>(
     out
 }
 
+// Assign lhs + rhs to out, normal-ordering each component product.
 pub fn assign_from_add<C: FieldElem>(
     out: &mut term_set::ViewMut<Complex64>,
     lhs: &terms::View<C>,
@@ -64,6 +65,7 @@ pub fn assign_from_add<C: FieldElem>(
     Ok(())
 }
 
+// Assign lhs * rhs to out, normal-ordering each component product.
 pub fn assign_from_mul<C: FieldElem>(
     out: &mut term_set::ViewMut<Complex64>,
     lhs: &terms::View<C>,
@@ -99,6 +101,7 @@ pub fn mul<C: FieldElem>(
     Ok(out)
 }
 
+// Assign the commutator [lhs, rhs] = lhs * rhs - rhs * lhs to out.
 pub fn assign_from_commutator<C: FieldElem>(
     out: &mut term_set::ViewMut<Complex64>,
     lhs: &terms::View<C>,
@@ -110,6 +113,7 @@ pub fn assign_from_commutator<C: FieldElem>(
     Ok(())
 }
 
+// Assign the anticommutator {lhs, rhs} = lhs * rhs + rhs * lhs to out.
 pub fn assign_from_anticommutator<C: FieldElem>(
     out: &mut term_set::ViewMut<Complex64>,
     lhs: &terms::View<C>,
@@ -139,6 +143,7 @@ pub fn anticommutator<C: FieldElem>(
     Ok(out)
 }
 
+// Check if the commutator [lhs, rhs] is zero within the given tolerance.
 pub fn commute<C: FieldElem>(
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
@@ -147,6 +152,7 @@ pub fn commute<C: FieldElem>(
     Ok(commutator(lhs, rhs)?.get_coeffs().all_insignificant(atol))
 }
 
+// Check if the anticommutator {lhs, rhs} is zero within the given tolerance.
 pub fn anticommute<C: FieldElem>(
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
@@ -157,6 +163,7 @@ pub fn anticommute<C: FieldElem>(
         .all_insignificant(atol))
 }
 
+// Check if the commutator [lhs, rhs] is zero within the default tolerance.
 pub fn commute_default<C: FieldElem>(
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
@@ -164,6 +171,7 @@ pub fn commute_default<C: FieldElem>(
     commute(lhs, rhs, C::COMMUTES_ATOL_DEFAULT)
 }
 
+// Check if the anticommutator {lhs, rhs} is zero within the default tolerance.
 pub fn anticommute_default<C: FieldElem>(
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,

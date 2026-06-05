@@ -151,7 +151,7 @@ mod tests {
     #[test]
     fn test_from_standard() {
         let standard_strings = create_test_array();
-        let transposed_strings: Array = standard_strings.into();
+        let transposed_strings: Array = standard_strings;
         assert_eq!(transposed_strings.n_cmpnt, 3);
     }
 

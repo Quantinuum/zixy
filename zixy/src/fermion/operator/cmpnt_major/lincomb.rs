@@ -241,5 +241,26 @@ mod tests {
         assert!(!commute(&lhs.borrow().as_terms(), &rhs.borrow().as_terms(), 1e-10).unwrap());
         assert!(anticommute(&lhs.borrow().as_terms(), &rhs.borrow().as_terms(), 1e-10).unwrap());
     }
+
+    #[test]
+    fn test_mul_with_coefficients() {
+        let modes = Modes::from_count(2);
+
+        // lhs = a_0 annihilate mode 0
+        let mut lhs = TermSet::<f64>::new(modes.clone());
+        let a0 = Cmpnt:: from_sets_unchecked(modes.clone(), HashSet::new(), HashSet::from([0]));
+        scaled_iadd_elem(&mut lhs.borrow_mut(), a0.borrow(), 2.0);
+
+         // rhs = a_0^+ create mode 0
+        let mut rhs = TermSet::<f64>::new(modes.clone());
+        let a0_dag = Cmpnt:: from_sets_unchecked(modes.clone(), HashSet:: from([0]), HashSet::new());
+        scaled_iadd_elem(&mut rhs.borrow_mut(), a0_dag.borrow(), 3.0);
+
+        let result = mul(&lhs.borrow().as_terms(), &rhs.borrow().as_terms()).unwrap();
+        let coeffs: Vec<f64> = result.get_coeffs().iter().cloned().collect();
+        assert_eq!(coeffs.len(), 2);
+        assert!(coeffs.contains(&6.0));
+        assert!(coeffs.contains(&-6.0));
+    }
     
 }

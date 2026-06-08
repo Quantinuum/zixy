@@ -19,19 +19,23 @@
         },
         {
           "type": "toml",
-          "path": "Cargo.toml"
+          "path": "Cargo.toml",
+          "jsonpath": "$.version"
         },
         {
           "type": "toml",
-          "path": "zixy/Cargo.toml"
+          "path": "zixy/Cargo.toml",
+          "jsonpath": "$.version"
         },
         {
           "type": "toml",
-          "path": "zixy-py/Cargo.toml"
+          "path": "zixy-py/Cargo.toml",
+          "jsonpath": "$.version"
         },
         {
           "type": "toml",
-          "path": "zixy-py/pyproject.toml"
+          "path": "zixy-py/pyproject.toml",
+          "jsonpath": "$.project.version"
         },
         {
           "type": "generic",

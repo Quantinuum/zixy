@@ -5,31 +5,31 @@
       "release-type": "rust",
       "include-component-in-tag": false,
       "bump-minor-pre-major": true,
-      "skip-changelog": true
+      "skip-changelog": true,
+      "extra-files": [
+        {
+          "type": "toml",
+          "path": "Cargo.lock",
+          "jsonpath": "$.package[?(@.name=='zixy')].version"
+        },
+        {
+          "type": "toml",
+          "path": "Cargo.lock",
+          "jsonpath": "$.package[?(@.name=='zixy-py')].version"
+        },
+        {
+          "type": "toml",
+          "path": "zixy-py/Cargo.toml"
+        },
+        {
+          "type": "toml",
+          "path": "zixy-py/pyproject.toml"
+        },
+        {
+          "type": "generic",
+          "path": "zixy-py/zixy/__init__.py"
+        }
+      ]
     }
-  },
-  "extra-files": [
-    {
-      "type": "toml",
-      "path": "Cargo.lock",
-      "jsonpath": "$.package[?(@.name=='zixy')].version"
-    },
-    {
-      "type": "toml",
-      "path": "Cargo.lock",
-      "jsonpath": "$.package[?(@.name=='zixy-py')].version"
-    },
-    {
-      "type": "toml",
-      "path": "zixy-py/Cargo.toml"
-    },
-    {
-      "type": "toml",
-      "path": "zixy-py/pyproject.toml"
-    },
-    {
-      "type": "generic",
-      "path": "zixy-py/zixy/__init__.py"
-    }
-  ]
+  }
 }

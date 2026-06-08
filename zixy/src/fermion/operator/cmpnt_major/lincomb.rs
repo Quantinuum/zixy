@@ -1,19 +1,22 @@
 //! Fermion operator in linear combination utilities.
 
+use num_complex::Complex64;
 use crate::container::word_iters::lincomb::{iadd,isub, scaled_iadd, scaled_iadd_elem};
-use crate::container::coeffs::traits::FieldElem;
-use crate::container::traits::proj::{Borrow, BorrowMut};
-use crate::fermion::traits::ModesBased;
+use crate::container::coeffs::traits::{FieldElem, FieldElemVec, HasCoeffs, NumRepr};
+use crate::container::traits::proj::{Borrow, BorrowMut, ToOwned};
+use crate::container::traits::Elements;
+use crate::container::traits::RefElements;
+use crate::container::word_iters::term_set::AsViewMut;
+use crate::fermion::traits::{DifferentSpaces, ModesBased};
 use crate::fermion::operator::products::mul_cmpnts;
 use crate::fermion::operator::cmpnt_major::term_set::{self, TermSet};
 use crate::fermion::operator::cmpnt_major::terms;
-use crate::fermion::errors::DifferentModes;
 
 pub fn add<C: FieldElem>(
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
 ) -> TermSet<C> {
-    let mut out = TermSet::from(lhs);
+    let mut out = TermSet::from(lhs.to_owned());
     iadd(&mut out.borrow_mut(), rhs);
     out
 }
@@ -22,7 +25,7 @@ pub fn sub<C: FieldElem>(
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
 ) -> TermSet<C> {
-    let mut out = TermSet::from(lhs);
+    let mut out = TermSet::from(lhs.to_owned());
     isub(&mut out.borrow_mut(), rhs);
     out
 }
@@ -32,7 +35,7 @@ pub fn scaled_add<C: FieldElem>(
     rhs: &terms::View<C>,
     scale: C,
 ) -> TermSet<C> {
-    let mut out = TermSet::from(lhs);
+    let mut out = TermSet::from(lhs.to_owned());
     scaled_iadd(&mut out.borrow_mut(), rhs, scale);
     out
 }
@@ -42,8 +45,8 @@ pub fn assign_from_add<C: FieldElem>(
     out: &mut term_set::ViewMut<Complex64>,
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
-) -> Result<(), DifferentModes> {
-    DifferentModes::check(out.word_oters, lhs.word_iters, rhs.word_iters)?;
+) -> Result<(), DifferentSpaces> {
+    DifferentSpaces::check_transitive(out, lhs, rhs)?;
     out.clear();
     let n_lhs = lhs.word_iters.len().min(lhs.coeffs.len());
     let n_rhs = rhs.word_iters.len().min(rhs.coeffs.len());
@@ -51,7 +54,7 @@ pub fn assign_from_add<C: FieldElem>(
         let lhs_cmpnt = lhs.word_iters.get_elem_ref(i_lhs);
         for (i_rhs, rhs_coeff) in rhs.coeffs.iter().take(n_rhs).enumerate() {
             let rhs_cmpnt = rhs.word_iters.get_elem_ref(i_rhs);
-            let (result_cmpnts, result_signs) = mul_cmpnts(lhs_cmpnt, rhs_cmpnt);
+            let (result_cmpnts, result_signs) = mul_cmpnts(&lhs_cmpnt, &rhs_cmpnt);
             for (i_res, sign) in result_signs.iter().enumerate() {
                 let result_cmpnt = result_cmpnts.get_elem_ref(i_res);
                 let c = sign.to_complex();
@@ -70,8 +73,8 @@ pub fn assign_from_mul<C: FieldElem>(
     out: &mut term_set::ViewMut<Complex64>,
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
-) -> Result<(), DifferentModes> {
-    DifferentModes::check_transitive(out.word_iters, lhs.word_iters, rhs.word_iters)?;
+) -> Result<(), DifferentSpaces> {
+    DifferentSpaces::check_transitive(out, lhs, rhs)?;
     out.clear();
     let n_lhs = lhs.word_iters.len().min(lhs.coeffs.len());
     let n_rhs = rhs.word_iters.len().min(rhs.coeffs.len());
@@ -95,7 +98,7 @@ pub fn assign_from_mul<C: FieldElem>(
 pub fn mul<C: FieldElem>(
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
-) -> Result<TermSet<Complex64>, DifferentModes> {
+) -> Result<TermSet<Complex64>, DifferentSpaces> {
     let mut out = TermSet::<Complex64>::new(lhs.to_modes());
     assign_from_mul(&mut out.borrow_mut(), lhs, rhs)?;
     Ok(out)
@@ -106,7 +109,7 @@ pub fn assign_from_commutator<C: FieldElem>(
     out: &mut term_set::ViewMut<Complex64>,
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
-) -> Result<(), DifferentQubits> {
+) -> Result<(), DifferentSpaces> {
     assign_from_mul(out, lhs, rhs)?;
     let tmp = mul(rhs, lhs)?.terms;
     isub(out, &tmp.borrow());
@@ -118,7 +121,7 @@ pub fn assign_from_anticommutator<C: FieldElem>(
     out: &mut term_set::ViewMut<Complex64>,
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
-) -> Result<(), DifferentQubits> {
+) -> Result<(), DifferentSpaces> {
     assign_from_mul(out, lhs, rhs)?;
     let tmp = mul(rhs, lhs)?.terms;
     iadd(out, &tmp.borrow());
@@ -128,8 +131,8 @@ pub fn assign_from_anticommutator<C: FieldElem>(
 pub fn commutator<C: FieldElem>(
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
-) -> Result<TermSet<Complex64>, DifferentQubits> {
-    let mut out = TermSet::<Complex64>::new(lhs.to_qubits());
+) -> Result<TermSet<Complex64>, DifferentSpaces> {
+    let mut out = TermSet::<Complex64>::new(lhs.to_modes());
     assign_from_commutator(&mut out.borrow_mut(), lhs, rhs)?;
     Ok(out)
 }
@@ -137,8 +140,8 @@ pub fn commutator<C: FieldElem>(
 pub fn anticommutator<C: FieldElem>(
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
-) -> Result<TermSet<Complex64>, DifferentQubits> {
-    let mut out = TermSet::<Complex64>::new(lhs.to_qubits());
+) -> Result<TermSet<Complex64>, DifferentSpaces> {
+    let mut out = TermSet::<Complex64>::new(lhs.to_modes());
     assign_from_anticommutator(&mut out.borrow_mut(), lhs, rhs)?;
     Ok(out)
 }
@@ -148,7 +151,7 @@ pub fn commute<C: FieldElem>(
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
     atol: f64,
-) -> Result<bool, DifferentModes> {
+) -> Result<bool, DifferentSpaces> {
     Ok(commutator(lhs, rhs)?.get_coeffs().all_insignificant(atol))
 }
 
@@ -157,7 +160,7 @@ pub fn anticommute<C: FieldElem>(
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
     atol: f64,
-) -> Result<bool, DifferentModes> {
+) -> Result<bool, DifferentSpaces> {
     Ok(anticommutator(lhs, rhs)?
         .get_coeffs()
         .all_insignificant(atol))
@@ -167,7 +170,7 @@ pub fn anticommute<C: FieldElem>(
 pub fn commute_default<C: FieldElem>(
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
-) -> Result<bool, DifferentModes> {
+) -> Result<bool, DifferentSpaces> {
     commute(lhs, rhs, C::COMMUTES_ATOL_DEFAULT)
 }
 
@@ -175,7 +178,7 @@ pub fn commute_default<C: FieldElem>(
 pub fn anticommute_default<C: FieldElem>(
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
-) -> Result<bool, DifferentModes> {
+) -> Result<bool, DifferentSpaces> {
     anticommute(lhs, rhs, C::COMMUTES_ATOL_DEFAULT)
 }
 
@@ -185,6 +188,9 @@ mod tests {
     use crate::fermion::operator::cmpnt_major::terms::Terms;
     use crate::fermion::mode::Modes;
     use crate::fermion::operator::cmpnt::Cmpnt;
+    use crate::container::traits::{Elements, MutRefElements};
+    use crate::container::word_iters::term_set::AsView;
+    use crate::container::word_iters::terms::AsViewMut;
     use crate::container::traits::proj::Borrow;
     use crate::container::word_iters::lincomb::scaled_iadd_elem;
     use std::collections::HashSet;
@@ -218,12 +224,12 @@ mod tests {
 
         // lhs = a_0 annihilate mode 0
         let mut lhs = TermSet::<f64>::new(modes.clone());
-        let a0 = Cmpnt:: from_sets_unchecked(modes.clone(), Hashset::new(), HashSet::from([0]));
+        let a0 = Cmpnt:: from_sets_unchecked(modes.clone(), HashSet::new(), HashSet::from([0]));
         scaled_iadd_elem(&mut lhs.borrow_mut(), a0.borrow(), 1.0);
 
          // rhs = a_0^+ create mode 0
         let mut rhs = TermSet::<f64>::new(modes.clone());
-        let a0_dag = Cmpnt:: from_sets_unchecked(modes.clone(), Hashset:: from([0]), HashSet::new());
+        let a0_dag = Cmpnt:: from_sets_unchecked(modes.clone(), HashSet:: from([0]), HashSet::new());
         scaled_iadd_elem(&mut rhs.borrow_mut(), a0_dag.borrow(), 1.0);
 
         //a_0 * a_0^+ = 1 - a_0^+ * a_0 -> two terms in the result
@@ -245,9 +251,9 @@ mod tests {
         let a0_dag = Cmpnt:: from_sets_unchecked(modes.clone(), HashSet:: from([0]), HashSet::new());
         scaled_iadd_elem(&mut rhs.borrow_mut(), a0_dag.borrow(), 1.0);
 
-        // a_0 and a_0^+ anticommute, but do not commute
+        // a_0 and a_0^+ neither commute nor anticommute to zero
         assert!(!commute(&lhs.borrow().as_terms(), &rhs.borrow().as_terms(), 1e-10).unwrap());
-        assert!(anticommute(&lhs.borrow().as_terms(), &rhs.borrow().as_terms(), 1e-10).unwrap());
+        assert!(!anticommute(&lhs.borrow().as_terms(), &rhs.borrow().as_terms(), 1e-10).unwrap());
     }
 
     #[test]
@@ -265,10 +271,10 @@ mod tests {
         scaled_iadd_elem(&mut rhs.borrow_mut(), a0_dag.borrow(), 3.0);
 
         let result = mul(&lhs.borrow().as_terms(), &rhs.borrow().as_terms()).unwrap();
-        let coeffs: Vec<f64> = result.get_coeffs().iter().cloned().collect();
+        let coeffs: Vec<Complex64> = result.get_coeffs().iter().cloned().collect();
         assert_eq!(coeffs.len(), 2);
-        assert!(coeffs.contains(&6.0));
-        assert!(coeffs.contains(&-6.0));
+        assert!(coeffs.contains(&Complex64::new(6.0, 0.0)));
+        assert!(coeffs.contains(&Complex64::new(-6.0, 0.0)));
     }
     
 }

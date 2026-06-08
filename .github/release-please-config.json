@@ -5,7 +5,9 @@
       "release-type": "rust",
       "include-component-in-tag": false,
       "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
       "skip-changelog": true,
+      "pull-request-title-pattern": "chore: release ${packageName} v${version}",
       "extra-files": [
         {
           "type": "toml",

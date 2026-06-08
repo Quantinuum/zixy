@@ -7,7 +7,7 @@
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
       "skip-changelog": true,
-      "pull-request-title-pattern": "chore: release ${packageName} v${version}",
+      "pull-request-title-pattern": "chore: release ${version}",
       "extra-files": [
         {
           "type": "toml",

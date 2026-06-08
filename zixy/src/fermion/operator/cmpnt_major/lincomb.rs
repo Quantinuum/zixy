@@ -14,13 +14,13 @@ use num_complex::Complex64;
 
 pub fn add<C: FieldElem>(lhs: &terms::View<C>, rhs: &terms::View<C>) -> TermSet<C> {
     let mut out = TermSet::from(lhs.to_owned());
-    iadd(&mut out.borrow_mut(), rhs);
+    assign_from_add(&mut out.borrow_mut(), lhs, rhs);
     out
 }
 
 pub fn sub<C: FieldElem>(lhs: &terms::View<C>, rhs: &terms::View<C>) -> TermSet<C> {
     let mut out = TermSet::from(lhs.to_owned());
-    isub(&mut out.borrow_mut(), rhs);
+    assign_from_sub(&mut out.borrow_mut(), lhs, rhs);
     out
 }
 

@@ -9,23 +9,28 @@
       "extra-files": [
         {
           "type": "toml",
-          "path": "/zixy/Cargo.lock",
+          "path": "/Cargo.lock",
           "jsonpath": "$.package[?(@.name=='zixy')].version"
         },
         {
           "type": "toml",
-          "path": "/zixy/Cargo.lock",
+          "path": "/Cargo.lock",
           "jsonpath": "$.package[?(@.name=='zixy-py')].version"
         },
         {
           "type": "toml",
           "path": "/zixy/Cargo.toml",
-          "jsonpath": "$.version"
+          "jsonpath": "$.package.version"
         },
         {
           "type": "toml",
           "path": "/zixy-py/Cargo.toml",
-          "jsonpath": "$.package[?(@.name=='zixy-py')].version"
+          "jsonpath": "$.package.version"
+        },
+        {
+          "type": "toml",
+          "path": "/zixy-py/Cargo.toml",
+          "jsonpath": "$.dependencies.zixy.version"
         },
         {
           "type": "toml",

@@ -68,9 +68,9 @@ impl<'a, C: NumRepr> ModesBased for TermMutRef<'a, C> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use num_complex::Complex64;
     use crate::container::coeffs::unity::Unity;
     use crate::container::traits::Elements;
+    use num_complex::Complex64;
 
     #[test]
     fn test_empty() {

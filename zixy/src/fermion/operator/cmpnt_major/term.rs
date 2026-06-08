@@ -3,10 +3,10 @@
 use std::fmt::Display;
 
 use crate::container::coeffs::traits::NumRepr;
+use crate::container::coeffs::traits::NumReprVec;
 use crate::container::traits::proj::Borrow;
 use crate::container::word_iters::terms;
 use crate::container::word_iters::terms::AsViewMut;
-use crate::container::coeffs::traits::NumReprVec;
 use crate::fermion::mode::Modes;
 use crate::fermion::operator::cmpnt_list::CmpntList;
 use crate::fermion::operator::cmpnt_major::terms::Terms;
@@ -43,8 +43,8 @@ impl<C: NumRepr> ModesBased for Term<C> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::container::coeffs::unity::Unity;
     use crate::container::coeffs::complex_sign::ComplexSign;
+    use crate::container::coeffs::unity::Unity;
     use crate::container::traits::Elements;
 
     #[test]

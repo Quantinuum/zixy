@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "packages": {
-    ".": {
+    "zixy": {
       "release-type": "rust",
       "include-component-in-tag": false,
       "bump-minor-pre-major": true,
@@ -9,37 +9,37 @@
       "extra-files": [
         {
           "type": "toml",
-          "path": "Cargo.lock",
+          "path": "/zixy/Cargo.lock",
           "jsonpath": "$.package[?(@.name=='zixy')].version"
         },
         {
           "type": "toml",
-          "path": "Cargo.lock",
+          "path": "/zixy/Cargo.lock",
           "jsonpath": "$.package[?(@.name=='zixy-py')].version"
         },
         {
           "type": "toml",
-          "path": "Cargo.toml",
+          "path": "/Cargo.toml",
           "jsonpath": "$.version"
         },
         {
           "type": "toml",
-          "path": "zixy/Cargo.toml",
+          "path": "/zixy/Cargo.toml",
           "jsonpath": "$.version"
         },
         {
           "type": "toml",
-          "path": "zixy-py/Cargo.toml",
+          "path": "/zixy-py/Cargo.toml",
           "jsonpath": "$.version"
         },
         {
           "type": "toml",
-          "path": "zixy-py/pyproject.toml",
+          "path": "/zixy-py/pyproject.toml",
           "jsonpath": "$.project.version"
         },
         {
           "type": "generic",
-          "path": "zixy-py/zixy/__init__.py"
+          "path": "/zixy-py/zixy/__init__.py"
         }
       ]
     }

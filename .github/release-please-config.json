@@ -14,20 +14,24 @@
         },
         {
           "type": "toml",
-          "path": "Cargo.lock",
+          "path": "../Cargo.lock",
           "jsonpath": "$.package[?(@.name=='zixy-py')].version"
         },
         {
           "type": "toml",
-          "path": "zixy-py/Cargo.toml"
+          "path": "../zixy/Cargo.toml"
         },
         {
           "type": "toml",
-          "path": "zixy-py/pyproject.toml"
+          "path": "../zixy-py/Cargo.toml"
+        },
+        {
+          "type": "toml",
+          "path": "../zixy-py/pyproject.toml"
         },
         {
           "type": "generic",
-          "path": "zixy-py/zixy/__init__.py"
+          "path": "../zixy-py/zixy/__init__.py"
         }
       ]
     }

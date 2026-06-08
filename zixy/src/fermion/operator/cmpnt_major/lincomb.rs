@@ -263,7 +263,7 @@ mod tests {
         scaled_iadd_elem(&mut rhs.borrow_mut(), a0_dag.borrow(), 3.0);
 
         let result = mul(&lhs.borrow().as_terms(), &rhs.borrow().as_terms()).unwrap();
-        let coeffs: Vec<Complex64> = result.get_coeffs().iter().cloned().collect();
+        let coeffs: Vec<Complex64> = result.get_coeffs().to_vec();
         assert_eq!(coeffs.len(), 2);
         assert!(coeffs.contains(&Complex64::new(6.0, 0.0)));
         assert!(coeffs.contains(&Complex64::new(-6.0, 0.0)));

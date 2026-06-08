@@ -1,8 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "packages": {
-    "zixy-py": {
-      "release-type": "python",
+    "zixy": {
+      "release-type": "rust",
       "include-component-in-tag": false,
       "bump-minor-pre-major": true,
       "skip-changelog": true

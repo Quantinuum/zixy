@@ -49,9 +49,9 @@ impl Indices {
 
 impl ProductHelper {
     /// Create an empty helper for building products of operators on the given fermionic mode space.
-    pub fn new(modes: Modes) -> Self {
+    pub fn new() -> Self {
         Self {
-            cmpnts: CmpntList::new(modes),
+            cmpnts: CmpntList::new(Modes::from_count(0)),
             signs: SignVec::default(),
             n_lhs_ann: 0,
             n_rhs_ann: 0,
@@ -88,7 +88,7 @@ impl ProductHelper {
 
     /// Compute and store every branch of the product `lhs * rhs`, including their signs.
     pub fn set(&mut self, lhs: &CmpntRef, rhs: &CmpntRef) {
-        self.cmpnts.clear();
+        self.cmpnts = CmpntList::new(lhs.modes().clone());
         self.signs.clear();
         if Self::destroys(lhs, rhs) {
             return;
@@ -327,7 +327,7 @@ impl ProductHelper {
 
 // Multiply two fermion components, returning the normal-ordered result terms and their signs.
 pub fn mul_cmpnts(lhs: &CmpntRef, rhs: &CmpntRef) -> (CmpntList, SignVec) {
-    let mut helper = ProductHelper::new(lhs.modes().clone());
+    let mut helper = ProductHelper::new();
     helper.set(lhs, rhs);
     (helper.cmpnts, helper.signs)
 }
@@ -424,7 +424,7 @@ mod tests {
         let lhs_ann = HashSet::from_iter(lhs_ann.into_iter());
         let rhs_cre = HashSet::from_iter(rhs_cre.into_iter());
         let rhs_ann = HashSet::from_iter(rhs_ann.into_iter());
-        let mut helper = ProductHelper::new(modes.clone());
+        let mut helper = ProductHelper::new();
         let lhs = Cmpnt::from_sets_unchecked(modes.clone(), lhs_cre, lhs_ann);
         let rhs = Cmpnt::from_sets_unchecked(modes.clone(), rhs_cre, rhs_ann);
         helper.set(&lhs.borrow(), &rhs.borrow());

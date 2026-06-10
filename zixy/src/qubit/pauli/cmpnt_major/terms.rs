@@ -520,8 +520,10 @@ mod tests {
     use super::*;
     use crate::container::coeffs::complex_sign::ComplexSign;
     use crate::container::coeffs::sign::Sign;
+    use crate::container::coeffs::traits::HasCoeffs;
     use crate::container::coeffs::unity::Unity;
-    use crate::container::traits::Elements;
+    use crate::container::traits::{Elements, RefElements};
+    use crate::container::word_iters::terms::AsViewMut as _;
     use crate::qubit::mode::{PauliMatrix, Qubits};
     use crate::qubit::pauli::cmpnt_major::cmpnt::PauliWord;
     use rstest::rstest;
@@ -637,5 +639,35 @@ mod tests {
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), expected_imuls);
         assert_eq!(tab, exp);
+    }
+
+    #[rstest]
+    // The second pauli string should not be affected by the in-place multiplication on the first, so its total phase should remain as 1.
+    #[case(vec![X, Y, Z], vec![X, Y, Z], vec![I, I, I], vec![ComplexSign::ONE, ComplexSign::ONE])]
+    #[case(vec![Z, X, Y], vec![X, Y, X], vec![Y, Z, Z], vec![ComplexSign(1), ComplexSign::ONE])]
+    #[case(vec![X, Y, Z], vec![Y, Z, Z], vec![Z, X, I], vec![ComplexSign(2), ComplexSign::ONE])]
+    #[case(vec![X, Y, Z], vec![Y, Z, X], vec![Z, X, Y], vec![ComplexSign(3), ComplexSign::ONE])]
+    fn test_imul_asviewmut(
+        #[case] lhs: Vec<PauliMatrix>,
+        #[case] rhs: Vec<PauliMatrix>,
+        #[case] expected: Vec<PauliMatrix>,
+        #[case] expected_phase: Vec<ComplexSign>,
+    ) -> Result<(), OutOfBounds> {
+        let mut tab = Terms::<ComplexSign>::new(Qubits::from_count(3));
+        tab.push_pauli_vec(lhs)?;
+        tab.push_pauli_vec(rhs)?;
+
+        let mut view = tab.view_mut();
+        view.imul(0, 1);
+
+        assert_eq!(
+            view.get_elem_ref(0).get_word_iter_ref().get_pauli_vec(),
+            expected
+        );
+        assert_eq!(view.get_coeffs().len(), expected_phase.len());
+        for (i, phase) in expected_phase.iter().enumerate() {
+            assert_eq!(view.get_coeffs().get(i)?, *phase);
+        }
+        Ok(())
     }
 }

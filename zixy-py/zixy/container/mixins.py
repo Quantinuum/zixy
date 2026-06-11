@@ -91,7 +91,7 @@ class CoeffMulMixin(Generic[CoeffT]):
 
     @abstractmethod
     def __mul__(self, rhs: OtherCoeffT) -> CoeffMulMixin[Any]:
-        """Multiply :param:`self` with :param:`rhs`."""
+        """Multiply ``self`` with ``rhs``."""
         pass
 
     @overload
@@ -148,7 +148,7 @@ class CoeffMulMixin(Generic[CoeffT]):
     def __rmul__(self: CoeffMulMixin[Expr], lhs: Expr) -> CoeffMulMixin[Expr]: ...
 
     def __rmul__(self, lhs: OtherCoeffT) -> CoeffMulMixin[Any]:
-        """Multiply :param:`lhs` with :param:`self`."""
+        """Multiply ``lhs`` with ``self``."""
         return self.__mul__(lhs)
 
 
@@ -210,7 +210,7 @@ class CoeffDivMixin(Generic[CoeffT]):
 
     @abstractmethod
     def __truediv__(self, rhs: OtherCoeffT) -> CoeffDivMixin[Any]:
-        """Divide :param:`self` by :param:`rhs`."""
+        """Divide ``self`` by ``rhs``."""
         pass
 
     @overload
@@ -268,7 +268,7 @@ class CoeffDivMixin(Generic[CoeffT]):
 
     @abstractmethod
     def __rtruediv__(self, lhs: OtherCoeffT) -> CoeffDivMixin[Any]:
-        """Divide :param:`lhs` by :param:`self`."""
+        """Divide ``lhs`` by ``self``."""
         pass
 
 
@@ -283,19 +283,19 @@ class TermMulMixin(Generic[ImplT, SpecT, CoeffT]):
     @property
     @abstractmethod
     def coeff(self) -> CoeffT:
-        """Get the coefficient associated with :param:`self`."""
+        """Get the coefficient associated with ``self``."""
         pass
 
     @coeff.setter
     @abstractmethod
     def coeff(self, value: CoeffT) -> None:
-        """Set the coefficient associated with :param:`self`."""
+        """Set the coefficient associated with ``self``."""
         pass
 
     @property
     @abstractmethod
     def cmpnt(self) -> Cmpnt[ImplT, SpecT]:
-        """Get the component associated with :param:`self`."""
+        """Get the component associated with ``self``."""
         pass
 
     @overload
@@ -519,7 +519,7 @@ class TermMulMixin(Generic[ImplT, SpecT, CoeffT]):
         self,
         rhs: OtherCoeffT | Cmpnt[ImplT, SpecT] | TermMulMixin[ImplT, SpecT, OtherCoeffT],
     ) -> TermMulMixin[ImplT, SpecT, Any]:
-        """Multiply :param:`self` with :param:`rhs`."""
+        """Multiply ``self`` with ``rhs``."""
         if not isinstance(rhs, Coeff | Cmpnt | TermMulMixin):
             return NotImplemented
         if isinstance(rhs, Coeff):
@@ -641,7 +641,7 @@ class TermMulMixin(Generic[ImplT, SpecT, CoeffT]):
     ) -> TermMulMixin[ImplT, SpecT, CoeffT]: ...
 
     def __rmul__(self, lhs: OtherCoeffT | Cmpnt[ImplT, SpecT]) -> TermMulMixin[ImplT, SpecT, Any]:
-        """Multiply :param:`lhs` with :param:`self`."""
+        """Multiply ``lhs`` with ``self``."""
         if not isinstance(lhs, Coeff | Cmpnt):
             return NotImplemented
         if isinstance(lhs, Coeff):

@@ -78,7 +78,7 @@ class Term(TermBase[QubitStateArray, StringSpec, CoeffT, bool]):
         return cast(String, self.cmpnt)
 
     def __imul__(self, rhs: Coeff | String | Term[CoeffT]) -> Self:  # type: ignore[misc,override]
-        """In-place multiplication of :param:`self` by :param:`rhs`."""
+        """In-place multiplication of ``self`` by ``rhs``."""
         init_coeff = None
         different_qubits = True
         try:
@@ -130,7 +130,7 @@ class Terms(TermsBase[QubitStateArray, StringSpec, CoeffT, bool]):
 
     @property
     def strings(self) -> Strings:
-        """Get the string components of :param:`self`."""
+        """Get the string components of ``self``."""
         return cast(Strings, self.cmpnts)
 
 
@@ -297,7 +297,7 @@ class RealTermSum(NumericTermSum[QubitStateArray, StringSpec, float], TermSum[fl
         source: Sequence[float] = tuple(),
         big_endian: bool = False,
     ) -> Self:
-        """Create an instance of :param:`cls` from a dense vector.
+        """Create an instance of ``cls`` from a dense vector.
 
         Args:
             qubits: The qubit register or qubit count.
@@ -322,7 +322,7 @@ class RealTermSum(NumericTermSum[QubitStateArray, StringSpec, float], TermSum[fl
         return out
 
     def to_dense(self, big_endian: bool = False) -> NDArray[np.float64]:
-        """Convert :param:`self` to a dense vector.
+        """Convert ``self`` to a dense vector.
 
         Args:
             big_endian: Whether to use big endian ordering for the resulting matrix. If ``False``,
@@ -337,7 +337,7 @@ class RealTermSum(NumericTermSum[QubitStateArray, StringSpec, float], TermSum[fl
         return self._impl._cmpnts._impl.to_dense_real(self._impl._coeffs._impl, big_endian)
 
     def vdot(self, rhs: RealTermSum) -> float:
-        """Compute the inner product of :param:`self` with :param:`rhs`."""
+        """Compute the inner product of ``self`` with ``rhs``."""
         assert isinstance(self._impl._coeffs, RealCoeffs)  # TODO: resolve
         assert isinstance(rhs._impl._coeffs, RealCoeffs)  # TODO: resolve
         return float(
@@ -408,7 +408,7 @@ class ComplexTermSum(NumericTermSum[QubitStateArray, StringSpec, complex], TermS
         source: Sequence[float] = tuple(),
         big_endian: bool = False,
     ) -> ComplexTermSum:
-        """Create an instance of :param:`cls` from a dense vector.
+        """Create an instance of ``cls`` from a dense vector.
 
         Args:
             qubits: The qubit register or qubit count.
@@ -434,20 +434,20 @@ class ComplexTermSum(NumericTermSum[QubitStateArray, StringSpec, complex], TermS
 
     @property
     def real_part(self) -> RealTermSum:
-        """Return the real part of :param:`self`."""
+        """Return the real part of ``self``."""
         assert isinstance(self._data.coeffs, ComplexCoeffs)  # TODO: resolve
         data = TermData(self._data.cmpnts.clone(), self._data.coeffs.real_part)
         return RealTermSum._create(data)
 
     @property
     def imag_part(self) -> RealTermSum:
-        """Return the imaginary part of :param:`self`."""
+        """Return the imaginary part of ``self``."""
         assert isinstance(self._data.coeffs, ComplexCoeffs)  # TODO: resolve
         data = TermData(self._data.cmpnts.clone(), self._data.coeffs.imag_part)
         return RealTermSum._create(data)
 
     def to_dense(self, big_endian: bool = False) -> NDArray[np.complex128]:
-        """Convert :param:`self` to a dense vector.
+        """Convert ``self`` to a dense vector.
 
         Args:
             big_endian: Whether to use big endian ordering for the resulting matrix. If ``False``,
@@ -462,7 +462,7 @@ class ComplexTermSum(NumericTermSum[QubitStateArray, StringSpec, complex], TermS
         return self._impl._cmpnts._impl.to_dense_complex(self._impl._coeffs._impl, big_endian)
 
     def vdot(self, rhs: ComplexTermSum) -> complex:
-        """Compute the inner product of :param:`self` with :param:`rhs`."""
+        """Compute the inner product of ``self`` with ``rhs``."""
         assert isinstance(self._impl._coeffs, ComplexCoeffs)  # TODO: resolve
         assert isinstance(rhs._impl._coeffs, ComplexCoeffs)  # TODO: resolve
         return complex(
@@ -514,7 +514,7 @@ class SymbolicTerm(Term[Expr]):
         return out
 
     def try_to_real(self) -> RealTerm:
-        """Try to evaluate :param:`self` as a term containing a vector of real coefficients.
+        """Try to evaluate ``self`` as a term containing a vector of real coefficients.
 
         Returns:
             An instance of :class:`~zixy.qubit.state._terms.RealTerm` with the evaluated
@@ -531,7 +531,7 @@ class SymbolicTerm(Term[Expr]):
         return RealTerm._create(TermData(cmpnts, coeffs))
 
     def try_to_complex(self) -> ComplexTerm:
-        """Try to evaluate :param:`self` as a term containing a vector of complex coefficients.
+        """Try to evaluate ``self`` as a term containing a vector of complex coefficients.
 
         Returns:
             An instance of :class:`~zixy.qubit.state._terms.ComplexTerm` with the evaluated
@@ -561,15 +561,15 @@ class SymbolicTerms(Terms[Expr]):
 
     @property
     def coeffs(self) -> SymbolicCoeffs:
-        """Get the coefficients of :param:`self`."""
+        """Get the coefficients of ``self``."""
         return cast(SymbolicCoeffs, self._data.coeffs[self.slice])
 
     @property
     def free_symbols(self) -> set[Symbol]:
-        """Get the set of free (unsubstituted) symbols in :param:`self`.
+        """Get the set of free (unsubstituted) symbols in ``self``.
 
         Returns:
-            Union of the sets of free symbols across all coefficients in :param:`self`.
+            Union of the sets of free symbols across all coefficients in ``self``.
         """
         return self.coeffs.free_symbols
 
@@ -596,7 +596,7 @@ class SymbolicTerms(Terms[Expr]):
         return SymbolicTerms._create(TermData(self.strings.clone(), self.coeffs.subs(values)))
 
     def idiff(self, variable: Symbol | str) -> None:
-        """Differentiate partially with respect to :param:`variable` in-place.
+        """Differentiate partially with respect to ``variable`` in-place.
 
         Args:
             variable: Symbol or name of symbol by which to differentiate the viewed symbolic
@@ -608,7 +608,7 @@ class SymbolicTerms(Terms[Expr]):
         self.coeffs.idiff(variable)
 
     def diff(self, variable: Symbol | str) -> SymbolicTerms:
-        """Differentiate partially with respect to :param:`variable` out of place.
+        """Differentiate partially with respect to ``variable`` out of place.
 
         Args:
             variable: Symbol or name of symbol by which to differentiate the viewed symbolic
@@ -620,7 +620,7 @@ class SymbolicTerms(Terms[Expr]):
         return SymbolicTerms._create(TermData(self.strings.clone(), self.coeffs.diff(variable)))
 
     def try_to_real(self) -> RealTerms:
-        """Try to evaluate :param:`self` as terms containing a vector of real coefficients.
+        """Try to evaluate ``self`` as terms containing a vector of real coefficients.
 
         Returns:
             An instance of :class:`~zixy.qubit.state._terms.RealTerms` with the evaluated
@@ -632,7 +632,7 @@ class SymbolicTerms(Terms[Expr]):
         return RealTerms._create(TermData(self.strings.clone(), self.coeffs.try_to_real()))
 
     def try_to_complex(self) -> ComplexTerms:
-        """Try to evaluate :param:`self` as terms containing a vector of complex coefficients.
+        """Try to evaluate ``self`` as terms containing a vector of complex coefficients.
 
         Returns:
             An instance of :class:`~zixy.qubit.state._terms.ComplexTerms` with the evaluated
@@ -682,7 +682,7 @@ class TermRegistry(terms.TermRegistry[QubitStateArray, StringSpec]):
     term_type_symbolic: type[SymbolicTerm]
 
     def __getitem__(self, coeff_type: type[CoeffT]) -> type[Term[CoeffT]]:
-        """Get the term type corresponding to :param:`coeff_type`."""
+        """Get the term type corresponding to ``coeff_type``."""
         return cast(type[Term[CoeffT]], super().__getitem__(coeff_type))
 
 

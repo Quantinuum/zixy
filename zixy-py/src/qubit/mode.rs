@@ -8,6 +8,7 @@ use pyo3::types::PyAny;
 use zixy::container::traits::Elements;
 use zixy::qubit::mode::PauliMatrix as PauliMatrix_;
 use zixy::qubit::mode::Qubits as Qubits_;
+use zixy::qubit::mode::SymplecticPart as SymplecticPart_;
 
 use crate::standard_dunders;
 use crate::utils::ToPyResult;
@@ -127,6 +128,63 @@ impl From<PauliMatrix> for PauliMatrix_ {
             PauliMatrix::X => PauliMatrix_::X,
             PauliMatrix::Y => PauliMatrix_::Y,
             PauliMatrix::Z => PauliMatrix_::Z,
+        }
+    }
+}
+
+/// Symbols representing the Pauli X and Z
+/// Used to identify the X or Z part of the symplectic representation of Paulis
+#[pyclass]
+#[derive(Clone, Copy, Debug)]
+#[repr(u8)]
+pub enum SymplecticPart {
+    /// X part
+    X = 0,
+    /// Z part
+    Z = 1,
+}
+
+impl Display for SymplecticPart {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Into::<SymplecticPart_>::into(*self).fmt(f)
+    }
+}
+
+impl PartialEq for SymplecticPart {
+    fn eq(&self, other: &Self) -> bool {
+        Into::<SymplecticPart_>::into(*self) == Into::<SymplecticPart_>::into(*other)
+    }
+}
+
+#[pymethods]
+impl SymplecticPart {
+    #[classattr]
+    const ALL: [Self; 2] = [Self::X, Self::Z];
+
+    fn __eq__(&self, other: &Self) -> bool {
+        self == other
+    }
+
+    fn __str__(&self) -> PyResult<String> {
+        Ok(self.to_string())
+    }
+}
+standard_dunders!(SymplecticPart);
+
+impl From<SymplecticPart_> for SymplecticPart {
+    fn from(val: SymplecticPart_) -> Self {
+        match val {
+            SymplecticPart_::X => SymplecticPart::X,
+            SymplecticPart_::Z => SymplecticPart::Z,
+        }
+    }
+}
+
+impl From<SymplecticPart> for SymplecticPart_ {
+    fn from(val: SymplecticPart) -> Self {
+        match val {
+            SymplecticPart::X => SymplecticPart_::X,
+            SymplecticPart::Z => SymplecticPart_::Z,
         }
     }
 }

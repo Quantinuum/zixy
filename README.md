@@ -98,3 +98,11 @@ There are three main kinds of container that encapsulate `CmpntList` with generi
 - `Terms<C: NumRepr>`: stores a `C::Vector` of the same length as the `CmpntList`, offers mutable access to the components and coefficients.
 - `TermSet<C: NumRepr>`: stores a `C::Vector` of the same length as the `CmpntList` and via an indirect hash map, provides constant complexity lookup and enforces uniqueness among components. Offers mutable access only to the coefficients.
 - `TermSum<C: FieldElem>`: works like `Set<C>` but with linear combination semantics and is only defined for `FieldElem`-implementing coefficient types.
+
+
+## Documentation
+
+The source files can be found in the [zixy-py/docs](https://github.com/Quantinuum/zixy/zixy-py/docs) directory. 
+
+1. API docs (generated with sphinx autosummary)
+2. Jupyter notebook examples in [zixy-py/docs/examples](https://github.com/Quantinuum/zixy/zixy-py/docs/examples).

@@ -72,49 +72,49 @@ class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT]):
     _impl: ImplT
     _index: int | None
 
-    def __init__(self, impl: ImplT, index: int | None = None):
+    def __init__(self, impl: ImplT, indexer: int | None = None):
         """Initialize the component.
 
         Args:
             impl: Rust-bound object storing the data.
-            index: Position within Rust-bound array at which the viewed component is stored. When
-                :param:`index` is ``None``, the :class:`Cmpnt` is an owning view on the sole element
-                of :param:`impl`.
+            indexer: Position within Rust-bound array at which the viewed component is stored. When
+                ``indexer`` is ``None``, the :class:`Cmpnt` is an owning view on the sole element
+                of ``impl``.
         """
         assert isinstance(impl, self.impl_type)
         self._impl = impl
-        self._index = index
+        self._index = indexer
         self._check_bounds()
 
     @classmethod
-    def _create(cls, impl: ImplT, index: int | None = None) -> Self:
-        """Create an instance of :param:`cls`.
+    def _create(cls, impl: ImplT, indexer: int | None = None) -> Self:
+        """Create an instance of ``cls``.
 
         Args:
             impl: Rust-bound object containing the data for this item.
-            index: Index of the item within :param:`impl`. If ``None``, this instance is
+            indexer: Index of the item within ``impl``. If ``None``, this instance is
                 considered to be owning.
 
         Returns:
-            A new instance of :param:`cls`.
+            A new instance of ``cls``.
         """
         out = cls.__new__(cls)
-        Cmpnt.__init__(out, impl, index)
+        Cmpnt.__init__(out, impl, indexer)
         return out
 
     def clone(self) -> Self:
-        """Return a deep copy of :param:`self`."""
+        """Return a deep copy of ``self``."""
         return type(self)._create(self._impl.cmpnts_clone([self.index]))
 
     def aliases(self, other: Cmpnt[ImplT, SpecT]) -> bool:
-        """Determine whether :param:`self` is a view of the same component as :param:`other`."""
+        """Determine whether ``self`` is a view of the same component as ``other``."""
         if type(self) is not type(other) or self.is_owning():
             # owners never alias other objects
             return False
         return self._impl.same_as(other._impl) and self.index == other.index
 
     def __eq__(self, other: object) -> bool:
-        """Return whether :param:`self` and :param:`other` are equal."""
+        """Return whether ``self`` and ``other`` are equal."""
         if not isinstance(other, Cmpnt):
             return NotImplemented
         return self._impl.cmpnts_eq([self.index], other._impl, [other.index])
@@ -144,7 +144,7 @@ class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT]):
         """Raise a ``TypeError`` for unsupported component specifiers.
 
         Raises:
-            TypeError: The specifier supplied to set the value of :param:`self` is of an unsupported
+            TypeError: The specifier supplied to set the value of ``self`` is of an unsupported
                 type.
         """
         raise TypeError(
@@ -152,10 +152,10 @@ class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT]):
         )
 
     def _check_bounds(self) -> None:
-        """Validate that :param:`self` references a valid element in its implementation array.
+        """Validate that ``self`` references a valid element in its implementation array.
 
         Raises:
-            IndexError: The index of :param:`self` is out of bounds for the implementation array it
+            IndexError: The index of ``self`` is out of bounds for the implementation array it
                 views.
         """
         if len(self._impl) != 1 and self.is_owning():
@@ -177,7 +177,7 @@ class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT]):
     def __mul__(
         self, rhs: CoeffT | Cmpnt[ImplT, SpecT]
     ) -> Term[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, OtherCoeffT]:
-        """Return the product of :param:`self` and :param:`rhs`."""
+        """Return the product of ``self`` and ``rhs``."""
         if not isinstance(rhs, Coeff):
             # Cmpnt multiplication is not defined for base Cmpnt, but may be define by derived class
             return NotImplemented
@@ -185,7 +185,7 @@ class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT]):
         return term_type.from_cmpnt_coeff(self, rhs)
 
     def __rmul__(self, lhs: CoeffT) -> Term[ImplT, SpecT, CoeffT]:
-        """Return the product of :param:`lhs` and :param:`self`."""
+        """Return the product of ``lhs`` and ``self``."""
         if not isinstance(lhs, Coeff):
             return NotImplemented
         term_type = self._term_registry[type(lhs)]
@@ -210,7 +210,7 @@ class CmpntSet(Generic[ImplT, SpecT]):
 
         Args:
             impl: Rust-bound object storing the data. Unlike :class:`Cmpnts`, this is copied from,
-                not referenced directly by :param:`self`.
+                not referenced directly by ``self``.
         """
         assert isinstance(impl, self.cmpnts_type.cmpnt_type.impl_type), type(impl)
         self._impl = impl.cmpnts_clone([])
@@ -220,14 +220,14 @@ class CmpntSet(Generic[ImplT, SpecT]):
 
     @classmethod
     def _create(cls, impl: ImplT) -> Self:
-        """Create a new instance of :param:`cls`.
+        """Create a new instance of ``cls``.
 
         Args:
             impl: Rust-bound object storing the data. Unlike :class:`Cmpnts`, this is copied from,
-                not referenced directly by :param:`self`.
+                not referenced directly by ``self``.
 
         Returns:
-            A new instance of :param:`cls`.
+            A new instance of ``cls``.
         """
         out = cls.__new__(cls)
         CmpntSet.__init__(out, impl)
@@ -235,56 +235,56 @@ class CmpntSet(Generic[ImplT, SpecT]):
 
     @classmethod
     def from_cmpnts(cls, cmpnts: Cmpnts[ImplT, SpecT]) -> Self:
-        """Create a new instance of :param:`cls` from the components in :param:`cmpnts`.
+        """Create a new instance of ``cls`` from the components in ``cmpnts``.
 
         Args:
             cmpnts: Owned or viewed components with which to populate the new instance.
 
         Returns:
-            A new instance of :param:`cls` containing the components in :param:`cmpnts`.
+            A new instance of ``cls`` containing the components in ``cmpnts``.
         """
         out = cls._create(cmpnts._impl.cmpnts_clone([]))
         out.insert_iterable(cmpnts)
         return out
 
     def _empty_clone(self) -> Self:
-        """Get an empty (owning, contiguous) clone of :param:`self`."""
+        """Get an empty (owning, contiguous) clone of ``self``."""
         return self._create(self._impl.cmpnts_clone([]))
 
     def clone(self) -> Self:
-        """Return a deep copy of :param:`self`."""
+        """Return a deep copy of ``self``."""
         out = self._empty_clone()
         out.insert_iterable(self)
         return out
 
     def to_cmpnts(self) -> Cmpnts[ImplT, SpecT]:
-        """Create a new array of components owning copies of all those contained in :param:`self`.
+        """Create a new array of components owning copies of all those contained in ``self``.
 
         Returns:
-            New :class:`Cmpnts` instance containing copies of the components in :param:`self`. The
+            New :class:`Cmpnts` instance containing copies of the components in ``self``. The
             type is determined by :attr:`~zixy.container.cmpnts.CmpntSet.cmpnts_type`.
         """
         return self.cmpnts_type._create(self._impl.cmpnts_clone(None))
 
     def __repr__(self) -> str:
-        """Return a string representation of :param:`self`."""
+        """Return a string representation of ``self``."""
         return ", ".join(str(s) for s in self)
 
     def __len__(self) -> int:
-        """Get the number of elements in :param:`self`."""
+        """Get the number of elements in ``self``."""
         return len(self._impl)
 
     def _get_working_cmpnt(
         self, value: SpecT | Cmpnt[ImplT, SpecT] | None = None
     ) -> Cmpnt[ImplT, SpecT]:
-        """Get a :class:`Cmpnt` instance that contains the component specified by :param:`value`.
+        """Get a :class:`Cmpnt` instance that contains the component specified by ``value``.
 
         Args:
             value: The component specifier.
 
         Returns:
-            A :class:`Cmpnt` instance containing the component specified by :param:`value`. If
-            :param:`value` is already a :class:`Cmpnt` instance, it is returned directly, otherwise
+            A :class:`Cmpnt` instance containing the component specified by ``value``. If
+            ``value`` is already a :class:`Cmpnt` instance, it is returned directly, otherwise
             the value is set in a working :class:`Cmpnt` instance and that instance is returned.
         """
         if isinstance(value, self.cmpnts_type.cmpnt_type):
@@ -324,7 +324,7 @@ class CmpntSet(Generic[ImplT, SpecT]):
             self.insert(item)
 
     def lookup(self, value: SpecT | Cmpnt[ImplT, SpecT]) -> int | None:
-        """Try to find the index of :param:`value` in :param:`self`.
+        """Try to find the index of ``value`` in ``self``.
 
         Args:
             value: The component specifier.
@@ -336,18 +336,18 @@ class CmpntSet(Generic[ImplT, SpecT]):
         return self._impl.mapped_lookup(self._map, value._impl, value.index)
 
     def contains(self, value: SpecT | Cmpnt[ImplT, SpecT]) -> bool:
-        """Check whether :param:`value` is stored in :param:`self`.
+        """Check whether ``value`` is stored in ``self``.
 
         Args:
             value: The component specifier.
 
         Returns:
-            Whether the lookup of :param:`value` was successful.
+            Whether the lookup of ``value`` was successful.
         """
         return self.lookup(value) is not None
 
     def remove(self, value: SpecT | Cmpnt[ImplT, SpecT]) -> int:
-        """Try to remove :param:`value` from :param:`self`.
+        """Try to remove ``value`` from ``self``.
 
         Args:
             value: The component specifier.
@@ -365,13 +365,13 @@ class CmpntSet(Generic[ImplT, SpecT]):
         return i
 
     def __eq__(self, other: object) -> bool:
-        """Return whether :param:`self` and :param:`other` are equal."""
+        """Return whether ``self`` and ``other`` are equal."""
         if not isinstance(other, CmpntSet):
             return NotImplemented
         return self._impl.mapped_equal(self._map, other._impl)
 
     def __iter__(self) -> Iterator[Cmpnt[ImplT, SpecT]]:
-        """Iterate over the elements of :param:`self`."""
+        """Iterate over the elements of ``self``."""
         if not len(self):
             return
         tmp = self._get_working_cmpnt()
@@ -382,28 +382,28 @@ class CmpntSet(Generic[ImplT, SpecT]):
     def iter_filter_map(
         self, f: Callable[[Cmpnt[ImplT, SpecT]], bool]
     ) -> Iterator[Cmpnt[ImplT, SpecT]]:
-        """Lazily evaluate a filter-map operation over the components of :param:`self`.
+        """Lazily evaluate a filter-map operation over the components of ``self``.
 
         Args:
-            f: Function which may mutate copies of the components of :param:`self`, returning
+            f: Function which may mutate copies of the components of ``self``, returning
                 ``True`` if those mutated copies are to be included in the generator. The function
                 signature should take a single :class:`~zixy.container.cmpnts.Cmpnt` instance
                 as an argument, and return a
                 boolean.
 
         Returns:
-            Iterator over the selected (and possibly mutated) components of :param:`self` according
-            to :param:`f`. The type of the components is determined by
+            Iterator over the selected (and possibly mutated) components of ``self`` according
+            to ``f``. The type of the components is determined by
             :attr:`~zixy.container.cmpnts.Cmpnts.cmpnts_type`.
         """
         tmp = self.cmpnts_type._create(self._impl.cmpnts_clone(None))
         return tmp.iter_filter_map(f)
 
     def filter_map(self, f: Callable[[Cmpnt[ImplT, SpecT]], bool]) -> Self:
-        """Eagerly evaluate a filter-map operation over the components of :param:`self`.
+        """Eagerly evaluate a filter-map operation over the components of ``self``.
 
         Args:
-            f: Function which may mutate copies of the components of :param:`self`, returning
+            f: Function which may mutate copies of the components of ``self``, returning
                 ``True`` if those mutated copies are to be included in the generator. The function
                 signature should take a single :class:`~zixy.container.cmpnts.Cmpnt` instance
                 as an argument, and return a
@@ -411,7 +411,7 @@ class CmpntSet(Generic[ImplT, SpecT]):
 
         Returns:
             New instance containing the occurrences of selected (and possibly mutated) components
-            of :param:`self` according to :param:`f`. The type of the components is determined by
+            of ``self`` according to ``f``. The type of the components is determined by
             :attr:`~zixy.container.cmpnts.Cmpnts.cmpnts_type`.
         """
         out = self._empty_clone()
@@ -425,15 +425,15 @@ class CmpntSet(Generic[ImplT, SpecT]):
         *args: Any,
         **kwargs: Any,
     ) -> Self:
-        """Create a new instance of :param:`cls` from an iterable.
+        """Create a new instance of ``cls`` from an iterable.
 
         Args:
             iterable: Iterable returning specifiers of all the components to be appended.
-            args: Positional arguments to forward to the constructor of :param:`cls`.
-            kwargs: Keyword arguments to forward to the constructor of :param:`cls`.
+            args: Positional arguments to forward to the constructor of ``cls``.
+            kwargs: Keyword arguments to forward to the constructor of ``cls``.
 
         Returns:
-            New instance of :param:`cls` containing the components specified by :param:`iterable`.
+            New instance of ``cls`` containing the components specified by ``iterable``.
         """
         out = cls(*args, **kwargs)
         out.insert_iterable(iterable)
@@ -452,35 +452,35 @@ class Cmpnts(Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT]
     _impl: ImplT
     _set_type: type[CmpntSet[ImplT, SpecT]] = CmpntSet
 
-    def __init__(self, impl: ImplT, s: slice = slice(None)):
+    def __init__(self, impl: ImplT, indexer: slice = slice(None)):
         """Initialize the component array.
 
         Args:
             impl: Rust-bound object storing the data.
-            s: Slice of elements within Rust-bound array that are to be viewed by :param:`self`.
-                When :param:`s` is ``None``, :param:`self` is taken to be an owning view on all
-                elements of :param:`impl`.
+            indexer: Slice of elements within Rust-bound array that are to be viewed by ``self``.
+                The default value of ``slice(None)`` indicates that ``self`` is taken to be an
+                owning view on all elements of ``impl``.
         """
         assert self._set_type.cmpnts_type is type(self)
         assert isinstance(impl, self.cmpnt_type.impl_type), type(impl)
         self._impl = impl
-        self._slice = s
+        self._slice = indexer
 
     @classmethod
-    def _create(cls, impl: ImplT, s: slice = slice(None)) -> Self:
-        """Create a new instance of :param:`cls`.
+    def _create(cls, impl: ImplT, indexer: slice = slice(None)) -> Self:
+        """Create a new instance of ``cls``.
 
         Args:
             impl: Rust-bound object containing the data for this sequence.
-            s: Slice of the data in :param:`impl` that this instance should view. If ``None``, this
-                instance is considered to be owning.
+            indexer: Slice of the data in ``impl`` that this instance should view. The default
+                value of ``slice(None)`` indicates that this instance is considered to be owning.
 
         Returns:
-            A new instance of :param:`cls`.
+            A new instance of ``cls``.
         """
         assert isinstance(impl, cls.cmpnt_type.impl_type)
         out = cls.__new__(cls)
-        Cmpnts.__init__(out, impl, s)
+        Cmpnts.__init__(out, impl, indexer)
         return out
 
     @classmethod
@@ -491,18 +491,18 @@ class Cmpnts(Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT]
             cmpnt: Component to copy into the new instance.
 
         Returns:
-            New owning instance containing only :param:`cmpnt`.
+            New owning instance containing only ``cmpnt``.
         """
         assert isinstance(cmpnt, cls.cmpnt_type), type(cmpnt)
         return cls._create(cmpnt.clone()._impl)
 
     def clone(self) -> Self:
-        """Return a deep copy of :param:`self`."""
+        """Return a deep copy of ``self``."""
         inds = slice_to_tuple(self.slice, len(self._impl))
         return self._create(self._impl.cmpnts_clone(inds))
 
     def __eq__(self, other: object) -> bool:
-        """Return whether :param:`self` and :param:`other` are equal."""
+        """Return whether ``self`` and ``other`` are equal."""
         if not isinstance(other, Cmpnts):
             return NotImplemented
         inds = slice_to_tuple(self.slice, len(self._impl))
@@ -510,7 +510,7 @@ class Cmpnts(Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT]
         return self._impl.cmpnts_eq(inds, other._impl, other_inds)
 
     def __repr__(self) -> str:
-        """Return a string representation of :param:`self`."""
+        """Return a string representation of ``self``."""
         return ", ".join(str(s) for s in self)
 
     @overload
@@ -520,13 +520,13 @@ class Cmpnts(Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT]
     def __getitem__(self, indexer: builtins.slice) -> Self: ...
 
     def __getitem__(self, indexer: int | builtins.slice) -> Cmpnt[ImplT, SpecT] | Self:
-        """Get the element or elements selected by :param:`indexer`.
+        """Get the element or elements selected by ``indexer``.
 
         Args:
             indexer: Index or slice selecting the element(s) to return.
 
         Returns:
-            Element or slice selected by :param:`indexer`.
+            Element or slice selected by ``indexer``.
         """
         if isinstance(indexer, int):
             return self.cmpnt_type._create(self._impl, self.map_index(indexer))
@@ -540,12 +540,12 @@ class Cmpnts(Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT]
         indexer: int | builtins.slice,
         source: SpecT | Cmpnt[ImplT, SpecT] | Cmpnts[ImplT, SpecT] | None,
     ) -> None:
-        """Set the component at :param:`indexer` in :param:`self` to :param:`source`.
+        """Set the component at ``indexer`` in ``self`` to ``source``.
 
         Args:
-            indexer: Index of the string or slice of strings within :param:`self` to assign.
+            indexer: Index of the string or slice of strings within ``self`` to assign.
             source: Value specifying the component or a view of many components to assign at
-                :param:`indexer`.
+                ``indexer``.
         """
         if isinstance(indexer, builtins.slice):
             if isinstance(source, Cmpnts):
@@ -573,11 +573,11 @@ class Cmpnts(Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT]
             self[indexer].set(source)
 
     def _empty_clone(self) -> Self:
-        """Get an empty (owning, contiguous) clone of :param:`self`."""
+        """Get an empty (owning, contiguous) clone of ``self``."""
         return self._create(self._impl.cmpnts_clone([]))
 
     def reordered(self, inds: Sequence[int]) -> Self:
-        """Get a new instance with the elements of :param:`self` in a new order.
+        """Get a new instance with the elements of ``self`` in a new order.
 
         Args:
             inds: Sequence of indices defining the new order. Should be a permutation of
@@ -594,23 +594,23 @@ class Cmpnts(Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT]
         return out
 
     def new_clear_cmpnt(self) -> Cmpnt[ImplT, SpecT]:
-        """Get a new :class:`Cmpnt` instance using the same implementation as :param:`self`."""
+        """Get a new :class:`Cmpnt` instance using the same implementation as ``self``."""
         return self._empty_clone().resize(1)[0]
 
     def iter_filter_map(
         self, f: Callable[[Cmpnt[ImplT, SpecT]], bool]
     ) -> Iterator[Cmpnt[ImplT, SpecT]]:
-        """Lazily evaluate a filter-map operation over the components of :param:`self`.
+        """Lazily evaluate a filter-map operation over the components of ``self``.
 
         Args:
-            f: Function which may mutate copies of the components of :param:`self`, returning
+            f: Function which may mutate copies of the components of ``self``, returning
                 ``True`` if those mutated copies are to be included in the generator. The function
                 signature should take a single :class:`Cmpnt` instance as an argument, and return a
                 boolean.
 
         Returns:
-            Iterator over the selected (and possibly mutated) components of :param:`self` according
-            to :param:`f`.
+            Iterator over the selected (and possibly mutated) components of ``self`` according
+            to ``f``.
         """
         if not len(self):
             return
@@ -623,45 +623,45 @@ class Cmpnts(Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT]
                 yield tmp
 
     def filter_map(self, f: Callable[[Cmpnt[ImplT, SpecT]], bool]) -> Self:
-        """Eagerly evaluate a filter-map operation over the components of :param:`self`.
+        """Eagerly evaluate a filter-map operation over the components of ``self``.
 
         Args:
-            f: Function which may mutate copies of the components of :param:`self`, returning
+            f: Function which may mutate copies of the components of ``self``, returning
                 ``True`` if those mutated copies are to be included in the generator. The function
                 signature should take a single :class:`Cmpnt` instance as an argument, and return a
                 boolean.
 
         Returns:
             New instance containing the occurrences of selected (and possibly mutated) components
-            of :param:`self` according to :param:`f`.
+            of ``self`` according to ``f``.
         """
         out = self._empty_clone()
         out.append_iterable(self.iter_filter_map(f))
         return out
 
     def filter_unique(self) -> Cmpnts[ImplT, SpecT]:
-        """Get a new :class:`Cmpnts` instance containing the unique components of :param:`self`."""
+        """Get a new :class:`Cmpnts` instance containing the unique components of ``self``."""
         return self._set_type(self._impl).to_cmpnts()
 
     def iter_filter_populated(self) -> Iterator[Cmpnt[ImplT, SpecT]]:
-        """Lazily filter components of :param:`self`, retaining only those that are not clear."""
+        """Lazily filter components of ``self``, retaining only those that are not clear."""
         tmp = self.new_clear_cmpnt()
         for view in self:
             if view != tmp:
                 yield view
 
     def filter_populated(self) -> Self:
-        """Eagerly filter components of :param:`self`, retaining only those that are not clear."""
+        """Eagerly filter components of ``self``, retaining only those that are not clear."""
         out = self._empty_clone()
         out.append_iterable(self.iter_filter_populated())
         return out
 
     @requires_ownership
     def append_n(self, n: int, source: SpecT | Cmpnt[ImplT, SpecT] | None = None) -> Self:
-        """Append :param:`source` to the end of :param:`self` :param:`n` times.
+        """Append ``source`` to the end of ``self`` ``n`` times.
 
         Args:
-            n: Number of times to repeatedly append :param:`source`.
+            n: Number of times to repeatedly append ``source``.
             source: Specification for the value to append.
 
         Note:
@@ -675,7 +675,7 @@ class Cmpnts(Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT]
 
     @requires_ownership
     def append(self, source: SpecT | Cmpnt[ImplT, SpecT] | None = None) -> Self:
-        """Append :param:`source` to the end of :param:`self`.
+        """Append ``source`` to the end of ``self``.
 
         Args:
             source: Value to append.
@@ -707,15 +707,15 @@ class Cmpnts(Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT]
         *args: Any,
         **kwargs: Any,
     ) -> Self:
-        """Create a new instance of :param:`cls` from an iterable.
+        """Create a new instance of ``cls`` from an iterable.
 
         Args:
             iterable: Iterable returning specifiers of all the components to be appended.
-            args: Positional arguments to forward to the constructor of :param:`cls`.
-            kwargs: Keyword arguments to forward to the constructor of :param:`cls`.
+            args: Positional arguments to forward to the constructor of ``cls``.
+            kwargs: Keyword arguments to forward to the constructor of ``cls``.
 
         Returns:
-            New instance of :param:`cls` containing the components specified by :param:`iterable`.
+            New instance of ``cls`` containing the components specified by ``iterable``.
         """
         out = cls(*args, **kwargs)
         out.append_iterable(iterable)

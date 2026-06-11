@@ -180,15 +180,60 @@ impl Represent<f64> for Complex64 {
     }
 }
 
-#[test]
-fn test_parse() {
-    assert!(Complex64::parse("ad").is_err());
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::rstest;
 
-    assert!(Complex64::parse("1.234").is_ok_and(|x| x == Complex64::new(1.234, 0.0)));
-    assert!(Complex64::parse(" 1.234").is_ok_and(|x| x == Complex64::new(1.234, 0.0)));
-    assert!(Complex64::parse("+1.234").is_ok_and(|x| x == Complex64::new(1.234, 0.0)));
-    assert!(Complex64::parse("-1.234").is_ok_and(|x| x == Complex64::new(-1.234, 0.0)));
-    assert!(Complex64::parse("i-1.234").is_ok_and(|x| x == Complex64::new(-1.234, 1.0)));
-    assert!(Complex64::parse("i - 1.234").is_ok_and(|x| x == Complex64::new(-1.234, 1.0)));
-    assert!(Complex64::parse(" +i - 1.234").is_ok_and(|x| x == Complex64::new(-1.234, 1.0)));
+    #[test]
+    fn test_parse() {
+        assert!(Complex64::parse("ad").is_err());
+
+        assert!(Complex64::parse("1.234").is_ok_and(|x| x == Complex64::new(1.234, 0.0)));
+        assert!(Complex64::parse(" 1.234").is_ok_and(|x| x == Complex64::new(1.234, 0.0)));
+        assert!(Complex64::parse("+1.234").is_ok_and(|x| x == Complex64::new(1.234, 0.0)));
+        assert!(Complex64::parse("-1.234").is_ok_and(|x| x == Complex64::new(-1.234, 0.0)));
+        assert!(Complex64::parse("i-1.234").is_ok_and(|x| x == Complex64::new(-1.234, 1.0)));
+        assert!(Complex64::parse("i - 1.234").is_ok_and(|x| x == Complex64::new(-1.234, 1.0)));
+        assert!(Complex64::parse(" +i - 1.234").is_ok_and(|x| x == Complex64::new(-1.234, 1.0)));
+    }
+
+    #[test]
+    fn test_conj() {
+        let c = Complex64::new(1.0, 2.0);
+        assert_eq!(c.conj(), Complex64::new(1.0, -2.0));
+    }
+
+    #[test]
+    fn test_ipow() {
+        let mut c = Complex64::new(1.0, 1.0);
+        c.ipow(2);
+        assert_eq!(c, Complex64::new(0.0, 2.0));
+        c.ipow(2);
+        assert_eq!(c, Complex64::new(-4.0, 0.0));
+        c.ipow(0);
+        assert_eq!(c, Complex64::new(1.0, 0.0));
+    }
+
+    #[rstest]
+    #[case(AnyNumRepr::Unity(Unity {}), Complex64::ONE)]
+    #[case(AnyNumRepr::Sign(Sign(false)), Complex64::ONE)]
+    #[case(AnyNumRepr::Sign(Sign(true)), -Complex64::ONE)]
+    #[case(AnyNumRepr::ComplexSign(ComplexSign(0)), Complex64::ONE)]
+    #[case(AnyNumRepr::ComplexSign(ComplexSign(1)), Complex64::I)]
+    #[case(AnyNumRepr::ComplexSign(ComplexSign(2)), -Complex64::ONE)]
+    #[case(AnyNumRepr::ComplexSign(ComplexSign(3)), -Complex64::I)]
+    #[case(AnyNumRepr::Whole(42), Complex64::new(42.0, 0.0))]
+    #[case(AnyNumRepr::Real(-1.52), Complex64::new(-1.52, 0.0))]
+    #[case(
+        AnyNumRepr::Complex(Complex64::new(1.0, -2.0)),
+        Complex64::new(1.0, -2.0)
+    )]
+    fn test_try_represent_any(
+        #[case] input: AnyNumRepr,
+        #[case] expected: Complex64,
+    ) -> Result<(), Unrepresentable> {
+        assert_eq!(Complex64::try_represent_any(input)?, expected);
+        Ok(())
+    }
 }

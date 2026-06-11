@@ -567,7 +567,7 @@ pub mod test_defs {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use crate::container::quicksort::QuickSortNoCoeffs;
     use rand::rngs::StdRng;
     use rand::{Rng, SeedableRng};

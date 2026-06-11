@@ -61,17 +61,17 @@ class Term(Generic[ImplT, SpecT, CoeffT, ElemT], TermBase[ImplT, SpecT, CoeffT])
 
     @property
     def qubits(self) -> Qubits:
-        """Get the qubits corresponding to :param:`self`."""
+        """Get the qubits corresponding to ``self``."""
         return self.string._impl.qubits
 
     def to_sparse_matrix(self, big_endian: bool = False) -> Any:
-        """Return :param:`self` as a sparse matrix.
+        """Return ``self`` as a sparse matrix.
 
         Args:
             big_endian: Whether to use big-endian basis ordering.
 
         Returns:
-            The sparse matrix representation of :param:`self`.
+            The sparse matrix representation of ``self``.
         """
         return self.string.to_sparse_matrix(big_endian) * complex(self.coeff)
 
@@ -105,7 +105,7 @@ class Terms(Generic[ImplT, SpecT, CoeffT, ElemT], TermsBase[ImplT, SpecT, CoeffT
 
     @property
     def qubits(self) -> Qubits:
-        """Get the qubits corresponding to :param:`self`."""
+        """Get the qubits corresponding to ``self``."""
         return self.strings.qubits
 
 
@@ -132,7 +132,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], TermSetBase[ImplT, SpecT, Co
 
     @property
     def qubits(self) -> Qubits:
-        """Get the qubits corresponding to :param:`self`."""
+        """Get the qubits corresponding to ``self``."""
         return cast(Strings[ImplT, SpecT, ElemT], self._impl._cmpnts).qubits
 
 

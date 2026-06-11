@@ -1,0 +1,42 @@
+name: Merge develop into main
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Create PR from develop to main
+        run: |
+          existing_prs="$(
+            gh pr list \
+              --base main \
+              --head develop \
+              --state open \
+              --json number \
+              --jq length
+          )"
+
+          if [ "$existing_prs" = "0" ]; then
+            pr_url="$(
+              gh pr create \
+                --base main \
+                --head develop \
+                --title "chore: merge develop into main" \
+                --body "Merge \`develop\` into \`main\` for release."
+            )"
+
+            gh pr edit "$pr_url" --add-label "release-merge"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

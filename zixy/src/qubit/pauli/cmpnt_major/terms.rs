@@ -670,4 +670,34 @@ mod tests {
         }
         Ok(())
     }
+
+    #[rstest]
+    #[case(vec![I], vec![clifford::Gate::H(0)] ,vec![I], ComplexSign(0))]
+    #[case(vec![X], vec![clifford::Gate::H(0)] ,vec![Z], ComplexSign(0))]
+    #[case(vec![Y], vec![clifford::Gate::H(0)] ,vec![Y], ComplexSign(2))]
+    #[case(vec![Z], vec![clifford::Gate::H(0)] ,vec![X], ComplexSign(0))]
+    #[case(vec![I], vec![clifford::Gate::S(0)] ,vec![I], ComplexSign(0))]
+    #[case(vec![X], vec![clifford::Gate::S(0)] ,vec![Y], ComplexSign(0))]
+    #[case(vec![Y], vec![clifford::Gate::S(0)] ,vec![X], ComplexSign(2))]
+    #[case(vec![Z], vec![clifford::Gate::S(0)] ,vec![Z], ComplexSign(0))]
+    fn test_conj_clifford_asviewmut_single_gate(
+        #[case] pauli: Vec<PauliMatrix>,
+        #[case] gates: Vec<clifford::Gate>,
+        #[case] expected: Vec<PauliMatrix>,
+        #[case] expected_phase: ComplexSign,
+    ) -> Result<(), OutOfBounds> {
+        let mut tab = Terms::<ComplexSign>::new(Qubits::from_count(pauli.len()));
+        tab.push_pauli_vec(pauli)?;
+        let mut view = tab.view_mut();
+        view.conj_clifford_vec(gates);
+        assert_eq!(
+            view.get_elem_ref(0).get_word_iter_ref().get_pauli_vec(),
+            expected
+        );
+        assert_eq!(view.get_coeffs().len(), 1);
+        for i in 0..view.get_coeffs().len() {
+            assert_eq!(view.get_coeffs().get(i)?, expected_phase);
+        }
+        Ok(())
+    }
 }

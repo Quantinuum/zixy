@@ -1,24 +1,16 @@
 //! Fermion operator products module.
 
-#[cfg(test)]
 use crate::container::bit_matrix::{AsRowMutRef, AsRowRef};
-#[cfg(test)]
 use crate::container::coeffs::sign::{Sign, SignVec};
-#[cfg(test)]
 use crate::container::coeffs::traits::NumReprVec;
-#[cfg(test)]
 use crate::container::traits::{Elements, MutRefElements, RefElements};
-#[cfg(test)]
 use crate::container::word_iters::{ElemMutRef, ElemRef, WordIters};
-#[cfg(test)]
 use crate::fermion::mode::Modes;
-#[cfg(test)]
 use crate::fermion::operator::cmpnt_list::{CmpntList, CmpntRef};
-#[cfg(test)]
 use crate::fermion::operator::cre_or_ann;
+use crate::fermion::traits::ModesBased;
 
 /// Stores variables to support the recursive computation of normal-ordered fermion operator products.
-#[cfg(test)]
 struct ProductHelper {
     cmpnts: CmpntList,
     signs: SignVec,
@@ -36,7 +28,7 @@ struct ProductHelper {
 ///   state.
 /// - `lhs_ann`: number of set modes in `LHS_` that have already been processed.
 /// - `rhs_cre`: number of set modes in `RHS^` that have already been processed.
-#[cfg(test)]
+
 #[derive(Clone, Copy, Default)]
 struct Indices {
     bif: usize,
@@ -45,7 +37,6 @@ struct Indices {
     rhs_cre: usize,
 }
 
-#[cfg(test)]
 impl Indices {
     /// Return a copy with both processed common-mode counters advanced by one.
     fn incremented(&self) -> Self {
@@ -56,12 +47,11 @@ impl Indices {
     }
 }
 
-#[cfg(test)]
 impl ProductHelper {
     /// Create an empty helper for building products of operators on the given fermionic mode space.
-    pub fn new(modes: Modes) -> Self {
+    pub fn new() -> Self {
         Self {
-            cmpnts: CmpntList::new(modes),
+            cmpnts: CmpntList::new(Modes::from_count(0)),
             signs: SignVec::default(),
             n_lhs_ann: 0,
             n_rhs_ann: 0,
@@ -98,7 +88,7 @@ impl ProductHelper {
 
     /// Compute and store every branch of the product `lhs * rhs`, including their signs.
     pub fn set(&mut self, lhs: &CmpntRef, rhs: &CmpntRef) {
-        self.cmpnts.clear();
+        self.cmpnts = CmpntList::new(lhs.modes().clone());
         self.signs.clear();
         if Self::destroys(lhs, rhs) {
             return;
@@ -335,6 +325,13 @@ impl ProductHelper {
     }
 }
 
+// Multiply two fermion components, returning the normal-ordered result terms and their signs.
+pub fn mul_cmpnts(lhs: &CmpntRef, rhs: &CmpntRef) -> (CmpntList, SignVec) {
+    let mut helper = ProductHelper::new();
+    helper.set(lhs, rhs);
+    (helper.cmpnts, helper.signs)
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;
@@ -427,7 +424,7 @@ mod tests {
         let lhs_ann = HashSet::from_iter(lhs_ann.into_iter());
         let rhs_cre = HashSet::from_iter(rhs_cre.into_iter());
         let rhs_ann = HashSet::from_iter(rhs_ann.into_iter());
-        let mut helper = ProductHelper::new(modes.clone());
+        let mut helper = ProductHelper::new();
         let lhs = Cmpnt::from_sets_unchecked(modes.clone(), lhs_cre, lhs_ann);
         let rhs = Cmpnt::from_sets_unchecked(modes.clone(), rhs_cre, rhs_ann);
         helper.set(&lhs.borrow(), &rhs.borrow());

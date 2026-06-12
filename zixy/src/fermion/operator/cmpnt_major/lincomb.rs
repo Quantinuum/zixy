@@ -186,6 +186,12 @@ pub fn conserves_particle_number<C: FieldElem>(terms: &terms::View<C>, atol: f64
     let nop = num_op_inds::<C>(modes.clone(), inds).unwrap().terms;
     commute(terms, &nop.borrow(), atol).unwrap()
 }
+
+// check if the operator conserves particle number, i.e. if it commutes with the number operator, within the default tolerance.
+pub fn conserves_particle_number_default<C: FieldElem>(terms: &terms::View<C>) -> bool {
+    conserves_particle_number(terms, C::COMMUTES_ATOL_DEFAULT)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

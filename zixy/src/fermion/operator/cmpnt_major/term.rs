@@ -3,6 +3,7 @@
 use std::fmt::Display;
 
 use crate::container::coeffs::traits::NumRepr;
+use crate::container::coeffs::traits::NumReprVec;
 use crate::container::traits::proj::Borrow;
 use crate::container::word_iters::terms;
 use crate::container::word_iters::terms::AsViewMut;
@@ -42,9 +43,8 @@ impl<C: NumRepr> ModesBased for Term<C> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::container::coeffs::unity::Unity;
     use crate::container::coeffs::complex_sign::ComplexSign;
-    use crate::container::coeffs::real::Real;
+    use crate::container::coeffs::unity::Unity;
     use crate::container::traits::Elements;
 
     #[test]
@@ -63,8 +63,8 @@ mod tests {
 
     #[test]
     fn test_new_real_has_unit_coeff() {
-        let term = Term::<Real>::new(Modes::from_count(4));
+        let term = Term::<f64>::new(Modes::from_count(4));
         assert_eq!(term.coeffs.len(), 1);
-        assert_eq!(term.coeffs.get_unchecked(0), Real::ONE);
+        assert_eq!(term.coeffs.get_unchecked(0), 1.0);
     }
 }

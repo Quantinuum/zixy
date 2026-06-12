@@ -62,12 +62,9 @@ pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<CmpntList, C> {
     where
         C: Signed,
     {
-        let self_mut_ref = self.view_mut();
+        let mut self_mut_ref = self.view_mut();
         for i in 0..self_mut_ref.len() {
-            self_mut_ref
-                .word_iters
-                .get_elem_mut_ref(i)
-                .conj_clifford(gate);
+            self_mut_ref.get_elem_mut_ref(i).conj_clifford(gate);
         }
     }
 
@@ -672,21 +669,26 @@ mod tests {
     }
 
     #[rstest]
+    // Identities: H I H^ = I, H X H^ = Z, H Y H^ = -Y, H Z H^ = X where H is Hadamard
     #[case(vec![I], vec![clifford::Gate::H(0)] ,vec![I], ComplexSign(0))]
     #[case(vec![X], vec![clifford::Gate::H(0)] ,vec![Z], ComplexSign(0))]
     #[case(vec![Y], vec![clifford::Gate::H(0)] ,vec![Y], ComplexSign(2))]
     #[case(vec![Z], vec![clifford::Gate::H(0)] ,vec![X], ComplexSign(0))]
+    #[case(vec![I,X,Y,Z], vec![clifford::Gate::H(0), clifford::Gate::H(1), clifford::Gate::H(2), clifford::Gate::H(3)] ,vec![I, Z, Y, X], ComplexSign(2))]
+    // Identities: S I S^ = I, S X S^ = Y, S Y S^ = -X, S Z S^ = Z where S is sqrt(X)
     #[case(vec![I], vec![clifford::Gate::S(0)] ,vec![I], ComplexSign(0))]
     #[case(vec![X], vec![clifford::Gate::S(0)] ,vec![Y], ComplexSign(0))]
     #[case(vec![Y], vec![clifford::Gate::S(0)] ,vec![X], ComplexSign(2))]
     #[case(vec![Z], vec![clifford::Gate::S(0)] ,vec![Z], ComplexSign(0))]
-    fn test_conj_clifford_asviewmut_single_gate(
+    #[case(vec![I,X,Y,Z], vec![clifford::Gate::S(0), clifford::Gate::S(1), clifford::Gate::S(2), clifford::Gate::S(3)] ,vec![I, Y, X, Z], ComplexSign(2))]
+    fn test_conj_clifford_asviewmut_singlequbit_gate(
         #[case] pauli: Vec<PauliMatrix>,
         #[case] gates: Vec<clifford::Gate>,
         #[case] expected: Vec<PauliMatrix>,
         #[case] expected_phase: ComplexSign,
     ) -> Result<(), OutOfBounds> {
-        let mut tab = Terms::<ComplexSign>::new(Qubits::from_count(pauli.len()));
+        let pauli_len = pauli.len();
+        let mut tab = Terms::<ComplexSign>::new(Qubits::from_count(pauli_len));
         tab.push_pauli_vec(pauli)?;
         let mut view = tab.view_mut();
         view.conj_clifford_vec(gates);
@@ -695,9 +697,48 @@ mod tests {
             expected
         );
         assert_eq!(view.get_coeffs().len(), 1);
-        for i in 0..view.get_coeffs().len() {
-            assert_eq!(view.get_coeffs().get(i)?, expected_phase);
-        }
+        assert_eq!(view.get_coeffs().get(0)?, expected_phase);
+        Ok(())
+    }
+
+    #[rstest]
+    #[case(vec![I, I], 0 , 1, vec![I, I], ComplexSign(0))]
+    #[case(vec![I, X], 0 , 1, vec![I, X], ComplexSign(0))]
+    #[case(vec![I, Y], 0 , 1, vec![Z, Y], ComplexSign(0))]
+    #[case(vec![I, Z], 0 , 1, vec![Z, Z], ComplexSign(0))]
+    #[case(vec![X, I], 0 , 1, vec![X, X], ComplexSign(0))]
+    #[case(vec![X, X], 0 , 1, vec![X, I], ComplexSign(0))]
+    #[case(vec![X, Y], 0 , 1, vec![Y, Z], ComplexSign(0))]
+    #[case(vec![X, Z], 0 , 1, vec![Y, Y], ComplexSign(2))]
+    #[case(vec![Y, I], 0 , 1, vec![Y, X], ComplexSign(0))]
+    #[case(vec![Y, X], 0 , 1, vec![Y, I], ComplexSign(0))]
+    #[case(vec![Y, Y], 0 , 1, vec![X, Z], ComplexSign(2))]
+    #[case(vec![Y, Z], 0 , 1, vec![X, Y], ComplexSign(0))]
+    #[case(vec![Z, I], 0 , 1, vec![Z, I], ComplexSign(0))]
+    #[case(vec![Z, X], 0 , 1, vec![Z, X], ComplexSign(0))]
+    #[case(vec![Z, Y], 0 , 1, vec![I, Y], ComplexSign(0))]
+    #[case(vec![Z, Z], 0 , 1, vec![I, Z], ComplexSign(0))]
+    fn test_conj_clifford_asviewmut_multiqubit_gate(
+        #[case] pauli: Vec<PauliMatrix>,
+        #[case] control: usize,
+        #[case] target: usize,
+        #[case] expected: Vec<PauliMatrix>,
+        #[case] expected_phase: ComplexSign,
+    ) -> Result<(), OutOfBounds> {
+        let mut tab = Terms::<ComplexSign>::new(Qubits::from_count(pauli.len()));
+        tab.push_pauli_vec(pauli)?;
+        let mut view = tab.view_mut();
+        view.conj_clifford(clifford::Gate::CX(
+            DistinctPair::new(control, target).unwrap_or_else(|| {
+                panic!("Failed to create distinct pair of {},{}", control, target)
+            }),
+        ));
+        assert_eq!(
+            view.get_elem_ref(0).get_word_iter_ref().get_pauli_vec(),
+            expected
+        );
+        assert_eq!(view.get_coeffs().len(), 1);
+        assert_eq!(view.get_coeffs().get(0)?, expected_phase);
         Ok(())
     }
 }

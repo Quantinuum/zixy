@@ -70,12 +70,13 @@ mod tests {
     use super::*;
     use crate::container::coeffs::unity::Unity;
     use crate::container::traits::Elements;
+    use num_complex::Complex64;
 
     #[test]
     fn test_empty() {
         let list_unity = Terms::<Unity>::new(Modes::from_count(3));
-        let list_real = Terms::<Real>::new(Modes::from_count(3));
-        let list_complex = Terms::<Complex>::new(Modes::from_count(3));
+        let list_real = Terms::<f64>::new(Modes::from_count(3));
+        let list_complex = Terms::<Complex64>::new(Modes::from_count(3));
         assert!(list_unity.is_empty());
         assert!(list_real.is_empty());
         assert!(list_complex.is_empty());

@@ -33,14 +33,14 @@ jobs:
           # upload directory conatining the html files for the Sphinx build
           path: zixy-py/docs/build/
 
-deploy:
-  runs-on: ubuntu-latest
-  needs: build
-  environment:
-    name: github-pages
-    url: ${{ steps.deployment.outputs.page_url }}
-  steps:
-    - name: Deploy to GitHub Pages
-      id: deployment
-      if: github.ref == 'refs/heads/main'
-      uses: actions/deploy-pages@v4
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        if: github.ref == 'refs/heads/main'
+        uses: actions/deploy-pages@v4

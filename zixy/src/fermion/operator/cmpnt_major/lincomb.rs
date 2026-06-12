@@ -186,7 +186,6 @@ pub fn conserves_particle_number<C: FieldElem>(terms: &terms::View<C>, atol: f64
     let nop = num_op_inds::<C>(modes.clone(), inds).unwrap().terms;
     commute(terms, &nop.borrow(), atol).unwrap()
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -280,7 +279,6 @@ mod tests {
         assert!(coeffs.contains(&Complex64::new(6.0, 0.0)));
         assert!(coeffs.contains(&Complex64::new(-6.0, 0.0)));
     }
-
     #[test]
     fn test_adjoint() {
         let modes = Modes::from_count(2);

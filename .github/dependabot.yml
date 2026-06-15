@@ -1,0 +1,49 @@
+version: 2
+
+updates:
+  - package-ecosystem: "cargo"
+    directories:
+      - "/"
+      - "/zixy/"
+      - "/zixy-py/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "build(deps)"
+    groups:
+      cargo-version-updates:
+        patterns:
+          - "*"
+    assignees:
+      - "Quantinuum/EUMEN-DEV"
+  - package-ecosystem: "github-actions"
+    directories:
+      - "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "build(deps)"
+    groups:
+      github-actions-version-updates:
+        patterns:
+          - "*"
+    assignees:
+      - "Quantinuum/EUMEN-DEV"
+  - package-ecosystem: "pip"
+    directories:
+      - "/"
+      - "/zixy-py/"
+      - "/zixy-py/docs/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "build(deps)"
+    groups:
+      pip-version-updates:
+        patterns:
+          - "*"
+    assignees:
+      - "Quantinuum/EUMEN-DEV"

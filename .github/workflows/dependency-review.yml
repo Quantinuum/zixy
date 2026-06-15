@@ -1,0 +1,20 @@
+name: 'Dependency Review'
+on: 
+    pull_request:
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+jobs:
+    dependency-review:
+        runs-on: ubuntu-latest
+        steps:
+            - name: 'Checkout repository'
+              uses: actions/checkout@v6
+            - name: 'Run Dependency Review'
+              uses: actions/dependency-review-action@v5
+              with:
+                fail-on-severity: low
+                allow-licenses: 'MIT, Apache-2.0, BSD-3-Clause, BSD-2-Clause, MPL-2.0, CC0-1.0, Unlicense'
+                vulnerability-check: true

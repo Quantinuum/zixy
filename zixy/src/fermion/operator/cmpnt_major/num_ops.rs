@@ -19,8 +19,7 @@ pub fn num_op_inds<C: FieldElem>(
 ) -> Result<TermSet<C>, OutOfBounds> {
     let mut out = TermSet::<C>::new(modes.clone());
     for i in inds.into_iter() {
-        let cmpnt =
-            Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([i]), HashSet::from([i]));
+        let cmpnt = Cmpnt::from_sets(modes.clone(), HashSet::from([i]), HashSet::from([i]))?;
         out.as_terms_mut().push_elem_coeff(cmpnt.borrow(), C::ONE);
     }
 
@@ -29,7 +28,8 @@ pub fn num_op_inds<C: FieldElem>(
 
 /// Create the full number operator over all modes.
 pub fn num_op<C: FieldElem>(modes: Modes) -> TermSet<C> {
-    num_op_inds::<C>(modes.clone(), (0..modes.len()).collect()).unwrap()
+    num_op_inds::<C>(modes.clone(), (0..modes.len()).collect())
+        .expect("num_op indices are always in bounds")
 }
 
 #[cfg(test)]

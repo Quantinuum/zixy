@@ -156,8 +156,8 @@ pub fn anticommute_default<C: FieldElem>(
 // Reverse the order, and swap creation <-> annihilation on every operator.
 pub fn adjoint<C: FieldElem>(terms: &terms::View<C>) -> terms::Terms<C> {
     let mut out = terms::Terms::new(terms.modes().clone());
-    for (i, coeff) in terms.coeffs.iter().take(terms.len()).enumerate() {
-        let cmpnt = terms.word_iters.get_elem_ref(i);
+    for term in terms.iter() {
+        let (cmpnt, coeff) = term.unpack();
         let coeff_conj = coeff.conj();
         let cre = cmpnt.get_cre_part().to_set();
         let ann = cmpnt.get_ann_part().to_set();
@@ -192,6 +192,22 @@ pub fn conserves_particle_number_default<C: FieldElem>(terms: &terms::View<C>) -
     conserves_particle_number(terms, C::COMMUTES_ATOL_DEFAULT)
 }
 
+// A struct to hold properties of a fermion operator, such as whether it is Hermitian and whether it conserves particle number.
+pub struct OperatorProperties {
+    pub is_hermitian: bool,
+    pub conserves_particle_number: bool,
+}
+
+// Check the properties of a fermion operator, returning an OperatorProperties struct.
+pub fn check_operator_properties<C: FieldElem>(terms: &terms::View<C>) -> OperatorProperties {
+    let is_hermitian = is_hermitian_default(terms);
+    let conserves_particle_number = conserves_particle_number_default(terms);
+    OperatorProperties {
+        is_hermitian,
+        conserves_particle_number,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -203,6 +219,7 @@ mod tests {
     use crate::fermion::mode::Modes;
     use crate::fermion::operator::cmpnt::Cmpnt;
     use crate::fermion::operator::cmpnt_major::terms::Terms;
+    use rstest::rstest;
     use std::collections::HashSet;
 
     #[test]
@@ -285,67 +302,82 @@ mod tests {
         assert!(coeffs.contains(&Complex64::new(6.0, 0.0)));
         assert!(coeffs.contains(&Complex64::new(-6.0, 0.0)));
     }
-    #[test]
-    fn test_adjoint() {
-        let modes = Modes::from_count(2);
-
-        // a_0^+ a_1 create mode 0 annihilate mode 1
+    #[rstest]
+    #[case(vec![(HashSet::new(), HashSet::from([0]))], vec![(HashSet::from([0]), HashSet::new())])]
+    #[case(vec![(HashSet::from([0]), HashSet::from([1]))], vec![(HashSet::from([1]), HashSet::from([0]))])]
+    #[case(vec![(HashSet::from([0]), HashSet::from([0]))], vec![(HashSet::from([0]), HashSet::from([0]))])]
+    fn test_adjoint(
+        #[case] cmpnts: Vec<(HashSet<usize>, HashSet<usize>)>,
+        #[case] expected: Vec<(HashSet<usize>, HashSet<usize>)>,
+    ) {
+        let modes = Modes::from_count(4);
         let mut terms = Terms::<f64>::new(modes.clone());
-        let a0_dag_a1 =
-            Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([0]), HashSet::from([1]));
-        terms.borrow_mut().push_elem_coeff(a0_dag_a1.borrow(), 2.0);
-        // check that the adjoint is a_1^+ a_0 with the same coefficient
-        let adj = adjoint(&terms.borrow());
-        assert_eq!(adj.len(), 1);
-        let adj_cmpnt = adj.word_iters.get_elem_ref(0);
-        assert_eq!(adj_cmpnt.get_cre_part().to_set(), HashSet::from([1]));
-        assert_eq!(adj_cmpnt.get_ann_part().to_set(), HashSet::from([0]));
-        assert_eq!(adj.coeffs[0], 2.0);
+        for (cre, ann) in cmpnts {
+            let cmpnt = Cmpnt::from_sets_unchecked(modes.clone(), cre, ann);
+            terms.borrow_mut().push_elem_coeff(cmpnt.borrow(), 1.0);
+        }
+        let result = adjoint(&terms.borrow());
+        for (cre_exp, ann_exp) in expected {
+            let cmpnt_exp = Cmpnt::from_sets_unchecked(modes.clone(), cre_exp, ann_exp);
+            assert!(result
+                .borrow()
+                .iter()
+                .any(|term_ref| { term_ref.get_word_iter_ref() == cmpnt_exp.borrow() }));
+        }
     }
 
-    #[test]
-    fn test_is_hermitian() {
-        let modes = Modes::from_count(2);
-
-        // a_0^+ a_1 + a_1^+ a_0 is Hermitian
+    #[rstest]
+    #[case(vec![(HashSet::from([0]), HashSet::from([0]))], true)] // a_0^+ a_0 is Hermitian
+    #[case(vec![(HashSet::new(), HashSet::from([0]))], false)] // a_0 is not Hermitian
+    #[case(vec![(HashSet::from([0]), HashSet::from([1]))], false)] // a_0^+ a_1 is not Hermitian
+    fn test_is_hermitian_and_default(
+        #[case] cmpnts: Vec<(HashSet<usize>, HashSet<usize>)>,
+        #[case] expected: bool,
+    ) {
+        let modes = Modes::from_count(4);
         let mut terms = Terms::<f64>::new(modes.clone());
-        let a0_dag_a1 =
-            Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([0]), HashSet::from([1]));
-        let a1_dag_a0 =
-            Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([1]), HashSet::from([0]));
-        terms.borrow_mut().push_elem_coeff(a0_dag_a1.borrow(), 2.0);
-        terms.borrow_mut().push_elem_coeff(a1_dag_a0.borrow(), 2.0);
-        assert!(is_hermitian(&terms.borrow(), 1e-10));
-
-        // a_0^+ a_1 - a_1^+ a_0 is anti-Hermitian, not Hermitian
-        let mut terms2 = Terms::<f64>::new(modes.clone());
-        terms2.borrow_mut().push_elem_coeff(a0_dag_a1.borrow(), 2.0);
-        terms2
-            .borrow_mut()
-            .push_elem_coeff(a1_dag_a0.borrow(), -2.0);
-        assert!(!is_hermitian(&terms2.borrow(), 1e-10));
+        for (cre, ann) in cmpnts {
+            let cmpnt = Cmpnt::from_sets_unchecked(modes.clone(), cre, ann);
+            terms.borrow_mut().push_elem_coeff(cmpnt.borrow(), 1.0);
+        }
+        assert_eq!(is_hermitian(&terms.borrow(), 1e-10), expected);
+        assert_eq!(is_hermitian_default(&terms.borrow()), expected);
     }
 
-    #[test]
-    fn test_conserves_particle_number() {
+    #[rstest]
+    #[case(vec![(HashSet::from([0]), HashSet::from([0]))], true)] // a_0^+ a_0 conserves particle number
+    #[case(vec![(HashSet::from([0]), HashSet::new())], false)] // a_0^+ does not conserve particle number
+    #[case(vec![(HashSet::from([0]), HashSet::from([1]))], true)] // a_0^+ a_1 conserves particle number
+    fn test_conserves_particle_number_and_default(
+        #[case] cmpnts: Vec<(HashSet<usize>, HashSet<usize>)>,
+        #[case] expected: bool,
+    ) {
         let modes = Modes::from_count(2);
 
-        // a_0^+ a_1 + a_1^+ a_0 conserves particle number
         let mut terms = Terms::<f64>::new(modes.clone());
-        let a0_dag_a1 =
-            Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([0]), HashSet::from([1]));
-        let a1_dag_a0 =
-            Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([1]), HashSet::from([0]));
-        terms.borrow_mut().push_elem_coeff(a0_dag_a1.borrow(), 2.0);
-        terms.borrow_mut().push_elem_coeff(a1_dag_a0.borrow(), 2.0);
-        assert!(conserves_particle_number(&terms.borrow(), 1e-10));
+        for (cre, ann) in cmpnts {
+            let cmpnt = Cmpnt::from_sets_unchecked(modes.clone(), cre, ann);
+            terms.borrow_mut().push_elem_coeff(cmpnt.borrow(), 1.0);
+        }
+        assert_eq!(conserves_particle_number(&terms.borrow(), 1e-10), expected);
+        assert_eq!(conserves_particle_number_default(&terms.borrow()), expected);
+    }
 
-        // a_0^+ + a_0 does not conserve particle number
-        let mut terms2 = Terms::<f64>::new(modes.clone());
-        let a0_dag = Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([0]), HashSet::new());
-        let a0 = Cmpnt::from_sets_unchecked(modes.clone(), HashSet::new(), HashSet::from([0]));
-        terms2.borrow_mut().push_elem_coeff(a0_dag.borrow(), 2.0);
-        terms2.borrow_mut().push_elem_coeff(a0.borrow(), 2.0);
-        assert!(!conserves_particle_number(&terms2.borrow(), 1e-10));
+    #[rstest]
+    #[case(vec![(HashSet::from([0]), HashSet::from([0]))])] // a_0^+ a_0 is Hermitian and conserves particle number
+    #[case(vec![(HashSet::from([0]), HashSet::new())])] // a_0^+ is not Hermitian and does not conserve particle number
+    fn test_check_operator_properties(#[case] cmpnts: Vec<(HashSet<usize>, HashSet<usize>)>) {
+        let modes = Modes::from_count(2);
+        let mut terns = Terms::<f64>::new(modes.clone());
+        for (cre, ann) in cmpnts {
+            let cmpnt = Cmpnt::from_sets_unchecked(modes.clone(), cre, ann);
+            terns.borrow_mut().push_elem_coeff(cmpnt.borrow(), 1.0);
+        }
+        let props = check_operator_properties(&terns.borrow());
+        assert_eq!(props.is_hermitian, is_hermitian_default(&terns.borrow()));
+        assert_eq!(
+            props.conserves_particle_number,
+            conserves_particle_number_default(&terns.borrow())
+        );
     }
 }

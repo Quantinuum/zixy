@@ -183,8 +183,11 @@ pub fn is_hermitian_default<C: FieldElem>(terms: &terms::View<C>) -> bool {
 pub fn conserves_particle_number<C: FieldElem>(terms: &terms::View<C>, atol: f64) -> bool {
     let modes = terms.to_modes();
     let inds: HashSet<usize> = modes.iter().collect();
-    let nop = num_op_inds::<C>(modes.clone(), inds).expect("Mode indices are always in bounds").terms;
-    commute(terms, &nop.borrow(), atol).expect("Terms and number operator are always in the same mode space")
+    let nop = num_op_inds::<C>(modes.clone(), inds)
+        .unwrap_or_else(|_| panic!("Mode indices are always in bounds"))
+        .terms;
+    commute(terms, &nop.borrow(), atol)
+        .unwrap_or_else(|_| panic!("Mode spaces are always compatible"))
 }
 
 // check if the operator conserves particle number, i.e. if it commutes with the number operator, within the default tolerance.

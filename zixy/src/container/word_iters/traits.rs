@@ -73,3 +73,40 @@ pub trait TransformCoeffs<T: WordIters, InpC: NumRepr, OutC: NumRepr>:
         self.transformed_coeffs(|x| OutC::from(x.to_complex()))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::container::traits::proj::Borrow;
+    use crate::container::word_iters::term_set::test_defs::StringCmpnts;
+    use crate::container::word_iters::term_set::TermSet;
+
+    type TestContainerComplex = TermSet<StringCmpnts, Complex64>;
+    type TestContainerReal = TermSet<StringCmpnts, f64>;
+    #[test]
+    fn test_real_part() {
+        let sc = StringCmpnts::new(3);
+        let mut ts = TestContainerComplex::empty_from(&sc);
+        ts.insert_u64it(vec![0, 1, 2, 3].into_iter(), Complex64::new(1.0, 2.0));
+        let new_ts: TermSet<StringCmpnts, f64> = ts.borrow().real_part();
+        assert!(new_ts.get_coeffs()[0] == 1.0);
+    }
+    #[test]
+    fn test_imag_part() {
+        let sc = StringCmpnts::new(3);
+        let mut ts = TestContainerComplex::empty_from(&sc);
+        ts.insert_u64it(vec![0, 1, 2, 3].into_iter(), Complex64::new(1.0, 2.0));
+        let new_ts: TermSet<StringCmpnts, f64> = ts.borrow().imag_part();
+        assert!(new_ts.get_coeffs()[0] == 2.0);
+    }
+
+    #[test]
+    fn test_to_complex() {
+        let sc = StringCmpnts::new(3);
+        let mut ts = TestContainerReal::empty_from(&sc);
+        ts.insert_u64it(vec![0, 1, 2, 3].into_iter(), 1.0);
+        let new_ts: TermSet<StringCmpnts, Complex64> = ts.borrow().to_complex();
+        assert!(new_ts.get_coeffs()[0] == Complex64::new(1.0, 0.0));
+    }
+}

@@ -31,7 +31,7 @@ updates:
           - "*"
     assignees:
       - "Quantinuum/EUMEN-DEV"
-  - package-ecosystem: "pip"
+  - package-ecosystem: "uv"
     directories:
       - "/"
       - "/zixy-py/"
@@ -42,7 +42,7 @@ updates:
     commit-message:
       prefix: "build(deps)"
     groups:
-      pip-version-updates:
+      uv-version-updates:
         patterns:
           - "*"
     assignees:

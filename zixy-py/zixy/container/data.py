@@ -16,12 +16,14 @@
 
 from __future__ import annotations
 
+import re
 from typing import Generic
 
 from typing_extensions import Self
 
+from zixy.container.base import StringRepresentable
 from zixy.container.cmpnts import Cmpnt, Cmpnts, ImplT, SpecT
-from zixy.container.coeffs import Coeffs, CoeffT
+from zixy.container.coeffs import Coeffs, CoeffT, get_coeffs_type
 from zixy.utils import slice_single_item
 
 

@@ -16,6 +16,21 @@ from zixy.container.coeffs import (
 from zixy.container.data import TermData
 
 
+class SignStringTermData(TermData):
+    cmpnts_type = Strings
+    coeffs_type = SignCoeffs
+
+
+class RealStringTermData(TermData):
+    cmpnts_type = Strings
+    coeffs_type = RealCoeffs
+
+
+class ComplexStringTermData(TermData):
+    cmpnts_type = Strings
+    coeffs_type = ComplexCoeffs
+
+
 def test_sign_term_data() -> None:
     td = TermData(Strings(0), SignCoeffs.from_size(0))
     assert (len(td), len(td._cmpnts), len(td._coeffs)) == (0,) * 3
@@ -154,3 +169,22 @@ def test_symbolic_term_data() -> None:
     assert str(td) == "(0, ), (x, ), (2*x, ), (3*x, ), (4*x, ), (5*x, )"
     td._cmpnts._impl._list[2] = "hello"
     assert str(td) == "(0, ), (x, ), (2*x, hello), (3*x, ), (4*x, ), (5*x, )"
+
+
+def test_term_data_from_str_round_trip() -> None:
+    assert SignStringTermData.from_str("") == SignStringTermData(Strings.from_str(""), SignCoeffs())
+
+    sign_td = SignStringTermData.from_str("(-1, ), (+1, hello)")
+    assert sign_td == SignStringTermData(
+        Strings.from_str(", hello"), SignCoeffs.from_str("[-1, +1]")
+    )
+
+    real_td = RealStringTermData.from_str("(0.0, ), (1.25, hello)")
+    assert real_td == RealStringTermData(
+        Strings.from_str(", hello"), RealCoeffs.from_str("[0.0, 1.25]")
+    )
+
+    complex_td = ComplexStringTermData.from_str("(0j, ), ((1.2-3.4j), hello)")
+    assert complex_td == ComplexStringTermData(
+        Strings.from_str(", hello"), ComplexCoeffs.from_str("[0j, (1.2-3.4j)]")
+    )

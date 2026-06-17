@@ -48,7 +48,7 @@ import pandas as pd
 from sympy import Expr
 from typing_extensions import Self
 
-from zixy.container.base import ViewableItem, ViewableSequence, requires_ownership
+from zixy.container.base import ViewableItem, ViewableSequence, requires_ownership, StringRepresentable
 from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet, ImplT, SpecT
 from zixy.container.coeffs import (
     Coeff,
@@ -86,6 +86,7 @@ class Term(
     ViewableItem[TermData[ImplT, SpecT, CoeffT]],
     Generic[ImplT, SpecT, CoeffT],
     TermMulMixin[ImplT, SpecT, CoeffT],
+    StringRepresentable,
 ):
     """A term consisting of a component and a coefficient.
 
@@ -166,6 +167,44 @@ class Term(
         coeffs = get_coeffs_type(cls.coeff_type)()
         coeffs.append(coeff)
         return cls._create(TermData(cmpnts, coeffs))
+
+    @classmethod
+    def from_str(cls, s: str) -> Self:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            s: String to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``s``.
+        """
+        coeff_type = cls.coeff_type
+        cmpnt_type = cls.cmpnt_type
+        if not s.startswith("(") or not s.endswith(")"):
+            raise ValueError(f"String {s} is not a valid representation of a term.")
+        s = s[1:-1]
+        coeff_str, cmpnt_str = s.split(",", 1)
+        coeff_str = coeff_str.strip()
+        cmpnt_str = cmpnt_str.strip()
+        coeff: CoeffT
+        if coeff_type is Sign:
+            coeff = Sign.from_str(coeff_str)  # type: ignore
+        elif coeff_type is ComplexSign:
+            coeff = ComplexSign.from_str(coeff_str)  # type: ignore
+        elif coeff_type is RootOfUnity:
+            coeff = RootOfUnity.from_str(coeff_str)  # type: ignore
+        elif _is_int(coeff_type):
+            coeff = int(coeff_str)  # type: ignore
+        elif _is_float(coeff_type):
+            coeff = float(coeff_str)  # type: ignore
+        elif _is_complex(coeff_type):
+            coeff = complex(coeff_str)  # type: ignore
+        elif _is_expr(coeff_type):
+            coeff = Expr(coeff_str)  # type: ignore
+        else:
+            raise TypeError(f"Cannot parse string {s} into a term with coefficient type {coeff_type}.")
+        cmpnt = cmpnt_type.from_str(cmpnt_str)
+        return cls.from_cmpnt_coeff(cmpnt, coeff)
 
     def clone(self) -> Self:
         """Return a deep copy of ``self``."""
@@ -256,6 +295,7 @@ class Term(
 class Terms(
     Generic[ImplT, SpecT, CoeffT],
     ViewableSequence[Term[ImplT, SpecT, CoeffT], TermData[ImplT, SpecT, CoeffT]],
+    StringRepresentable,
 ):
     """A collection of terms consisting of components and coefficients.
 
@@ -589,6 +629,20 @@ class Terms(
         out.append_iterable(source)
         return out
 
+    @classmethod
+    def from_str(cls, s: str) -> Self:
+        """Create a new instance of ``cls`` from a string.
+
+        Args:
+            s: String to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``s``.
+        """
+        term_strs = [t.strip() for t in s.split(",")]
+        terms = [cls.term_type.from_str(t) for t in term_strs]
+        return cls.from_iterable(terms)
+
 
 class NumericTerms(Terms[ImplT, SpecT, NumberT]):
     """A collection of terms consisting of components and numeric coefficients.
@@ -617,7 +671,7 @@ class NumericTerms(Terms[ImplT, SpecT, NumberT]):
         return out
 
 
-class TermSet(Generic[ImplT, SpecT, CoeffT]):
+class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
     """A collection of unique terms consisting of components and coefficients.
 
     A set-like container of terms that may be used to store unique terms and perform set-like
@@ -722,6 +776,19 @@ class TermSet(Generic[ImplT, SpecT, CoeffT]):
         out = cls.__new__(cls)
         TermSet.__init__(out, terms)
         return out
+
+    @classmethod
+    def from_str(cls, s: str) -> Self:
+        """Create a new instance of ``cls`` from a string.
+
+        Args:
+            s: String to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``s``.
+        """
+        terms = cls.terms_type.from_str(s)
+        return cls.from_terms(terms)
 
     def into(
         self, t: type[TermSet[ImplT, SpecT, OtherCoeffT]]

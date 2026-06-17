@@ -7,6 +7,7 @@ from mock_cmpnts import String, Strings, StringSet, StringsImplArray
 def test_cmpnt():
     s = String("hello")
     assert str(s) == "hello"
+    assert String.from_str("hello") == s
     s.set("world")
     assert str(s) == "world"
     s.set(String("hello"))

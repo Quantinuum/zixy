@@ -116,8 +116,16 @@ class String(Cmpnt[StringsImplArray, CmpntSpecT]):
         self.set(source)
 
     @classmethod
-    def from_str(cls, source: str) -> String:
-        return cls(source)
+    def from_str(cls, s: str) -> String:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            s: String to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``s``.
+        """
+        return cls(s)
 
     def __repr__(self) -> str:
         return str(self._impl._list[self.index])

@@ -85,6 +85,7 @@ def test_string_from_str():
     assert str(err.value) == "There should be exactly one Pauli string in the input, not 5."
     a = String.from_str("X0 Z1 Y2 Z3", 4)
     assert a.get_tuple() == (X, Z, Y, Z)
+    assert String.from_str(str(a), 4) == a
 
 
 def test_string_to_sparse_matrix():

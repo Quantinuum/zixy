@@ -6,7 +6,11 @@ from zixy.qubit.state import String, Strings
 def test_from_tuple():
     s = String(6, (0, 1, 1, 0, 0, 1))
     assert str(s) == "[0, 1, 1, 0, 0, 1]"
+    assert String.from_str(str(s), 6) == s
     assert s.hamming_weight() == s.count(True) == 3
+    with pytest.raises(ValueError) as err:
+        String.from_str("[1, 0], [0, 1]", 2)
+    assert str(err.value) == "Source string should contain one state string, got 2."
     with pytest.raises(ValueError) as err:
         s[1] = 2
     assert str(err.value) == "Integer bit argument must be either 0 or 1"

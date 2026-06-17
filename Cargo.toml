@@ -22,10 +22,10 @@ missing_docs = "warn"
 
 [workspace.dependencies]
 pyo3 = { version = "0.27.2", features = ["extension-module", "multiple-pymethods"] }
-ndarray = "0.16.1"
+ndarray = "0.17.2"
 sprs = "0.11"
-itertools = "0.14.0"
-rand = "0.9.1"
+itertools = "0.15.0"
+rand = "0.10.1"
 indexmap = "2.9.0"
 num-complex = { version = "0.4", features = ["serde"] }
 rstest = "0.26.1"

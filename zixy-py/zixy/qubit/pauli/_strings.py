@@ -252,24 +252,6 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
 
     _set_type: type[StringSet]
 
-    @classmethod
-    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Strings:
-        """Create a new instance of ``cls`` by parsing an input string.
-
-        Args:
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
-                index in the input string.
-            source: Input string to parse.
-
-        Returns:
-            A new instance containing the Pauli string in the ``source``.
-        """
-        if isinstance(qubits, int):
-            qubits = Qubits.from_count(qubits)
-        return cls._create(
-            cls.cmpnt_type.impl_type(qubits if qubits is not None else None, PauliSprings(source))
-        )
-
     @overload
     def __getitem__(self, indexer: int) -> String: ...
 

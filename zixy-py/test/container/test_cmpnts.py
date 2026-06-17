@@ -98,6 +98,7 @@ def test_cmpnt_set():
     s = StringSet.from_iterable("what a a time to to be to time alive time".split())
     assert len(s) == 6
     assert str(s) == "what, a, time, to, be, alive"
+    assert str(StringSet.from_str(str(s))) == str(s)
     assert s.lookup("be") == 4
     assert s.lookup("was") is None
 

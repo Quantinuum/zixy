@@ -179,6 +179,26 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
         )
         self.resize(n)
 
+    @classmethod
+    def from_str(cls, s: str, qubits: int | Qubits | None = None) -> Self:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            s: String to parse.
+            qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
+                index in the input string.
+
+        Returns:
+            An instance of ``cls`` parsed from ``s``.
+        """
+        if isinstance(qubits, int):
+            qubits = Qubits.from_count(qubits)
+        return cls._create(
+            cls.cmpnt_type.impl_type(
+                qubits if qubits is not None else None, cls.cmpnt_type._springs_type(s)
+            )
+        )
+
     @property
     def qubits(self) -> Qubits:
         """Get the qubits corresponding to ``self``."""

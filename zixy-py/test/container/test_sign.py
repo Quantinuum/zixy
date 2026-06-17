@@ -15,6 +15,8 @@ def test_from_phases():
 def test_scalar_conversions():
     assert int(Sign(False)) == 1
     assert int(Sign(True)) == -1
+    assert Sign.from_str("+1") == Sign(False)
+    assert Sign.from_str("-1") == Sign(True)
 
 
 def test_scalar_mul():

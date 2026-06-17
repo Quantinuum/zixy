@@ -61,3 +61,4 @@ def test_strings_from_iterable():
         str(s[2::-1])
         == "[0, 1, 0, 1, 0, 1, 0, 1, 0, 1], [0, 1, 1, 0, 0, 0, 1, 0, 0, 0], [0, 1, 0, 1, 1, 0, 0, 0, 0, 1]"
     )
+    assert Strings.from_str(str(s), 10) == s

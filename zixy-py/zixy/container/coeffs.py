@@ -488,6 +488,10 @@ class ComplexSign(RootOfUnity):
             ValueError: If ``s`` is not exactly representable as ``cls``.
         """
         try:
+            if s == "+i":
+                s = "1j"
+            elif s == "-i":
+                s = "-1j"
             value = complex(s)
             return cls.from_complex(value)
         except ValueError as e:

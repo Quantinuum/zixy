@@ -156,6 +156,12 @@ pub fn try_py_indices(indices: Vec<isize>, len: usize) -> PyResult<Vec<usize>> {
     Ok(out)
 }
 
+/// Format the indexed component of a `WordIters` container as a string.
+pub fn cmpnt_to_string<T: WordIters>(src: &T, index: isize) -> PyResult<String> {
+    let index = try_py_index(index, src.len())?;
+    Ok(src.fmt_elem(index))
+}
+
 /// Implement this to provide access to a Rust object within a wrapper object.
 pub trait AccessImplementation {
     /// Type of the the wrapped object.

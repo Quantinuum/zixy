@@ -119,6 +119,10 @@ class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT], StringRepresentable):
             return NotImplemented
         return self._impl.cmpnts_eq([self.index], other._impl, [other.index])
 
+    def __repr__(self) -> str:
+        """Return a string representation of ``self``."""
+        return self._impl.cmpnt_to_string(self.index)
+
     @abstractmethod
     def set(self, source: SpecT | Self | None) -> None:
         """Set the value of the component.

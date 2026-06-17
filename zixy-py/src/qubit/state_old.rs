@@ -11,7 +11,7 @@ use zixy::qubit::state::cmpnt_list::CmpntList;
 use zixy::qubit::traits::{DifferentQubits, QubitsBased};
 
 use crate::qubit::mode::Qubits;
-use crate::utils::{try_py_index, try_py_indices, ToPyResult};
+use crate::utils::{cmpnt_to_string, try_py_index, try_py_indices, ToPyResult};
 
 /// A list of computational basis state strings
 #[pyclass(subclass)]
@@ -252,8 +252,7 @@ impl Array {
 
     /// Get the string representation of the indexed cmpnt.
     pub fn cmpnt_to_string(&self, i: isize) -> PyResult<String> {
-        let i = try_py_index(i, self.len())?;
-        Ok(self.0.get_elem_ref(i).to_string())
+        cmpnt_to_string(&self.0, i)
     }
 
     /// Take the indexed cmpnts of `self` and write them contiguously to a new instance.

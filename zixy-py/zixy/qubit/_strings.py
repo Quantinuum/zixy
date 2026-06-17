@@ -73,10 +73,6 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
             self.set(source)
         assert len(self._impl) == 1
 
-    def __repr__(self) -> str:
-        """Return a string representation of ``self``."""
-        return self._impl.cmpnt_to_string(self.index)
-
     @property
     def qubits(self) -> Qubits:
         """Get the qubits corresponding to ``self``."""

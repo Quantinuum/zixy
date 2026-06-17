@@ -343,4 +343,14 @@ class StringRepresentable(ABC):
         """
         pass
 
-    parse = from_str
+    @classmethod
+    def parse(cls, s: str) -> Self:
+        """Parse a string into an instance of ``cls``.
+
+        Args:
+            s: String to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``s``.
+        """
+        return cls.from_str(s)

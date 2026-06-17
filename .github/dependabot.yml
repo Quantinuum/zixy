@@ -15,8 +15,6 @@ updates:
       cargo-version-updates:
         patterns:
           - "*"
-    assignees:
-      - "Quantinuum/EUMEN-DEV"
   - package-ecosystem: "github-actions"
     directories:
       - "/"
@@ -29,8 +27,6 @@ updates:
       github-actions-version-updates:
         patterns:
           - "*"
-    assignees:
-      - "Quantinuum/EUMEN-DEV"
   - package-ecosystem: "uv"
     directories:
       - "/"
@@ -45,5 +41,3 @@ updates:
       uv-version-updates:
         patterns:
           - "*"
-    assignees:
-      - "Quantinuum/EUMEN-DEV"

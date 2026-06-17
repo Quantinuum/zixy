@@ -15,6 +15,10 @@ updates:
       cargo-version-updates:
         patterns:
           - "*"
+      ignore:
+        - dependency-name: "rand"
+          versions: [">= 0.10.0"]
+  
   - package-ecosystem: "github-actions"
     directories:
       - "/"
@@ -27,6 +31,7 @@ updates:
       github-actions-version-updates:
         patterns:
           - "*"
+  
   - package-ecosystem: "uv"
     directories:
       - "/"

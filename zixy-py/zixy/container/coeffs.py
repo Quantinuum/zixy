@@ -44,7 +44,7 @@ from sympy import Expr, Float, I, Integer, Symbol, diff, sympify
 from typing_extensions import Self, TypeIs
 
 from zixy import _zixy
-from zixy.container.base import ViewableSequence, requires_ownership, StringRepresentable
+from zixy.container.base import StringRepresentable, ViewableSequence, requires_ownership
 from zixy.utils import (
     DEFAULT_ATOL,
     DEFAULT_RTOL,

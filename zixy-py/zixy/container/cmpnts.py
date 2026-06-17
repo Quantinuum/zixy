@@ -41,7 +41,12 @@ from typing import (
 from typing_extensions import Self
 
 from zixy._zixy import Map
-from zixy.container.base import ViewableItem, ViewableSequence, requires_ownership, StringRepresentable
+from zixy.container.base import (
+    StringRepresentable,
+    ViewableItem,
+    ViewableSequence,
+    requires_ownership,
+)
 from zixy.container.coeffs import Coeff, CoeffT, OtherCoeffT
 from zixy.utils import slice_index_gen, slice_len, slice_of_slice, slice_to_tuple
 
@@ -457,7 +462,9 @@ class CmpntSet(Generic[ImplT, SpecT], StringRepresentable):
         return out
 
 
-class Cmpnts(Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT], StringRepresentable):
+class Cmpnts(
+    Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT], StringRepresentable
+):
     """A collection of components.
 
     An array-like container of components that may be an owning instance referencing a contiguous

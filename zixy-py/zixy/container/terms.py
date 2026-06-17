@@ -48,7 +48,12 @@ import pandas as pd
 from sympy import Expr
 from typing_extensions import Self
 
-from zixy.container.base import ViewableItem, ViewableSequence, requires_ownership, StringRepresentable
+from zixy.container.base import (
+    StringRepresentable,
+    ViewableItem,
+    ViewableSequence,
+    requires_ownership,
+)
 from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet, ImplT, SpecT
 from zixy.container.coeffs import (
     Coeff,
@@ -178,8 +183,6 @@ class Term(
         Returns:
             An instance of ``cls`` parsed from ``s``.
         """
-        coeff_type = cls.coeff_type
-        cmpnt_type = cls.cmpnt_type
         if not s.startswith("(") or not s.endswith(")"):
             raise ValueError(f"String {s} is not a valid representation of a term.")
         s = s[1:-1]
@@ -187,23 +190,23 @@ class Term(
         coeff_str = coeff_str.strip()
         cmpnt_str = cmpnt_str.strip()
         coeff: CoeffT
-        if coeff_type is Sign:
-            coeff = Sign.from_str(coeff_str)  # type: ignore
-        elif coeff_type is ComplexSign:
-            coeff = ComplexSign.from_str(coeff_str)  # type: ignore
-        elif coeff_type is RootOfUnity:
-            coeff = RootOfUnity.from_str(coeff_str)  # type: ignore
-        elif _is_int(coeff_type):
-            coeff = int(coeff_str)  # type: ignore
-        elif _is_float(coeff_type):
-            coeff = float(coeff_str)  # type: ignore
-        elif _is_complex(coeff_type):
-            coeff = complex(coeff_str)  # type: ignore
-        elif _is_expr(coeff_type):
-            coeff = Expr(coeff_str)  # type: ignore
+        if _is_sign(cls.coeff_type):
+            coeff = Sign.from_str(coeff_str)
+        elif _is_complex_sign(cls.coeff_type):
+            coeff = ComplexSign.from_str(coeff_str)
+        elif _is_int(cls.coeff_type):
+            coeff = int(coeff_str)
+        elif _is_float(cls.coeff_type):
+            coeff = float(coeff_str)
+        elif _is_complex(cls.coeff_type):
+            coeff = complex(coeff_str)
+        elif _is_expr(cls.coeff_type):
+            coeff = Expr(coeff_str)
         else:
-            raise TypeError(f"Cannot parse string {s} into a term with coefficient type {coeff_type}.")
-        cmpnt = cmpnt_type.from_str(cmpnt_str)
+            raise TypeError(
+                f"Cannot parse string {s} into a term with coefficient type {cls.coeff_type}."
+            )
+        cmpnt = cls.cmpnts_type.cmpnt_type.from_str(cmpnt_str)
         return cls.from_cmpnt_coeff(cmpnt, coeff)
 
     def clone(self) -> Self:

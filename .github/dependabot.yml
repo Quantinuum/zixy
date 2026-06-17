@@ -7,28 +7,37 @@ updates:
       - "/zixy/"
       - "/zixy-py/"
     schedule:
-      interval: "daily"
-    open-pull-requests-limit: 5
+      interval: "weekly"
+    open-pull-requests-limit: 2
     commit-message:
       prefix: "build(deps)"
     groups:
       cargo-version-updates:
         patterns:
           - "*"
-      ignore:
-        - dependency-name: "rand"
-          versions: [">= 0.10.0"]
+      cargo-security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "rand"
+        # Breaking API change which breaks builds
+        versions: [">= 0.10.0"]
   
   - package-ecosystem: "github-actions"
     directories:
       - "/"
     schedule:
-      interval: "daily"
-    open-pull-requests-limit: 5
+      interval: "weekly"
+    open-pull-requests-limit: 2
     commit-message:
       prefix: "build(deps)"
     groups:
       github-actions-version-updates:
+        patterns:
+          - "*"
+      github-actions-security-updates:
+        applies-to: security-updates
         patterns:
           - "*"
   
@@ -38,11 +47,15 @@ updates:
       - "/zixy-py/"
       - "/zixy-py/docs/"
     schedule:
-      interval: "daily"
-    open-pull-requests-limit: 5
+      interval: "weekly"
+    open-pull-requests-limit: 2
     commit-message:
       prefix: "build(deps)"
     groups:
       uv-version-updates:
+        patterns:
+          - "*"
+      uv-security-updates:
+        applies-to: security-updates
         patterns:
           - "*"

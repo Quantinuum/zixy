@@ -115,6 +115,10 @@ class String(Cmpnt[StringsImplArray, CmpntSpecT]):
         super().__init__(impl)
         self.set(source)
 
+    @classmethod
+    def from_str(cls, source: str) -> String:
+        return cls(source)
+
     def __repr__(self) -> str:
         return str(self._impl._list[self.index])
 

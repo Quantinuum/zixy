@@ -430,6 +430,7 @@ def test_sign_vec():
     assert len(SignCoeffs.from_scalar(Sign(False))) == 1
     assert len(SignCoeffs.from_scalar(Sign(False), 5)) == 5
     assert SignCoeffs.from_scalar(Sign(False))[0] == Sign(False)
+    assert SignCoeffs.from_str("[+1, -1]") == SignCoeffs.from_sequence([Sign(False), Sign(True)])
     v = SignCoeffs.from_size(10)
     assert len(v) == 10
     assert all(c == Sign(False) for c in v)
@@ -471,6 +472,7 @@ def test_sign_vec():
     assert str(v) == "[-1, -1, +1, +1]"
     copy = v[:].clone()
     assert copy == v
+    assert SignCoeffs.from_str(str(copy)) == copy
     rcopy = v[::-1].clone()
     assert rcopy == copy[::-1]
     assert rcopy[::-1] == copy
@@ -490,6 +492,9 @@ def test_complex_sign_vec():
     assert len(ComplexSignCoeffs.from_scalar(ComplexSign(3))) == 1
     assert len(ComplexSignCoeffs.from_scalar(ComplexSign(3), 5)) == 5
     assert ComplexSignCoeffs.from_scalar(ComplexSign(3))[0] == ComplexSign(3)
+    assert ComplexSignCoeffs.from_str("[+1, +i, -1, -i]") == ComplexSignCoeffs.from_phases(
+        [0, 1, 2, 3]
+    )
     v = ComplexSignCoeffs.from_size(10)
     assert len(v) == 10
     assert all(c == ComplexSign(0) for c in v)
@@ -531,6 +536,7 @@ def test_complex_sign_vec():
     assert str(v) == "[+i, +i, -1, -1]"
     copy = v[:].clone()
     assert copy == v
+    assert ComplexSignCoeffs.from_str(str(copy)) == copy
     rcopy = v[::-1].clone()
     assert rcopy == copy[::-1]
     assert rcopy[::-1] == copy
@@ -550,6 +556,7 @@ def test_real_vec():
     assert len(RealCoeffs.from_scalar(2.0)) == 1
     assert len(RealCoeffs.from_scalar(2.0, 5)) == 5
     assert RealCoeffs.from_scalar(2.0)[0] == 2
+    assert RealCoeffs.from_str("[1.25, -2.5]") == RealCoeffs.from_sequence([1.25, -2.5])
     v = RealCoeffs.from_size(10)
     assert len(v) == 10
     assert all(c == 1 for c in v)
@@ -595,6 +602,7 @@ def test_real_vec():
     assert str(v) == "[1.0, 2.0, 2.0]"
     copy = v[:].clone()
     assert copy == v
+    assert RealCoeffs.from_str(str(copy)) == copy
     rcopy = v[::-1].clone()
     assert rcopy == copy[::-1]
     assert rcopy[::-1] == copy
@@ -614,6 +622,9 @@ def test_complex_vec():
     assert len(ComplexCoeffs.from_scalar(2 + 1j)) == 1
     assert len(ComplexCoeffs.from_scalar(2 + 1j, 5)) == 5
     assert ComplexCoeffs.from_scalar(2 + 1j)[0] == 2 + 1j
+    assert ComplexCoeffs.from_str("[(1+2j), (-3+0j)]") == ComplexCoeffs.from_sequence(
+        [1 + 2j, -3 + 0j]
+    )
     v = ComplexCoeffs.from_size(10)
     assert len(v) == 10
     assert all(c == 1 for c in v)
@@ -661,6 +672,7 @@ def test_complex_vec():
     assert str(v) == "[(1+1j), (1+1j), (2+0j), (2+0j)]"
     copy = v[:].clone()
     assert copy == v
+    assert ComplexCoeffs.from_str(str(copy)) == copy
     rcopy = v[::-1].clone()
     assert rcopy == copy[::-1]
     assert rcopy[::-1] == copy

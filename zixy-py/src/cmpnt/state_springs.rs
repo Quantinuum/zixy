@@ -2,6 +2,7 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::{pyclass, pymethods, Bound, PyAny, PyErr, PyResult};
 use zixy::cmpnt::springs::ModeSettings;
+use zixy::container::traits::Elements;
 use zixy::cmpnt::state_springs::BinarySprings as BinarySprings_;
 
 use crate::utils::ToPyResult;
@@ -30,6 +31,11 @@ impl BinarySprings {
         Err(PyErr::new::<PyValueError, _>(
             "Binary springs object does not have exactly one part",
         ))
+    }
+
+    /// Get number of springs.
+    pub fn __len__(&self) -> usize {
+        self.0.len()
     }
 }
 wrapped_str!(BinarySprings);

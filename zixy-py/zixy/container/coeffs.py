@@ -1064,6 +1064,11 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
         Returns:
             An instance of ``cls`` parsed from ``s``.
         """
+        s = s.strip().removeprefix("[").removesuffix("]")
+        if _is_complex(cls.coeff_type):
+            # normalise e.g. (1 + 2j) -> 1 + 2j
+            items = [item.strip().removeprefix("(").removesuffix(")") for item in s.split(", ")]
+            s = ", ".join(item for item in items if item)
         out = cls()
         out._impl = cls.coeffs_type.parse(s)
         return out
@@ -1607,10 +1612,10 @@ class SymbolicCoeffs(Coeffs[Expr]):
         return ComplexCoeffs.from_sequence(out)
 
     @classmethod
-    def parse(cls, source: str) -> Self:  # noqa: D102
+    def from_str(cls, source: str) -> Self:  # noqa: D102
         raise NotImplementedError("Cannot parse SymbolicCoeffs from string.")
 
-    parse.__doc__ = Coeffs.parse.__doc__
+    from_str.__doc__ = Coeffs.from_str.__doc__
 
     @property
     def np_array(self) -> NDArray[np.float64 | np.complex128]:

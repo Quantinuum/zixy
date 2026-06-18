@@ -45,4 +45,14 @@ impl PackedIntMatrix {
         let shifted = self.table[i_row][i_u64] >> bit_offset;
         (shifted & mask) as usize
     }
+
+    /// Read back all mode indices in row `i_row` up to `length` slots, ignoring padding.
+    pub fn read_row(&self, i_row: usize, length: usize) -> Vec<usize> {
+        let mut vec: Vec<usize> = Vec::new();
+        for i in 0..length {
+            let value = self.get_value(i_row, i);
+            vec.push(value);
+        }
+        vec
+    }
 }

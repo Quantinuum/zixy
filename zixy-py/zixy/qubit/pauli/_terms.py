@@ -197,7 +197,9 @@ class Terms(TermsBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
         impl, phases = QubitPauliArray.with_phases(qubits, PauliSprings(source))
         cmpnts = cls.term_type.cmpnts_type._create(impl)
         coeffs_type = get_coeffs_type(cls.term_type.coeff_type)
-        coeffs = coeffs_type.from_str(source) if "(" in source else coeffs_type.from_size(len(phases))
+        coeffs = (
+            coeffs_type.from_str(source) if "(" in source else coeffs_type.from_size(len(phases))
+        )
         coeffs *= ComplexSignCoeffs._create(phases)
         return cls._create(TermData(cmpnts, coeffs))
 

@@ -271,9 +271,7 @@ class Sign(RootOfUnity):
             value = int(source)
             return cls.from_int(value)
         except ValueError as e:
-            raise ValueError(
-                f"string {source} is not an exact square root of unity."
-            ) from e
+            raise ValueError(f"string {source} is not an exact square root of unity.") from e
 
     def __int__(self) -> int:
         """Convert ``self`` to an integer value."""
@@ -497,9 +495,7 @@ class ComplexSign(RootOfUnity):
             value = complex(source)
             return cls.from_complex(value)
         except ValueError as e:
-            raise ValueError(
-                f"string {source} is not an exact fourth root of unity."
-            ) from e
+            raise ValueError(f"string {source} is not an exact fourth root of unity.") from e
 
     def __int__(self) -> int:
         """Convert ``self`` to an integer value.

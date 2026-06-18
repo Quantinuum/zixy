@@ -33,7 +33,6 @@ operations.
 from __future__ import annotations
 
 import builtins
-from abc import abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from typing import (

@@ -326,10 +326,6 @@ class StringRepresentable(ABC):
         """Return a string representation of ``self``."""
         return repr(self)
 
-    def to_string(self) -> str:
-        """Return a string representation of ``self``."""
-        return str(self)
-
     @classmethod
     @abstractmethod
     def from_str(cls, source: str) -> Self:

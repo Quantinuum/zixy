@@ -9,9 +9,7 @@ from zixy.container.data import TermData
 from zixy.container.terms import NumericTerms, NumericTermSum, Term, Terms, TermSet
 
 
-def _mock_term_from_str(
-    cls: type[Term[StringsImplArray, str, object]], source: str
-) -> object:
+def _mock_term_from_str(cls: type[Term[StringsImplArray, str, object]], source: str) -> object:
     if not source.startswith("(") or not source.endswith(")"):
         raise ValueError(f"String {source} is not a valid representation of a term.")
     coeff_str, cmpnt_str = source[1:-1].split(",", 1)

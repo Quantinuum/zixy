@@ -332,25 +332,25 @@ class StringRepresentable(ABC):
 
     @classmethod
     @abstractmethod
-    def from_str(cls, s: str) -> Self:
+    def from_str(cls, source: str) -> Self:
         """Create an instance of ``cls`` from a string.
 
         Args:
-            s: String to parse.
+            source: String to parse.
 
         Returns:
-            An instance of ``cls`` parsed from ``s``.
+            An instance of ``cls`` parsed from ``source``.
         """
         pass
 
     @classmethod
-    def parse(cls, s: str) -> Self:
+    def parse(cls, source: str) -> Self:
         """Parse a string into an instance of ``cls``.
 
         Args:
-            s: String to parse.
+            source: String to parse.
 
         Returns:
-            An instance of ``cls`` parsed from ``s``.
+            An instance of ``cls`` parsed from ``source``.
         """
-        return cls.from_str(s)
+        return cls.from_str(source)

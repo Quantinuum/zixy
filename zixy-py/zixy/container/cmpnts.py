@@ -257,16 +257,16 @@ class CmpntSet(Generic[ImplT, SpecT], StringRepresentable):
         return out
 
     @classmethod
-    def from_str(cls, s: str) -> Self:
+    def from_str(cls, source: str) -> Self:
         """Create an instance of ``cls`` from a string.
 
         Args:
-            s: String to parse.
+            source: String to parse.
 
         Returns:
-            An instance of ``cls`` parsed from ``s``.
+            An instance of ``cls`` parsed from ``source``.
         """
-        cmpnts = cls.cmpnts_type.from_str(s)
+        cmpnts = cls.cmpnts_type.from_str(source)
         return cls.from_cmpnts(cmpnts)
 
     def _empty_clone(self) -> Self:
@@ -521,16 +521,16 @@ class Cmpnts(
         return cls._create(cmpnt.clone()._impl)
 
     @classmethod
-    def from_str(cls, s: str) -> Self:
+    def from_str(cls, source: str) -> Self:
         """Create an instance of ``cls`` from a string.
 
         Args:
-            s: String to parse.
+            source: String to parse.
 
         Returns:
-            An instance of ``cls`` parsed from ``s``.
+            An instance of ``cls`` parsed from ``source``.
         """
-        cmpnt = cls.cmpnt_type.from_str(s)
+        cmpnt = cls.cmpnt_type.from_str(source)
         return cls.from_cmpnt(cmpnt)
 
     def clone(self) -> Self:

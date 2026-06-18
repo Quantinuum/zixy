@@ -255,23 +255,25 @@ class Sign(RootOfUnity):
     from_numeric = from_int
 
     @classmethod
-    def from_str(cls, s: str) -> Self:
+    def from_str(cls, source: str) -> Self:
         """Create an instance of ``cls`` from a string.
 
         Args:
-            s: String to parse.
+            source: String to parse.
 
         Returns:
-            An instance of ``cls`` parsed from ``s``.
+            An instance of ``cls`` parsed from ``source``.
 
         Raises:
-            ValueError: If ``s`` is not exactly representable as ``cls``.
+            ValueError: If ``source`` is not exactly representable as ``cls``.
         """
         try:
-            value = int(s)
+            value = int(source)
             return cls.from_int(value)
         except ValueError as e:
-            raise ValueError(f"string {s} is not an exact square root of unity.") from e
+            raise ValueError(
+                f"string {source} is not an exact square root of unity."
+            ) from e
 
     def __int__(self) -> int:
         """Convert ``self`` to an integer value."""
@@ -475,27 +477,29 @@ class ComplexSign(RootOfUnity):
     from_numeric = from_complex
 
     @classmethod
-    def from_str(cls, s: str) -> Self:
+    def from_str(cls, source: str) -> Self:
         """Create an instance of ``cls`` from a string.
 
         Args:
-            s: String to parse.
+            source: String to parse.
 
         Returns:
-            An instance of ``cls`` parsed from ``s``.
+            An instance of ``cls`` parsed from ``source``.
 
         Raises:
-            ValueError: If ``s`` is not exactly representable as ``cls``.
+            ValueError: If ``source`` is not exactly representable as ``cls``.
         """
         try:
-            if s == "+i":
-                s = "1j"
-            elif s == "-i":
-                s = "-1j"
-            value = complex(s)
+            if source == "+i":
+                source = "1j"
+            elif source == "-i":
+                source = "-1j"
+            value = complex(source)
             return cls.from_complex(value)
         except ValueError as e:
-            raise ValueError(f"string {s} is not an exact fourth root of unity.") from e
+            raise ValueError(
+                f"string {source} is not an exact fourth root of unity."
+            ) from e
 
     def __int__(self) -> int:
         """Convert ``self`` to an integer value.
@@ -1059,22 +1063,24 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
         self.resize(len(self) - 1)
 
     @classmethod
-    def from_str(cls, s: str) -> Self:
+    def from_str(cls, source: str) -> Self:
         """Create an instance of ``cls`` from a string.
 
         Args:
-            s: String to parse.
+            source: String to parse.
 
         Returns:
-            An instance of ``cls`` parsed from ``s``.
+            An instance of ``cls`` parsed from ``source``.
         """
-        s = s.strip().removeprefix("[").removesuffix("]")
+        source = source.strip().removeprefix("[").removesuffix("]")
         if _is_complex(cls.coeff_type):
             # normalise e.g. (1 + 2j) -> 1 + 2j
-            items = [item.strip().removeprefix("(").removesuffix(")") for item in s.split(", ")]
-            s = ", ".join(item for item in items if item)
+            items = [
+                item.strip().removeprefix("(").removesuffix(")") for item in source.split(", ")
+            ]
+            source = ", ".join(item for item in items if item)
         out = cls()
-        out._impl = cls.coeffs_type.parse(s)
+        out._impl = cls.coeffs_type.parse(source)
         return out
 
     @property
@@ -1346,17 +1352,17 @@ class ExprListWrapper(BaseVec):
         return len(self._list)
 
     @classmethod
-    def from_str(cls, s: str) -> Self:
+    def from_str(cls, source: str) -> Self:
         """Create an instance of ``cls`` from a string.
 
         Args:
-            s: String to parse.
+            source: String to parse.
 
         Returns:
-            An instance of ``cls`` parsed from ``s``.
+            An instance of ``cls`` parsed from ``source``.
         """
         out = cls()
-        out._list = [sympify(s) for s in s.split(",")]
+        out._list = [sympify(s) for s in source.split(",")]
         return out
 
     def __getitem__(self, index: int) -> Expr:

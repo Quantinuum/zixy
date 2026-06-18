@@ -598,16 +598,16 @@ class Terms(
         return out
 
     @classmethod
-    def from_str(cls, s: str) -> Self:
+    def from_str(cls, source: str) -> Self:
         """Create a new instance of ``cls`` from a string.
 
         Args:
-            s: String to parse.
+            source: String to parse.
 
         Returns:
-            An instance of ``cls`` parsed from ``s``.
+            An instance of ``cls`` parsed from ``source``.
         """
-        term_strs = split_top_level(s)
+        term_strs = split_top_level(source)
         terms = [cls.term_type.from_str(t) for t in term_strs]
         return cls.from_iterable(terms)
 
@@ -746,16 +746,16 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         return out
 
     @classmethod
-    def from_str(cls, s: str) -> Self:
+    def from_str(cls, source: str) -> Self:
         """Create a new instance of ``cls`` from a string.
 
         Args:
-            s: String to parse.
+            source: String to parse.
 
         Returns:
-            An instance of ``cls`` parsed from ``s``.
+            An instance of ``cls`` parsed from ``source``.
         """
-        terms = cls.terms_type.from_str(s)
+        terms = cls.terms_type.from_str(source)
         return cls.from_terms(terms)
 
     def into(

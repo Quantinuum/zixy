@@ -10,13 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v7
         with:
           version: 0.11.3
-      - uses: extractions/setup-just@v3
+      - uses: extractions/setup-just@v4
         with:
           just-version: '1.40.0'
 
@@ -26,9 +26,9 @@ jobs:
           just build-strict
 
       - name: Set up Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           # upload directory conatining the html files for the Sphinx build
           path: zixy-py/docs/build/
@@ -47,4 +47,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/docs/staging'
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

@@ -2,8 +2,8 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::{pyclass, pymethods, Bound, PyAny, PyErr, PyResult};
 use zixy::cmpnt::springs::{ModeInd, ModeSettings};
-use zixy::container::traits::Elements;
 use zixy::cmpnt::state_springs::BinarySprings as BinarySprings_;
+use zixy::container::traits::Elements;
 
 use crate::utils::ToPyResult;
 use crate::{standard_dunders, wrapped_str};

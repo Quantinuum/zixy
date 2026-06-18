@@ -33,6 +33,7 @@ operations.
 from __future__ import annotations
 
 import builtins
+from abc import abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from typing import (
@@ -80,7 +81,7 @@ from zixy.container.coeffs import (
 )
 from zixy.container.data import TermData
 from zixy.container.mixins import TermMulMixin
-from zixy.utils import DEFAULT_ATOL, DEFAULT_RTOL, slice_index_gen, slice_of_slice
+from zixy.utils import DEFAULT_ATOL, DEFAULT_RTOL, slice_index_gen, slice_of_slice, split_top_level
 
 TermSpecT: TypeAlias = (
     Cmpnt[ImplT, SpecT] | SpecT | tuple[SpecT | Cmpnt[ImplT, SpecT] | None, CoeffT | None] | None
@@ -172,42 +173,6 @@ class Term(
         coeffs = get_coeffs_type(cls.coeff_type)()
         coeffs.append(coeff)
         return cls._create(TermData(cmpnts, coeffs))
-
-    @classmethod
-    def from_str(cls, s: str) -> Self:
-        """Create an instance of ``cls`` from a string.
-
-        Args:
-            s: String to parse.
-
-        Returns:
-            An instance of ``cls`` parsed from ``s``.
-        """
-        if not s.startswith("(") or not s.endswith(")"):
-            raise ValueError(f"String {s} is not a valid representation of a term.")
-        s = s[1:-1]
-        coeff_str, cmpnt_str = s.split(",", 1)
-        coeff_str = coeff_str.strip()
-        cmpnt_str = cmpnt_str.strip()
-        coeff: CoeffT
-        if _is_sign(cls.coeff_type):
-            coeff = Sign.from_str(coeff_str)
-        elif _is_complex_sign(cls.coeff_type):
-            coeff = ComplexSign.from_str(coeff_str)
-        elif _is_int(cls.coeff_type):
-            coeff = int(coeff_str)
-        elif _is_float(cls.coeff_type):
-            coeff = float(coeff_str)
-        elif _is_complex(cls.coeff_type):
-            coeff = complex(coeff_str)
-        elif _is_expr(cls.coeff_type):
-            coeff = Expr(coeff_str)
-        else:
-            raise TypeError(
-                f"Cannot parse string {s} into a term with coefficient type {cls.coeff_type}."
-            )
-        cmpnt = cls.cmpnts_type.cmpnt_type.from_str(cmpnt_str)
-        return cls.from_cmpnt_coeff(cmpnt, coeff)
 
     def clone(self) -> Self:
         """Return a deep copy of ``self``."""
@@ -642,7 +607,7 @@ class Terms(
         Returns:
             An instance of ``cls`` parsed from ``s``.
         """
-        term_strs = [t.strip() for t in s.split(",")]
+        term_strs = split_top_level(s)
         terms = [cls.term_type.from_str(t) for t in term_strs]
         return cls.from_iterable(terms)
 

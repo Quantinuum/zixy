@@ -251,6 +251,7 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
     cmpnt_type = String
 
     _set_type: type[StringSet]
+    _springs_type = PauliSprings
 
     @overload
     def __getitem__(self, indexer: int) -> String: ...

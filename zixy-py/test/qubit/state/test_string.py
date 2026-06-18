@@ -1,6 +1,6 @@
 import pytest
 
-from zixy.qubit.state import String, Strings
+from zixy.qubit.state import String, Strings, StringSet
 
 
 def test_from_tuple():
@@ -62,3 +62,5 @@ def test_strings_from_iterable():
         == "[0, 1, 0, 1, 0, 1, 0, 1, 0, 1], [0, 1, 1, 0, 0, 0, 1, 0, 0, 0], [0, 1, 0, 1, 1, 0, 0, 0, 0, 1]"
     )
     assert Strings.from_str(str(s), 10) == s
+    string_set = StringSet.from_iterable(({1, 3, 4, 9}, {1, 2, 6}, {1, 3, 4, 9}), 10)
+    assert StringSet.from_str(str(string_set)) == string_set

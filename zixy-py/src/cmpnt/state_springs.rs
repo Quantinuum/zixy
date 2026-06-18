@@ -1,7 +1,7 @@
 //! Storage format for lists of state mode settings.
 use pyo3::exceptions::PyValueError;
 use pyo3::{pyclass, pymethods, Bound, PyAny, PyErr, PyResult};
-use zixy::cmpnt::springs::ModeSettings;
+use zixy::cmpnt::springs::{ModeInd, ModeSettings};
 use zixy::container::traits::Elements;
 use zixy::cmpnt::state_springs::BinarySprings as BinarySprings_;
 
@@ -36,6 +36,11 @@ impl BinarySprings {
     /// Get number of springs.
     pub fn __len__(&self) -> usize {
         self.0.len()
+    }
+
+    /// Number of modes required in the smallest space that can contain this spring.
+    pub fn default_n_qubit(&self) -> ModeInd {
+        self.0.get_mode_inds().default_n_mode()
     }
 }
 wrapped_str!(BinarySprings);

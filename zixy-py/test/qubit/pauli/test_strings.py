@@ -323,3 +323,4 @@ def test_string_set():
 def test_string_set_from_iterable():
     s = StringSet.from_iterable(((X,), (Y,), (X,), (I,), (Z,), (Y,), (X,)), 1)
     assert len(s) == 4
+    assert StringSet.from_str(str(s)) == s

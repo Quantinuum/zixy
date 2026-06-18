@@ -2,28 +2,64 @@ from __future__ import annotations
 
 import pytest
 from mock_cmpnts import String, Strings, StringSet, StringsImplArray
+from typing_extensions import Self
 
 from zixy.container.coeffs import ComplexSign, RealCoeffs, Sign, SignCoeffs
 from zixy.container.data import TermData
-from zixy.container.terms import NumericTerms, Term, Terms, TermSet
+from zixy.container.terms import NumericTerms, NumericTermSum, Term, Terms, TermSet
+
+
+def _mock_term_from_str(cls: type[Term[StringsImplArray, str, object]], s: str) -> object:
+    if not s.startswith("(") or not s.endswith(")"):
+        raise ValueError(f"String {s} is not a valid representation of a term.")
+    coeff_str, cmpnt_str = s[1:-1].split(",", 1)
+    coeff_str = coeff_str.strip()
+    cmpnt_str = cmpnt_str.strip()
+    if cls.coeff_type is Sign:
+        coeff = Sign.from_str(coeff_str)
+    elif cls.coeff_type is float:
+        coeff = float(coeff_str)
+    elif cls.coeff_type is complex:
+        coeff = complex(coeff_str)
+    else:
+        raise TypeError(f"Unsupported mock coefficient type {cls.coeff_type}.")
+    return cls.from_cmpnt_coeff(String.from_str(cmpnt_str), coeff)
 
 
 class RealMockTerm(Term[StringsImplArray, str, float]):
     cmpnts_type = Strings
     coeff_type = float
 
+    @classmethod
+    def from_str(cls, s: str) -> Self:
+        return _mock_term_from_str(cls, s)
+
 
 class RealMockTerms(NumericTerms[StringsImplArray, str, float]):
     term_type = RealMockTerm
+
+    def __init__(self, data: TermData[StringsImplArray, str, float] | None = None):
+        super().__init__(TermData(Strings(0), RealCoeffs.from_size(0)) if data is None else data)
 
 
 class RealMockTermSet(TermSet[StringsImplArray, str, float]):
     terms_type = RealMockTerms
 
 
+class RealMockTermSum(NumericTermSum[StringsImplArray, str, float]):
+    terms_type = RealMockTerms
+
+    def __init__(self):
+        super().__init__(RealMockTerms())
+
+
 class ComplexMockTerm(Term[StringsImplArray, str, complex]):
     cmpnts_type = Strings
     coeff_type = complex
+
+    @classmethod
+    def from_str(cls, s: str) -> Self:
+        return _mock_term_from_str(cls, s)
 
 
 class ComplexMockTerms(NumericTerms[StringsImplArray, str, complex]):
@@ -39,8 +75,17 @@ def test_sign_terms():
         cmpnts_type = Strings
         coeff_type = Sign
 
+        @classmethod
+        def from_str(cls, s: str) -> Self:
+            return _mock_term_from_str(cls, s)
+
     class MockTerms(Terms[StringsImplArray, str, Sign]):
         term_type = MockTerm
+
+        def __init__(self, data: TermData[StringsImplArray, str, Sign] | None = None):
+            super().__init__(
+                TermData(Strings(0), SignCoeffs.from_size(0)) if data is None else data
+            )
 
     class MockTermSet(TermSet[StringsImplArray, str, Sign]):
         terms_type = MockTerms
@@ -145,12 +190,18 @@ def test_sign_terms():
     assert len(MockTermSet(terms)) == 3
     assert str(MockTermSet(terms)) == "(+1, ), (-1, Fermi), (-1, hello)"
     assert str(MockTermSet(terms).clone()) == "(+1, ), (-1, Fermi), (-1, hello)"
+    assert MockTerms.from_str(str(terms)) == terms
+    assert MockTermSet.from_str(str(MockTermSet(terms))) == MockTermSet(terms)
 
 
 def test_real_terms():
     class MockTerm(Term[StringsImplArray, str, float]):
         cmpnts_type = Strings
         coeff_type = float
+
+        @classmethod
+        def from_str(cls, s: str) -> Self:
+            return _mock_term_from_str(cls, s)
 
     class MockTerms(NumericTerms[StringsImplArray, str, float]):
         term_type = MockTerm
@@ -226,6 +277,12 @@ def test_real_terms():
 
     assert terms_1[4::-1] == terms_2[4::-1]
     assert terms_1[4::-1].allclose(terms_2[4::-1])
+
+    term_sum = RealMockTermSum.from_iterable((("alpha", 1.0), ("beta", -2.0), ("alpha", 3.0)))
+    assert RealMockTermSet.from_str(str(RealMockTermSet.from_terms(term_sum.to_terms()))) == (
+        RealMockTermSet.from_terms(term_sum.to_terms())
+    )
+    assert RealMockTermSum.from_str(str(term_sum)) == term_sum
 
 
 def test_container_into_shape_conversions():

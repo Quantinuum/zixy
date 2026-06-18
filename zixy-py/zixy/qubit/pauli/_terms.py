@@ -89,29 +89,6 @@ class Term(TermBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
     coeff_type: type[CoeffT]
 
     @classmethod
-    def term_data_from_str(
-        cls, source: str, qubits: int | Qubits | None = None
-    ) -> TermData[QubitPauliArray, StringSpec, CoeffT]:
-        """Parse an input string and return the corresponding term data.
-
-        Args:
-            source: Input string to parse.
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
-                index in the input string.
-
-        Returns:
-            The parsed term data.
-        """
-        if isinstance(qubits, int):
-            qubits = Qubits.from_count(qubits)
-        impl, phases = QubitPauliArray.with_phases(qubits, PauliSprings(source))
-        cmpnts = cls.cmpnts_type._create(impl)
-        coeffs_type = get_coeffs_type(cls.coeff_type)
-        coeffs = coeffs_type.parse(source) if "(" in source else coeffs_type.from_size(len(phases))
-        coeffs *= ComplexSignCoeffs._create(phases)
-        return TermData(cmpnts, coeffs)
-
-    @classmethod
     def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Self:
         """Create a new instance of ``cls`` by parsing an input string.
 
@@ -123,7 +100,14 @@ class Term(TermBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
         Returns:
             A new instance containing the Pauli string and coefficient in the ``source``.
         """
-        data = cls.term_data_from_str(source, qubits)
+        if isinstance(qubits, int):
+            qubits = Qubits.from_count(qubits)
+        impl, phases = QubitPauliArray.with_phases(qubits, PauliSprings(source))
+        cmpnts = cls.cmpnts_type._create(impl)
+        coeffs_type = get_coeffs_type(cls.coeff_type)
+        coeffs = coeffs_type.from_str(source)
+        coeffs *= ComplexSignCoeffs._create(phases)
+        data = TermData(cmpnts, coeffs)
         if len(data) != 1:
             raise ValueError(
                 f"There should be exactly one Term string in the input, not {len(data)}."
@@ -208,7 +192,14 @@ class Terms(TermsBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
         Returns:
             A new instance containing the Pauli strings and coefficients in the ``source``.
         """
-        return cls._create(cls.term_type.term_data_from_str(source, qubits))
+        if isinstance(qubits, int):
+            qubits = Qubits.from_count(qubits)
+        impl, phases = QubitPauliArray.with_phases(qubits, PauliSprings(source))
+        cmpnts = cls.term_type.cmpnts_type._create(impl)
+        coeffs_type = get_coeffs_type(cls.term_type.coeff_type)
+        coeffs = coeffs_type.parse(source) if "(" in source else coeffs_type.from_size(len(phases))
+        coeffs *= ComplexSignCoeffs._create(phases)
+        return cls._create(TermData(cmpnts, coeffs))
 
     @property
     def strings(self) -> Strings:

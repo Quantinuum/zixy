@@ -100,7 +100,7 @@ class StringsImplArray(ImplArray):
     def mapped_equal(self, map: dict[str, int], other: StringsImplArray) -> bool:
         if len(self) != len(other):
             return False
-        return all(self.mapped_lookup(map, s) is not None for s in other._list)
+        return all(self.mapped_lookup(map, other, i) is not None for i in range(len(other)))
 
 
 CmpntSpecT = str

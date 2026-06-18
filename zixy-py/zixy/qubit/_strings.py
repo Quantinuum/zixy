@@ -165,6 +165,8 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
     contiguous Rust-bound data object, or a view on a slice of the elements in another collection.
     """
 
+    _springs_type: type[Springs]
+
     def __init__(self, qubits: int | Qubits = 0, n: int = 0):
         """Initialize the string array.
 
@@ -195,7 +197,7 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
             qubits = Qubits.from_count(qubits)
         return cls._create(
             cls.cmpnt_type.impl_type(
-                qubits if qubits is not None else None, cls.cmpnt_type._springs_type(s)
+                qubits if qubits is not None else None, cls._springs_type(s)
             )
         )
 

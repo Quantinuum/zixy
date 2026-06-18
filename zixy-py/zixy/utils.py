@@ -149,6 +149,48 @@ def slice_of_slice(s1: slice, s2: slice, length: int) -> slice:
     return slice(start, None, step) if start > stop and stop < 0 else slice(start, stop, step)
 
 
+def split_top_level(s: str, sep: str = ",") -> list[str]:
+    """Split ``s`` on unnested occurrences of ``sep``.
+
+    Commas inside matched pairs of ``()``, ``[]`` or ``{}`` are ignored. Empty items are dropped
+    and surrounding whitespace is stripped from the returned items.
+
+    Args:
+        s: String to split.
+        sep: Single-character separator.
+
+    Returns:
+        Top-level items extracted from ``s``.
+    """
+    items: list[str] = []
+    start = 0
+    paren_depth = 0
+    bracket_depth = 0
+    brace_depth = 0
+    for i, c in enumerate(s):
+        if c == "(":
+            paren_depth += 1
+        elif c == ")":
+            paren_depth -= 1
+        elif c == "[":
+            bracket_depth += 1
+        elif c == "]":
+            bracket_depth -= 1
+        elif c == "{":
+            brace_depth += 1
+        elif c == "}":
+            brace_depth -= 1
+        elif c == sep and paren_depth == 0 and bracket_depth == 0 and brace_depth == 0:
+            item = s[start:i].strip()
+            if item:
+                items.append(item)
+            start = i + 1
+    item = s[start:].strip()
+    if item:
+        items.append(item)
+    return items
+
+
 def _default_tols() -> tuple[float, float]:
     """Get the default absolute and relative tolerances for :func:`~numpy.allclose`."""
     params = inspect.signature(numpy.allclose).parameters

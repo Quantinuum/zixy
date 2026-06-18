@@ -155,6 +155,7 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
     cmpnt_type = String
 
     _set_type: type[StringSet]
+    _springs_type = BinarySprings
 
     @classmethod
     def new(cls, qubits: int | Qubits = 0, n: int = 0) -> Strings:

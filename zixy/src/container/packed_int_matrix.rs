@@ -11,8 +11,8 @@ pub struct PackedIntMatrix {
 
 impl PackedIntMatrix {
     /// Create a new empty row
-    pub fn new(n_bits: usize, max_len: isize) -> Self {
-        let row_size = divceil((n_bits as isize) * max_len, 64) as usize;
+    pub fn new(n_bits: usize, max_len: usize) -> Self {
+        let row_size = divceil((n_bits * max_len) as isize, 64) as usize;
         Self {
             table: Table::new(row_size),
             n_bits,

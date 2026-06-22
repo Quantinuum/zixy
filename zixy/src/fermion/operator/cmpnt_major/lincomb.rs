@@ -248,7 +248,7 @@ pub fn active_modes<C: FieldElem>(terms: &terms::View<C>) -> HashSet<usize> {
 }
 
 /// Returns a new operator with all terms where `|coeff| < tol` removed.
-pub fn filter_small_coeffs<C: FieldElem>(terms: &terms::View<C>, tol: f64) -> Terms<C> {
+pub fn truncated<C: FieldElem>(terms: &terms::View<C>, tol: f64) -> Terms<C> {
     let mut result = Terms::<C>::new(terms.modes().clone());
     for term in terms.iter() {
         let (cmpnt, coeff) = term.unpack();
@@ -467,7 +467,7 @@ mod tests {
     }
 
     #[test]
-    fn test_filter_small_coeffs() {
+    fn test_truncated() {
         let modes = Modes::from_count(4);
         let mut terms = Terms::<f64>::new(modes.clone());
 
@@ -479,7 +479,7 @@ mod tests {
         terms.borrow_mut().push_elem_coeff(cmpnt1.borrow(), 1.0);
         terms.borrow_mut().push_elem_coeff(cmpnt2.borrow(), 1e-15);
 
-        let filtered = filter_small_coeffs(&terms.borrow(), 1e-10);
+        let filtered = truncated(&terms.borrow(), 1e-10);
         assert_eq!(filtered.len(), 1);
     }
 }

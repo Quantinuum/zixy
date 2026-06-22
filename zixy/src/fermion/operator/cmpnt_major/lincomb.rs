@@ -233,6 +233,19 @@ pub fn is_molecular<C: FieldElem>(terms: &terms::View<C>) -> bool {
     true
 }
 
+/// Returns the set of mode indices that the operator acts on.
+pub fn active_modes<C: FieldElem>(terms: &terms::View<C>) -> HashSet<usize> {
+    let mut result: HashSet<usize> = HashSet::new();
+    for term in terms.iter() {
+        let (cmpnt, _) = term.unpack();
+        let cre = cmpnt.get_cre_part().to_set();
+        let ann = cmpnt.get_ann_part().to_set();
+        result.extend(cre);
+        result.extend(ann);
+    }
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -422,5 +435,21 @@ mod tests {
             terms.borrow_mut().push_elem_coeff(cmpnt.borrow(), 1.0);
         }
         assert_eq!(is_molecular(&terms.borrow()), expected);
+    }
+
+    #[rstest]
+    #[case(vec![(HashSet::from([0]), HashSet::from([1]))],HashSet::from([0, 1]))]
+    #[case(vec![(HashSet::from([0, 1]), HashSet::from([2, 3]))], HashSet::from([0, 1, 2, 3]))]
+    fn test_active_modes(
+        #[case] cmpnts: Vec<(HashSet<usize>, HashSet<usize>)>,
+        #[case] expected: HashSet<usize>,
+    ) {
+        let modes = Modes::from_count(4);
+        let mut terms = Terms::<f64>::new(modes.clone());
+        for (cre, ann) in cmpnts {
+            let cmpnt = Cmpnt::from_sets_unchecked(modes.clone(), cre, ann);
+            terms.borrow_mut().push_elem_coeff(cmpnt.borrow(), 1.0);
+        }
+        assert_eq!(active_modes(&terms.borrow()), expected);
     }
 }

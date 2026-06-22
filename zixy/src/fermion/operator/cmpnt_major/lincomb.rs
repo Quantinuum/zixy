@@ -214,7 +214,7 @@ pub fn check_operator_properties<C: FieldElem>(terms: &terms::View<C>) -> Operat
     }
 }
 
-/// Returns `true` if all the terms have equal creators/annohilators and at most 4 ladder operators.
+/// Returns `true` if all the terms have equal creators/annihilators and at most 4 ladder operators.
 pub fn is_molecular<C: FieldElem>(terms: &terms::View<C>) -> bool {
     for term in terms.iter() {
         let (cmpnt, _) = term.unpack();

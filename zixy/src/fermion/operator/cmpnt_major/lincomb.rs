@@ -12,6 +12,7 @@ use crate::fermion::operator::cmpnt::Cmpnt;
 use crate::fermion::operator::cmpnt_major::num_ops::num_op_from_inds;
 use crate::fermion::operator::cmpnt_major::term_set::{self, TermSet};
 use crate::fermion::operator::cmpnt_major::terms;
+use crate::fermion::operator::cmpnt_major::terms::Terms;
 use crate::fermion::operator::products::mul_cmpnts;
 use crate::fermion::traits::{DifferentSpaces, ModesBased};
 use num_complex::Complex64;
@@ -246,6 +247,18 @@ pub fn active_modes<C: FieldElem>(terms: &terms::View<C>) -> HashSet<usize> {
     result
 }
 
+/// Returns a new operator with all terms where `|coeff| < tol` removed.
+pub fn filter_small_coeffs<C: FieldElem>(terms: &terms::View<C>, tol: f64) -> Terms<C> {
+    let mut result = Terms::<C>::new(terms.modes().clone());
+    for term in terms.iter() {
+        let (cmpnt, coeff) = term.unpack();
+        if coeff.is_significant(tol) {
+            result.borrow_mut().push_elem_coeff(cmpnt, coeff);
+        }
+    }
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -451,5 +464,22 @@ mod tests {
             terms.borrow_mut().push_elem_coeff(cmpnt.borrow(), 1.0);
         }
         assert_eq!(active_modes(&terms.borrow()), expected);
+    }
+
+    #[test]
+    fn test_filter_small_coeffs() {
+        let modes = Modes::from_count(4);
+        let mut terms = Terms::<f64>::new(modes.clone());
+
+        let cmpnt1 =
+            Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([0]), HashSet::from([1]));
+        let cmpnt2 =
+            Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([2]), HashSet::from([3]));
+
+        terms.borrow_mut().push_elem_coeff(cmpnt1.borrow(), 1.0);
+        terms.borrow_mut().push_elem_coeff(cmpnt2.borrow(), 1e-15);
+
+        let filtered = filter_small_coeffs(&terms.borrow(), 1e-10);
+        assert_eq!(filtered.len(), 1);
     }
 }

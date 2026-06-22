@@ -13,7 +13,7 @@ use crate::fermion::operator::cmpnt::Cmpnt;
 use crate::fermion::operator::cmpnt_major::term_set::TermSet;
 
 /// Create a number operator over the given set of mode indices.
-pub fn num_op_inds<C: FieldElem>(
+pub fn num_op_from_inds<C: FieldElem>(
     modes: Modes,
     inds: HashSet<usize>,
 ) -> Result<TermSet<C>, OutOfBounds> {
@@ -28,7 +28,7 @@ pub fn num_op_inds<C: FieldElem>(
 
 /// Create the full number operator over all modes.
 pub fn num_op<C: FieldElem>(modes: Modes) -> TermSet<C> {
-    num_op_inds::<C>(modes.clone(), (0..modes.len()).collect())
+    num_op_from_inds::<C>(modes.clone(), (0..modes.len()).collect())
         .expect("num_op indices are always in bounds")
 }
 
@@ -42,10 +42,10 @@ mod tests {
     use std::collections::HashSet;
 
     #[test]
-    fn test_num_op_inds() {
+    fn test_num_op_from_inds() {
         let modes = Modes::from_count(4);
         let inds = HashSet::from([1, 3]);
-        let num_op = num_op_inds::<f64>(modes.clone(), inds).unwrap();
+        let num_op = num_op_from_inds::<f64>(modes.clone(), inds).unwrap();
         assert_eq!(num_op.as_terms().len(), 2);
         let expected_cmpnts = vec![
             Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([1]), HashSet::from([1])),

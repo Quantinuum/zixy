@@ -39,7 +39,7 @@ pub fn scaled_add<C: FieldElem>(
     out
 }
 
-// Assign lhs * rhs to out, normal-ordering each component product.
+/// Assign lhs * rhs to out, normal-ordering each component product.
 pub fn assign_from_mul<C: FieldElem>(
     out: &mut term_set::ViewMut<Complex64>,
     lhs: &terms::View<C>,
@@ -75,7 +75,7 @@ pub fn mul<C: FieldElem>(
     Ok(out)
 }
 
-// Assign the commutator [lhs, rhs] = lhs * rhs - rhs * lhs to out.
+/// Assign the commutator [lhs, rhs] = lhs * rhs - rhs * lhs to out.
 pub fn assign_from_commutator<C: FieldElem>(
     out: &mut term_set::ViewMut<Complex64>,
     lhs: &terms::View<C>,
@@ -87,7 +87,7 @@ pub fn assign_from_commutator<C: FieldElem>(
     Ok(())
 }
 
-// Assign the anticommutator {lhs, rhs} = lhs * rhs + rhs * lhs to out.
+/// Assign the anticommutator {lhs, rhs} = lhs * rhs + rhs * lhs to out.
 pub fn assign_from_anticommutator<C: FieldElem>(
     out: &mut term_set::ViewMut<Complex64>,
     lhs: &terms::View<C>,
@@ -117,7 +117,7 @@ pub fn anticommutator<C: FieldElem>(
     Ok(out)
 }
 
-// Check if the commutator [lhs, rhs] is zero within the given tolerance.
+/// Check if the commutator [lhs, rhs] is zero within the given tolerance.
 pub fn commute<C: FieldElem>(
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
@@ -126,7 +126,7 @@ pub fn commute<C: FieldElem>(
     Ok(commutator(lhs, rhs)?.get_coeffs().all_insignificant(atol))
 }
 
-// Check if the anticommutator {lhs, rhs} is zero within the given tolerance.
+/// Check if the anticommutator {lhs, rhs} is zero within the given tolerance.
 pub fn anticommute<C: FieldElem>(
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
@@ -137,7 +137,7 @@ pub fn anticommute<C: FieldElem>(
         .all_insignificant(atol))
 }
 
-// Check if the commutator [lhs, rhs] is zero within the default tolerance.
+/// Check if the commutator [lhs, rhs] is zero within the default tolerance.
 pub fn commute_default<C: FieldElem>(
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
@@ -145,7 +145,7 @@ pub fn commute_default<C: FieldElem>(
     commute(lhs, rhs, C::COMMUTES_ATOL_DEFAULT)
 }
 
-// Check if the anticommutator {lhs, rhs} is zero within the default tolerance.
+/// Check if the anticommutator {lhs, rhs} is zero within the default tolerance.
 pub fn anticommute_default<C: FieldElem>(
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
@@ -153,7 +153,7 @@ pub fn anticommute_default<C: FieldElem>(
     anticommute(lhs, rhs, C::COMMUTES_ATOL_DEFAULT)
 }
 
-// Reverse the order, and swap creation <-> annihilation on every operator.
+/// Reverse the order, and swap creation <-> annihilation on every operator.
 pub fn adjoint<C: FieldElem>(terms: &terms::View<C>) -> terms::Terms<C> {
     let mut out = terms::Terms::new(terms.modes().clone());
     for term in terms.iter() {
@@ -168,18 +168,18 @@ pub fn adjoint<C: FieldElem>(terms: &terms::View<C>) -> terms::Terms<C> {
     out
 }
 
-// check if the operator is Hermitian within the given tolerance, i.e. if it equals its own adjoint.
+/// check if the operator is Hermitian within the given tolerance, i.e. if it equals its own adjoint.
 pub fn is_hermitian<C: FieldElem>(terms: &terms::View<C>, atol: f64) -> bool {
     let adjoint_terms = adjoint(terms);
     diff(terms, &adjoint_terms.borrow()).all_insignificant(atol)
 }
 
-// check if the operator is Hermitian within the default tolerance.
+/// check if the operator is Hermitian within the default tolerance.
 pub fn is_hermitian_default<C: FieldElem>(terms: &terms::View<C>) -> bool {
     is_hermitian(terms, C::COMMUTES_ATOL_DEFAULT)
 }
 
-// check if the operator conserves particle number, i.e. if it commutes with the number operator, within the given tolerance.
+/// check if the operator conserves particle number, i.e. if it commutes with the number operator, within the given tolerance.
 pub fn conserves_particle_number<C: FieldElem>(terms: &terms::View<C>, atol: f64) -> bool {
     let modes = terms.to_modes();
     let inds: HashSet<usize> = modes.iter().collect();
@@ -190,25 +190,47 @@ pub fn conserves_particle_number<C: FieldElem>(terms: &terms::View<C>, atol: f64
         .unwrap_or_else(|_| panic!("Mode spaces are always compatible"))
 }
 
-// check if the operator conserves particle number, i.e. if it commutes with the number operator, within the default tolerance.
+/// check if the operator conserves particle number, i.e. if it commutes with the number operator, within the default tolerance.
 pub fn conserves_particle_number_default<C: FieldElem>(terms: &terms::View<C>) -> bool {
     conserves_particle_number(terms, C::COMMUTES_ATOL_DEFAULT)
 }
 
-// A struct to hold properties of a fermion operator, such as whether it is Hermitian and whether it conserves particle number.
+/// A struct to hold properties of a fermion operator, such as whether it is Hermitian and whether it conserves particle number.
 pub struct OperatorProperties {
     pub is_hermitian: bool,
     pub conserves_particle_number: bool,
+    pub is_molecular: bool,
 }
 
-// Check the properties of a fermion operator, returning an OperatorProperties struct.
+/// Check the properties of a fermion operator, returning an OperatorProperties struct.
 pub fn check_operator_properties<C: FieldElem>(terms: &terms::View<C>) -> OperatorProperties {
     let is_hermitian = is_hermitian_default(terms);
     let conserves_particle_number = conserves_particle_number_default(terms);
+    let is_molecular = is_molecular(terms);
     OperatorProperties {
         is_hermitian,
         conserves_particle_number,
+        is_molecular,
     }
+}
+
+/// Returns `true` if all the terms have equal creators/annohilators and at most 4 ladder operators.
+pub fn is_molecular<C: FieldElem>(terms: &terms::View<C>) -> bool {
+    for term in terms.iter() {
+        let (cmpnt, _) = term.unpack();
+        let cre = cmpnt.get_cre_part().to_set();
+        let ann = cmpnt.get_ann_part().to_set();
+        let n_cre = cre.len();
+        let n_ann = ann.len();
+        if n_cre != n_ann {
+            return false;
+        }
+        let total = n_cre + n_ann;
+        if !matches!(total, 0 | 2 | 4) {
+            return false;
+        }
+    }
+    true
 }
 
 #[cfg(test)]
@@ -371,16 +393,34 @@ mod tests {
     #[case(vec![(HashSet::from([0]), HashSet::new())])] // a_0^+ is not Hermitian and does not conserve particle number
     fn test_check_operator_properties(#[case] cmpnts: Vec<(HashSet<usize>, HashSet<usize>)>) {
         let modes = Modes::from_count(2);
-        let mut terns = Terms::<f64>::new(modes.clone());
+        let mut terms = Terms::<f64>::new(modes.clone());
         for (cre, ann) in cmpnts {
             let cmpnt = Cmpnt::from_sets_unchecked(modes.clone(), cre, ann);
-            terns.borrow_mut().push_elem_coeff(cmpnt.borrow(), 1.0);
+            terms.borrow_mut().push_elem_coeff(cmpnt.borrow(), 1.0);
         }
-        let props = check_operator_properties(&terns.borrow());
-        assert_eq!(props.is_hermitian, is_hermitian_default(&terns.borrow()));
+        let props = check_operator_properties(&terms.borrow());
+        assert_eq!(props.is_hermitian, is_hermitian_default(&terms.borrow()));
         assert_eq!(
             props.conserves_particle_number,
-            conserves_particle_number_default(&terns.borrow())
+            conserves_particle_number_default(&terms.borrow())
         );
+    }
+
+    #[rstest]
+    #[case(vec![(HashSet::from([0]), HashSet::from([1]))], true)] // a_0^+ a_1 is molecular
+    #[case(vec![(HashSet::from([0, 1]), HashSet::from([2, 3]))], true)] // a_0^+ a_1^+ a_2 a_3 is molecular
+    #[case(vec![(HashSet::from([0, 1, 2]), HashSet::from([3, 4, 5]))], false)] // 6 ladder ops, not molecular
+    #[case(vec![(HashSet::from([0]), HashSet::new())], false)] // unequal cre/ann, not molecular
+    fn test_is_molecular(
+        #[case] cmpnts: Vec<(HashSet<usize>, HashSet<usize>)>,
+        #[case] expected: bool,
+    ) {
+        let modes = Modes::from_count(6);
+        let mut terms = Terms::<f64>::new(modes.clone());
+        for (cre, ann) in cmpnts {
+            let cmpnt = Cmpnt::from_sets_unchecked(modes.clone(), cre, ann);
+            terms.borrow_mut().push_elem_coeff(cmpnt.borrow(), 1.0);
+        }
+        assert_eq!(is_molecular(&terms.borrow()), expected);
     }
 }

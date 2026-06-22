@@ -9,7 +9,7 @@ use crate::container::word_iters::lincomb::{diff, iadd, isub, scaled_iadd, scale
 use crate::container::word_iters::term_set::{AsView, AsViewMut};
 use crate::container::word_iters::terms::AsViewMut as TermsAsViewMut;
 use crate::fermion::operator::cmpnt::Cmpnt;
-use crate::fermion::operator::cmpnt_major::num_ops::num_op_inds;
+use crate::fermion::operator::cmpnt_major::num_ops::num_op_from_inds;
 use crate::fermion::operator::cmpnt_major::term_set::{self, TermSet};
 use crate::fermion::operator::cmpnt_major::terms;
 use crate::fermion::operator::products::mul_cmpnts;
@@ -183,7 +183,7 @@ pub fn is_hermitian_default<C: FieldElem>(terms: &terms::View<C>) -> bool {
 pub fn conserves_particle_number<C: FieldElem>(terms: &terms::View<C>, atol: f64) -> bool {
     let modes = terms.to_modes();
     let inds: HashSet<usize> = modes.iter().collect();
-    let nop = num_op_inds::<C>(modes.clone(), inds)
+    let nop = num_op_from_inds::<C>(modes.clone(), inds)
         .unwrap_or_else(|_| panic!("Mode indices are always in bounds"))
         .terms;
     commute(terms, &nop.borrow(), atol)

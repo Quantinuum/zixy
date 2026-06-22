@@ -32,6 +32,15 @@ pub fn num_op<C: FieldElem>(modes: Modes) -> TermSet<C> {
         .expect("num_op indices are always in bounds")
 }
 
+/// Returns a list of number operators, one for each mode.
+/// The i-th operator counts the number of particles in mode i.
+pub fn orbital_num_ops<C: FieldElem>(modes: Modes) -> Vec<Result<TermSet<C>, OutOfBounds>> {
+    let n_modes = modes.len();
+    (0..n_modes)
+        .map(|i| num_op_from_inds(modes.clone(), [i].into()))
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

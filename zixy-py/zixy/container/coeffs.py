@@ -1416,11 +1416,11 @@ class ExprListWrapper(BaseVec):
         return coeff.simplify()
 
     def update(self, index: int, value: Coeff) -> None:
-        """Update the indexed element by adding the given value.
+        """Update the value at the given index with the given value.
 
         Args:
             index: Index of coefficient within ``self`` to update.
-            value: Value specifying the coefficient to add to the indexed element.
+            value: Value specifying the coefficient to replace the indexed element with.
         """
         self._list[index] = ExprListWrapper.simplify_integer_floats(sympify(value))
 
@@ -1433,7 +1433,7 @@ class ExprListWrapper(BaseVec):
         Note:
             This method operates in-place.
         """
-        self._list.append(sympify(value))
+        self._list.append(ExprListWrapper.simplify_integer_floats(sympify(value)))
 
     def resize(self, n: int) -> None:
         """Resize the underlying container.
@@ -1489,6 +1489,20 @@ class ExprListWrapper(BaseVec):
         """
         self.transform(indexer, lambda coeff: coeff.subs(values))
 
+    def free_symbols(self, indexer: slice) -> set[Symbol]:
+        """Get the set of free (unsubstituted) symbols in the indexed element(s).
+
+        Args:
+            indexer: Index of coefficient within ``self`` to get free symbols from.
+
+        Returns:
+            Set of free symbols in the indexed element(s).
+        """
+        out = set()
+        for coeff in self._list[indexer]:
+            out.update(coeff.free_symbols)
+        return out
+
 
 class SymbolicCoeffs(Coeffs[Expr]):
     """A collection of :class:`~sympy.Expr`.
@@ -1505,7 +1519,7 @@ class SymbolicCoeffs(Coeffs[Expr]):
     def __eq__(self, other: object) -> bool:
         """Return whether ``self`` and ``other`` are equal."""
         if not isinstance(other, SymbolicCoeffs):
-            raise NotImplementedError("Can only compare SymbolicCoeffs to SymbolicCoeffs.")
+            return NotImplemented
         return all(
             self._impl.simplify(left) == self._impl.simplify(right)
             for left, right in zip(self, other, strict=False)
@@ -1518,10 +1532,7 @@ class SymbolicCoeffs(Coeffs[Expr]):
         Returns:
             Union of the sets of free symbols across all coefficients in ``self``.
         """
-        out = set()
-        for coeff in self._impl:
-            out.update(coeff.free_symbols)
-        return out
+        return self._impl.free_symbols(self.slice)
 
     def extend(self, other: Self) -> None:
         """Append the elements of ``other`` to the end of ``self``.

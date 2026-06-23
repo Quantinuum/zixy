@@ -2,8 +2,7 @@
 
 use std::fmt::Display;
 
-use crate::container::bit_matrix::AsBitMatrix;
-use crate::container::bit_matrix::AsRowRef;
+use crate::container::bit_matrix::{AsBitMatrix, AsRowRef};
 use crate::container::coeffs::sign::SignVec;
 use crate::container::coeffs::traits::NumReprVec;
 use crate::container::errors::OutOfBounds;

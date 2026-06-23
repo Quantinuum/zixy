@@ -236,16 +236,39 @@ pub fn active_modes<C: FieldElem>(terms: &terms::View<C>) -> HashSet<usize> {
     result
 }
 
-/// Returns a new operator with all terms where `|coeff| < tol` removed.
-pub fn truncated<C: FieldElem>(terms: &terms::View<C>, tol: f64) -> Terms<C> {
+/// Returns a new operator with all terms where `|coeff| < atol` removed.
+pub fn truncated<C: FieldElem>(terms: &terms::View<C>, atol: f64) -> Terms<C> {
     let mut result = Terms::<C>::new(terms.modes().clone());
     for term in terms.iter() {
         let (cmpnt, coeff) = term.unpack();
-        if coeff.is_significant(tol) {
+        if coeff.is_significant(atol) {
             result.borrow_mut().push_elem_coeff(cmpnt, coeff);
         }
     }
     result
+}
+
+/// Returns `true` if the identity, i.e. it has a single
+/// term with no ladder operators and coefficient 1.
+pub fn is_identity(terms: &TermSet<Complex64>, atol: f64) -> bool {
+    if terms.len() != 1 {
+        return false;
+    }
+    if let Some(term) = terms.borrow().iter().next() {
+        let (cmpnt, coeff) = term.unpack();
+        let n_cre = cmpnt.get_cre_part().to_set().len();
+        let n_ann = cmpnt.get_ann_part().to_set().len();
+        return n_cre == 0 && n_ann == 0 && !(coeff - Complex64::ONE).is_significant(atol);
+    }
+    false
+}
+
+/// Returns `true` if the operator is unitary within a given tolerance.
+pub fn is_unitary(terms: &terms::View<Complex64>, atol: f64) -> bool {
+    let adj = adjoint(terms);
+    let product =
+        mul(terms, &adj.borrow()).unwrap_or_else(|_| panic!("Modes spaces are always compatible"));
+    is_identity(&product, atol)
 }
 
 #[cfg(test)]
@@ -470,5 +493,21 @@ mod tests {
 
         let filtered = truncated(&terms.borrow(), 1e-10);
         assert_eq!(filtered.len(), 1);
+    }
+
+    #[rstest]
+    #[case(vec![(HashSet::new(), HashSet::new(), Complex64::new(1.0, 0.0))], true)] // identity is unitary
+    #[case(vec![(HashSet::from([0]), HashSet::from([1]), Complex64::new(2.0, 0.0))], false)] // scaled operator is not unitary
+    fn test_is_unitary(
+        #[case] cmpnts: Vec<(HashSet<usize>, HashSet<usize>, Complex64)>,
+        #[case] expected: bool,
+    ) {
+        let modes = Modes::from_count(2);
+        let mut terms = Terms::<Complex64>::new(modes.clone());
+        for (cre, ann, coeff) in cmpnts {
+            let cmpnt = Cmpnt::from_sets_unchecked(modes.clone(), cre, ann);
+            terms.borrow_mut().push_elem_coeff(cmpnt.borrow(), coeff);
+        }
+        assert_eq!(is_unitary(&terms.borrow(), 1e-10), expected);
     }
 }

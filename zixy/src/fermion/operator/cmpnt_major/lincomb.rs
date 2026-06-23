@@ -17,6 +17,7 @@ use crate::fermion::operator::products::mul_cmpnts;
 use crate::fermion::traits::{DifferentSpaces, ModesBased};
 use num_complex::Complex64;
 use std::collections::HashSet;
+use std::ops::Sub;
 
 pub fn add<C: FieldElem>(lhs: &terms::View<C>, rhs: &terms::View<C>) -> TermSet<C> {
     let mut out = TermSet::from(lhs.to_owned());
@@ -250,15 +251,15 @@ pub fn truncated<C: FieldElem>(terms: &terms::View<C>, atol: f64) -> Terms<C> {
 
 /// Returns `true` if the identity, i.e. it has a single
 /// term with no ladder operators and coefficient 1.
-pub fn is_identity(terms: &TermSet<Complex64>, atol: f64) -> bool {
+pub fn is_identity<C: FieldElem + Sub<Output = C>>(terms: &terms::View<C>, atol: f64) -> bool {
     if terms.len() != 1 {
         return false;
     }
-    if let Some(term) = terms.borrow().iter().next() {
+    if let Some(term) = terms.iter().next() {
         let (cmpnt, coeff) = term.unpack();
         let n_cre = cmpnt.get_cre_part().to_set().len();
         let n_ann = cmpnt.get_ann_part().to_set().len();
-        return n_cre == 0 && n_ann == 0 && !(coeff - Complex64::ONE).is_significant(atol);
+        return n_cre == 0_usize && n_ann == 0_usize && !(coeff - C::ONE).is_significant(atol);
     }
     false
 }
@@ -268,7 +269,7 @@ pub fn is_unitary(terms: &terms::View<Complex64>, atol: f64) -> bool {
     let adj = adjoint(terms);
     let product =
         mul(terms, &adj.borrow()).unwrap_or_else(|_| panic!("Modes spaces are always compatible"));
-    is_identity(&product, atol)
+    is_identity(&product.as_terms(), atol)
 }
 
 #[cfg(test)]

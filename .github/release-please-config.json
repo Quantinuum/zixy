@@ -33,6 +33,12 @@
         },
         {
           "type": "toml",
+          "path": "/zixy-py/docs/uv.lock",
+          "jsonpath": "$.package[?(@.name.value == 'zixy')].version",
+          "glob": true
+        },
+        {
+          "type": "toml",
           "path": "/zixy-py/pyproject.toml",
           "jsonpath": "$.project.version"
         },

@@ -200,38 +200,27 @@ pub fn conserves_particle_number_default<C: FieldElem>(terms: &terms::View<C>) -
 pub struct OperatorProperties {
     pub is_hermitian: bool,
     pub conserves_particle_number: bool,
-    pub is_molecular: bool,
+    pub is_physical: bool,
 }
 
 /// Check the properties of a fermion operator, returning an OperatorProperties struct.
 pub fn check_operator_properties<C: FieldElem>(terms: &terms::View<C>) -> OperatorProperties {
     let is_hermitian = is_hermitian_default(terms);
     let conserves_particle_number = conserves_particle_number_default(terms);
-    let is_molecular = is_molecular(terms);
+    let is_physical = is_physical(terms);
     OperatorProperties {
         is_hermitian,
         conserves_particle_number,
-        is_molecular,
+        is_physical,
     }
 }
 
 /// Returns `true` if all the terms have equal creators/annihilators and at most 4 ladder operators.
-pub fn is_molecular<C: FieldElem>(terms: &terms::View<C>) -> bool {
-    for term in terms.iter() {
+pub fn is_physical<C: FieldElem>(terms: &terms::View<C>) -> bool {
+    terms.iter().all(|term| {
         let (cmpnt, _) = term.unpack();
-        let cre = cmpnt.get_cre_part().to_set();
-        let ann = cmpnt.get_ann_part().to_set();
-        let n_cre = cre.len();
-        let n_ann = ann.len();
-        if n_cre != n_ann {
-            return false;
-        }
-        let total = n_cre + n_ann;
-        if !matches!(total, 0 | 2 | 4) {
-            return false;
-        }
-    }
-    true
+        cmpnt.particle_number_change() == 0 && cmpnt.count_n_body() <= 2
+    })
 }
 
 /// Returns the set of mode indices that the operator acts on.
@@ -437,7 +426,7 @@ mod tests {
     #[case(vec![(HashSet::from([0, 1]), HashSet::from([2, 3]))], true)] // a_0^+ a_1^+ a_2 a_3 is molecular
     #[case(vec![(HashSet::from([0, 1, 2]), HashSet::from([3, 4, 5]))], false)] // 6 ladder ops, not molecular
     #[case(vec![(HashSet::from([0]), HashSet::new())], false)] // unequal cre/ann, not molecular
-    fn test_is_molecular(
+    fn test_is_physical(
         #[case] cmpnts: Vec<(HashSet<usize>, HashSet<usize>)>,
         #[case] expected: bool,
     ) {
@@ -447,7 +436,7 @@ mod tests {
             let cmpnt = Cmpnt::from_sets_unchecked(modes.clone(), cre, ann);
             terms.borrow_mut().push_elem_coeff(cmpnt.borrow(), 1.0);
         }
-        assert_eq!(is_molecular(&terms.borrow()), expected);
+        assert_eq!(is_physical(&terms.borrow()), expected);
     }
 
     #[rstest]

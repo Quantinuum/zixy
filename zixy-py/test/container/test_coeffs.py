@@ -714,18 +714,28 @@ def test_symbolic_vec():
     v = SymbolicCoeffs.from_sequence(
         [sympify(c) for c in ["x**2", "2*x", "y**3", "y", 1, "3*x", 1]]
     )
-    assert v.subs({"x": 5}) == SymbolicCoeffs.from_sequence(
+    assert v.free_symbols == {sympify("x"), sympify("y")}
+    v_sub_x = v.subs({"x": 5})
+    v_sub_y = v.subs({"y": 2})
+    v_sub_xy = v.subs({"x": 1, "y": 2})
+    assert v_sub_x.free_symbols == {sympify("y")}
+    assert v_sub_y.free_symbols == {sympify("x")}
+    assert not v_sub_xy.free_symbols
+    assert v_sub_x == SymbolicCoeffs.from_sequence(
         [sympify(c) for c in [25, 10, "y**3", "y", 1, 15, 1]]
     )
-    assert v.subs({"y": 2}) == SymbolicCoeffs.from_sequence(
+    assert v_sub_y == SymbolicCoeffs.from_sequence(
         [sympify(c) for c in ["x**2", "2*x", 8, 2, 1, "3*x", 1]]
     )
-    assert v.subs({sympify("x"): 1, "y": 2}) == SymbolicCoeffs.from_sequence(
-        [sympify(c) for c in [1, 2, 8, 2, 1, 3, 1]]
+    assert v_sub_xy == SymbolicCoeffs.from_sequence([sympify(c) for c in [1, 2, 8, 2, 1, 3, 1]])
+    assert v_sub_xy.try_to_real() == RealCoeffs.from_sequence([1, 2, 8, 2, 1, 3, 1])
+    v_diff_x = v.diff("x")
+    v_diff_y = v.diff("y")
+    assert v_diff_x == SymbolicCoeffs.from_sequence([sympify(c) for c in ["2*x", 2, 0, 0, 0, 3, 0]])
+    assert v_diff_y == SymbolicCoeffs.from_sequence(
+        [sympify(c) for c in [0, 0, "3*y**2", 1, 0, 0, 0]]
     )
-    assert v.subs({sympify("x"): 1, "y": 2}).try_to_real() == RealCoeffs.from_sequence(
-        [1, 2, 8, 2, 1, 3, 1]
-    )
+
     v.resize(4)
     v[:] = x
     assert all(c == x for c in v)

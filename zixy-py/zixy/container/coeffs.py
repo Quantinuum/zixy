@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import builtins
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -1297,7 +1297,7 @@ class ExprListWrapper(BaseVec):
         return len(self._list)
 
     @classmethod
-    def parse(self, string: str) -> Self:
+    def parse(cls, string: str) -> Self:
         """Construct an instance of ``cls`` from a string representation.
 
         Args:
@@ -1306,7 +1306,7 @@ class ExprListWrapper(BaseVec):
         Returns:
             An instance of ``cls`` represented by ``string``.
         """
-        out = self()
+        out = cls()
         out._list = [sympify(s) for s in string.split(",")]
         return out
 
@@ -1329,6 +1329,10 @@ class ExprListWrapper(BaseVec):
             value: Value(s) specifying the coefficient(s) to assign.
         """
         self._list[index] = ExprListWrapper.simplify_integer_floats(sympify(value))
+
+    def __iter__(self) -> Iterator[Expr]:
+        """Return an iterator over the elements of ``self``."""
+        return iter(self._list)
 
     @staticmethod
     def simplify_integer_floats(expr: Expr) -> Expr:
@@ -1406,6 +1410,20 @@ class ExprListWrapper(BaseVec):
             return [ExprListWrapper._sympify_coeff(coeff) for coeff in coeffs]
         return [ExprListWrapper._sympify_coeff(coeffs)]
 
+    @staticmethod
+    def simplify(coeff: Expr) -> Expr:
+        """Simplify the given coefficient."""
+        return coeff.simplify()
+
+    def update(self, index: int, value: Coeff) -> None:
+        """Update the indexed element by adding the given value.
+
+        Args:
+            index: Index of coefficient within ``self`` to update.
+            value: Value specifying the coefficient to add to the indexed element.
+        """
+        self._list[index] = ExprListWrapper.simplify_integer_floats(sympify(value))
+
     def append(self, value: Expr) -> None:
         """Append ``value`` to the end of ``self``.
 
@@ -1433,6 +1451,44 @@ class ExprListWrapper(BaseVec):
         self._list = self._list[:n]
         assert len(self) == n
 
+    def transform(self, indexer: slice, func: Callable[[Expr], Expr]) -> None:
+        """Apply a transformation to the indexed element(s).
+
+        Args:
+            indexer: Index of coefficient within ``self`` to transform.
+            func: Function to apply to the indexed element(s).
+
+        Note:
+            This method operates in-place.
+        """
+        coeffs = [self.simplify_integer_floats(func(coeff)) for coeff in self._list[indexer]]
+        self._list[indexer] = coeffs
+
+    def idiff(self, indexer: slice, variable: Symbol | str) -> None:
+        """Differentiate partially with respect to ``variable`` in-place.
+
+        Args:
+            indexer: Index of coefficient within ``self`` to differentiate.
+            variable: Symbol or name of symbol by which to differentiate the viewed symbolic
+                expressions.
+
+        Note:
+            This method operates in-place.
+        """
+        if isinstance(variable, str):
+            variable = Symbol(variable)
+        self.transform(indexer, lambda coeff: diff(coeff, variable))
+
+    def substitute(self, indexer: slice, values: dict[Symbol | str, Number | Expr]) -> None:
+        """Apply a partial substitution of the symbols in-place.
+
+        Args:
+            indexer: Index of coefficient within ``self`` to substitute.
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        """
+        self.transform(indexer, lambda coeff: coeff.subs(values))
+
 
 class SymbolicCoeffs(Coeffs[Expr]):
     """A collection of :class:`~sympy.Expr`.
@@ -1449,9 +1505,10 @@ class SymbolicCoeffs(Coeffs[Expr]):
     def __eq__(self, other: object) -> bool:
         """Return whether ``self`` and ``other`` are equal."""
         if not isinstance(other, SymbolicCoeffs):
-            return NotImplemented
+            raise NotImplementedError("Can only compare SymbolicCoeffs to SymbolicCoeffs.")
         return all(
-            left.simplify() == right.simplify() for left, right in zip(self, other, strict=False)
+            self._impl.simplify(left) == self._impl.simplify(right)
+            for left, right in zip(self, other, strict=False)
         )
 
     @property
@@ -1462,7 +1519,7 @@ class SymbolicCoeffs(Coeffs[Expr]):
             Union of the sets of free symbols across all coefficients in ``self``.
         """
         out = set()
-        for coeff in self._impl._list:
+        for coeff in self._impl:
             out.update(coeff.free_symbols)
         return out
 
@@ -1487,8 +1544,7 @@ class SymbolicCoeffs(Coeffs[Expr]):
         Note:
             This method operates in-place.
         """
-        coeffs = [coeff.subs(values) for coeff in self]
-        self._impl._list[self.slice] = coeffs
+        self._impl.substitute(self.slice, values)
 
     def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicCoeffs:
         """Apply a partial substitution of the symbols out of place.
@@ -1513,10 +1569,7 @@ class SymbolicCoeffs(Coeffs[Expr]):
         Note:
             This method operates in-place.
         """
-        if isinstance(variable, str):
-            variable = Symbol(variable)
-        coeffs = [diff(coeff, variable) for coeff in self]
-        self._impl._list[self.slice] = coeffs
+        self._impl.idiff(self.slice, variable)
 
     def diff(self, variable: Symbol | str) -> SymbolicCoeffs:
         """Differentiate partially with respect to ``variable`` out of place.

@@ -3,7 +3,7 @@ use crate::container::traits::Elements;
 use crate::utils::arith::divceil;
 
 // A matrix of packed integers stored in a 'Table' buffer.
-
+#[derive(Clone)]
 pub struct PackedIntMatrix {
     table: Table,
     n_bits: usize,

@@ -1,17 +1,19 @@
 use crate::container::bit_matrix::AsBitMatrix;
 use crate::container::bit_matrix::BitMatrix;
 use crate::container::packed_int_matrix::PackedIntMatrix;
-use crate::container::traits::Elements;
+use crate::container::traits::{Compatible, Elements, EmptyClone};
 use crate::container::word_iters::WordIters;
 use crate::fermion::mode::Modes;
 
 /// Contiguous and compact storage for non-normal-ordered fermion operator strings.
+#[derive(Clone)]
 pub struct RawCmpntList {
     pub mode_part: PackedIntMatrix, // mode index at each operator position
     pub adj_part: BitMatrix,        // cre/ann flag per slot
     pub len_part: Vec<u64>,         // length of each string
     pub modes: Modes,               // list of modes
     pub max_len: usize,             // max operator slots per row
+    pub n_bits: usize,              // number of bits per mode index
 }
 
 impl RawCmpntList {
@@ -23,6 +25,7 @@ impl RawCmpntList {
             len_part: Vec::new(),
             modes,
             max_len,
+            n_bits,
         }
     }
 
@@ -43,11 +46,6 @@ impl RawCmpntList {
         self.len_part.is_empty()
     }
 
-    /// Return the number of operator strings stored.
-    pub fn len(&self) -> usize {
-        self.len_part.len()
-    }
-
     /// Read back the operator string at index `i` as a tuple of mode indices and cre/ann flags.
     pub fn get(&self, i: usize) -> (Vec<usize>, Vec<bool>) {
         let length = self.len_part[i] as usize;
@@ -57,6 +55,24 @@ impl RawCmpntList {
             adj.push(self.adj_part.get_bit_unchecked(i, j));
         }
         (modes, adj)
+    }
+}
+
+impl Elements for RawCmpntList {
+    fn len(&self) -> usize {
+        self.len_part.len()
+    }
+}
+
+impl Compatible for RawCmpntList {
+    fn compatible_with(&self, other: &Self) -> bool {
+        self.modes == other.modes
+    }
+}
+
+impl EmptyClone for RawCmpntList {
+    fn empty_clone(&self) -> Self {
+        Self::new(self.n_bits, self.max_len, self.modes.clone())
     }
 }
 

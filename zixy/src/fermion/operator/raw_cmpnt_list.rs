@@ -76,6 +76,24 @@ impl EmptyClone for RawCmpntList {
     }
 }
 
+impl WordIters for RawCmpntList {
+    fn elem_u64it(&self, i: usize) -> impl Iterator<Item = u64> + Clone {
+        self.mode_part
+            .elem_u64it(i)
+            .chain(self.adj_part.elem_u64it(i))
+    }
+
+    fn elem_u64it_mut(&mut self, i: usize) -> impl Iterator<Item = &mut u64> {
+        self.mode_part
+            .elem_u64it_mut(i)
+            .chain(self.adj_part.elem_u64it_mut(i))
+    }
+
+    fn u64it_size(&self) -> usize {
+        self.mode_part.u64it_size() + self.adj_part.u64it_size()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

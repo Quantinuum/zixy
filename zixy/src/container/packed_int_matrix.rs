@@ -55,4 +55,19 @@ impl PackedIntMatrix {
         }
         vec
     }
+
+    /// Return an iterator over the raw u64 words in row `i`.
+    pub fn elem_u64it(&self, i: usize) -> impl Iterator<Item = u64> + Clone + use<'_> {
+        self.table[i].iter().copied()
+    }
+
+    /// Return a mutable iterator over the raw u64 words in row `i`.
+    pub fn elem_u64it_mut(&mut self, i: usize) -> impl Iterator<Item = &mut u64> {
+        self.table[i].iter_mut()
+    }
+
+    /// Return the number of u64 words per row.
+    pub fn u64it_size(&self) -> usize {
+        self.table.get_row_size()
+    }
 }

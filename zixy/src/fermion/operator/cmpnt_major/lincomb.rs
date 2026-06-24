@@ -197,31 +197,16 @@ pub fn conserves_particle_number_default<C: FieldElem>(terms: &terms::View<C>) -
     conserves_particle_number(terms, C::COMMUTES_ATOL_DEFAULT)
 }
 
-/// A struct to hold properties of a fermion operator, such as whether it is Hermitian and whether it conserves particle number.
-pub struct OperatorProperties {
-    pub is_hermitian: bool,
-    pub conserves_particle_number: bool,
-    pub is_physical: bool,
-}
-
-/// Check the properties of a fermion operator, returning an OperatorProperties struct.
-pub fn check_operator_properties<C: FieldElem>(terms: &terms::View<C>) -> OperatorProperties {
-    let is_hermitian = is_hermitian_default(terms);
-    let conserves_particle_number = conserves_particle_number_default(terms);
-    let is_physical = is_physical(terms);
-    OperatorProperties {
-        is_hermitian,
-        conserves_particle_number,
-        is_physical,
-    }
-}
-
-/// Returns `true` if all the terms have equal creators/annihilators and at most 4 ladder operators.
-pub fn is_physical<C: FieldElem>(terms: &terms::View<C>) -> bool {
-    terms.iter().all(|term| {
-        let (cmpnt, _) = term.unpack();
-        cmpnt.particle_number_change() == 0 && cmpnt.count_n_body() <= 2
-    })
+/// Returns the maximum n-body order across all terms in the operator.
+pub fn max_n_body<C: FieldElem>(terms: &terms::View<C>) -> usize {
+    terms
+        .iter()
+        .map(|term| {
+            let (cmpnt, _) = term.unpack();
+            cmpnt.count_n_body()
+        })
+        .max()
+        .unwrap_or(0)
 }
 
 /// Returns the set of mode indices that the operator acts on.
@@ -428,42 +413,6 @@ mod tests {
     }
 
     #[rstest]
-    #[case(vec![(HashSet::from([0]), HashSet::from([0]))])] // a_0^+ a_0 is Hermitian and conserves particle number
-    #[case(vec![(HashSet::from([0]), HashSet::new())])] // a_0^+ is not Hermitian and does not conserve particle number
-    fn test_check_operator_properties(#[case] cmpnts: Vec<(HashSet<usize>, HashSet<usize>)>) {
-        let modes = Modes::from_count(2);
-        let mut terms = Terms::<f64>::new(modes.clone());
-        for (cre, ann) in cmpnts {
-            let cmpnt = Cmpnt::from_sets_unchecked(modes.clone(), cre, ann);
-            terms.borrow_mut().push_elem_coeff(cmpnt.borrow(), 1.0);
-        }
-        let props = check_operator_properties(&terms.borrow());
-        assert_eq!(props.is_hermitian, is_hermitian_default(&terms.borrow()));
-        assert_eq!(
-            props.conserves_particle_number,
-            conserves_particle_number_default(&terms.borrow())
-        );
-    }
-
-    #[rstest]
-    #[case(vec![(HashSet::from([0]), HashSet::from([1]))], true)] // a_0^+ a_1 is molecular
-    #[case(vec![(HashSet::from([0, 1]), HashSet::from([2, 3]))], true)] // a_0^+ a_1^+ a_2 a_3 is molecular
-    #[case(vec![(HashSet::from([0, 1, 2]), HashSet::from([3, 4, 5]))], false)] // 6 ladder ops, not molecular
-    #[case(vec![(HashSet::from([0]), HashSet::new())], false)] // unequal cre/ann, not molecular
-    fn test_is_physical(
-        #[case] cmpnts: Vec<(HashSet<usize>, HashSet<usize>)>,
-        #[case] expected: bool,
-    ) {
-        let modes = Modes::from_count(6);
-        let mut terms = Terms::<f64>::new(modes.clone());
-        for (cre, ann) in cmpnts {
-            let cmpnt = Cmpnt::from_sets_unchecked(modes.clone(), cre, ann);
-            terms.borrow_mut().push_elem_coeff(cmpnt.borrow(), 1.0);
-        }
-        assert_eq!(is_physical(&terms.borrow()), expected);
-    }
-
-    #[rstest]
     #[case(vec![(HashSet::from([0]), HashSet::from([1]))],HashSet::from([0, 1]))]
     #[case(vec![(HashSet::from([0, 1]), HashSet::from([2, 3]))], HashSet::from([0, 1, 2, 3]))]
     fn test_active_modes(
@@ -510,5 +459,22 @@ mod tests {
             terms.borrow_mut().push_elem_coeff(cmpnt.borrow(), coeff);
         }
         assert_eq!(is_unitary(&terms.borrow(), 1e-10), expected);
+    }
+
+    #[test]
+    fn test_max_n_body() {
+        let modes = Modes::from_count(4);
+        let mut terms = Terms::<f64>::new(modes.clone());
+
+        let cmpnt1 =
+            Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([0]), HashSet::from([1]));
+        let cmpnt2 =
+            Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([0, 1]), HashSet::from([2, 3]));
+
+        terms.borrow_mut().push_elem_coeff(cmpnt1.borrow(), 1.0);
+        terms.borrow_mut().push_elem_coeff(cmpnt2.borrow(), 1.0);
+
+        assert_eq!(max_n_body(&terms.borrow()), 2);
+        assert!(max_n_body(&terms.borrow()) <= 2);
     }
 }

@@ -6,6 +6,8 @@ use crate::container::traits::Elements;
 use crate::container::traits::RefElements;
 use crate::container::word_iters::lincomb::{iadd, isub, scaled_iadd, scaled_iadd_elem};
 use crate::container::word_iters::term_set::AsViewMut;
+use crate::fermion::operator::cmpnt_major::raw_term_set;
+use crate::fermion::operator::cmpnt_major::raw_term_set::RawTermSet;
 use crate::fermion::operator::cmpnt_major::term_set::{self, TermSet};
 use crate::fermion::operator::cmpnt_major::terms;
 use crate::fermion::operator::products::mul_cmpnts;
@@ -146,6 +148,29 @@ pub fn anticommute_default<C: FieldElem>(
     rhs: &terms::View<C>,
 ) -> Result<bool, DifferentSpaces> {
     anticommute(lhs, rhs, C::COMMUTES_ATOL_DEFAULT)
+}
+
+pub fn raw_mul<C: FieldElem>(
+    lhs: &raw_term_set::View<C>,
+    rhs: &raw_term_set::View<C>,
+) -> Result<RawTermSet<Complex64>, DifferentSpaces> {
+    let max_len = 2 * lhs.word_iters.modes().len();
+    let mut out = RawTermSet::<Complex64>::new(max_len, lhs.to_modes());
+    DifferentSpaces::check_transitive(lhs, rhs, &out)?;
+    let n_lhs = lhs.word_iters.len().min(lhs.coeffs.len());
+    let n_rhs = rhs.word_iters.len().min(rhs.coeffs.len());
+    for (i_lhs, lhs_coeff) in lhs.coeffs.iter().take(n_lhs).enumerate() {
+        let (lhs_modes, lhs_adj) = lhs.word_iters.get(i_lhs);
+        for (i_rhs, rhs_coeff) in rhs.coeffs.iter().take(n_rhs).enumerate() {
+            let (rhs_modes, rhs_adj) = rhs.word_iters.get(i_rhs);
+            let modes: Vec<usize> = lhs_modes.iter().chain(rhs_modes.iter()).copied().collect();
+            let adj: Vec<bool> = lhs_adj.iter().chain(rhs_adj.iter()).copied().collect();
+            let c = lhs_coeff.to_complex() * rhs_coeff.to_complex();
+            out.terms.word_iters.push(&modes, &adj);
+            out.terms.coeffs.push(c);
+        }
+    }
+    Ok(out)
 }
 
 #[cfg(test)]

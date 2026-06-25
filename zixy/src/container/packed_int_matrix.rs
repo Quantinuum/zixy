@@ -80,5 +80,4 @@ impl PackedIntMatrix {
     pub fn resize(&mut self, n: usize) {
         self.table.resize(n);
     }
-
 }

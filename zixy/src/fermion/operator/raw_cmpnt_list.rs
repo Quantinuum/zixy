@@ -4,6 +4,7 @@ use crate::container::packed_int_matrix::PackedIntMatrix;
 use crate::container::traits::{Compatible, Elements, EmptyClone};
 use crate::container::word_iters::WordIters;
 use crate::fermion::mode::Modes;
+use crate::fermion::traits::ModesBased;
 
 /// Contiguous and compact storage for non-normal-ordered fermion operator strings.
 #[derive(Clone)]
@@ -18,7 +19,13 @@ pub struct RawCmpntList {
 
 impl RawCmpntList {
     /// Create a new empty `RawCmpntList` with the given mode space and maximum operator string length.
-    pub fn new(n_bits: usize, max_len: usize, modes: Modes) -> Self {
+    pub fn new(max_len: usize, modes: Modes) -> Self {
+        let n_modes = modes.len();
+        let n_bits = if n_modes <= 1 {
+            1
+        } else {
+            (usize::BITS as usize) - (n_modes - 1).leading_zeros() as usize
+        };
         Self {
             mode_part: PackedIntMatrix::new(n_bits, max_len),
             adj_part: BitMatrix::new(max_len),
@@ -72,7 +79,7 @@ impl Compatible for RawCmpntList {
 
 impl EmptyClone for RawCmpntList {
     fn empty_clone(&self) -> Self {
-        Self::new(self.n_bits, self.max_len, self.modes.clone())
+        Self::new(self.max_len, self.modes.clone())
     }
 }
 
@@ -119,6 +126,12 @@ impl WordIters for RawCmpntList {
     }
 }
 
+impl ModesBased for RawCmpntList {
+    fn modes(&self) -> &Modes {
+        &self.modes
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -126,7 +139,7 @@ mod tests {
 
     #[test]
     fn test_empty() {
-        let v = RawCmpntList::new(8, 4, Modes::from_count(8));
+        let v = RawCmpntList::new(4, Modes::from_count(8));
         assert!(v.is_empty());
         assert_eq!(v.len(), 0);
     }
@@ -136,7 +149,7 @@ mod tests {
     #[case(&[3, 1, 2], &[true, false, true])]
     #[case(&[0], &[true])]
     fn test_push_single(#[case] modes: &[usize], #[case] adj: &[bool]) {
-        let mut v = RawCmpntList::new(8, 4, Modes::from_count(8));
+        let mut v = RawCmpntList::new(4, Modes::from_count(8));
         v.push(modes, adj);
         assert_eq!(v.len(), 1);
         let (out_modes, out_adj) = v.get(0);
@@ -146,7 +159,7 @@ mod tests {
 
     #[test]
     fn test_push_multiple() {
-        let mut v = RawCmpntList::new(8, 4, Modes::from_count(8));
+        let mut v = RawCmpntList::new(4, Modes::from_count(8));
         let inputs = vec![
             (vec![0, 1], vec![false, false]),
             (vec![3, 1, 2], vec![true, false, true]),

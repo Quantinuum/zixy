@@ -1415,14 +1415,62 @@ class ExprListWrapper(BaseVec):
         """Simplify the given coefficient."""
         return coeff.simplify()
 
-    def update(self, index: int, value: Coeff) -> None:
+    @staticmethod
+    def normalize(coeff: Expr) -> Expr | None:
+        return ExprListWrapper.simplify_integer_floats(sympify(coeff))
+
+    def set_scalar(self, index: int, value: Coeff) -> None:
         """Update the value at the given index with the given value.
 
         Args:
             index: Index of coefficient within ``self`` to update.
             value: Value specifying the coefficient to replace the indexed element with.
         """
-        self._list[index] = ExprListWrapper.simplify_integer_floats(sympify(value))
+        self._list[index] = ExprListWrapper.normalize(value)
+
+    def replace(self, indexer: slice, values: Sequence[Coeff]) -> None:
+        """Replace the slice of coefficients with the given sequence of coefficients.
+
+        Args:
+            indexer: A slice of coefficients within ``self`` to replace.
+            values: Sequence of values specifying the coefficients to replace the indexed
+                element(s) with.
+        """
+        if len(values) != slice_len(indexer, len(self)):
+            raise ValueError(
+                f"Length of values ({len(values)}) does not match length of "
+                f"selected slice ({slice_len(indexer, len(self))})"
+            )
+        for i, v in zip(slice_index_gen(indexer, len(self)), values):
+            self.set_scalar(i, v)
+
+    def evaluate_real(self, indexer: slice) -> list[float] | None:
+        """Evaluate a slice of coefficients as real numbers.
+
+        Args:
+            indexer: A slice of coefficients within ``self`` to evaluate.
+        """
+        out: list[float] = []
+        for coeff in self._list[indexer]:
+            value = coeff.evalf()
+            if not np.can_cast(float, type(value), casting="safe"):
+                raise TypeError(f"Cannot cast from {type(value)} to float")
+            out.append(float(value))
+        return out
+
+    def evaluate_complex(self, indexer: slice) -> list[complex] | None:
+        """Evaluate the indexed element(s) as complex numbers.
+
+        Args:
+            indexer: A slice of coefficients within ``self`` to evaluate.
+        """
+        out: list[complex] = []
+        for coeff in self._list[indexer]:
+            value = coeff.evalf()
+            if not np.can_cast(complex, type(value), casting="safe"):
+                raise TypeError(f"Cannot cast from {type(value)} to complex")
+            out.append(complex(value))
+        return out
 
     def append(self, value: Expr) -> None:
         """Append ``value`` to the end of ``self``.
@@ -1433,7 +1481,7 @@ class ExprListWrapper(BaseVec):
         Note:
             This method operates in-place.
         """
-        self._list.append(ExprListWrapper.simplify_integer_floats(sympify(value)))
+        self._list.append(ExprListWrapper.normalize(value))
 
     def resize(self, n: int) -> None:
         """Resize the underlying container.
@@ -1447,7 +1495,7 @@ class ExprListWrapper(BaseVec):
         Note:
             This method operates in-place.
         """
-        self._list.extend([sympify(1) for _ in range(n - len(self))])
+        self._list.extend([ExprListWrapper.normalize(1) for _ in range(n - len(self))])
         self._list = self._list[:n]
         assert len(self) == n
 
@@ -1464,7 +1512,7 @@ class ExprListWrapper(BaseVec):
         coeffs = [self.simplify_integer_floats(func(coeff)) for coeff in self._list[indexer]]
         self._list[indexer] = coeffs
 
-    def idiff(self, indexer: slice, variable: Symbol | str) -> None:
+    def differentiate(self, indexer: slice, variable: Symbol | str) -> None:
         """Differentiate partially with respect to ``variable`` in-place.
 
         Args:
@@ -1580,7 +1628,7 @@ class SymbolicCoeffs(Coeffs[Expr]):
         Note:
             This method operates in-place.
         """
-        self._impl.idiff(self.slice, variable)
+        self._impl.differentiate(self.slice, variable)
 
     def diff(self, variable: Symbol | str) -> SymbolicCoeffs:
         """Differentiate partially with respect to ``variable`` out of place.
@@ -1605,13 +1653,7 @@ class SymbolicCoeffs(Coeffs[Expr]):
         Raises:
             TypeError: A coefficient is not representable as real or there are free symbols.
         """
-        out = []
-        for coeff in self:
-            v = coeff.evalf()
-            if not np.can_cast(float, type(v), casting="safe"):
-                raise TypeError(f"Cannot cast from {type(v)} to float")
-            out.append(float(v))
-        return RealCoeffs.from_sequence(out)
+        return RealCoeffs.from_sequence(self._impl.evaluate_real(self.slice))
 
     def try_to_complex(self) -> ComplexCoeffs:
         """Try to evaluate ``self`` as a vector of complex coefficients.
@@ -1622,13 +1664,7 @@ class SymbolicCoeffs(Coeffs[Expr]):
         Raises:
             TypeError: A coefficient is not representable as complex or there are free symbols.
         """
-        out = []
-        for coeff in self:
-            v = coeff.evalf()
-            if not np.can_cast(complex, type(v), casting="safe"):
-                raise TypeError(f"Cannot cast from {type(v)} to complex")
-            out.append(complex(v))
-        return ComplexCoeffs.from_sequence(out)
+        return ComplexCoeffs.from_sequence(self._impl.evaluate_complex(self.slice))
 
     @classmethod
     def parse(cls, source: str) -> Self:  # noqa: D102

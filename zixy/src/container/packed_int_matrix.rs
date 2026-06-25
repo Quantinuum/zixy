@@ -70,4 +70,15 @@ impl PackedIntMatrix {
     pub fn u64it_size(&self) -> usize {
         self.table.get_row_size()
     }
+
+    /// Remove element at `index` by replacing it with the last element.
+    pub fn pop_and_swap(&mut self, index: usize) {
+        self.table.pop_and_swap(index);
+    }
+
+    /// Resize to `n` rows.
+    pub fn resize(&mut self, n: usize) {
+        self.table.resize(n);
+    }
+
 }

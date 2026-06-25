@@ -92,6 +92,31 @@ impl WordIters for RawCmpntList {
     fn u64it_size(&self) -> usize {
         self.mode_part.u64it_size() + self.adj_part.u64it_size()
     }
+
+    fn pop_and_swap(&mut self, index: usize) {
+        self.mode_part.pop_and_swap(index);
+        self.adj_part.pop_and_swap(index);
+        let last = self.len_part.len() - 1;
+        self.len_part.swap(index, last);
+        self.len_part.pop();
+    }
+
+    fn resize(&mut self, n: usize) {
+        self.mode_part.resize(n);
+        self.adj_part.resize(n);
+        self.len_part.resize(n, 0);
+    }
+
+    /// Format the operator string at index `i` as a human-readable string.
+    fn fmt_elem(&self, i: usize) -> String {
+        let (modes, adj) = self.get(i);
+        modes
+            .iter()
+            .zip(adj.iter())
+            .map(|(mode, is_cre)| format!("F{}{}", mode, if *is_cre { "^" } else { "" }))
+            .collect::<Vec<_>>()
+            .join(" ")
+    }
 }
 
 #[cfg(test)]

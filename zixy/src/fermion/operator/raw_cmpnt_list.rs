@@ -11,7 +11,7 @@ use crate::fermion::traits::ModesBased;
 pub struct RawCmpntList {
     pub mode_part: PackedIntMatrix, // mode index at each operator position
     pub adj_part: BitMatrix,        // cre/ann flag per slot
-    pub len_part: Vec<u64>,         // length of each string
+    pub len_part: Vec<usize>,       // length of each string
     pub modes: Modes,               // list of modes
     pub max_len: usize,             // max operator slots per row
     pub n_bits: usize,              // number of bits per mode index
@@ -45,7 +45,7 @@ impl RawCmpntList {
         for (i, value) in adj.iter().enumerate() {
             self.adj_part.set_bit_unchecked(last_row, i, *value);
         }
-        self.len_part.push(modes.len() as u64);
+        self.len_part.push(modes.len());
     }
 
     /// Return true if no operator strings are stored.
@@ -55,7 +55,7 @@ impl RawCmpntList {
 
     /// Read back the operator string at index `i` as a tuple of mode indices and cre/ann flags.
     pub fn get(&self, i: usize) -> (Vec<usize>, Vec<bool>) {
-        let length = self.len_part[i] as usize;
+        let length = self.len_part[i];
         let modes = self.mode_part.read_row(i, length);
         let mut adj = Vec::new();
         for j in 0..length {

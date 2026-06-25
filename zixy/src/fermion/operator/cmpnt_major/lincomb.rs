@@ -6,11 +6,13 @@ use crate::container::traits::Elements;
 use crate::container::traits::RefElements;
 use crate::container::word_iters::lincomb::{iadd, isub, scaled_iadd, scaled_iadd_elem};
 use crate::container::word_iters::term_set::AsViewMut;
+use crate::container::word_iters::Elem;
 use crate::fermion::operator::cmpnt_major::raw_term_set;
 use crate::fermion::operator::cmpnt_major::raw_term_set::RawTermSet;
 use crate::fermion::operator::cmpnt_major::term_set::{self, TermSet};
 use crate::fermion::operator::cmpnt_major::terms;
 use crate::fermion::operator::products::mul_cmpnts;
+use crate::fermion::operator::raw_cmpnt_list::RawCmpntList;
 use crate::fermion::traits::{DifferentSpaces, ModesBased};
 use num_complex::Complex64;
 
@@ -166,8 +168,9 @@ pub fn raw_mul<C: FieldElem>(
             let modes: Vec<usize> = lhs_modes.iter().chain(rhs_modes.iter()).copied().collect();
             let adj: Vec<bool> = lhs_adj.iter().chain(rhs_adj.iter()).copied().collect();
             let c = lhs_coeff.to_complex() * rhs_coeff.to_complex();
-            out.terms.word_iters.push(&modes, &adj);
-            out.terms.coeffs.push(c);
+            let mut tmp = Elem::<RawCmpntList>::from(&out.terms.word_iters);
+            tmp.borrow_mut().word_iters.push(&modes, &adj);
+            scaled_iadd_elem(&mut out.borrow_mut(), tmp.borrow(), c);
         }
     }
     Ok(out)

@@ -1,0 +1,20 @@
+[project]
+name ="zixy-docs"
+version = "0.1.0"
+description = "Documentation for the Python API of the Zixy package"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "furo>=2025.9.25",
+    "myst-nb>=1.4.0",
+    "sphinx-copybutton",
+    "pandas>=3.0.3",
+    "scipy",
+    "zixy",
+    "sphinx-autodoc-typehints>=3.11.0",
+    "jupyterlab",
+    "ipykernel>=7.3.0",
+]
+
+[tool.uv.sources]
+zixy = { path = ".." }

@@ -1,18 +1,21 @@
 //! Extends `CmpntList` with a vector of associated coefficients.
 
+use itertools::{chain, Itertools};
 use num_complex::Complex64;
 
 use crate::cmpnt::parse::ParseError;
 use crate::cmpnt::springs::ModeSettings;
+use crate::container::bit_matrix::AsBitMatrix;
 use crate::container::coeffs::traits::{
     ComplexSigned, HasCoeffsMut, IMulResult, NumRepr, NumReprVec, Signed,
 };
+use crate::container::errors::OutOfBounds;
 use crate::container::traits::proj::{self, AsRef};
 use crate::container::traits::{Elements, EmptyFrom, MutRefElements};
 use crate::container::utils::DistinctPair;
 use crate::container::word_iters::{terms, WordIters};
 use crate::qubit::clifford;
-use crate::qubit::mode::{pauli_matrix_product, PauliMatrix, Qubits};
+use crate::qubit::mode::{pauli_matrix_product, PauliMatrix, Qubits, SymplecticPart};
 use crate::qubit::pauli::cmpnt_major::cmpnt_list::{CmpntList, CmpntRef};
 use crate::qubit::pauli::springs::Springs;
 use crate::qubit::traits::{
@@ -59,12 +62,9 @@ pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<CmpntList, C> {
     where
         C: Signed,
     {
-        let self_mut_ref = self.view_mut();
+        let mut self_mut_ref = self.view_mut();
         for i in 0..self_mut_ref.len() {
-            self_mut_ref
-                .word_iters
-                .get_elem_mut_ref(i)
-                .conj_clifford(gate);
+            self_mut_ref.get_elem_mut_ref(i).conj_clifford(gate);
         }
     }
 
@@ -75,6 +75,105 @@ pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<CmpntList, C> {
         C: Signed,
     {
         gates.into_iter().for_each(|gate| self.conj_clifford(gate));
+    }
+
+    /// In place canonicalization with respect to a given ordering of the binary entries in the symplectic form
+    /// `mode_order` the order of binary entries to try reducing to at most one non-zero entry
+    /// `to_solve` the subset of the components to canonicalise over (e.g. if some partial canonicalization has already been done, skip those components)
+    /// `additional_reduces` components outside of `to_solve` to include in the reduction step (e.g. if some partial canonicalization has already been done, reduce the components that already have leading entries)
+    /// Errors if any of the qubit or component indices provided are out of bounds
+    /// Returns the sequence of imul operations as pairs (lhs_written, rhs_read)
+    fn canonicalize(
+        &mut self,
+        mode_order: &Vec<(usize, SymplecticPart)>,
+        to_solve: &Vec<usize>,
+        additional_reduces: &Vec<usize>,
+    ) -> Result<Vec<(usize, usize)>, OutOfBounds> {
+        let mut imul_ops = vec![];
+        let mut pivot_cmpnt = 0;
+        let mut self_mut_ref = self.view_mut();
+        for (qubit, part) in mode_order {
+            let qubit_idx = self_mut_ref.word_iters.qubits().get(*qubit)?;
+            match part {
+                SymplecticPart::X => {
+                    for cmp_idx in &to_solve[pivot_cmpnt..] {
+                        if self_mut_ref
+                            .word_iters
+                            .x_part()
+                            .get_bit(*cmp_idx, qubit_idx)?
+                        {
+                            let pivot_idx = to_solve[pivot_cmpnt];
+                            if let Some(inds) = DistinctPair::new(pivot_idx, *cmp_idx) {
+                                let (mut lhs, rhs) = self_mut_ref.get_semi_mut_refs(inds);
+                                lhs.imul_unchecked(rhs);
+                                imul_ops.push((pivot_idx, *cmp_idx));
+                            }
+                            for red_idx in chain!(to_solve, additional_reduces) {
+                                if self_mut_ref
+                                    .word_iters
+                                    .x_part()
+                                    .get_bit(*red_idx, qubit_idx)?
+                                {
+                                    if let Some(inds) = DistinctPair::new(*red_idx, pivot_idx) {
+                                        let (mut lhs, rhs) = self_mut_ref.get_semi_mut_refs(inds);
+                                        lhs.imul_unchecked(rhs);
+                                        imul_ops.push((*red_idx, pivot_idx));
+                                    }
+                                }
+                            }
+                            pivot_cmpnt += 1;
+                            break;
+                        }
+                    }
+                }
+                SymplecticPart::Z => {
+                    for cmp_idx in &to_solve[pivot_cmpnt..] {
+                        if self_mut_ref
+                            .word_iters
+                            .z_part()
+                            .get_bit(*cmp_idx, qubit_idx)?
+                        {
+                            let pivot_idx = to_solve[pivot_cmpnt];
+                            if let Some(inds) = DistinctPair::new(pivot_idx, *cmp_idx) {
+                                let (mut lhs, rhs) = self_mut_ref.get_semi_mut_refs(inds);
+                                lhs.imul_unchecked(rhs);
+                                imul_ops.push((pivot_idx, *cmp_idx));
+                            }
+                            for red_idx in chain!(to_solve, additional_reduces) {
+                                if self_mut_ref
+                                    .word_iters
+                                    .z_part()
+                                    .get_bit(*red_idx, qubit_idx)?
+                                {
+                                    if let Some(inds) = DistinctPair::new(*red_idx, pivot_idx) {
+                                        let (mut lhs, rhs) = self_mut_ref.get_semi_mut_refs(inds);
+                                        lhs.imul_unchecked(rhs);
+                                        imul_ops.push((*red_idx, pivot_idx));
+                                    }
+                                }
+                            }
+                            pivot_cmpnt += 1;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        Ok(imul_ops)
+    }
+
+    /// In place canonicalization of the entire Terms with respect to solving X parts first (in qubit order), then Z parts
+    /// Returns the sequence of imul operations as pairs (lhs_written, rhs_read)
+    fn canonicalize_all(&mut self) -> Vec<(usize, usize)> {
+        let n_qubits = self.view().word_iters.qubits().n_qubit();
+        let mode_order = chain!(
+            (0..n_qubits).map(|i| (i, SymplecticPart::X)),
+            (0..n_qubits).map(|i| (i, SymplecticPart::Z))
+        )
+        .collect_vec();
+        let to_solve = (0..self.view().word_iters.len()).collect_vec();
+        // All ranges are guaranteed to be in bounds, so we can safely unwrap without error
+        self.canonicalize(&mode_order, &to_solve, &vec![]).unwrap()
     }
 }
 
@@ -418,8 +517,10 @@ mod tests {
     use super::*;
     use crate::container::coeffs::complex_sign::ComplexSign;
     use crate::container::coeffs::sign::Sign;
+    use crate::container::coeffs::traits::HasCoeffs;
     use crate::container::coeffs::unity::Unity;
-    use crate::container::traits::Elements;
+    use crate::container::traits::{Elements, RefElements};
+    use crate::container::word_iters::terms::AsViewMut as _;
     use crate::qubit::mode::{PauliMatrix, Qubits};
     use crate::qubit::pauli::cmpnt_major::cmpnt::PauliWord;
     use rstest::rstest;
@@ -508,5 +609,136 @@ mod tests {
             .assign_mul_cmpnt_refs_unchecked(lhs.borrow(), rhs.borrow());
         assert_eq!(out.get_elem_ref(0).get_word_iter_ref().get_pauli_vec(), ov);
         assert_eq!(out.get_elem_ref(0).get_coeff(), phase);
+    }
+
+    #[rstest]
+    #[case(0, vec![], vec![], vec![], vec![], vec![], vec![])]
+    #[case(3, vec![vec![Z, Z, Z], vec![X, X, I], vec![I, X, X]], vec![(0, SymplecticPart::X), (1, SymplecticPart::X), (0, SymplecticPart::Z)], vec![0, 1, 2], vec![], vec![(0, 1), (1, 0), (1, 2), (0, 1), (2, 1), (1, 2)], vec![vec![X, I, X], vec![I, X, X], vec![Z, Z, Z]])]
+    #[case(3, vec![vec![Z, Z, Z], vec![X, X, I], vec![Y, Z, X]], vec![(0, SymplecticPart::X), (1, SymplecticPart::X), (0, SymplecticPart::Z)], vec![0, 1], vec![2], vec![(0, 1), (1, 0), (2, 0), (0, 1)], vec![vec![X, X, I], vec![Z, Z, Z], vec![I, X, Y]])]
+    fn test_canonicalize(
+        #[case] n_qubits: usize,
+        #[case] strings: Vec<Vec<PauliMatrix>>,
+        #[case] q_order: Vec<(usize, SymplecticPart)>,
+        #[case] to_solve: Vec<usize>,
+        #[case] to_reduce: Vec<usize>,
+        #[case] expected_imuls: Vec<(usize, usize)>,
+        #[case] expected_strings: Vec<Vec<PauliMatrix>>,
+    ) {
+        let mut tab = Terms::<Sign>::new(Qubits::from_count(n_qubits));
+        for pv in strings {
+            tab.push_pauli_vec(pv).unwrap();
+        }
+        let mut exp = Terms::<Sign>::new(Qubits::from_count(n_qubits));
+        for pv in expected_strings {
+            exp.push_pauli_vec(pv).unwrap();
+        }
+        let res = tab.canonicalize(&q_order, &to_solve, &to_reduce);
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), expected_imuls);
+        assert_eq!(tab, exp);
+    }
+
+    #[rstest]
+    // The second pauli string should not be affected by the in-place multiplication on the first, so its total phase should remain as 1.
+    #[case(vec![X, Y, Z], vec![X, Y, Z], vec![I, I, I], vec![ComplexSign::ONE, ComplexSign::ONE])]
+    #[case(vec![Z, X, Y], vec![X, Y, X], vec![Y, Z, Z], vec![ComplexSign(1), ComplexSign::ONE])]
+    #[case(vec![X, Y, Z], vec![Y, Z, Z], vec![Z, X, I], vec![ComplexSign(2), ComplexSign::ONE])]
+    #[case(vec![X, Y, Z], vec![Y, Z, X], vec![Z, X, Y], vec![ComplexSign(3), ComplexSign::ONE])]
+    fn test_imul_asviewmut(
+        #[case] lhs: Vec<PauliMatrix>,
+        #[case] rhs: Vec<PauliMatrix>,
+        #[case] expected: Vec<PauliMatrix>,
+        #[case] expected_phase: Vec<ComplexSign>,
+    ) -> Result<(), OutOfBounds> {
+        let mut tab = Terms::<ComplexSign>::new(Qubits::from_count(3));
+        tab.push_pauli_vec(lhs)?;
+        tab.push_pauli_vec(rhs)?;
+
+        let mut view = tab.view_mut();
+        view.imul(0, 1);
+
+        assert_eq!(
+            view.get_elem_ref(0).get_word_iter_ref().get_pauli_vec(),
+            expected
+        );
+        assert_eq!(view.get_coeffs().len(), expected_phase.len());
+        for (i, phase) in expected_phase.iter().enumerate() {
+            assert_eq!(view.get_coeffs().get(i)?, *phase);
+        }
+        Ok(())
+    }
+
+    #[rstest]
+    // Identities: H I H^ = I, H X H^ = Z, H Y H^ = -Y, H Z H^ = X where H is Hadamard
+    #[case(vec![I], vec![clifford::Gate::H(0)] ,vec![I], ComplexSign(0))]
+    #[case(vec![X], vec![clifford::Gate::H(0)] ,vec![Z], ComplexSign(0))]
+    #[case(vec![Y], vec![clifford::Gate::H(0)] ,vec![Y], ComplexSign(2))]
+    #[case(vec![Z], vec![clifford::Gate::H(0)] ,vec![X], ComplexSign(0))]
+    #[case(vec![I,X,Y,Z], vec![clifford::Gate::H(0), clifford::Gate::H(1), clifford::Gate::H(2), clifford::Gate::H(3)] ,vec![I, Z, Y, X], ComplexSign(2))]
+    // Identities: S I S^ = I, S X S^ = Y, S Y S^ = -X, S Z S^ = Z where S is sqrt(X)
+    #[case(vec![I], vec![clifford::Gate::S(0)] ,vec![I], ComplexSign(0))]
+    #[case(vec![X], vec![clifford::Gate::S(0)] ,vec![Y], ComplexSign(0))]
+    #[case(vec![Y], vec![clifford::Gate::S(0)] ,vec![X], ComplexSign(2))]
+    #[case(vec![Z], vec![clifford::Gate::S(0)] ,vec![Z], ComplexSign(0))]
+    #[case(vec![I,X,Y,Z], vec![clifford::Gate::S(0), clifford::Gate::S(1), clifford::Gate::S(2), clifford::Gate::S(3)] ,vec![I, Y, X, Z], ComplexSign(2))]
+    fn test_conj_clifford_asviewmut_singlequbit_gate(
+        #[case] pauli: Vec<PauliMatrix>,
+        #[case] gates: Vec<clifford::Gate>,
+        #[case] expected: Vec<PauliMatrix>,
+        #[case] expected_phase: ComplexSign,
+    ) -> Result<(), OutOfBounds> {
+        let pauli_len = pauli.len();
+        let mut tab = Terms::<ComplexSign>::new(Qubits::from_count(pauli_len));
+        tab.push_pauli_vec(pauli)?;
+        let mut view = tab.view_mut();
+        view.conj_clifford_vec(gates);
+        assert_eq!(
+            view.get_elem_ref(0).get_word_iter_ref().get_pauli_vec(),
+            expected
+        );
+        assert_eq!(view.get_coeffs().len(), 1);
+        assert_eq!(view.get_coeffs().get(0)?, expected_phase);
+        Ok(())
+    }
+
+    #[rstest]
+    #[case(vec![I, I], 0 , 1, vec![I, I], ComplexSign(0))]
+    #[case(vec![I, X], 0 , 1, vec![I, X], ComplexSign(0))]
+    #[case(vec![I, Y], 0 , 1, vec![Z, Y], ComplexSign(0))]
+    #[case(vec![I, Z], 0 , 1, vec![Z, Z], ComplexSign(0))]
+    #[case(vec![X, I], 0 , 1, vec![X, X], ComplexSign(0))]
+    #[case(vec![X, X], 0 , 1, vec![X, I], ComplexSign(0))]
+    #[case(vec![X, Y], 0 , 1, vec![Y, Z], ComplexSign(0))]
+    #[case(vec![X, Z], 0 , 1, vec![Y, Y], ComplexSign(2))]
+    #[case(vec![Y, I], 0 , 1, vec![Y, X], ComplexSign(0))]
+    #[case(vec![Y, X], 0 , 1, vec![Y, I], ComplexSign(0))]
+    #[case(vec![Y, Y], 0 , 1, vec![X, Z], ComplexSign(2))]
+    #[case(vec![Y, Z], 0 , 1, vec![X, Y], ComplexSign(0))]
+    #[case(vec![Z, I], 0 , 1, vec![Z, I], ComplexSign(0))]
+    #[case(vec![Z, X], 0 , 1, vec![Z, X], ComplexSign(0))]
+    #[case(vec![Z, Y], 0 , 1, vec![I, Y], ComplexSign(0))]
+    #[case(vec![Z, Z], 0 , 1, vec![I, Z], ComplexSign(0))]
+    fn test_conj_clifford_asviewmut_multiqubit_gate(
+        #[case] pauli: Vec<PauliMatrix>,
+        #[case] control: usize,
+        #[case] target: usize,
+        #[case] expected: Vec<PauliMatrix>,
+        #[case] expected_phase: ComplexSign,
+    ) -> Result<(), OutOfBounds> {
+        let mut tab = Terms::<ComplexSign>::new(Qubits::from_count(pauli.len()));
+        tab.push_pauli_vec(pauli)?;
+        let mut view = tab.view_mut();
+        view.conj_clifford(clifford::Gate::CX(
+            DistinctPair::new(control, target).unwrap_or_else(|| {
+                panic!("Failed to create distinct pair of {},{}", control, target)
+            }),
+        ));
+        assert_eq!(
+            view.get_elem_ref(0).get_word_iter_ref().get_pauli_vec(),
+            expected
+        );
+        assert_eq!(view.get_coeffs().len(), 1);
+        assert_eq!(view.get_coeffs().get(0)?, expected_phase);
+        Ok(())
     }
 }

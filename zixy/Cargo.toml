@@ -1,6 +1,6 @@
 [package]
 name = "zixy"
-version = "0.2.2"
+version = "0.3.0"
 edition = { workspace = true }
 rust-version = { workspace = true }
 license = "Apache-2.0"
@@ -23,7 +23,7 @@ num-traits = "0.2"
 [dev-dependencies]
 rstest = { workspace = true }
 
-criterion = { version = "0.7.0", features = ["html_reports"] }
+criterion = { version = "0.8.2", features = ["html_reports"] }
 
 [[bench]]
 name = "bench_main"

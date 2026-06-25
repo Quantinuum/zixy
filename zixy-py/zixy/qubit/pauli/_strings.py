@@ -94,12 +94,12 @@ class String(StringBase[ImplT, SpecT, ElemT]):
 
     @staticmethod
     def _get_default_qubits(source: SpecT | None = None) -> Qubits:
-        """Get the default qubit space for :param:`source`."""
+        """Get the default qubit space for ``source``."""
         return _default_qubits(source)
 
     @classmethod
     def from_str(cls, source: str, qubits: int | Qubits | None = None) -> String:
-        """Create a new instance of :param:`cls` by parsing an input string.
+        """Create a new instance of ``cls`` by parsing an input string.
 
         Args:
             source: Input string to parse.
@@ -107,7 +107,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
                 index in the input string.
 
         Returns:
-            A new instance containing the Pauli string in the :param:`source`.
+            A new instance containing the Pauli string in the ``source``.
         """
         n = len(PauliSprings(source))
         if n != 1:
@@ -115,11 +115,11 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         return cls(qubits, source)
 
     def __getitem__(self, i: int) -> PauliMatrix:
-        """Return the element of the string at index :param:`i`."""
+        """Return the element of the string at index ``i``."""
         return self._impl.cmpnt_get_pauli(self.index, i)
 
     def __setitem__(self, i: int, pauli: PauliMatrix | str) -> None:
-        """Set the element of the string at index :param:`i`."""
+        """Set the element of the string at index ``i``."""
         if isinstance(pauli, str):
             if pauli == "I":
                 pauli = PauliMatrix.I
@@ -166,7 +166,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
     def __mul__(self, rhs: CoeffT) -> Term[CoeffT]: ...
 
     def __mul__(self, rhs: CoeffT | String) -> Term[CoeffT] | Term[ComplexSign]:
-        """Multiplication of :param:`self` by :param:`rhs`."""
+        """Multiplication of ``self`` by ``rhs``."""
         if not isinstance(rhs, Coeff | String):
             return NotImplemented
         if isinstance(rhs, String):
@@ -177,7 +177,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         return super().__mul__(rhs)  # type: ignore[return-value]
 
     def __imul__(self, rhs: String) -> Self:  # type: ignore
-        """In-place multiplication of :param:`self` by :param:`rhs`."""
+        """In-place multiplication of ``self`` by ``rhs``."""
         if not isinstance(rhs, String):
             raise TypeError("String is only in-place multiplicable by String")
         phase = self.phase_of_mul(rhs)
@@ -187,11 +187,11 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         return self
 
     def phase_of_mul(self, rhs: String) -> ComplexSign:
-        """Get the phase resulting from the multiplication of :param:`self` and :param:`rhs`."""
+        """Get the phase resulting from the multiplication of ``self`` and ``rhs``."""
         return ComplexSign(self._impl.cmpnt_phase_of_mul(self.index, rhs._impl, rhs.index))
 
     def imul_ignore_phase(self, rhs: String) -> None:
-        """In-place multiplication of :param:`self` by :param:`rhs`, ignoring the scalar phase."""
+        """In-place multiplication of ``self`` by ``rhs``, ignoring the scalar phase."""
         from zixy.qubit.pauli._terms import Term  # noqa: PLC0415
 
         if isinstance(rhs, Term):
@@ -209,7 +209,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
             self._impl.cmpnt_matrices_imul_external(self.index, rhs._impl, rhs.index)
 
     def imul_get_phase(self, rhs: String) -> ComplexSign:
-        """In-place multiplication of :param:`self` by :param:`rhs`, returning the phase.
+        """In-place multiplication of ``self`` by ``rhs``, returning the phase.
 
         See Also:
             :meth:`~zixy.qubit.pauli._strings.String.imul_ignore_phase` for in-place
@@ -224,7 +224,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         return ComplexSign(phase)
 
     def set_mul(self, lhs: String, rhs: String) -> ComplexSign:
-        """Set :param:`self` to the product of :param:`lhs` and :param:`rhs`, and return the phase.
+        """Set ``self`` to the product of ``lhs`` and ``rhs``, and return the phase.
 
         Args:
             lhs: Left hand side of the product.
@@ -237,7 +237,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         return self.imul_get_phase(rhs)
 
     def commutes_with(self, rhs: String) -> bool:
-        """Check whether :param:`self` commutes with :param:`rhs`."""
+        """Check whether ``self`` commutes with ``rhs``."""
         return self._impl.cmpnt_commutes_with(self.index, rhs._impl, rhs.index)
 
 
@@ -254,7 +254,7 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
 
     @classmethod
     def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Strings:
-        """Create a new instance of :param:`cls` by parsing an input string.
+        """Create a new instance of ``cls`` by parsing an input string.
 
         Args:
             qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
@@ -262,7 +262,7 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
             source: Input string to parse.
 
         Returns:
-            A new instance containing the Pauli string in the :param:`source`.
+            A new instance containing the Pauli string in the ``source``.
         """
         if isinstance(qubits, int):
             qubits = Qubits.from_count(qubits)
@@ -277,13 +277,13 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
     def __getitem__(self, indexer: slice) -> Strings: ...
 
     def __getitem__(self, indexer: int | slice) -> String | Strings:
-        """Get the element or elements selected by :param:`indexer`.
+        """Get the element or elements selected by ``indexer``.
 
         Args:
             indexer: Index or slice selecting the element(s) to return.
 
         Returns:
-            Element or slice selected by :param:`indexer`.
+            Element or slice selected by ``indexer``.
         """
         return super().__getitem__(indexer)  # type: ignore[return-value]
 
@@ -292,7 +292,7 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
         return tuple(self[i].get_dict() for i in range(len(self)))
 
     def compatibility_matrix(self) -> NDArray[np.uint8]:
-        """Form the compatibility matrix for the strings in :param:`self`.
+        """Form the compatibility matrix for the strings in ``self``.
 
         Returns:
             Matrix with 1 where the strings represented by the row and column commute, 0 elsewhere.
@@ -312,7 +312,7 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
         return self.filter_populated()
 
     def centralizer_and_remainder(self) -> tuple[Strings, Strings]:
-        """Get the centralizer and remainder of :param:`self`.
+        """Get the centralizer and remainder of ``self``.
 
         The centralizer of a set :math:`S` of Pauli strings is the set of strings :math:`C` that
         commute with all others in :math:`S`. The remainder is the set of Pauli strings that are in

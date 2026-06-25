@@ -87,17 +87,17 @@ class RootOfUnity(ABC):
 
     @abstractmethod
     def to_symbolic(self) -> Expr:
-        """Convert :param:`self` to a SymPy symbolic type."""
+        """Convert ``self`` to a SymPy symbolic type."""
         pass
 
     @abstractmethod
     def to_numeric(self) -> Number:
-        """Convert :param:`self` to a built-in numeric type."""
+        """Convert ``self`` to a built-in numeric type."""
         pass
 
     @abstractmethod
     def from_numeric(cls, value: Number) -> Self:
-        """Construct an instance of :param:`cls` from a built-in numeric type."""
+        """Construct an instance of ``cls`` from a built-in numeric type."""
         pass
 
     def _sympy_(self) -> Expr:  # noqa: PLW3201
@@ -105,7 +105,7 @@ class RootOfUnity(ABC):
         return self.to_symbolic()
 
     def __repr__(self) -> str:
-        """Return a string representation of :param:`self`."""
+        """Return a string representation of ``self``."""
         return str(self._impl)
 
 
@@ -136,16 +136,16 @@ class Sign(RootOfUnity):
         return self._impl.to_phase()
 
     def __eq__(self, other: object) -> bool:
-        """Return whether :param:`self` and :param:`other` are equal."""
+        """Return whether ``self`` and ``other`` are equal."""
         if not isinstance(other, Sign):
             return NotImplemented
         return self._impl == other._impl
 
     def __mul__(self, other: OtherCoeffT) -> OtherCoeffT:
-        """Out-of-place multiplication of :param:`self` by :param:`other`.
+        """Out-of-place multiplication of ``self`` by ``other``.
 
         Note:
-            The return type is determined by the type of the right-hand operand :param:`other`,
+            The return type is determined by the type of the right-hand operand ``other``,
             with appropriate type promotion rules.
         """
         if not isinstance(other, Coeff):
@@ -157,7 +157,7 @@ class Sign(RootOfUnity):
         return self.to_numeric() * other
 
     def __rmul__(self, other: OtherCoeffT) -> OtherCoeffT:
-        """Out-of-place multiplication of :param:`other` by :param:`self`.
+        """Out-of-place multiplication of ``other`` by ``self``.
 
         See Also:
             :meth:`__mul__`
@@ -165,11 +165,11 @@ class Sign(RootOfUnity):
         return self * other
 
     def __imul__(self, rhs: Coeff) -> Self:
-        """Multiply :param:`self` by :param:`rhs`.
+        """Multiply ``self`` by ``rhs``.
 
         Raises:
             ValueError: If the result of the multiplication cannot be represented by the type of
-                :param:`self`.
+                ``self``.
         """
         if isinstance(rhs, Sign):
             Sign.__init__(self, self._impl.to_phase() ^ rhs._impl.to_phase())
@@ -202,7 +202,7 @@ class Sign(RootOfUnity):
     def __truediv__(self, other: Expr) -> Expr: ...
 
     def __truediv__(self, other: OtherCoeffT) -> OtherCoeffT:
-        """Out-of-place division of :param:`self` by :param:`other`.
+        """Out-of-place division of ``self`` by ``other``.
 
         See Also:
             :meth:`__mul__`
@@ -226,7 +226,7 @@ class Sign(RootOfUnity):
     def __rtruediv__(self, other: Expr) -> Expr: ...
 
     def __rtruediv__(self, other: OtherCoeffT) -> OtherCoeffT:
-        """Out-of-place division of :param:`other` by :param:`self`.
+        """Out-of-place division of ``other`` by ``self``.
 
         See Also:
             :meth:`__mul__`, :meth:`__truediv__`
@@ -239,10 +239,10 @@ class Sign(RootOfUnity):
 
     @classmethod
     def from_int(cls, value: int | float | complex) -> Sign:
-        """Construct an instance of :param:`cls` from an integer.
+        """Construct an instance of ``cls`` from an integer.
 
         Raises:
-            ValueError: If :param:`value` is not exactly representable as :param:`cls`.
+            ValueError: If ``value`` is not exactly representable as ``cls``.
         """
         if value == 1:
             return cls(0)
@@ -253,35 +253,35 @@ class Sign(RootOfUnity):
     from_numeric = from_int
 
     def __int__(self) -> int:
-        """Convert :param:`self` to an integer value."""
+        """Convert ``self`` to an integer value."""
         return -1 if self._impl.to_phase() else 1
 
     def __float__(self) -> float:
-        """Convert :param:`self` to a floating point value."""
+        """Convert ``self`` to a floating point value."""
         return float(int(self))
 
     def __complex__(self) -> complex:
-        """Convert :param:`self` to a complex floating point value."""
+        """Convert ``self`` to a complex floating point value."""
         return complex(int(self))
 
     def __pos__(self) -> Self:
-        """Return :param:`self`."""
+        """Return ``self``."""
         return self
 
     def __neg__(self) -> Sign:
-        """Return the negation of :param:`self`."""
+        """Return the negation of ``self``."""
         return Sign(not self._impl.to_phase())
 
     def __abs__(self) -> Sign:
-        """Return the absolute value of :param:`self`."""
+        """Return the absolute value of ``self``."""
         return Sign(False)
 
     def to_symbolic(self) -> Expr:
-        """Convert :param:`self` to a SymPy symbolic constant."""
+        """Convert ``self`` to a SymPy symbolic constant."""
         return sympify(int(self))
 
     def to_numeric(self) -> int:
-        """Convert :param:`self` to a built-in numeric type."""
+        """Convert ``self`` to a built-in numeric type."""
         return int(self)
 
 
@@ -312,7 +312,7 @@ class ComplexSign(RootOfUnity):
         return self._impl.to_phase()
 
     def __eq__(self, other: object) -> bool:
-        """Return whether :param:`self` and :param:`other` are equal."""
+        """Return whether ``self`` and ``other`` are equal."""
         if not isinstance(other, ComplexSign):
             return NotImplemented
         return self._impl == other._impl
@@ -329,10 +329,10 @@ class ComplexSign(RootOfUnity):
     def __mul__(self, other: Expr) -> Expr: ...
 
     def __mul__(self, other: Coeff) -> Coeff:
-        """Out-of-place multiplication of :param:`self` by :param:`other`.
+        """Out-of-place multiplication of ``self`` by ``other``.
 
         Note:
-            The return type is determined by the type of the right-hand operand :param:`other`,
+            The return type is determined by the type of the right-hand operand ``other``,
             with appropriate type promotion rules.
         """
         if not isinstance(other, Coeff):
@@ -355,7 +355,7 @@ class ComplexSign(RootOfUnity):
     def __rmul__(self, other: Expr) -> Expr: ...
 
     def __rmul__(self, other: Coeff) -> Coeff:
-        """Out-of-place multiplication of :param:`other` by :param:`self`.
+        """Out-of-place multiplication of ``other`` by ``self``.
 
         See Also:
             :meth:`__mul__`
@@ -363,11 +363,11 @@ class ComplexSign(RootOfUnity):
         return self * other
 
     def __imul__(self, rhs: Coeff) -> Self:  # type: ignore[misc]
-        """Multiply :param:`self` by :param:`rhs`.
+        """Multiply ``self`` by ``rhs``.
 
         Raises:
             ValueError: If the result of the multiplication cannot be represented by the type of
-                :param:`self`.
+                ``self``.
         """
         if isinstance(rhs, Sign):
             return self.__imul__(complex(rhs))
@@ -396,7 +396,7 @@ class ComplexSign(RootOfUnity):
     def __truediv__(self, other: Expr) -> Expr: ...
 
     def __truediv__(self, other: Coeff) -> Coeff:
-        """Out-of-place division of :param:`self` by :param:`other`.
+        """Out-of-place division of ``self`` by ``other``.
 
         See Also:
             :meth:`__mul__`
@@ -421,7 +421,7 @@ class ComplexSign(RootOfUnity):
     def __rtruediv__(self, other: Expr) -> Expr: ...
 
     def __rtruediv__(self, other: Coeff) -> Coeff:
-        """Out-of-place division of :param:`other` by :param:`self`.
+        """Out-of-place division of ``other`` by ``self``.
 
         See Also:
             :meth:`__mul__`, :meth:`__truediv__`
@@ -436,10 +436,10 @@ class ComplexSign(RootOfUnity):
 
     @classmethod
     def from_complex(cls, value: complex | float) -> ComplexSign:
-        """Construct an instance of :param:`cls` from a complex value.
+        """Construct an instance of ``cls`` from a complex value.
 
         Raises:
-            ValueError: If :param:`value` is not exactly representable as :param:`cls`.
+            ValueError: If ``value`` is not exactly representable as ``cls``.
         """
         if value == complex(1, 0):
             return cls(0)
@@ -454,10 +454,10 @@ class ComplexSign(RootOfUnity):
     from_numeric = from_complex
 
     def __int__(self) -> int:
-        """Convert :param:`self` to an integer value.
+        """Convert ``self`` to an integer value.
 
         Raises:
-            ValueError: If the value of :param:`self` is not representable as an integer.
+            ValueError: If the value of ``self`` is not representable as an integer.
         """
         phase = self._impl.to_phase()
         assert phase >= 0 and phase < 4
@@ -468,10 +468,10 @@ class ComplexSign(RootOfUnity):
         raise ValueError(f"Cannot convert {type(self)} value {self} to int.")
 
     def __float__(self) -> float:
-        """Convert :param:`self` to a floating point value.
+        """Convert ``self`` to a floating point value.
 
         Raises:
-            ValueError: If the value of :param:`self` is not representable as a float.
+            ValueError: If the value of ``self`` is not representable as a float.
 
         See Also:
             :meth:`__int__`
@@ -479,7 +479,7 @@ class ComplexSign(RootOfUnity):
         return float(int(self))
 
     def __complex__(self) -> complex:
-        """Convert :param:`self` to a complex floating point value."""
+        """Convert ``self`` to a complex floating point value."""
         phase = self._impl.to_phase()
         assert phase >= 0 and phase < 4
         if phase == 0:
@@ -492,19 +492,19 @@ class ComplexSign(RootOfUnity):
             return complex(0, -1)
 
     def __pos__(self) -> Self:
-        """Return :param:`self`."""
+        """Return ``self``."""
         return self
 
     def __neg__(self) -> ComplexSign:
-        """Return the negation of :param:`self`."""
+        """Return the negation of ``self``."""
         return ComplexSign(self._impl.to_phase() + 2)
 
     def __abs__(self) -> ComplexSign:
-        """Return the absolute value of :param:`self`."""
+        """Return the absolute value of ``self``."""
         return ComplexSign(0)
 
     def to_symbolic(self) -> Expr:
-        """Convert :param:`self` to a SymPy symbolic constant."""
+        """Convert ``self`` to a SymPy symbolic constant."""
         phase = self._impl.to_phase()
         assert phase >= 0 and phase < 4
         if phase == 0:
@@ -517,7 +517,7 @@ class ComplexSign(RootOfUnity):
             return -I
 
     def to_numeric(self) -> complex:
-        """Convert :param:`self` to a built-in numeric type."""
+        """Convert ``self`` to a built-in numeric type."""
         return complex(self)
 
 
@@ -534,7 +534,7 @@ def zero(coeff_type: type[CoeffT]) -> CoeffT:
         coeff_type: Type in which to return the value.
 
     Returns:
-        An instance of :param:`coeff_type` that is equal to zero.
+        An instance of ``coeff_type`` that is equal to zero.
     """
     if issubclass(coeff_type, RootOfUnity):
         return coeff_type(0)
@@ -553,7 +553,7 @@ def unit(coeff_type: type[CoeffT]) -> CoeffT:
         coeff_type: Type in which to return the value.
 
     Returns:
-        An instance of :param:`coeff_type` that is equal to unity.
+        An instance of ``coeff_type`` that is equal to unity.
     """
     if issubclass(coeff_type, RootOfUnity):
         return coeff_type()
@@ -566,17 +566,17 @@ def unit(coeff_type: type[CoeffT]) -> CoeffT:
 
 
 def _convert_symbolic(source: Expr, t: type[CoeffT]) -> CoeffT:
-    """Convert the symbolic expression :param:`source` to a coefficient of type :param:`t`.
+    """Convert the symbolic expression ``source`` to a coefficient of type ``t``.
 
     Args:
         source: Symbolic expression to convert.
-        t: Type of coefficient with which to represent :param:`source`.
+        t: Type of coefficient with which to represent ``source``.
 
     Returns:
-        An instance of :param:`t` equal to :param:`source`.
+        An instance of ``t`` equal to ``source``.
 
     Raises:
-        ValueError: If :param:`source` cannot be represented as type :param:`t`.
+        ValueError: If ``source`` cannot be represented as type ``t``.
     """
     if t is int:
         try:
@@ -596,47 +596,47 @@ def _convert_symbolic(source: Expr, t: type[CoeffT]) -> CoeffT:
 
 
 def _is_int(cls: type[Coeff]) -> TypeIs[type[int]]:
-    """Whether :param:`cls` is of type ``int``."""
+    """Whether ``cls`` is of type ``int``."""
     return cls is int
 
 
 def _is_float(cls: type[Coeff]) -> TypeIs[type[float]]:
-    """Whether :param:`cls` is of type ``float``."""
+    """Whether ``cls`` is of type ``float``."""
     return cls is float
 
 
 def _is_complex(cls: type[Coeff]) -> TypeIs[type[complex]]:
-    """Whether :param:`cls` is of type ``complex``."""
+    """Whether ``cls`` is of type ``complex``."""
     return cls is complex
 
 
 def _is_expr(cls: type[Coeff]) -> TypeIs[type[Expr]]:
-    """Whether :param:`cls` is of type :class:`~sympy.Expr`."""
+    """Whether ``cls`` is of type :class:`~sympy.Expr`."""
     return issubclass(cls, Expr)
 
 
 def _is_sign(cls: type[Coeff]) -> TypeIs[type[Sign]]:
-    """Whether :param:`cls` is of type :class:`Sign`."""
+    """Whether ``cls`` is of type :class:`Sign`."""
     return issubclass(cls, Sign)
 
 
 def _is_complex_sign(cls: type[Coeff]) -> TypeIs[type[ComplexSign]]:
-    """Whether :param:`cls` is of type :class:`ComplexSign`."""
+    """Whether ``cls`` is of type :class:`ComplexSign`."""
     return issubclass(cls, ComplexSign)
 
 
 def convert(source: Coeff, cls: type[CoeffT]) -> CoeffT:
-    """Convert the coefficient :param:`source` to a coefficient of type :param:`cls`.
+    """Convert the coefficient ``source`` to a coefficient of type ``cls``.
 
     Args:
         source: Coefficient to convert.
-        cls: Type of coefficient with which to represent :param:`source`.
+        cls: Type of coefficient with which to represent ``source``.
 
     Returns:
-        An instance of :param:`cls` equal to :param:`source`.
+        An instance of ``cls`` equal to ``source``.
 
     Raises:
-        ValueError: If :param:`source` cannot be represented as type :param:`cls`.
+        ValueError: If ``source`` cannot be represented as type ``cls``.
     """
     if not isinstance(source, Coeff):
         raise TypeError
@@ -674,7 +674,7 @@ def convert(source: Coeff, cls: type[CoeffT]) -> CoeffT:
 
 
 def common_type(lhs: Coeff, rhs: Coeff) -> type[Coeff]:
-    """Find the most narrow coefficient type that can represent both :param:`lhs` and :param:`rhs`.
+    """Find the most narrow coefficient type that can represent both ``lhs`` and ``rhs``.
 
     Args:
         lhs: First coefficient value.
@@ -698,18 +698,18 @@ def common_type(lhs: Coeff, rhs: Coeff) -> type[Coeff]:
 
 
 def typesafe_mul(lhs: CoeffT, rhs: Coeff) -> CoeffT:
-    """Multiply :param:`lhs` by :param:`rhs` with the result conserving the type of :param:`lhs`.
+    """Multiply ``lhs`` by ``rhs`` with the result conserving the type of ``lhs``.
 
     Args:
         lhs: Left hand operand, also defining the required result type.
         rhs: Right hand operand.
 
     Returns:
-        The product of :param:`lhs` and :param:`rhs`, of the same type as :param:`lhs`.
+        The product of ``lhs`` and ``rhs``, of the same type as ``lhs``.
 
     Raises:
-        ValueError: Product of :param:`lhs` and :param:`rhs` is not representable as the type of
-            :param:`lhs`.
+        ValueError: Product of ``lhs`` and ``rhs`` is not representable as the type of
+            ``lhs``.
     """
     cls = type(lhs) if not isinstance(lhs, Expr) else Expr
     result = lhs * convert(rhs, cls)
@@ -740,16 +740,16 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
 
     _impl: _zixy.BaseVec
 
-    def __init__(self, data: _zixy.BaseVec | None = None, s: slice = slice(None)):
+    def __init__(self, data: _zixy.BaseVec | None = None, indexer: slice = slice(None)):
         """Initialize the coefficient vector.
 
         Args:
             data: Rust-bound object storing a vector of coefficients. If ``None``, an empty vector
                 of the appropriate type is initialized.
-            s: Slice over which the data is to be viewed.
+            indexer: Slice over which the data is to be viewed.
         """
         self._impl = data if data is not None else self.coeffs_type(0)
-        self._slice = s
+        self._slice = indexer
 
     def fill(self, coeff: CoeffT) -> None:
         """Set all the coefficients in the vector to the given value.
@@ -765,61 +765,61 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
 
         Args:
             source: Iterable containing the values to be assigned to the viewed coefficients of
-                :param:`self`.
+                ``self``.
         """
         for i, c in enumerate(source):
             self[i] = convert(c, self.coeff_type)
 
     @classmethod
-    def _create(cls, data: _zixy.BaseVec, s: slice = slice(None)) -> Self:
-        """Create a new instance of :param:`cls`.
+    def _create(cls, data: _zixy.BaseVec, indexer: slice = slice(None)) -> Self:
+        """Create a new instance of ``cls``.
 
         Args:
             data: Rust-bound object containing the data for this sequence.
-            s: Slice of the data in :param:`data` that this instance should view. If ``None``, this
-                instance is considered to be owning.
+            indexer: Slice of the data in ``data`` that this instance should view. The default
+                value of ``slice(None)`` indicates that this instance is considered to be owning.
 
         Returns:
-            A new instance of :param:`cls`.
+            A new instance of ``cls``.
         """
         out = cls.__new__(cls)
         assert type(data) is cls.coeffs_type, (type(data), cls.coeffs_type)
-        Coeffs.__init__(out, data, s)
+        Coeffs.__init__(out, data, indexer)
         return out
 
     def clone(self) -> Self:
-        """Return a deep copy of :param:`self`."""
+        """Return a deep copy of ``self``."""
         out = self._empty_clone()
         for c in self:
             out.append(c)
         return out
 
     def __pos__(self) -> Self:
-        """Return :param:`self`."""
+        """Return ``self``."""
         return self
 
     def __neg__(self) -> Self:
-        """Return the negation of :param:`self`."""
+        """Return the negation of ``self``."""
         out: Self = self._empty_clone()
         for item in self:
             out.append(-item)
         return out
 
     def __repr__(self) -> str:
-        """Return a string representation of :param:`self`."""
+        """Return a string representation of ``self``."""
         return "[" + (", ".join(str(c) for c in self)) + "]"
 
     def __eq__(self, other: object) -> bool:
-        """Return whether :param:`self` and :param:`other` are equal."""
+        """Return whether ``self`` and ``other`` are equal."""
         if not isinstance(other, Coeffs):
             return NotImplemented
         return all(left == right for left, right in zip(self, other, strict=False))
 
     def map_index(self, index: int) -> int:
-        """Map an index in :param:`self` to an index in the underlying data.
+        """Map an index in ``self`` to an index in the underlying data.
 
         Args:
-            index: Index in :param:`self`.
+            index: Index in ``self``.
 
         Returns:
             Corresponding index in the underlying data.
@@ -833,13 +833,13 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
     def __getitem__(self, indexer: builtins.slice) -> Self: ...
 
     def __getitem__(self, indexer: int | builtins.slice) -> CoeffT | Self:
-        """Get the element or elements selected by :param:`indexer`.
+        """Get the element or elements selected by ``indexer``.
 
         Args:
             indexer: Index or slice selecting the coefficient(s) to return.
 
         Returns:
-            Coefficient or slice selected by :param:`indexer`.
+            Coefficient or slice selected by ``indexer``.
         """
         if isinstance(indexer, builtins.slice):
             return type(self)._create(
@@ -876,7 +876,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
         """Set the indexed element(s) to the given value(s).
 
         Args:
-            indexer: Index or slice of coefficient(s) within :param:`self` to assign.
+            indexer: Index or slice of coefficient(s) within ``self`` to assign.
             source: Value(s) specifying the coefficient(s) to assign.
         """
         if isinstance(indexer, builtins.slice):
@@ -917,11 +917,11 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
             self[i] = typesafe_mul(self[i], scalar)
 
     def __imul__(self, rhs: Coeff | Iterable[Coeff]) -> Self:
-        """Multiply :param:`self` by :param:`rhs` in-place.
+        """Multiply ``self`` by ``rhs`` in-place.
 
         Raises:
             ValueError: If the result of the multiplication cannot be represented by the type of
-                :param:`self`.
+                ``self``.
         """
         if isinstance(rhs, Coeff):
             self.scale(rhs)
@@ -933,15 +933,15 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
         return self
 
     def to_tuple(self) -> tuple[CoeffT, ...]:
-        """Get a tuple of clones of the elements of :param:`self`."""
+        """Get a tuple of clones of the elements of ``self``."""
         return tuple(c for c in self)
 
     def _empty_clone(self) -> Self:
-        """Get an empty (owning, contiguous) clone of :param:`self`."""
+        """Get an empty (owning, contiguous) clone of ``self``."""
         return self._create(self.coeffs_type(0))
 
     def reordered(self, inds: Sequence[int]) -> Self:
-        """Get a new instance with the elements of :param:`self` in a new order.
+        """Get a new instance with the elements of ``self`` in a new order.
 
         Args:
             inds: Sequence of indices defining the new order. Should be a permutation of
@@ -959,10 +959,10 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
 
     @requires_ownership
     def append_n(self, n: int, value: CoeffT) -> None:
-        """Append :param:`value` to the end of :param:`self` :param:`n` times.
+        """Append ``value`` to the end of ``self`` ``n`` times.
 
         Args:
-            n: Number of times to repeatedly append :param:`value`.
+            n: Number of times to repeatedly append ``value``.
             value: Value to append.
 
         Note:
@@ -976,7 +976,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
 
     @requires_ownership
     def append(self, value: CoeffT) -> None:
-        """Append :param:`value` to the end of :param:`self`.
+        """Append ``value`` to the end of ``self``.
 
         Args:
             value: Value to append.
@@ -988,10 +988,10 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
 
     @requires_ownership
     def extend(self, other: Self) -> None:
-        """Append the elements of :param:`other` to the end of :param:`self`.
+        """Append the elements of ``other`` to the end of ``self``.
 
         Args:
-            other: Other instance whose elements are appended to :param:`self`.
+            other: Other instance whose elements are appended to ``self``.
 
         Note:
             This method operates in-place.
@@ -1003,7 +1003,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
 
     @requires_ownership
     def swap_remove(self, index: int) -> None:
-        """Set the element at :param:`index` to the final element, then delete the final element.
+        """Set the element at ``index`` to the final element, then delete the final element.
 
         Args:
             index: Element index to remove.
@@ -1016,13 +1016,13 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
 
     @classmethod
     def parse(cls, source: str) -> Self:
-        """Construct an instance of :param:`cls` from a string representation.
+        """Construct an instance of ``cls`` from a string representation.
 
         Args:
             source: The string to read from.
 
         Returns:
-            An instance of :param:`cls` represented by :param:`source`.
+            An instance of ``cls`` represented by ``source``.
         """
         out = cls()
         out._impl = cls.coeffs_type.parse(source)
@@ -1031,17 +1031,17 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
     @property
     @abstractmethod
     def np_array(self) -> NDArray[np.generic]:
-        """Get the contents of :param:`self` copied as a flat NumPy array.
+        """Get the contents of ``self`` copied as a flat NumPy array.
 
         Returns:
-            NumPy array containing all elements of :param:`self`.
+            NumPy array containing all elements of ``self``.
         """
         pass
 
     def allclose(
         self, other: Coeffs[Any], rtol: float = DEFAULT_RTOL, atol: float = DEFAULT_ATOL
     ) -> bool:
-        """Check whether :param:`self` and :param:`other` are within a certain tolerance.
+        """Check whether ``self`` and ``other`` are within a certain tolerance.
 
         Args:
             other: Other instance to compare to.
@@ -1049,7 +1049,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
             atol: Absolute tolerance.
 
         Returns:
-            Whether :param:`self` and :param:`other` are within the given tolerances of each other.
+            Whether ``self`` and ``other`` are within the given tolerances of each other.
 
         Note:
             This method operates by comparing the NumPy arrays returned by
@@ -1063,14 +1063,14 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
 
     @classmethod
     def from_scalar(cls, coeff: CoeffT, n: int = 1) -> Self:
-        """Get a new instance of :param:`cls` with the given scalar repeated :param:`n` times.
+        """Get a new instance of ``cls`` with the given scalar repeated ``n`` times.
 
         Args:
             coeff: Coefficient value.
-            n: Number of times to repeat :param:`coeff`.
+            n: Number of times to repeat ``coeff``.
 
         Returns:
-            New instance with :param:`coeff` repeated :param:`n` times.
+            New instance with ``coeff`` repeated ``n`` times.
         """
         out = cls()
         out.append_n(n, coeff)
@@ -1084,7 +1084,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
             source: Sequence of coefficients.
 
         Returns:
-            New instance with elements set according to :param:`source`.
+            New instance with elements set according to ``source``.
         """
         out = cls()
         for coeff in source:
@@ -1104,7 +1104,7 @@ class RootOfUnityCoeffs(Coeffs[CoeffT]):
 
 
 class SignCoeffs(RootOfUnityCoeffs[Sign]):
-    """A collection of :class:`Sign`s.
+    """A collection of :class:`Sign`.
 
     A resizable vector-like container of coefficients that may be an owning instance referencing a
     contiguous Rust-bound data object, or a view on a slice of the elements in another collection.
@@ -1123,7 +1123,7 @@ class SignCoeffs(RootOfUnityCoeffs[Sign]):
             source: Sequence of phases.
 
         Returns:
-            New instance with elements set to phases according to :param:`source`.
+            New instance with elements set to phases according to ``source``.
         """
         out = cls()
         if isinstance(source, np.ndarray) and source.dtype == np.bool_:
@@ -1137,16 +1137,16 @@ class SignCoeffs(RootOfUnityCoeffs[Sign]):
 
     @property
     def np_array(self) -> NDArray[np.int64]:
-        """Get the contents of :param:`self` copied as a flat NumPy array.
+        """Get the contents of ``self`` copied as a flat NumPy array.
 
         Returns:
-            NumPy array containing all elements of :param:`self`.
+            NumPy array containing all elements of ``self``.
         """
         return np.array([int(s) for s in self], dtype=np.int64)[self.slice].ravel()
 
 
 class ComplexSignCoeffs(RootOfUnityCoeffs[ComplexSign]):
-    """A collection of :class:`ComplexSign`s.
+    """A collection of :class:`ComplexSign`.
 
     A resizable vector-like container of coefficients that may be an owning instance referencing a
     contiguous Rust-bound data object, or a view on a slice of the elements in another collection.
@@ -1165,7 +1165,7 @@ class ComplexSignCoeffs(RootOfUnityCoeffs[ComplexSign]):
             source: Sequence of phases.
 
         Returns:
-            New instance with elements set to phases according to :param:`source`.
+            New instance with elements set to phases according to ``source``.
         """
         out = cls()
         if isinstance(source, np.ndarray) and source.dtype == np.uint8:
@@ -1179,10 +1179,10 @@ class ComplexSignCoeffs(RootOfUnityCoeffs[ComplexSign]):
 
     @property
     def np_array(self) -> NDArray[np.complex128]:
-        """Get the contents of :param:`self` copied as a flat NumPy array.
+        """Get the contents of ``self`` copied as a flat NumPy array.
 
         Returns:
-            NumPy array containing all elements of :param:`self`.
+            NumPy array containing all elements of ``self``.
         """
         return np.array([complex(s) for s in self], dtype=np.complex128)[self.slice].ravel()
 
@@ -1197,13 +1197,13 @@ class NumericalCoeffs(Coeffs[NumberT]):
     coeffs_type: type[_zixy.RealVec | _zixy.ComplexVec]
 
     def any_significant(self, atol: float = DEFAULT_ATOL) -> bool:
-        """Check whether any element of :param:`self` is significantly different from zero.
+        """Check whether any element of ``self`` is significantly different from zero.
 
         Args:
             atol: The absolute tolerance to use.
 
         Returns:
-            Whether any element of :param:`self` is significantly different from zero.
+            Whether any element of ``self`` is significantly different from zero.
         """
         return not np.allclose(self.np_array, 0, rtol=0, atol=atol)
 
@@ -1215,7 +1215,7 @@ class NumericalCoeffs(Coeffs[NumberT]):
             source: Sequence of coefficients.
 
         Returns:
-            New instance with elements set according to :param:`source`.
+            New instance with elements set according to ``source``.
         """
         out = cls()
         out._impl = cls.coeffs_type.from_array(np.asarray(source, dtype=cls.coeff_type))
@@ -1224,7 +1224,7 @@ class NumericalCoeffs(Coeffs[NumberT]):
 
 
 class RealCoeffs(NumericalCoeffs[float]):
-    """A collection of ``float``s.
+    """A collection of ``float``.
 
     A resizable vector-like container of coefficients that may be an owning instance referencing a
     contiguous Rust-bound data object, or a view on a slice of the elements in another collection.
@@ -1237,16 +1237,16 @@ class RealCoeffs(NumericalCoeffs[float]):
 
     @property
     def np_array(self) -> NDArray[np.float64]:
-        """Get the contents of :param:`self` copied as a flat NumPy array.
+        """Get the contents of ``self`` copied as a flat NumPy array.
 
         Returns:
-            NumPy array containing all elements of :param:`self`.
+            NumPy array containing all elements of ``self``.
         """
         return np.asarray(self._impl.to_array(), dtype=np.float64)[self.slice].ravel()
 
 
 class ComplexCoeffs(NumericalCoeffs[complex]):
-    """A collection of ``complex``s.
+    """A collection of ``complex``.
 
     A resizable vector-like container of coefficients that may be an owning instance referencing a
     contiguous Rust-bound data object, or a view on a slice of the elements in another collection.
@@ -1259,21 +1259,21 @@ class ComplexCoeffs(NumericalCoeffs[complex]):
 
     @property
     def np_array(self) -> NDArray[np.complex128]:
-        """Get the contents of :param:`self` copied as a flat NumPy array.
+        """Get the contents of ``self`` copied as a flat NumPy array.
 
         Returns:
-            NumPy array containing all elements of :param:`self`.
+            NumPy array containing all elements of ``self``.
         """
         return np.asarray(self._impl.to_array(), dtype=np.complex128)[self.slice].ravel()
 
     @property
     def real_part(self) -> RealCoeffs:
-        """Get the real part of :param:`self` as a new instance of :class:`RealCoeffs`."""
+        """Get the real part of ``self`` as a new instance of :class:`RealCoeffs`."""
         return RealCoeffs.from_sequence(self.np_array.real)
 
     @property
     def imag_part(self) -> RealCoeffs:
-        """Get the imaginary part of :param:`self` as a new instance of :class:`RealCoeffs`."""
+        """Get the imaginary part of ``self`` as a new instance of :class:`RealCoeffs`."""
         return RealCoeffs.from_sequence(self.np_array.imag)
 
 
@@ -1293,31 +1293,31 @@ class ExprListWrapper(BaseVec):
         self._list = [sympify(1) for _ in range(n)]
 
     def __len__(self) -> int:
-        """Get the number of elements in :param:`self`."""
+        """Get the number of elements in ``self``."""
         return len(self._list)
 
     @classmethod
     def parse(self, string: str) -> Self:
-        """Construct an instance of :param:`cls` from a string representation.
+        """Construct an instance of ``cls`` from a string representation.
 
         Args:
             string: The string to read from.
 
         Returns:
-            An instance of :param:`cls` represented by :param:`string`.
+            An instance of ``cls`` represented by ``string``.
         """
         out = self()
         out._list = [sympify(s) for s in string.split(",")]
         return out
 
     def __getitem__(self, index: int) -> Expr:
-        """Get the element or elements selected by :param:`index`.
+        """Get the element or elements selected by ``index``.
 
         Args:
             index: Index or slice selecting the element(s) to return.
 
         Returns:
-            Element or slice selected by :param:`index`.
+            Element or slice selected by ``index``.
         """
         return self._list[index]
 
@@ -1325,7 +1325,7 @@ class ExprListWrapper(BaseVec):
         """Set the indexed element(s) to the given value(s).
 
         Args:
-            index: Index or slice of coefficient(s) within :param:`self` to assign.
+            index: Index or slice of coefficient(s) within ``self`` to assign.
             value: Value(s) specifying the coefficient(s) to assign.
         """
         self._list[index] = ExprListWrapper.simplify_integer_floats(sympify(value))
@@ -1344,13 +1344,13 @@ class ExprListWrapper(BaseVec):
 
     @classmethod
     def from_list(cls, source: list[Expr]) -> ExprListWrapper:
-        """Create an instance of :param:`cls` from a list of expressions.
+        """Create an instance of ``cls`` from a list of expressions.
 
         Args:
             source: The list of expressions to read from.
 
         Returns:
-            An instance of :param:`cls` containing the expressions in :param:`source`.
+            An instance of ``cls`` containing the expressions in ``source``.
         """
         out = cls()
         assert all(isinstance(c, Expr) for c in source)
@@ -1359,14 +1359,14 @@ class ExprListWrapper(BaseVec):
 
     @classmethod
     def from_coeffs(cls, source: Coeff | Sequence[Coeff]) -> ExprListWrapper:
-        """Create an instance of :param:`cls` from a coefficient or sequence of coefficients.
+        """Create an instance of ``cls`` from a coefficient or sequence of coefficients.
 
         Args:
             source: The coefficient or sequence of coefficients to read from.
 
         Returns:
-            An instance of :param:`cls` containing the expressions corresponding to the coefficients
-            in :param:`source`.
+            An instance of ``cls`` containing the expressions corresponding to the coefficients
+            in ``source``.
         """
         out = cls()
         out._list = ExprListWrapper._sympify_coeffs(source)
@@ -1407,7 +1407,7 @@ class ExprListWrapper(BaseVec):
         return [ExprListWrapper._sympify_coeff(coeffs)]
 
     def append(self, value: Expr) -> None:
-        """Append :param:`value` to the end of :param:`self`.
+        """Append ``value`` to the end of ``self``.
 
         Args:
             value: Value to append.
@@ -1435,7 +1435,7 @@ class ExprListWrapper(BaseVec):
 
 
 class SymbolicCoeffs(Coeffs[Expr]):
-    """A collection of :class:`~sympy.Expr`s.
+    """A collection of :class:`~sympy.Expr`.
 
     A resizable vector-like container of coefficients that may be an owning instance referencing a
     contiguous Rust-bound data object, or a view on a slice of the elements in another collection.
@@ -1447,7 +1447,7 @@ class SymbolicCoeffs(Coeffs[Expr]):
     _impl: ExprListWrapper
 
     def __eq__(self, other: object) -> bool:
-        """Return whether :param:`self` and :param:`other` are equal."""
+        """Return whether ``self`` and ``other`` are equal."""
         if not isinstance(other, SymbolicCoeffs):
             return NotImplemented
         return all(
@@ -1456,10 +1456,10 @@ class SymbolicCoeffs(Coeffs[Expr]):
 
     @property
     def free_symbols(self) -> set[Symbol]:
-        """Get the set of free (unsubstituted) symbols in :param:`self`.
+        """Get the set of free (unsubstituted) symbols in ``self``.
 
         Returns:
-            Union of the sets of free symbols across all coefficients in :param:`self`.
+            Union of the sets of free symbols across all coefficients in ``self``.
         """
         out = set()
         for coeff in self._impl._list:
@@ -1467,10 +1467,10 @@ class SymbolicCoeffs(Coeffs[Expr]):
         return out
 
     def extend(self, other: Self) -> None:
-        """Append the elements of :param:`other` to the end of :param:`self`.
+        """Append the elements of ``other`` to the end of ``self``.
 
         Args:
-            other: Other instance whose elements are appended to :param:`self`.
+            other: Other instance whose elements are appended to ``self``.
 
         Note:
             This method operates in-place.
@@ -1504,7 +1504,7 @@ class SymbolicCoeffs(Coeffs[Expr]):
         return out
 
     def idiff(self, variable: Symbol | str) -> None:
-        """Differentiate partially with respect to :param:`variable` in-place.
+        """Differentiate partially with respect to ``variable`` in-place.
 
         Args:
             variable: Symbol or name of symbol by which to differentiate the viewed symbolic
@@ -1519,7 +1519,7 @@ class SymbolicCoeffs(Coeffs[Expr]):
         self._impl._list[self.slice] = coeffs
 
     def diff(self, variable: Symbol | str) -> SymbolicCoeffs:
-        """Differentiate partially with respect to :param:`variable` out of place.
+        """Differentiate partially with respect to ``variable`` out of place.
 
         Args:
             variable: Symbol or name of symbol by which to differentiate the viewed symbolic
@@ -1533,7 +1533,7 @@ class SymbolicCoeffs(Coeffs[Expr]):
         return out
 
     def try_to_real(self) -> RealCoeffs:
-        """Try to evaluate :param:`self` as a vector of real coefficients.
+        """Try to evaluate ``self`` as a vector of real coefficients.
 
         Returns:
             An instance of :class:`RealCoeffs` with the evaluated coefficients.
@@ -1550,7 +1550,7 @@ class SymbolicCoeffs(Coeffs[Expr]):
         return RealCoeffs.from_sequence(out)
 
     def try_to_complex(self) -> ComplexCoeffs:
-        """Try to evaluate :param:`self` as a vector of complex coefficients.
+        """Try to evaluate ``self`` as a vector of complex coefficients.
 
         Returns:
             An instance of :class:`ComplexCoeffs` with the evaluated coefficients.
@@ -1574,10 +1574,10 @@ class SymbolicCoeffs(Coeffs[Expr]):
 
     @property
     def np_array(self) -> NDArray[np.float64 | np.complex128]:
-        """Get the contents of :param:`self` copied as a flat NumPy array.
+        """Get the contents of ``self`` copied as a flat NumPy array.
 
         Returns:
-            NumPy array containing all elements of :param:`self`.
+            NumPy array containing all elements of ``self``.
         """
         try:
             return self.try_to_real().np_array
@@ -1608,7 +1608,7 @@ def get_coeffs_type(t: type[CoeffT]) -> type[Coeffs[CoeffT]]:
         t: The coefficient type for which to get the corresponding vector type.
 
     Returns:
-        The coefficient vector type corresponding to :param:`t`.
+        The coefficient vector type corresponding to ``t``.
     """
     if _is_sign(t):
         return SignCoeffs

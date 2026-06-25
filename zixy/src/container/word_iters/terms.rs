@@ -820,5 +820,295 @@ impl<'a, T: WordIters, C: NumRepr> HasIndex for TermMutRef<'a, T, C> {
 
 #[cfg(test)]
 mod tests {
-    // use super::*;
+    use crate::container::traits::Compatible;
+
+    use super::*;
+
+    #[derive(Clone)]
+    struct TestContainer {
+        elements: Vec<Vec<u64>>,
+    }
+
+    impl Elements for TestContainer {
+        fn len(&self) -> usize {
+            self.elements.len()
+        }
+    }
+
+    impl EmptyClone for TestContainer {
+        fn empty_clone(&self) -> Self {
+            Self {
+                elements: Vec::new(),
+            }
+        }
+    }
+
+    impl Compatible for TestContainer {
+        fn compatible_with(&self, _other: &Self) -> bool {
+            true
+        }
+    }
+
+    impl WordIters for TestContainer {
+        fn elem_u64it(&self, index: usize) -> impl Iterator<Item = u64> + Clone {
+            self.elements[index].clone().into_iter()
+        }
+
+        fn elem_u64it_mut(&mut self, index: usize) -> impl Iterator<Item = &mut u64> {
+            self.elements[index].iter_mut()
+        }
+
+        fn u64it_size(&self) -> usize {
+            self.elements.first().map(Vec::len).unwrap_or(0)
+        }
+
+        fn resize(&mut self, n: usize) {
+            let width = self.u64it_size();
+            self.elements.resize(n, vec![0; width]);
+        }
+
+        fn pop_and_swap(&mut self, _index: usize) {
+            Default::default()
+        }
+    }
+    #[test]
+    fn test_view_elem_equal() {
+        let terms: Terms<TestContainer, f64> = Terms {
+            word_iters: TestContainer {
+                elements: vec![vec![1, 2], vec![1, 2], vec![3, 4]],
+            },
+            coeffs: vec![0.5, 0.5, 1.5],
+        };
+        assert_eq!(terms.len(), 3);
+        assert!(terms.elem_equal(0, 1));
+        assert!(!terms.elem_equal(0, 2));
+        assert!(!terms.elem_equal(1, 2));
+    }
+
+    #[test]
+    fn test_to_owned() {
+        let terms: Terms<TestContainer, f64> = Terms {
+            word_iters: TestContainer {
+                elements: vec![vec![1, 2], vec![3, 4]],
+            },
+            coeffs: vec![0.5, 1.5],
+        };
+        let mut terms_clone = proj::ToOwned::to_owned(&terms);
+        assert_eq!(terms.len(), terms_clone.len());
+        for i in 0..terms.len() {
+            assert!(terms.elem_equal(i, i));
+            assert_eq!(terms.coeffs[i], terms_clone.coeffs[i]);
+        }
+        terms_clone.coeffs[0] = 0.0;
+        assert_ne!(terms.coeffs[0], terms_clone.coeffs[0]);
+    }
+
+    #[test]
+    fn test_mul_scalar() {
+        let terms: Terms<TestContainer, f64> = Terms {
+            word_iters: TestContainer {
+                elements: vec![vec![1, 2], vec![3, 4]],
+            },
+            coeffs: vec![0.5, 1.5],
+        };
+        let terms_scaled = terms.mul_scalar(2.0);
+        assert_eq!(terms.len(), terms_scaled.len());
+        for i in 0..terms.len() {
+            assert!(terms.elem_equal(i, i));
+            assert_eq!(terms.coeffs[i] * 2.0, terms_scaled.coeffs[i]);
+        }
+    }
+
+    #[test]
+    fn test_select_elem() {
+        let terms: Terms<TestContainer, f64> = Terms {
+            word_iters: TestContainer {
+                elements: vec![vec![1, 2], vec![3, 4], vec![5, 6]],
+            },
+            coeffs: vec![0.5, 1.5, 2.5],
+        };
+        let iter = [0_usize, 2_usize].into_iter();
+        let selected = terms.select(iter);
+        assert_eq!(selected.len(), 2);
+        assert_eq!(selected.coeffs[0], 0.5);
+        assert_eq!(selected.coeffs[1], 2.5);
+    }
+
+    #[test]
+    fn test_select_elem_out_of_bounds() {
+        let terms: Terms<TestContainer, f64> = Terms {
+            word_iters: TestContainer {
+                elements: vec![vec![1, 2], vec![3, 4], vec![5, 6]],
+            },
+            coeffs: vec![0.5, 1.5, 2.5],
+        };
+        let iter = [3, 4, 5].into_iter();
+        let selected = terms.select(iter);
+        assert_eq!(selected.len(), 0);
+    }
+
+    #[test]
+    fn test_deselect_elem() {
+        let terms: Terms<TestContainer, f64> = Terms {
+            word_iters: TestContainer {
+                elements: vec![vec![1, 2], vec![3, 4], vec![5, 6]],
+            },
+            coeffs: vec![0.5, 1.5, 2.5],
+        };
+        let iter = [0_usize].into_iter();
+        let deselected = terms.deselect(iter);
+        assert_eq!(deselected.len(), 2);
+        assert_eq!(deselected.coeffs[0], 1.5);
+        assert_eq!(deselected.coeffs[1], 2.5);
+    }
+
+    #[test]
+    fn test_deselect_elem_out_of_bounds() {
+        let terms: Terms<TestContainer, f64> = Terms {
+            word_iters: TestContainer {
+                elements: vec![vec![1, 2], vec![3, 4], vec![5, 6]],
+            },
+            coeffs: vec![0.5, 1.5, 2.5],
+        };
+        let iter = [3, 4, 5].into_iter();
+        let deselected = terms.deselect(iter);
+        assert_eq!(deselected.len(), 3);
+        assert_eq!(deselected.coeffs[0], 0.5);
+        assert_eq!(deselected.coeffs[1], 1.5);
+        assert_eq!(deselected.coeffs[2], 2.5);
+    }
+
+    #[test]
+    fn test_bipartition() {
+        let terms: Terms<TestContainer, f64> = Terms {
+            word_iters: TestContainer {
+                elements: vec![vec![1, 2], vec![3, 4], vec![5, 6]],
+            },
+            coeffs: vec![0.5, 1.5, 2.5],
+        };
+        let iter = [0_usize].into_iter();
+        let (selected, deselected) = terms.bipartition(iter);
+        assert_eq!(selected.len(), 1);
+        assert_eq!(selected.coeffs[0], 0.5);
+        assert_eq!(deselected.len(), 2);
+        assert_eq!(deselected.coeffs[0], 1.5);
+        assert_eq!(deselected.coeffs[1], 2.5);
+    }
+
+    #[test]
+    fn test_swap() {
+        let mut terms: Terms<TestContainer, f64> = Terms {
+            word_iters: TestContainer {
+                elements: vec![vec![1, 2], vec![3, 4], vec![5, 6]],
+            },
+            coeffs: vec![0.5, 1.5, 2.5],
+        };
+        terms.swap(0, 2);
+        assert_eq!(terms.coeffs[0], 2.5);
+        assert_eq!(terms.coeffs[1], 1.5);
+        assert_eq!(terms.coeffs[2], 0.5);
+        assert_eq!(
+            terms.word_iters.elem_u64it(0).collect::<Vec<u64>>(),
+            vec![5, 6]
+        );
+        assert_eq!(
+            terms.word_iters.elem_u64it(1).collect::<Vec<u64>>(),
+            vec![3, 4]
+        );
+        assert_eq!(
+            terms.word_iters.elem_u64it(2).collect::<Vec<u64>>(),
+            vec![1, 2]
+        );
+    }
+
+    #[test]
+    fn test_copy() {
+        let mut terms: Terms<TestContainer, f64> = Terms {
+            word_iters: TestContainer {
+                elements: vec![vec![1, 2], vec![3, 4], vec![5, 6]],
+            },
+            coeffs: vec![0.5, 1.5, 2.5],
+        };
+        terms.copy(0, 2);
+        assert_eq!(terms.coeffs[0], 2.5);
+        assert_eq!(terms.coeffs[1], 1.5);
+        assert_eq!(terms.coeffs[2], 2.5);
+        assert_eq!(
+            terms.word_iters.elem_u64it(0).collect::<Vec<u64>>(),
+            vec![5, 6]
+        );
+        assert_eq!(
+            terms.word_iters.elem_u64it(1).collect::<Vec<u64>>(),
+            vec![3, 4]
+        );
+        assert_eq!(
+            terms.word_iters.elem_u64it(2).collect::<Vec<u64>>(),
+            vec![5, 6]
+        );
+    }
+    #[test]
+    fn test_push_u64it() {
+        let mut terms: Terms<TestContainer, f64> = Terms {
+            word_iters: TestContainer {
+                elements: vec![vec![1, 2], vec![3, 4]],
+            },
+            coeffs: vec![0.5, 1.5],
+        };
+        terms.push_u64it(vec![5, 6].into_iter(), 2.5);
+        assert_eq!(terms.len(), 3);
+        assert_eq!(terms.coeffs[2], 2.5);
+        assert_eq!(
+            terms.word_iters.elem_u64it(2).collect::<Vec<u64>>(),
+            vec![5, 6]
+        );
+    }
+
+    #[test]
+    fn test_push_term_ref() {
+        let mut terms: Terms<TestContainer, f64> = Terms {
+            word_iters: TestContainer {
+                elements: vec![vec![1, 2], vec![3, 4]],
+            },
+            coeffs: vec![0.5, 1.5],
+        };
+
+        let words: Vec<u64> = terms.word_iters.elem_u64it(0).collect();
+        let coeff = terms.coeffs[0];
+        terms.push_u64it(words.into_iter(), coeff);
+
+        assert_eq!(terms.len(), 3);
+        assert_eq!(terms.coeffs[2], 0.5);
+        assert_eq!(
+            terms.word_iters.elem_u64it(2).collect::<Vec<u64>>(),
+            vec![1, 2]
+        );
+    }
+
+    #[test]
+    fn test_append() {
+        let mut terms1: Terms<TestContainer, f64> = Terms {
+            word_iters: TestContainer {
+                elements: vec![vec![1, 2], vec![3, 4]],
+            },
+            coeffs: vec![0.5, 1.5],
+        };
+        let terms2: Terms<TestContainer, f64> = Terms {
+            word_iters: TestContainer {
+                elements: vec![vec![5, 6], vec![7, 8]],
+            },
+            coeffs: vec![2.5, 3.5],
+        };
+        terms1.append(&terms2);
+        assert_eq!(terms1.len(), 4);
+        assert_eq!(terms1.coeffs[2], 2.5);
+        assert_eq!(terms1.coeffs[3], 3.5);
+        assert_eq!(
+            terms1.word_iters.elem_u64it(2).collect::<Vec<u64>>(),
+            vec![5, 6]
+        );
+        assert_eq!(
+            terms1.word_iters.elem_u64it(3).collect::<Vec<u64>>(),
+            vec![7, 8]
+        );
+    }
 }

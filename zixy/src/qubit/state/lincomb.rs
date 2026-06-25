@@ -2,6 +2,7 @@
 
 use crate::container::bit_matrix::AsBitMatrix;
 use crate::container::coeffs::traits::FieldElem;
+use crate::container::errors::{Dimension, OutOfBounds};
 use crate::container::traits::proj::BorrowMut;
 use crate::container::traits::RefElements;
 use crate::container::word_iters;
@@ -33,12 +34,14 @@ pub fn vdot<C: FieldElem>(lhs: &impl term_set::AsView<C>, rhs: &impl terms::AsVi
 
 /// If big_endian is true, the bit associated with mode 0 is the most significant in the index integer
 /// Else, the bit associated with mode n_qubit - 1 is the most significant
-pub fn to_dense<C: FieldElem>(state: &impl terms::AsView<C>, big_endian: bool) -> Vec<C> {
+pub fn to_dense<C: FieldElem>(
+    state: &impl terms::AsView<C>,
+    big_endian: bool,
+) -> Result<Vec<C>, OutOfBounds> {
     let state_ref = state.view();
     let n = state_ref.word_iters.n_bit();
-    if n >= 64 {
-        panic!("too many qubits to convert to sparse.");
-    }
+    OutOfBounds::check(n, 64, Dimension::Element)?;
+
     let mut out: Vec<C> = vec![C::ZERO; 1 << n];
     for term in state_ref.iter() {
         let ind = term.get_word_iter_ref().get_u64it().next().unwrap_or(0);
@@ -49,7 +52,7 @@ pub fn to_dense<C: FieldElem>(state: &impl terms::AsView<C>, big_endian: bool) -
         };
         out[ind as usize] = term.get_coeff();
     }
-    out
+    Ok(out)
 }
 
 /// Create a state linear combination from a dense array slice of coefficients.
@@ -89,181 +92,161 @@ pub fn from_dense<C: FieldElem>(
     out
 }
 
-/*
-impl<C: FieldElem> Sum<C> {
-    /// Create an empty set of states on the given space of qubits.
-    pub fn new(qubits: Qubits) -> Self {
-        Self::empty_from(&CmpntList::new(qubits))
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    use crate::cmpnt::springs::ModeSettings;
+    use crate::cmpnt::state_springs::BinarySprings;
+    use crate::container::bit_matrix::AsRowRef;
+    use crate::container::traits::RefElements;
+    use crate::container::word_iters::term_set::AsView;
+    use crate::qubit::state::terms::Terms;
+    use num_complex::Complex64;
+    use rstest::rstest;
+
+    #[rstest]
+    #[case(vec![], 0.0)]
+    #[case(vec![2.0], 4.0)]
+    #[case(vec![-3.0], 9.0)]
+    #[case(vec![1.0, 2.0, 3.0], 14.0)]
+    #[case(vec![0.0, 0.0, 0.0], 0.0)]
+    #[case(vec![0.0, 2.0, 0.0], 4.0)]
+    fn test_l2_norm_square(#[case] coeffs: Vec<f64>, #[case] expected: f64) {
+        let qubits = Qubits::from_count(coeffs.len());
+        let mut state: terms::Terms<f64> = Terms::new(qubits);
+        for c in coeffs {
+            state.coeffs.push(c);
+        }
+        assert_eq!(l2_norm_square(&state), expected);
     }
 
-    /// Add a contribution of c * basis vector to the linear combination by converting the vector of bits to a temporary `BasisState`.
-    pub fn add_from_vec(&mut self, bits: Vec<bool>, c: C) -> Result<(), ModeOutOfBounds> {
-        self.insert_or_add_elem_ref(BasisState::from_vec(self.to_qubits(), bits)?.borrow(), c);
+    #[rstest]
+    #[case(vec![Complex64::new(3.0, 4.0)], 25.0)]
+    #[case(vec![Complex64::new(0.0, 5.0)], 25.0)]
+    #[case(vec![Complex64::new(1.0, 1.0)], 2.0)]
+    #[case(vec![Complex64::new(1.0, 1.0), Complex64::new(2.0, -2.0)], 10.0)]
+    #[case(vec![Complex64::new(-3.0, 4.0)], 25.0)]
+    #[case(vec![Complex64::new(0.0, 0.0), Complex64::new(1.0, 0.0)], 1.0)]
+    #[case(vec![Complex64::new(1e-9, 1e-9)], 2e-18)]
+    fn test_l2_norm_square_complex(
+        #[case] coeffs: Vec<num_complex::Complex<f64>>,
+        #[case] expected: f64,
+    ) {
+        let qubits = Qubits::from_count(coeffs.len());
+        let mut state: terms::Terms<num_complex::Complex<f64>> = Terms::new(qubits);
+        for c in coeffs {
+            state.coeffs.push(c);
+        }
+        assert_eq!(l2_norm_square(&state), expected);
+    }
+
+    #[rstest]
+    // Test case: <v1|v2> where |v1> = 2|0> and |v2> = 3|0>, expected <v1|v2> = 6
+    #[case(vec![Complex64::new(2.0, 0.0)], "[0]", vec![Complex64::new(3.0, 0.0)], "[0]",  Complex64::new(6.0, 0.0))]
+    // Test case: <v1|v2> where |v1> = null and |v2> = (3+4i)|1>, expected <v1|v2> = 0
+    #[case(vec![], "", vec![Complex64::new(3.0, 4.0)], "[0]", Complex64::new(0.0, 0.0))]
+    // Test case: <v1|v2> where |v1> = (1+2i)|0> and |v2> = null, expected <v1|v2> = 0
+    #[case(vec![Complex64::new(1.0, 2.0)], "[0]", vec![], "", Complex64::new(0.0, 0.0))]
+    // Test case: <v1|v2> where |v1> = (1+2i)|0> and |v2> = (3+4i)|0>, expected <v1|v2> = (1-2i)(3+4i) = 11-2i
+    #[case(vec![Complex64::new(1.0, 2.0)], "[0]", vec![Complex64::new(3.0, 4.0)], "[0]", Complex64::new(11.0, -2.0))]
+    // Test case: <v1|v2> where |v1> = (1+2i)|1> and |v2> = (3+4i)|0>, expected <v1|v2> = 0 since they are orthogonal
+    #[case(vec![Complex64::new(1.0, 2.0)], "[1]", vec![Complex64::new(3.0, 4.0)], "[0]", Complex64::new(0.0, 0.0))]
+    // Test case: <v1|v2> where |v1> = (1+2i)|0> and |v2> = (3+4i)|1>, expected <v1|v2> = 0 since they are orthogonal
+    #[case(vec![Complex64::new(1.0, 2.0)], "[0]", vec![Complex64::new(3.0, 4.0)], "[1]", Complex64::new(0.0, 0.0))]
+    // Test case: <v1|v2> where |v1> = (1+2i)|01> + (-1+-2.5i)|11> and |v2> = (3+4i)|01> + i|00>, expected <v1|v2> = (1-2i)(3+4i) = 11-2i
+    #[case(vec![Complex64::new(1.0, 2.0), Complex64::new(-1.0, -2.5)], "[0, 1], [1,1]", vec![Complex64::new(3.0, 4.0), Complex64::new(0.0, 1.0)], "[0,1], [0,0]", Complex64::new(11.0, -2.0))]
+    // Test case: <v1|v2> where |v1> = (1+2i)|01> + (-1-2.5i)|11> and |v2> = (3+4i)|01> + i|11>, expected <v1|v2> = (1-2i)(3+4i) + (-1+2.5i)(i) = 8.5-3i
+    #[case(vec![Complex64::new(1.0, 2.0), Complex64::new(-1.0, -2.5)], "[0, 1], [1,1]", vec![Complex64::new(3.0, 4.0), Complex64::new(0.0, 1.0)], "[0,1], [1,1]", Complex64::new(8.5, -3.0))]
+    fn test_vdot(
+        #[case] lhs_coeffs: Vec<num_complex::Complex<f64>>,
+        #[case] lhs_qubit_labels: &str,
+        #[case] rhs_coeffs: Vec<num_complex::Complex<f64>>,
+        #[case] rhs_qubit_labels: &str,
+        #[case] expected: num_complex::Complex<f64>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let qubits_lhs = Qubits::from_count(lhs_coeffs.len());
+        let qubits_rhs = Qubits::from_count(rhs_coeffs.len());
+        let springs_rhs = BinarySprings::from_str(rhs_qubit_labels)?;
+        let springs_lhs = BinarySprings::from_str(lhs_qubit_labels)?;
+        let rhs_terms = Terms::<num_complex::Complex<f64>>::from_springs_coeffs(
+            qubits_rhs,
+            springs_rhs,
+            rhs_coeffs,
+        )?;
+        let lhs_terms = Terms::<num_complex::Complex<f64>>::from_springs_coeffs(
+            qubits_lhs,
+            springs_lhs,
+            lhs_coeffs,
+        )?;
+
+        let lhs_term_set: term_set::TermSet<num_complex::Complex<f64>> = lhs_terms.into();
+        assert_eq!(vdot(&lhs_term_set, &rhs_terms), expected);
         Ok(())
     }
 
-    /// Add a contribution of c * basis vector to the linear combination by converting the hashset of set bits to a temporary `BasisState`.
-    pub fn add_from_set(
-        &mut self,
-        set_bits: HashSet<usize>,
-        c: C,
-    ) -> Result<(), ModeOutOfBounds> {
-        self.insert_or_add_elem_ref(
-            BasisState::from_set(self.to_qubits(), set_bits)?.borrow(),
-            c,
+    #[test]
+    fn test_assign_from_dense_endian() {
+        let qubits = Qubits::from_count(3);
+
+        // Dense index 1 (001 in little-endian significance)
+        let source = vec![0.0, 7.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+
+        // little-endian
+        let mut le: term_set::TermSet<f64> = term_set::TermSet::new(qubits.clone());
+        assign_from_dense(&mut le.borrow_mut(), &source, false);
+        assert_eq!(le.view().coeffs.len(), 1);
+        assert_eq!(le.view().coeffs[0], 7.0);
+        assert_eq!(
+            le.view().get_elem_ref(0).get_word_iter_ref().to_vec(),
+            vec![true, false, false], // |100> in this mode ordering
         );
+
+        // big-endian: index 1 -> bit-reverse(001) = 100
+        let mut be: term_set::TermSet<f64> = term_set::TermSet::new(qubits);
+        assign_from_dense(&mut be.borrow_mut(), &source, true);
+        assert_eq!(be.view().coeffs.len(), 1);
+        assert_eq!(be.view().coeffs[0], 7.0);
+        assert_eq!(
+            be.view().get_elem_ref(0).get_word_iter_ref().to_vec(),
+            vec![false, false, true], // |001>
+        );
+    }
+
+    #[test]
+    fn test_from_dense() {
+        let qubits = Qubits::from_count(2);
+        let source = vec![0.0, 1.0, 2.0, 3.0];
+        let state = from_dense(qubits, &source, false);
+        assert_eq!(state.view().coeffs.len(), 3);
+        assert_eq!(state.view().coeffs[0], 1.0);
+        assert_eq!(state.view().coeffs[1], 2.0);
+        assert_eq!(state.view().coeffs[2], 3.0);
+    }
+
+    #[test]
+    fn test_to_dense_out_of_bounds() {
+        let qubits = Qubits::from_count(65);
+        let lhs = Terms::<num_complex::Complex<f64>>::new(qubits);
+        let result = to_dense(&lhs, false);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_to_dense() -> Result<(), Box<dyn std::error::Error>> {
+        let qubits = Qubits::from_count(3);
+        let springs = BinarySprings::from_str("[1, 0, 1]")?;
+        let terms = Terms::<f64>::from_springs(qubits, &springs)?;
+        let dense = to_dense(&terms, false)?;
+        assert_eq!(dense.len(), 8);
+        assert_eq!(dense[0], 0.0); // |000>
+        assert_eq!(dense[1], 0.0); // |001>
+        assert_eq!(dense[2], 0.0); // |010>
+        assert_eq!(dense[3], 0.0); // |011>
+        assert_eq!(dense[4], 0.0); // |100>
+        assert_eq!(dense[5], 1.0); // |101>
+        assert_eq!(dense[6], 0.0); // |110>
+        assert_eq!(dense[7], 0.0); // |111>
         Ok(())
     }
-
-    /// Get the coefficient of a computational basis vector in the linear combination by converting the vector of bit values to a temporary `BasisState`.
-    pub fn lookup_coeff_vec(&self, bits: Vec<bool>) -> Result<Option<C>, ModeOutOfBounds> {
-        Ok(self.lookup_coeff_elem_ref(BasisState::from_vec(self.to_qubits(), bits)?.borrow()))
-    }
-
-    /// Create a new linear combination on a given qubit space from some springs and coefficients.
-    pub fn from_springs_coeffs(
-        qubits: Qubits,
-        springs: &BinarySprings,
-        coeffs: &[C],
-    ) -> Result<Self, ModeOutOfBounds> {
-        let mut this = Self::new(qubits);
-        let mut work = BasisState::new(this.to_qubits());
-        let n = coeffs.len().min(springs.len());
-        for (i, c) in coeffs.iter().enumerate().take(n) {
-            work.borrow_mut().clear();
-            for (setting, i_mode) in springs.get_iter(i) {
-                work.borrow_mut().set_mode(i_mode, setting != 0)?;
-            }
-            this.insert_or_add_elem_ref(work.borrow(), *c);
-        }
-        Ok(this)
-    }
-
-    /// Create a new linear combination from some springs and coefficients, inferring a default qubit space.
-    pub fn from_springs_coeffs_default(springs: &BinarySprings, coeffs: &[C]) -> Self {
-        let qubits = Qubits::from_count(springs.get_mode_inds().default_n_mode());
-        Self::from_springs_coeffs(qubits, springs, coeffs).unwrap()
-    }
-
-    /// Create a new linear combination from some pairs of vectors of bit values and coefficients.
-    pub fn from_vec_coeff_pairs(
-        qubits: Qubits,
-        pairs: Vec<(Vec<bool>, C)>,
-    ) -> Result<Self, ModeOutOfBounds> {
-        let mut this = Self::new(qubits);
-        for (bits, c) in pairs {
-            this.add_from_vec(bits, c)?;
-        }
-        Ok(this)
-    }
-
-    /// Create a new linear combination from some pairs of vectors of bit values and coefficients.
-    /// assuming an inferred default qubit space.
-    pub fn from_vec_coeff_pairs_default(pairs: Vec<(Vec<bool>, C)>) -> Self {
-        let n_qubit = pairs.iter().map(|(v, _)| v.len()).max().unwrap_or_default();
-        Self::from_vec_coeff_pairs(Qubits::from_count(n_qubit), pairs).unwrap()
-    }
-
-    /// Create a new linear combination from some pairs of hashsets of set bit positions and coefficients.
-    pub fn from_set_coeff_pairs(
-        qubits: Qubits,
-        pairs: Vec<(HashSet<usize>, C)>,
-    ) -> Result<Self, ModeOutOfBounds> {
-        let mut this = Self::new(qubits);
-        for (bits, c) in pairs {
-            this.add_from_set(bits, c)?;
-        }
-        Ok(this)
-    }
-
-    /// Create a new linear combination from some pairs of hashsets of set bit positions and coefficients,
-    /// assuming an inferred default qubit space.
-    pub fn from_set_coeff_pairs_default(pairs: Vec<(HashSet<usize>, C)>) -> Self {
-        let i_qubit_max = pairs.iter().map(|(map, _)| map.iter().max()).max();
-        let n_qubit = match i_qubit_max {
-            Some(Some(x)) => *x,
-            _ => 0,
-        };
-        Self::from_set_coeff_pairs(Qubits::from_count(n_qubit), pairs).unwrap()
-    }
-
-    /// Create a new linear combination of a single computational basis vector with a unit coefficient.
-    pub fn from_cmpnt_ref(cmpnt_ref: CmpntRef) -> Self {
-        let mut this = Self::new(cmpnt_ref.to_qubits());
-        this.insert_or_add_elem_ref(cmpnt_ref, C::ONE);
-        this
-    }
-
-    /// Take the inner product of this basis state linear combination with another.
-    pub fn vdot(&self, other: &Self) -> C {
-        sum_ops::vdot(&Refs::from(&self.0), &Refs::from(&other.0))
-    }
-
-    /// Return Some with the Hamming weight if all terms have the same Hamming weight, else return None
-    pub fn hamming_weight(&self) -> Option<usize> {
-        self.get_word_iters().hamming_weight()
-    }
-
-    /// If big_endian is true, the bit associated with mode 0 is the most significant in the index integer
-    /// Else, the bit associated with mode n_qubit - 1 is the most significant
-    pub fn to_dense(&self, big_endian: bool) -> Vec<C> {
-        sum_ops::to_dense(&Refs::from(&self.0), big_endian)
-    }
-
-    /// Create a state linear combination from a dense array slice of coefficients.
-    pub fn from_dense(qubits: Qubits, coeffs: &[C], big_endian: bool) -> Self {
-        let mut out = Self::new(qubits);
-        let mut mut_refs = MutRefs::from(&mut out.0);
-        sum_ops::from_dense(&mut mut_refs, coeffs, big_endian);
-        out
-    }
-
-    /// Create a state linear combination from a dense array slice of coefficients. Inferring the
-    /// number of qubits from the dimension of the coefficient slice.
-    pub fn from_dense_default(coeffs: &[C], big_endian: bool) -> Self {
-        Self::from_dense(
-            Qubits::from_hilbert_space_dim(coeffs.len()),
-            coeffs,
-            big_endian,
-        )
-    }
-
-    /// Get the coefficient and reference to the component with the largest coefficient magnitude.
-    pub fn dominant_term(&self) -> Option<TermRef<'_, C>> {
-        let tmp = sum_ops::dominant_term::<C>(&self.0 .0 .0, &self.0 .0 .1);
-        tmp.map(|(elem_ref, _)| self.get_elem_ref(elem_ref.get_index()))
-    }
-
-    /// Get the square of the L2 norm, i.e. sum of the squares of all coefficients.
-    pub fn l2_norm_sq(&self) -> f64 {
-        self.get_coeffs().iter().map(C::magnitude_sq).sum::<f64>()
-    }
-
-    /// Get the L2 norm.
-    pub fn l2_norm(&self) -> f64 {
-        self.l2_norm_sq().sqrt()
-    }
-
-    /// Scale the state sum such that the L2 norm is 1.
-    pub fn l2_normalize(&mut self) {
-        let norm = C::from_real(1.0 / self.l2_norm());
-        self.scale(norm);
-    }
 }
-
-impl<C: FieldElem> QubitsBased for Sum<C> {
-    fn qubits(&self) -> &Qubits {
-        self.get_word_iters().qubits()
-    }
-}
-
-impl<C: FieldElem> QubitsRelabel for Sum<C> {
-    fn qubits_mut(&mut self) -> &mut Qubits {
-        self.get_word_iters_mut().qubits_mut()
-    }
-
-    fn general_standardized(&self, n_qubit: usize) -> Self {
-        Self::from(self.0 .0.general_standardized(n_qubit))
-    }
-}
-*/

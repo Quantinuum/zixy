@@ -37,7 +37,7 @@ jobs:
       RUSTFLAGS: -D warnings
     steps:
       - uses: actions/checkout@v6
-      - uses: mozilla-actions/sccache-action@v0.0.9
+      - uses: mozilla-actions/sccache-action@v0.0.10
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -60,7 +60,7 @@ jobs:
     name: Tests (Rust stable, all features)
     steps:
       - uses: actions/checkout@v6
-      - uses: mozilla-actions/sccache-action@v0.0.9
+      - uses: mozilla-actions/sccache-action@v0.0.10
       - id: toolchain
         uses: dtolnay/rust-toolchain@master
         with:
@@ -81,11 +81,11 @@ jobs:
     name: Check Python code
     steps:
       - uses: actions/checkout@v6
-      - uses: mozilla-actions/sccache-action@v0.0.9
+      - uses: mozilla-actions/sccache-action@v0.0.10
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Set up uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
@@ -93,6 +93,8 @@ jobs:
         run: uv python install ${{ env.PYTHON_LOWEST }}
       - name: Setup dependencies
         run: uv sync --python ${{ env.PYTHON_LOWEST }}
+      - name: Build Python extension
+        run: uv run maturin develop -m zixy-py/Cargo.toml
       - name: Ruff
         working-directory: zixy-py
         run: |
@@ -108,11 +110,11 @@ jobs:
     name: Tests (Python, coverage)
     steps:
       - uses: actions/checkout@v6
-      - uses: mozilla-actions/sccache-action@v0.0.9
+      - uses: mozilla-actions/sccache-action@v0.0.10
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Set up uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
@@ -120,10 +122,12 @@ jobs:
         run: uv python install ${{ env.PYTHON_LOWEST }}
       - name: Setup dependencies
         run: uv sync --python ${{ env.PYTHON_LOWEST }}
+      - name: Build Python extension
+        run: uv run maturin develop -m zixy-py/Cargo.toml
       - name: Run python tests with coverage instrumentation
         run: uv run pytest --cov=./ --cov-report=xml
       - name: Upload coverage report artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage
           path: ./coverage.txt
@@ -138,4 +142,3 @@ jobs:
       #     flags: python
       #     fail_ci_if_error: true
       #     token: ${{ secrets.CODECOV_TOKEN }}
-

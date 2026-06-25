@@ -1,0 +1,50 @@
+name: Deploy Sphinx to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: 0.11.3
+      - uses: extractions/setup-just@v4
+        with:
+          just-version: '1.40.0'
+
+      - name: Add dependencies, build site
+        run: |
+          cd zixy-py/docs
+          just build-strict
+
+      - name: Set up Pages
+        uses: actions/configure-pages@v6
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          # upload directory conatining the html files for the Sphinx build
+          path: zixy-py/docs/build/
+
+  deploy:
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/docs/staging'
+        uses: actions/deploy-pages@v5

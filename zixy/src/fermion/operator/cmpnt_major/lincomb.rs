@@ -8,7 +8,6 @@ use crate::container::traits::RefElements;
 use crate::container::word_iters::lincomb::{diff, iadd, isub, scaled_iadd, scaled_iadd_elem};
 use crate::container::word_iters::term_set::{AsView, AsViewMut};
 use crate::container::word_iters::terms::AsViewMut as TermsAsViewMut;
-use crate::container::word_iters::Elem;
 use crate::fermion::operator::cmpnt::Cmpnt;
 use crate::fermion::operator::cmpnt_major::num_ops::num_op_from_inds;
 use crate::fermion::operator::cmpnt_major::raw_term_set;
@@ -17,7 +16,6 @@ use crate::fermion::operator::cmpnt_major::term_set::{self, TermSet};
 use crate::fermion::operator::cmpnt_major::terms;
 use crate::fermion::operator::cmpnt_major::terms::Terms;
 use crate::fermion::operator::products::mul_cmpnts;
-use crate::fermion::operator::raw_cmpnt_list::RawCmpntList;
 use crate::fermion::traits::{DifferentSpaces, ModesBased};
 use num_complex::Complex64;
 use std::collections::HashSet;
@@ -277,9 +275,7 @@ pub fn raw_mul<C: FieldElem>(
             let modes: Vec<usize> = lhs_modes.iter().chain(rhs_modes.iter()).copied().collect();
             let adj: Vec<bool> = lhs_adj.iter().chain(rhs_adj.iter()).copied().collect();
             let c = lhs_coeff.to_complex() * rhs_coeff.to_complex();
-            let mut tmp = Elem::<RawCmpntList>::from(&out.terms.word_iters);
-            tmp.borrow_mut().word_iters.push(&modes, &adj);
-            scaled_iadd_elem(&mut out.borrow_mut(), tmp.borrow(), c);
+            out.push_term(&modes, &adj, c);
         }
     }
     Ok(out)
@@ -310,7 +306,12 @@ pub fn normalise<C: FieldElem>(raw_terms: &raw_term_set::View<C>) -> TermSet<Com
             Complex64::new(1.0, 0.0),
         );
         // multiply with each remaing operator
-        for (mode, is_cre) in modes[1..].iter().zip(adj[1..].iter()) {
+        for (mode, is_cre) in modes
+            .get(1..)
+            .unwrap_or(&[])
+            .iter()
+            .zip(adj.get(1..).unwrap_or(&[]).iter())
+        {
             let mut cre_set = HashSet::<usize>::new();
             let mut ann_set = HashSet::<usize>::new();
             if *is_cre {
@@ -351,7 +352,6 @@ mod tests {
     use crate::fermion::operator::cmpnt::Cmpnt;
     use crate::fermion::operator::cmpnt_major::raw_term_set::RawTermSet;
     use crate::fermion::operator::cmpnt_major::terms::Terms;
-    use crate::fermion::operator::raw_cmpnt_list::RawCmpntList;
     use rstest::rstest;
     use std::collections::HashSet;
 
@@ -562,23 +562,82 @@ mod tests {
         assert!(max_n_body(&terms.borrow()) <= 2);
     }
 
-    #[rstest]
-    #[case(4, vec![0, 0], vec![false, true], 2)] // a_0 a_0^+ -> 1 - a_0^+a_0
-    #[case(4, vec![0, 1], vec![false, true], 1)] // a_0 a_1^+ -> -a_1^+a_0
-    #[case(4, vec![0, 1, 0], vec![true, false, false], 2)] //a_0^+ a_1 a_0  -> -a_1 + a_0^+ a_1 a_0
-    fn test_normalise(
-        #[case] n_modes: usize,
-        #[case] modes: Vec<usize>,
-        #[case] adj: Vec<bool>,
-        #[case] expected_terms: usize,
+    fn make_raw(n_modes: usize, modes: &[usize], adj: &[bool]) -> RawTermSet<f64> {
+        let modes_space = Modes::from_count(n_modes);
+        let mut raw = RawTermSet::<f64>::new(modes.len(), modes_space);
+        raw.push_term(modes, adj, 1.0_f64);
+        raw
+    }
+
+    fn check_term(
+        result: &TermSet<Complex64>,
+        n_modes: usize,
+        cre: HashSet<usize>,
+        ann: HashSet<usize>,
+        coeff: Complex64,
     ) {
         let modes_space = Modes::from_count(n_modes);
-        let max_len = modes.len();
-        let mut raw = RawTermSet::<f64>::new(max_len, modes_space);
-        let mut tmp = Elem::<RawCmpntList>::from(&raw.terms.word_iters);
-        tmp.borrow_mut().word_iters.push(&modes, &adj);
-        scaled_iadd_elem(&mut raw.borrow_mut(), tmp.borrow(), 1.0f64);
+        let expected_cmpnt = Cmpnt::from_sets_unchecked(modes_space, cre.clone(), ann.clone());
+        let found = result.as_terms().iter().any(|t| {
+            t.get_word_iter_ref() == expected_cmpnt.borrow()
+                && (t.get_coeff().re - coeff.re).abs() < 1e-10
+                && (t.get_coeff().im - coeff.im).abs() < 1e-10
+        });
+        assert!(
+            found,
+            "term cre={cre:?} ann={ann:?} coeff={coeff} not found"
+        );
+    }
+
+    #[test]
+    fn test_normalise_a0_a0dag() {
+        // a_0 a_0^+ -> 1 - a_0^+ a_0
+        let raw = make_raw(4, &[0, 0], &[false, true]);
         let result = normalise(&raw.as_raw_terms());
-        assert_eq!(result.len(), expected_terms);
+        assert_eq!(result.len(), 2);
+        check_term(
+            &result,
+            4,
+            HashSet::new(),
+            HashSet::new(),
+            Complex64::new(1.0, 0.0),
+        );
+        check_term(
+            &result,
+            4,
+            HashSet::from([0]),
+            HashSet::from([0]),
+            Complex64::new(-1.0, 0.0),
+        );
+    }
+
+    #[test]
+    fn test_normalise_a0_a1dag() {
+        // a_0 a_1^+ -> -a_1^+ a_0
+        let raw = make_raw(4, &[0, 1], &[false, true]);
+        let result = normalise(&raw.as_raw_terms());
+        assert_eq!(result.len(), 1);
+        check_term(
+            &result,
+            4,
+            HashSet::from([1]),
+            HashSet::from([0]),
+            Complex64::new(-1.0, 0.0),
+        );
+    }
+
+    #[test]
+    fn test_normalise_a0dag_a1_a0() {
+        // a_0^+ a_1 a_0 -> -a_0^+ a_0 a_1
+        let raw = make_raw(4, &[0, 1, 0], &[true, false, false]);
+        let result = normalise(&raw.as_raw_terms());
+        assert_eq!(result.len(), 1);
+        check_term(
+            &result,
+            4,
+            HashSet::from([0]),
+            HashSet::from([0, 1]),
+            Complex64::new(-1.0, 0.0),
+        );
     }
 }

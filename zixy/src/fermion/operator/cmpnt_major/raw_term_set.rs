@@ -1,9 +1,11 @@
 //! Stores raw (non-normal-ordered) fermion terms.
 
-use crate::container::coeffs::traits::NumRepr;
+use crate::container::coeffs::traits::{NumRepr, NumReprVec};
 use crate::container::map::Map;
+use crate::container::traits::Elements;
 use crate::container::word_iters;
 use crate::container::word_iters::terms;
+use crate::container::word_iters::WordIters;
 use crate::fermion::mode::Modes;
 use crate::fermion::operator::raw_cmpnt_list::RawCmpntList;
 use crate::fermion::traits::ModesBased;
@@ -29,6 +31,13 @@ impl<C: NumRepr> RawTermSet<C> {
             terms: RawTerms::new(max_len, modes),
             map: Map::default(),
         }
+    }
+    pub fn push_term(&mut self, modes: &[usize], adj: &[bool], coeff: C) {
+        let i = self.terms.word_iters.len();
+        self.terms.word_iters.push(modes, adj);
+        let k = self.terms.word_iters.hash_at_index(i);
+        self.map.insert(k, i);
+        self.terms.coeffs.push(coeff);
     }
 }
 

@@ -32,5 +32,6 @@ fn _zixy(_py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     m.add_class::<crate::qubit::springs::PauliSprings>()?;
     m.add_class::<crate::qubit::mode::Qubits>()?;
     m.add_class::<crate::qubit::mode::PauliMatrix>()?;
+    m.add_class::<crate::qubit::mode::SymplecticPart>()?;
     Ok(())
 }

@@ -8,6 +8,7 @@ from zixy.qubit.pauli import (
     I,
     RealTerm,
     SignTerm,
+    SignTerms,
     String,
     SymbolicTerm,
     X,
@@ -108,3 +109,43 @@ def test_sign_term_products():
     prod = SignTerm(2, (X, X)) * SignTerm(2, (Z, Z))
     assert type(prod) is ComplexSignTerm
     assert str(prod) == "(-1, Y0 Y1)"
+
+
+def test_sign_terms_canonicalize():
+    tuples = (
+        (Z, Z, Z),
+        (X, X, I),
+        (I, X, X),
+    )
+    terms = SignTerms(3)
+    terms.append_iterable(tuples)
+    imul_ops = terms.canonicalize_all()
+    # check imul ops are done in the right order
+    correct_ops = [
+        # move X0 up
+        (0, 1),
+        # eliminate X0s
+        (1, 0),
+        # move X1 up
+        (1, 2),
+        # eliminate X1s
+        (0, 1),
+        (2, 1),
+        # X2 already solved
+        # Z0 already in place
+        # eliminate Z0s
+        (1, 2),
+    ]
+    assert imul_ops == correct_ops
+    # check final object is in canonical form
+    assert terms[0].string.get_tuple() == (X, I, X)
+    assert terms[1].string.get_tuple() == (I, X, X)
+    assert terms[2].string.get_tuple() == (Z, Z, Z)
+
+    null = SignTerms(0)
+    # the unique tableau with 0 qubits is in canonical form, so no imuls
+    assert null.canonicalize_all() == []
+
+    empty = SignTerms(3)
+    # the unique tableau with no components is in canonical form, so no imuls
+    assert empty.canonicalize_all() == []

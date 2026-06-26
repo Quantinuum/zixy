@@ -132,20 +132,82 @@ impl WordIters for Array {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::qubit::mode::PauliMatrix::*;
     use crate::qubit::mode::Qubits;
     use crate::qubit::pauli::cmpnt_major;
     use crate::qubit::pauli::mode_major::array::Array;
     use crate::qubit::traits::PushPaulis;
 
+    fn create_test_array() -> Array {
+        let qubits = Qubits::from_count(3);
+        let mut standard_strings = cmpnt_major::cmpnt_list::CmpntList::new(qubits);
+        let _ = standard_strings.push_pauli_vec([X, Y, Z].into());
+        let _ = standard_strings.push_pauli_vec([I, X, I].into());
+        let _ = standard_strings.push_pauli_vec([Z, I, X].into());
+        standard_strings.into()
+    }
+
     #[test]
     fn test_from_standard() {
-        let qubits = Qubits::from_count(6);
-        let mut standard_strings = cmpnt_major::cmpnt_list::CmpntList::new(qubits);
-        let _ = standard_strings.push_pauli_vec([X, Y, Y, X, I, Z].into());
-        let _ = standard_strings.push_pauli_vec([I, X, X, X, Z, Z].into());
-        let _ = standard_strings.push_pauli_vec([X, Z, Y, Z, I, I].into());
-        let transposed_strings: Array = standard_strings.into();
+        let standard_strings = create_test_array();
+        let transposed_strings: Array = standard_strings;
         assert_eq!(transposed_strings.n_cmpnt, 3);
+    }
+
+    #[test]
+    fn test_new_is_empty() {
+        let qubits = Qubits::from_count(0);
+        let array = Array::new(qubits.clone(), 0);
+        assert_eq!(array.len(), 0);
+        assert_eq!(array.qubits(), &qubits);
+        assert_eq!(array.x_part().len(), 0);
+        assert_eq!(array.z_part().len(), 0);
+    }
+
+    #[test]
+    fn test_resize_updates_correctly() {
+        let qubits = Qubits::from_count(0);
+        let mut array = Array::new(qubits.clone(), 0);
+        array.resize(3);
+        assert_eq!(array.len(), 3);
+        assert_eq!(array.qubits(), &qubits);
+        assert_eq!(array.x_part().len(), 3);
+        assert_eq!(array.z_part().len(), 3);
+        array.resize(0);
+        assert_eq!(array.len(), 0);
+        assert_eq!(array.qubits(), &qubits);
+        assert_eq!(array.x_part().len(), 0);
+        assert_eq!(array.z_part().len(), 0);
+    }
+
+    #[test]
+    fn test_empty_clone() {
+        let qubit_array = create_test_array();
+        let empty_clone = qubit_array.empty_clone();
+        assert_eq!(empty_clone.len(), 0);
+        assert_eq!(empty_clone.x_part().len(), 0);
+        assert_eq!(empty_clone.z_part().len(), 0);
+    }
+
+    #[test]
+    fn test_clone_preserves_content() {
+        let qubit_array = create_test_array();
+        let array_clone = qubit_array.clone();
+        assert_eq!(array_clone.len(), qubit_array.len());
+        assert_eq!(array_clone.qubits(), qubit_array.qubits());
+        assert_eq!(array_clone.x_part(), qubit_array.x_part());
+        assert_eq!(array_clone.z_part(), qubit_array.z_part());
+    }
+
+    #[test]
+    fn test_compatible() {
+        let qubits1 = Qubits::from_count(3);
+        let qubits2 = Qubits::from_count(4);
+        let array1 = Array::new(qubits1.clone(), 0);
+        let array2 = Array::new(qubits2.clone(), 0);
+        assert!(array1.compatible_with(&array1));
+        assert!(array2.compatible_with(&array2));
+        assert!(!array1.compatible_with(&array2));
     }
 }

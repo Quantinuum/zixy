@@ -57,6 +57,7 @@ from zixy.container.coeffs import (
     ComplexSign,
     Number,
     NumberT,
+    OtherCoeffT,
     RootOfUnity,
     Sign,
     _is_complex,
@@ -99,12 +100,12 @@ class Term(
     _impl: TermData[ImplT, SpecT, CoeffT]
     _index: int | None
 
-    def __init__(self, data: TermData[ImplT, SpecT, CoeffT], index: int | None = None):
+    def __init__(self, data: TermData[ImplT, SpecT, CoeffT], indexer: int | None = None):
         """Initialize the term.
 
         Args:
-            data: Raw term data object, of which :param:`self` views one.
-            index: Index of the term within :param:`data` that :param:`self` views.
+            data: Raw term data object, of which ``self`` views one.
+            indexer: Index of the term within ``data`` that ``self`` views.
         """
         if data.cmpnts_type is not self.cmpnts_type:
             raise TypeError(
@@ -117,49 +118,49 @@ class Term(
                 f"the coeff type {self.coeff_type} of this {type(self)}."
             )
         self._impl = data
-        self._index = index
+        self._index = indexer
 
     @property
     def _data(self) -> TermData[ImplT, SpecT, CoeffT]:
-        """Get the raw term data object underlying :param:`self`."""
+        """Get the raw term data object underlying ``self``."""
         return self._impl
 
     @property
     def cmpnt_type(self) -> type[Cmpnt[ImplT, SpecT]]:
-        """Get the component type of :param:`self`."""
+        """Get the component type of ``self``."""
         return self.cmpnts_type.cmpnt_type
 
     @property
     def coeffs_type(self) -> type[Coeffs[CoeffT]]:
-        """Get the coefficient container type of :param:`self`."""
+        """Get the coefficient container type of ``self``."""
         return get_coeffs_type(self.coeff_type)
 
     @classmethod
-    def _create(cls, data: TermData[ImplT, SpecT, CoeffT], index: int | None = None) -> Self:
-        """Create an instance of :param:`cls`.
+    def _create(cls, data: TermData[ImplT, SpecT, CoeffT], indexer: int | None = None) -> Self:
+        """Create an instance of ``cls``.
 
         Args:
             data: Raw term data object containing the data for this item.
-            index: Index of the item within :param:`data`. If ``None``, this instance is
+            indexer: Index of the item within ``data``. If ``None``, this instance is
                 considered to be owning.
 
         Returns:
-            A new instance of :param:`cls`.
+            A new instance of ``cls``.
         """
         out = cls.__new__(cls)
-        Term.__init__(out, data, index)
+        Term.__init__(out, data, indexer)
         return out
 
     @classmethod
     def from_cmpnt_coeff(cls, cmpnt: Cmpnt[ImplT, SpecT], coeff: CoeffT) -> Self:
-        """Factory to make an instance of :param:`cls` from a component and a coefficient.
+        """Factory to make an instance of ``cls`` from a component and a coefficient.
 
         Args:
             cmpnt: Component to copy from.
-            coeff: Coefficient scaling the :param:`cmpnt` in the new instance.
+            coeff: Coefficient scaling the ``cmpnt`` in the new instance.
 
         Returns:
-            An instance of :param:`cls` with the given component and coefficient.
+            An instance of ``cls`` with the given component and coefficient.
         """
         cmpnts = cls.cmpnts_type.from_cmpnt(cmpnt)
         coeffs = get_coeffs_type(cls.coeff_type)()
@@ -167,22 +168,22 @@ class Term(
         return cls._create(TermData(cmpnts, coeffs))
 
     def clone(self) -> Self:
-        """Return a deep copy of :param:`self`."""
+        """Return a deep copy of ``self``."""
         return type(self)._create(self._impl.clone(self.index))
 
     @property
     def cmpnt(self) -> Cmpnt[ImplT, SpecT]:
-        """Get a view on the component of :param:`self`."""
+        """Get a view on the component of ``self``."""
         return self._data.cmpnts[self.index]
 
     @property
     def coeff(self) -> CoeffT:
-        """Get a copy of the coefficient of :param:`self`."""
+        """Get a copy of the coefficient of ``self``."""
         return self._data.coeffs[self.index]
 
     @coeff.setter
     def coeff(self, value: CoeffT) -> None:
-        """Set the coefficient of :param:`self`.
+        """Set the coefficient of ``self``.
 
         Args:
             value: Value to assign.
@@ -192,34 +193,14 @@ class Term(
         """
         self._data.coeffs[self.index] = convert(value, self._data.coeff_type)
 
-    def into(self, t: type[Term[Any, Any, Any]]) -> Term[Any, Any, Any]:
-        """Clone :param:`self` into a new term of type :param:`t`.
-
-        Args:
-            t: Type to return, must have the same
-                :attr:`~zixy.container.terms.Term.cmpnt_type` as :param:`self`.
-
-        Returns:
-            A new instance of :param:`t`.
-        """
-        coeff = convert(self.coeff, t.coeff_type)
-        out = t.from_cmpnt_coeff(self.cmpnt, coeff)
-        if out.cmpnt_type is not self.cmpnt_type:
-            raise TypeError(
-                f"Cannot convert a term with component type "
-                f"{self.cmpnt_type} into one with a different component "
-                f"type {out.cmpnt_type}."
-            )
-        return out
-
     def aliases(self, other: Term[Any, Any, Any]) -> bool:
-        """Determine whether :param:`self` is a view of the same component as :param:`other`."""
+        """Determine whether ``self`` is a view of the same component as ``other``."""
         if type(self) is not type(other):
             return False
         return self.cmpnt.aliases(other.cmpnt)
 
     def __eq__(self, other: object) -> bool:
-        """Return whether :param:`self` and :param:`other` are equal."""
+        """Return whether ``self`` and ``other`` are equal."""
         if not isinstance(other, Term):
             return NotImplemented
         result: bool = (
@@ -266,7 +247,7 @@ class Term(
         self.set(None)
 
     def __repr__(self) -> str:
-        """Return a string representation of :param:`self`."""
+        """Return a string representation of ``self``."""
         coeff = repr(self.coeff)
         coeff = coeff.replace("-0j", "+0j")
         return f"({coeff}, {self.cmpnt})"
@@ -287,100 +268,80 @@ class Terms(
 
     _impl: TermData[ImplT, SpecT, CoeffT]
 
-    def __init__(self, data: TermData[ImplT, SpecT, CoeffT], s: slice = slice(None)):
+    def __init__(self, data: TermData[ImplT, SpecT, CoeffT], indexer: slice = slice(None)):
         """Initialize the term array.
 
         Args:
-            data: Raw term data object, of which :param:`self` views a slice.
-            s: Slice of the data in :param:`data` that :param:`self` will view. If ``None``, this
-                instance is considered to be owning.
+            data: Raw term data object, of which ``self`` views a slice.
+            indexer: Slice of the data in ``data`` that ``self`` will view. The default value of
+                ``slice(None)`` indicates that this instance is considered to be owning.
         """
         self._impl = data
-        self._slice = s
+        self._slice = indexer
 
     @property
     def _data(self) -> TermData[ImplT, SpecT, CoeffT]:
-        """Return the raw term data object underlying :param:`self`."""
+        """Return the raw term data object underlying ``self``."""
         return self._impl
 
     @classmethod
-    def _create(cls, data: TermData[ImplT, SpecT, CoeffT], s: slice = slice(None)) -> Self:
-        """Create a new instance of :param:`cls`.
+    def _create(cls, data: TermData[ImplT, SpecT, CoeffT], indexer: slice = slice(None)) -> Self:
+        """Create a new instance of ``cls``.
 
         Args:
             data: Raw term data object containing the data for this sequence.
-            s: Slice of the data in :param:`data` that this instance should view. If ``None``, this
-                instance is considered to be owning.
+            indexer: Slice of the data in ``data`` that this instance should view. The default
+                value of ``slice(None)`` indicates that this instance is considered to be owning.
 
         Returns:
-            A new instance of :param:`cls`.
+            A new instance of ``cls``.
         """
         out = cls.__new__(cls)
-        Terms.__init__(out, data, s)
+        Terms.__init__(out, data, indexer)
         return out
 
     def clone(self) -> Self:
-        """Return a deep copy of :param:`self`."""
+        """Return a deep copy of ``self``."""
         return self._create(self._impl.clone(self.slice))
 
-    def into(self, t: type[Terms[Any, Any, Any]]) -> Terms[Any, Any, Any]:
-        """Clone :param:`self` into a new collection of terms with type :param:`t`.
-
-        Args:
-            t: Type to return, must have the same
-                :attr:`~zixy.container.terms.Terms.cmpnt_type` as :param:`self`.
-
-        Returns:
-            A new instance of :param:`t`.
-        """
-        coeffs = convert_vec(self.coeffs, get_coeffs_type(t.term_type.coeff_type))
-        out = t._create(TermData(self.cmpnts.clone(), coeffs))
-        if out.cmpnt_type is not self.cmpnt_type:
-            raise TypeError(
-                f"Cannot convert terms with component type "
-                f"{out.cmpnt_type} into an instance with a different "
-                f"component type {self.cmpnt_type}."
-            )
-        return out
-
     def __eq__(self, other: object) -> bool:
-        """Return whether :param:`self` and :param:`other` are equal."""
+        """Return whether ``self`` and ``other`` are equal."""
         if not isinstance(other, type(self)):
             return NotImplemented
         return all(self[i] == other[i] for i in range(len(self)))
 
     @property
     def coeffs_type(self) -> type[Coeffs[CoeffT]]:
-        """Get the coefficient container type of :param:`self`."""
+        """Get the coefficient container type of ``self``."""
         return get_coeffs_type(self._data.coeff_type)
 
     @property
     def coeff_type(self) -> type[CoeffT]:
-        """Get the coefficient type of :param:`self`."""
+        """Get the coefficient type of ``self``."""
         return self._impl.coeff_type
 
     @property
     def cmpnts_type(self) -> type[Cmpnts[ImplT, SpecT]]:
-        """Get the component container type of :param:`self`."""
+        """Get the component container type of ``self``."""
         return self._data.cmpnts_type
 
     @property
     def cmpnt_type(self) -> type[Cmpnt[ImplT, SpecT]]:
-        """Get the component type of :param:`self`."""
+        """Get the component type of ``self``."""
         return self._impl.cmpnt_type
 
     @property
     def cmpnts(self) -> Cmpnts[ImplT, SpecT]:
-        """Get the components of :param:`self`."""
+        """Get the components of ``self``."""
         return self._data.cmpnts[self.slice]
 
     @property
     def coeffs(self) -> Coeffs[CoeffT]:
-        """Get the coefficients of :param:`self`."""
+        """Get the coefficients of ``self``."""
         return self._data.coeffs[self.slice]
 
     def __repr__(self) -> str:
-        """Return a string representation of :param:`self`."""
+        """Return a string representation of ``self``."""
         return ", ".join(str(s) for s in self)
 
     @overload
@@ -392,13 +353,13 @@ class Terms(
     def __getitem__(
         self, indexer: int | builtins.slice
     ) -> Term[ImplT, SpecT, CoeffT] | Terms[ImplT, SpecT, CoeffT]:
-        """Get the element or elements selected by :param:`indexer`.
+        """Get the element or elements selected by ``indexer``.
 
         Args:
             indexer: Index or slice selecting the element(s) to return.
 
         Returns:
-            Element or slice selected by :param:`indexer`.
+            Element or slice selected by ``indexer``.
         """
         if isinstance(indexer, int):
             if self.map_index(indexer) >= len(self._impl):
@@ -427,12 +388,12 @@ class Terms(
         | Terms[ImplT, SpecT, CoeffT]
         | None,
     ) -> None:
-        """Set the term at :param:`indexer` in :param:`self` to :param:`source`.
+        """Set the term at ``indexer`` in ``self`` to ``source``.
 
         Args:
-            indexer: Index of the string or slice of strings within :param:`self` to assign.
+            indexer: Index of the string or slice of strings within ``self`` to assign.
             source: Value specifying the term or a view of many components to assign at
-                :param:`indexer`.
+                ``indexer``.
         """
         if isinstance(indexer, slice):
             if isinstance(source, Terms):
@@ -464,16 +425,16 @@ class Terms(
             term.coeff = typesafe_mul(term.coeff, scalar)
 
     def __imul__(self, scalar: CoeffT) -> Self:
-        """Multiply :param:`self` by :param:`scalar` in-place."""
+        """Multiply ``self`` by ``scalar`` in-place."""
         self.scale(scalar)
         return self
 
     def _empty_clone(self) -> Self:
-        """Get an empty (owning, contiguous) clone of :param:`self`."""
+        """Get an empty (owning, contiguous) clone of ``self``."""
         return self._create(self._impl._empty_clone())
 
     def reordered(self, inds: Sequence[int]) -> Self:
-        """Get a new instance with the elements of :param:`self` in a new order.
+        """Get a new instance with the elements of ``self`` in a new order.
 
         Args:
             inds: Sequence of indices defining the new order. Should be a permutation of
@@ -493,7 +454,7 @@ class Terms(
         """Factory to make a new term with a zero component and a unit coefficient.
 
         Returns:
-            A new owing term with the component and coefficient type of :param:`self`.
+            A new owing term with the component and coefficient type of ``self``.
         """
         try:
             tmp = self[0].clone()
@@ -507,16 +468,16 @@ class Terms(
     def iter_filter_map(
         self, f: Callable[[Term[ImplT, SpecT, CoeffT]], bool]
     ) -> Iterator[Term[ImplT, SpecT, CoeffT]]:
-        """Lazily evaluate a filter-map operation over the components of :param:`self`.
+        """Lazily evaluate a filter-map operation over the components of ``self``.
 
         Args:
-            f: Function which may mutate copies of the terms of :param:`self`, returning ``True`` if
+            f: Function which may mutate copies of the terms of ``self``, returning ``True`` if
                 those mutated copies are to be included in the generator. The function signature
                 should take a single :class:`Term` instance as an argument, and return a boolean.
 
         Returns:
-            Iterator over the selected (and possibly mutated) terms of :param:`self` according
-            to :param:`f`.
+            Iterator over the selected (and possibly mutated) terms of ``self`` according
+            to ``f``.
         """
         if not len(self):
             return
@@ -529,16 +490,16 @@ class Terms(
                 yield tmp
 
     def filter_map(self, f: Callable[[Term[ImplT, SpecT, CoeffT]], bool]) -> Self:
-        """Eagerly evaluate a filter-map operation over the terms of :param:`self`.
+        """Eagerly evaluate a filter-map operation over the terms of ``self``.
 
         Args:
-            f: Function which may mutate copies of the terms of :param:`self`, returning ``True``
+            f: Function which may mutate copies of the terms of ``self``, returning ``True``
                 if those mutated copies are to be included in the generator. The function signature
                 should take a single :class:`Term` instance as an argument, and return a boolean.
 
         Returns:
             New instance containing the occurrences of selected (and possibly mutated) components
-            of :param:`self` according to :param:`f`.
+            of ``self`` according to ``f``.
         """
         out = self._empty_clone()
         out.append_iterable(self.iter_filter_map(f))
@@ -549,10 +510,10 @@ class Terms(
         n: int,
         source: TermSpecT[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, CoeffT] | None = None,
     ) -> Self:
-        """Append :param:`source` to the end of :param:`self` :param:`n` times.
+        """Append ``source`` to the end of ``self`` ``n`` times.
 
         Args:
-            n: Number of times to repeatedly append :param:`source`.
+            n: Number of times to repeatedly append ``source``.
             source: Value to append.
 
         Note:
@@ -570,7 +531,7 @@ class Terms(
         self,
         source: TermSpecT[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, CoeffT] | None = None,
     ) -> Self:
-        """Append :param:`source` to the end of :param:`self`.
+        """Append ``source`` to the end of ``self``.
 
         Args:
             source: Value to append.
@@ -586,10 +547,10 @@ class Terms(
             TermSpecT[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, CoeffT] | None
         ] = tuple(),
     ) -> Self:
-        """Append the elements of :param:`source` to the end of :param:`self`.
+        """Append the elements of ``source`` to the end of ``self``.
 
         Args:
-            source: Other iterable whose terms to append to :param:`self`.
+            source: Other iterable whose terms to append to ``self``.
 
         Note:
             This method operates in-place.
@@ -599,7 +560,7 @@ class Terms(
         return self
 
     def to_dataframe(self) -> pd.DataFrame:
-        """Convert :param:`self` to a :class:`~pandas.DataFrame`."""
+        """Convert ``self`` to a :class:`~pandas.DataFrame`."""
         return pd.DataFrame(
             {
                 "Component": (str(c) for c in self.cmpnts),
@@ -614,15 +575,15 @@ class Terms(
         *args: Any,
         **kwargs: Any,
     ) -> Self:
-        """Create a new instance of :param:`cls` from an iterable.
+        """Create a new instance of ``cls`` from an iterable.
 
         Args:
             source: Iterable returning specifiers of all the terms to be appended.
-            args: Positional arguments to forward to the constructor of :param:`cls`.
-            kwargs: Keyword arguments to forward to the constructor of :param:`cls`.
+            args: Positional arguments to forward to the constructor of ``cls``.
+            kwargs: Keyword arguments to forward to the constructor of ``cls``.
 
         Returns:
-            New instance of :param:`cls` containing the terms specified by :param:`source`.
+            New instance of ``cls`` containing the terms specified by ``source``.
         """
         out = cls(*args, **kwargs)
         out.append_iterable(source)
@@ -638,7 +599,7 @@ class NumericTerms(Terms[ImplT, SpecT, NumberT]):
     """
 
     def allclose(self, other: Self, rtol: float = DEFAULT_RTOL, atol: float = DEFAULT_ATOL) -> bool:
-        """Check whether :param:`self` and :param:`other` are within a certain tolerance.
+        """Check whether ``self`` and ``other`` are within a certain tolerance.
 
         Args:
             other: Other instance to compare to.
@@ -646,7 +607,7 @@ class NumericTerms(Terms[ImplT, SpecT, NumberT]):
             atol: Absolute tolerance.
 
         Returns:
-            Whether :param:`self` and :param:`other` are within the given tolerances of each other.
+            Whether ``self`` and ``other`` are within the given tolerances of each other.
 
         Note:
             This method operates by comparing the NumPy arrays returned by
@@ -681,8 +642,8 @@ class TermSet(Generic[ImplT, SpecT, CoeffT]):
                 coefficients.
 
         Note:
-            Components which appear multiple times in :param:`terms` will appear only once in
-                :param:`self`.
+            Components which appear multiple times in ``terms`` will appear only once in
+                ``self``.
         """
         self._impl = terms._empty_clone()._impl
         cmpnt_set_type = terms.cmpnts_type._set_type
@@ -695,102 +656,118 @@ class TermSet(Generic[ImplT, SpecT, CoeffT]):
 
     @property
     def _data(self) -> TermData[ImplT, SpecT, CoeffT]:
-        """Get the raw term data object underlying :param:`self`."""
+        """Get the raw term data object underlying ``self``."""
         return self._impl
 
     @property
     def coeffs_type(self) -> type[Coeffs[CoeffT]]:
-        """Get the coefficient container type of :param:`self`."""
+        """Get the coefficient container type of ``self``."""
         return self._impl.coeffs_type
 
     @property
     def coeff_type(self) -> type[CoeffT]:
-        """Get the coefficient type of :param:`self`."""
+        """Get the coefficient type of ``self``."""
         return self._data.coeff_type
 
     @property
     def cmpnts_type(self) -> type[Cmpnts[ImplT, SpecT]]:
-        """Get the component container type of :param:`self`."""
+        """Get the component container type of ``self``."""
         return self._impl.cmpnts_type
 
     @property
     def cmpnt_type(self) -> type[Cmpnt[ImplT, SpecT]]:
-        """Get the component type of :param:`self`."""
+        """Get the component type of ``self``."""
         return self._data.cmpnt_type
 
     @classmethod
     def _create(cls, data: TermData[ImplT, SpecT, CoeffT]) -> Self:
-        """Create a new instance of :param:`cls`.
+        """Create a new instance of ``cls``.
 
         Args:
             data: Raw term data object.
 
         Returns:
-            A new instance of :param:`cls`.
+            A new instance of ``cls``.
         """
         out = cls.__new__(cls)
         TermSet.__init__(out, cls.terms_type._create(data))
         return out
 
     def _empty_clone(self) -> Self:
-        """Get an empty (owning, contiguous) clone of :param:`self`."""
+        """Get an empty (owning, contiguous) clone of ``self``."""
         return self._create(
             TermData(self._impl._cmpnts._empty_clone(), self._impl._coeffs._empty_clone())
         )
 
     def clone(self) -> Self:
-        """Return a deep copy of :param:`self`."""
+        """Return a deep copy of ``self``."""
         out = self._empty_clone()
         out.insert_iterable(self)
         return out
 
     def to_terms(self) -> Terms[ImplT, SpecT, CoeffT]:
-        """Get a collection of terms containing the same data as :param:`self`."""
+        """Get a collection of terms containing the same data as ``self``."""
         return self.terms_type._create(self._impl.clone())
 
-    def to_dataframe(self) -> pd.DataFrame:
-        """Convert :param:`self` to a :class:`~pandas.DataFrame`."""
-        return self.to_terms().to_dataframe()
-
-    def into(self, t: type[TermSet[Any, Any, Any]]) -> TermSet[Any, Any, Any]:
-        """Clone :param:`self` into a new set of terms with type :param:`t`.
+    @classmethod
+    def from_terms(cls, terms: Terms[ImplT, SpecT, CoeffT]) -> Self:
+        """Create a new instance of ``cls`` from ``terms``.
 
         Args:
-            t: Type to return, must have the same
-                :attr:`~zixy.container.terms.TermSet.cmpnt_type` as :param:`self`.
+            terms: Terms-derived object from which to construct the set of terms.
 
         Returns:
-            A new instance of :param:`t`.
+            A new instance of ``cls`` containing the terms in ``terms``.
         """
-        terms = self.to_terms().into(t.terms_type)
-        out = t._create(terms._impl)
-        if out.cmpnt_type is not self.cmpnt_type:
-            raise TypeError(
-                f"Cannot convert a term with component type "
-                f"{self.cmpnt_type} into one with a different component "
-                f"type {out.cmpnt_type}."
-            )
+        out = cls.__new__(cls)
+        TermSet.__init__(out, terms)
         return out
 
+    def into(
+        self, t: type[TermSet[ImplT, SpecT, OtherCoeffT]]
+    ) -> TermSet[ImplT, SpecT, OtherCoeffT]:
+        """Clone ``self`` into a new related container of type ``t``.
+
+        Args:
+            t: Type of the new container to create.
+
+        Returns:
+            A new instance of ``t`` containing the same data as ``self``.
+        """
+        if issubclass(t, TermSet):
+            coeff_type = t.terms_type.term_type.coeff_type
+            coeffs_type = get_coeffs_type(coeff_type)
+            cmpnts = self._impl.cmpnts
+            coeffs = convert_vec(self._impl.coeffs, coeffs_type)
+            return t._create(TermData(cmpnts, coeffs))
+        try:
+            return self.to_terms().into(t)
+        except (TypeError, ValueError) as e:
+            raise TypeError(f"Cannot convert {type(self)} into unsupported target type {t}.") from e
+
+    def to_dataframe(self) -> pd.DataFrame:
+        """Convert ``self`` to a :class:`~pandas.DataFrame`."""
+        return self.to_terms().to_dataframe()
+
     def __repr__(self) -> str:
-        """Return a string representation of :param:`self`."""
+        """Return a string representation of ``self``."""
         return ", ".join(str(s) for s in self)
 
     def __len__(self) -> int:
-        """Get the number of elements in :param:`self`."""
+        """Get the number of elements in ``self``."""
         return len(self._impl)
 
     def _get_working_term(
         self, value: Term[ImplT, SpecT, CoeffT] | TermSpecT[ImplT, SpecT, CoeffT] = None
     ) -> Term[ImplT, SpecT, CoeffT]:
-        """Get a term that contains the data specified by :param:`value`.
+        """Get a term that contains the data specified by ``value``.
 
         Args:
             value: Term or term specifier required.
 
         Returns:
-            If :param:`value` is an instance of :class:`Term`, return it. Otherwise, set the
-            internally-allocated working term to the data specified by :param:`value` and return
+            If ``value`` is an instance of :class:`Term`, return it. Otherwise, set the
+            internally-allocated working term to the data specified by ``value`` and return
             that working term.
         """
         if isinstance(value, Term):
@@ -800,15 +777,15 @@ class TermSet(Generic[ImplT, SpecT, CoeffT]):
             return self._working_term
 
     def _get_working_cmpnt(self, value: Cmpnt[ImplT, SpecT] | SpecT | None) -> Cmpnt[ImplT, SpecT]:
-        """Get a component that contains the data specified by :param:`value`.
+        """Get a component that contains the data specified by ``value``.
 
         Args:
             value: Component or component specifier required.
 
         Returns:
-            If :param:`value` is an instance of :class:`~zixy.container.cmpnts.Cmpnt`, return
+            If ``value`` is an instance of :class:`~zixy.container.cmpnts.Cmpnt`, return
             it. Otherwise, set the component of the internally-allocated working term to the data
-            specified by :param:`value` and return that component.
+            specified by ``value`` and return that component.
         """
         cmpnt_type = self._impl.cmpnt_type
         assert issubclass(cmpnt_type, Cmpnt)
@@ -843,15 +820,15 @@ class TermSet(Generic[ImplT, SpecT, CoeffT]):
         """Insertion method which does not overwrite coefficient values.
 
         Operates similarly to :meth:`insert`, but does not overwrite coefficient values if the
-        component specified by :param:`key` is already present in :param:`self`.
+        component specified by ``key`` is already present in ``self``.
 
         Args:
             key: The term specifier.
 
         Returns:
             Index at which the term was inserted or found, and a boolean indicating whether
-            insertion was successful (i.e. whether the component specified by :param:`key` was not
-            already present in :param:`self`).
+            insertion was successful (i.e. whether the component specified by ``key`` was not
+            already present in ``self``).
 
         Note:
             This method operates in-place.
@@ -880,14 +857,14 @@ class TermSet(Generic[ImplT, SpecT, CoeffT]):
     def lookup_index(
         self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, CoeffT]
     ) -> int | None:
-        """Try to find the index of the component specified by :param:`value` in :param:`self`.
+        """Try to find the index of the component specified by ``value`` in ``self``.
 
         Args:
             value: The component or term specifier.
 
         Returns:
-            The index of the component specified by :param:`value` if it is present in
-            :param:`self`, and ``None`` otherwise.
+            The index of the component specified by ``value`` if it is present in
+            ``self``, and ``None`` otherwise.
         """
         value = self._get_working_term(value)
         return self._cmpnt_set.lookup(value.cmpnt)
@@ -895,14 +872,14 @@ class TermSet(Generic[ImplT, SpecT, CoeffT]):
     def lookup_coeff(
         self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, CoeffT]
     ) -> CoeffT | None:
-        """Try to find the coefficient of the term specified by :param:`value` in :param:`self`.
+        """Try to find the coefficient of the term specified by ``value`` in ``self``.
 
         Args:
             value: The component or term specifier.
 
         Returns:
-            The coefficient of the term specified by :param:`value` if it is present in
-            :param:`self`, and ``None`` otherwise.
+            The coefficient of the term specified by ``value`` if it is present in
+            ``self``, and ``None`` otherwise.
         """
         index = self.lookup_index(value)
         if index is None:
@@ -912,7 +889,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT]):
     def lookup(
         self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, CoeffT]
     ) -> tuple[int, CoeffT] | None:
-        """Try to find the index and coefficient of the component specified by :param:`value`.
+        """Try to find the index and coefficient of the component specified by ``value``.
 
         Args:
             value: The component or term specifier.
@@ -926,18 +903,18 @@ class TermSet(Generic[ImplT, SpecT, CoeffT]):
         return index, self._impl._coeffs[index]
 
     def contains(self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, CoeffT]) -> bool:
-        """Check whether the component specified by :param:`value` is stored in :param:`self`.
+        """Check whether the component specified by ``value`` is stored in ``self``.
 
         Args:
             value: The component specifier.
 
         Returns:
-            Whether the lookup of :param:`value` was successful.
+            Whether the lookup of ``value`` was successful.
         """
         return self.lookup(value) is not None
 
     def remove(self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, CoeffT]) -> int:
-        """Try to remove the component specified by :param:`value` from :param:`self`.
+        """Try to remove the component specified by ``value`` from ``self``.
 
         If the component is found, removal proceeds via swap-remove.
 
@@ -960,16 +937,16 @@ class TermSet(Generic[ImplT, SpecT, CoeffT]):
     def __getitem__(
         self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, CoeffT]
     ) -> CoeffT:
-        """Get the coefficient of the term with component specified by :param:`value`.
+        """Get the coefficient of the term with component specified by ``value``.
 
         Args:
             value: The component or term specifier.
 
         Returns:
-            The coefficient of the term with component specified by :param:`value`.
+            The coefficient of the term with component specified by ``value``.
 
         Raises:
-            KeyError: The component specified by :param:`value` was not found in :param:`self`.
+            KeyError: The component specified by ``value`` was not found in ``self``.
         """
         out = self.lookup_coeff(value)
         if out is None:
@@ -977,11 +954,11 @@ class TermSet(Generic[ImplT, SpecT, CoeffT]):
         return out
 
     def __setitem__(self, key: SpecT | Term[ImplT, SpecT, CoeffT], coeff: CoeffT) -> None:
-        """Set the coefficient of the term with component specified by :param:`key`."""
+        """Set the coefficient of the term with component specified by ``key``."""
         self._impl._coeffs[self.insert(key)] = coeff
 
     def __eq__(self, other: object) -> bool:
-        """Return whether :param:`self` and :param:`other` are equal."""
+        """Return whether ``self`` and ``other`` are equal."""
         if not isinstance(other, type(self)):
             return NotImplemented
         if self._cmpnt_set != other._cmpnt_set:
@@ -989,7 +966,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT]):
         return all(self.lookup_coeff(term.cmpnt) == term.coeff for term in other)
 
     def __iter__(self) -> Iterator[Term[ImplT, SpecT, CoeffT]]:
-        """Iterate over the elements of :param:`self`."""
+        """Iterate over the elements of ``self``."""
         if not len(self):
             return
         tmp = self._get_working_term().clone()
@@ -1007,16 +984,16 @@ class TermSet(Generic[ImplT, SpecT, CoeffT]):
     def iter_filter_map(
         self, f: Callable[[Term[ImplT, SpecT, CoeffT]], bool]
     ) -> Iterator[Term[ImplT, SpecT, CoeffT]]:
-        """Lazily evaluate a filter-map operation over the terms of :param:`self`.
+        """Lazily evaluate a filter-map operation over the terms of ``self``.
 
         Args:
-            f: Function which may mutate copies of the terms of :param:`self`, returning ``True`` if
+            f: Function which may mutate copies of the terms of ``self``, returning ``True`` if
                 those mutated copies are to be included in the generator. The function signature
                 should take a single :class:`Term` instance as an argument, and return a boolean.
 
         Returns:
-            Iterator over the selected (and possibly mutated) components of :param:`self` according
-            to :param:`f`.
+            Iterator over the selected (and possibly mutated) components of ``self`` according
+            to ``f``.
 
         Note:
             The resulting generator does not enforce uniqueness of components.
@@ -1024,16 +1001,16 @@ class TermSet(Generic[ImplT, SpecT, CoeffT]):
         return (term for term in self if f(term))
 
     def filter_map(self, f: Callable[[Term[ImplT, SpecT, CoeffT]], bool]) -> Self:
-        """Eagerly evaluate a filter-map operation over the terms of :param:`self`.
+        """Eagerly evaluate a filter-map operation over the terms of ``self``.
 
         Args:
-            f: Function which may mutate copies of the terms of :param:`self`, returning ``True``
+            f: Function which may mutate copies of the terms of ``self``, returning ``True``
                 if those mutated copies are to be included in the generator. The function signature
                 should take a single :class:`Term` instance as an argument, and return a boolean.
 
         Returns:
             New instance containing the occurrences of selected (and possibly mutated) components
-            of :param:`self` according to :param:`f`.
+            of ``self`` according to ``f``.
 
         Note:
             The resulting generator enforces uniqueness of components by overwriting coefficients of
@@ -1048,26 +1025,26 @@ class TermSet(Generic[ImplT, SpecT, CoeffT]):
         *args: Any,
         **kwargs: Any,
     ) -> Self:
-        """Create a new instance of :param:`cls` from an iterable.
+        """Create a new instance of ``cls`` from an iterable.
 
         Args:
             iterable: Iterable returning specifiers of all the terms to be appended.
-            args: Positional arguments to forward to the constructor of :param:`cls`.
-            kwargs: Keyword arguments to forward to the constructor of :param:`cls`.
+            args: Positional arguments to forward to the constructor of ``cls``.
+            kwargs: Keyword arguments to forward to the constructor of ``cls``.
 
         Returns:
-            New instance of :param:`cls` containing the terms specified by :param:`iterable`.
+            New instance of ``cls`` containing the terms specified by ``iterable``.
         """
         out = cls(*args, **kwargs)
         out.insert_iterable(iterable)
         return out
 
     def iter_filter_nonzero(self) -> Iterator[Term[ImplT, SpecT, CoeffT]]:
-        """Iterate over the non-zero terms of :param:`self`."""
+        """Iterate over the non-zero terms of ``self``."""
         return (term for term in self if term.coeff != 0)
 
     def filter_nonzero(self) -> Self:
-        """Filter :param:`self` to only the non-zero terms."""
+        """Filter ``self`` to only the non-zero terms."""
         return self._from_generator(self.iter_filter_nonzero())
 
 
@@ -1083,7 +1060,7 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
     """
 
     def _scaled_iadd(self, rhs: Term[ImplT, SpecT, CoeffT] | Self, scalar: Coeff) -> None:
-        """Add :param:`scalar` times :param:`rhs` to :param:`self` in-place."""
+        """Add ``scalar`` times ``rhs`` to ``self`` in-place."""
         if not isinstance(rhs, Term | TermSum):
             rhs = self._get_working_term(rhs)
         if self.coeff_type != rhs.coeff_type:
@@ -1103,34 +1080,34 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
             TermSet.__init__(self, self.filter_nonzero().to_terms())
 
     def __iadd__(self, rhs: Term[ImplT, SpecT, CoeffT] | Self) -> Self:
-        """Add :param:`rhs` to :param:`self` in-place."""
+        """Add ``rhs`` to ``self`` in-place."""
         self._scaled_iadd(rhs, 1)
         return self
 
     def __isub__(self, rhs: Term[ImplT, SpecT, CoeffT] | Self) -> Self:
-        """Subtract :param:`rhs` from :param:`self` in-place."""
+        """Subtract ``rhs`` from ``self`` in-place."""
         self._scaled_iadd(rhs, -1)
         return self
 
     def __add__(self, rhs: Term[ImplT, SpecT, CoeffT] | Self) -> Self:
-        """Addition of :param:`self` and :param:`rhs`."""
+        """Addition of ``self`` and ``rhs``."""
         out = self.clone()
         out += rhs
         return out
 
     def __sub__(self, rhs: Term[ImplT, SpecT, CoeffT] | Self) -> Self:
-        """Subtraction of :param:`rhs` from :param:`self`."""
+        """Subtraction of ``rhs`` from ``self``."""
         out = self.clone()
         out -= rhs
         return out
 
     def __imul__(self, scalar: Coeff) -> Self:
-        """In-place multiplication of :param:`self` by :param:`scalar`."""
+        """In-place multiplication of ``self`` by ``scalar``."""
         self._impl._coeffs.scale(scalar)
         return self
 
     def __itruediv__(self, scalar: Coeff) -> Self:
-        """In-place division of :param:`self` by :param:`scalar`."""
+        """In-place division of ``self`` by ``scalar``."""
         if isinstance(scalar, RootOfUnity):
             self *= 1 / scalar.to_numeric()
         else:
@@ -1138,25 +1115,25 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
         return self
 
     def __mul__(self, scalar: Coeff) -> Self:
-        """Multiplication of :param:`self` by :param:`scalar`."""
+        """Multiplication of ``self`` by ``scalar``."""
         out = self.clone()
         out *= scalar
         return out
 
     def __rmul__(self, scalar: Coeff) -> Self:
-        """Multiplication of :param:`scalar` by :param:`self`."""
+        """Multiplication of ``scalar`` by ``self``."""
         return self * scalar
 
     def __truediv__(self, scalar: Coeff) -> Self:
-        """Division of :param:`self` by :param:`scalar`."""
+        """Division of ``self`` by ``scalar``."""
         factor = 1 / scalar if not isinstance(scalar, RootOfUnity) else 1 / scalar.to_numeric()
         return self * factor
 
     def add_iterable(self, iterable: Iterable[Term[ImplT, SpecT, CoeffT]]) -> None:
-        """In-place addition of the terms in :param:`iterable` to :param:`self`.
+        """In-place addition of the terms in ``iterable`` to ``self``.
 
         Args:
-            iterable: Iterable of terms to add to :param:`self`.
+            iterable: Iterable of terms to add to ``self``.
 
         Note:
             This method operates in-place.
@@ -1165,13 +1142,13 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
             self += item
 
     def _from_generator(self, gen: Iterator[Term[ImplT, SpecT, CoeffT]]) -> Self:
-        """Create a new instance based on :param:`self` with contents given by a generator.
+        """Create a new instance based on ``self`` with contents given by a generator.
 
         Args:
             gen: Generator of terms to be summed into the new instance.
 
         Returns:
-            New instance with contents given by :param:`gen`.
+            New instance with contents given by ``gen``.
         """
         out = self._empty_clone()
         out.add_iterable(gen)
@@ -1185,15 +1162,15 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
         *args: Any,
         **kwargs: Any,
     ) -> Self:
-        """Create a new instance of :param:`cls` from an iterable.
+        """Create a new instance of ``cls`` from an iterable.
 
         Args:
             iterable: Iterable returning specifiers of all the terms to be appended.
-            args: Positional arguments to forward to the constructor of :param:`cls`.
-            kwargs: Keyword arguments to forward to the constructor of :param:`cls`.
+            args: Positional arguments to forward to the constructor of ``cls``.
+            kwargs: Keyword arguments to forward to the constructor of ``cls``.
 
         Returns:
-            New instance of :param:`cls` containing the terms specified by :param:`iterable`.
+            New instance of ``cls`` containing the terms specified by ``iterable``.
         """
         out = cls(*args, **kwargs)
         out.add_iterable(iterable)
@@ -1213,7 +1190,7 @@ class NumericTermSum(TermSum[ImplT, SpecT, NumberT]):
 
     @property
     def l1_norm(self) -> NumberT:
-        """Get the L1 norm of :param:`self`."""
+        """Get the L1 norm of ``self``."""
         result: NumberT = zero(self.coeff_type)
         for coeff in self._impl._coeffs:
             result += self.coeff_type(abs(coeff))
@@ -1221,7 +1198,7 @@ class NumericTermSum(TermSum[ImplT, SpecT, NumberT]):
 
     @property
     def l2_norm_square(self) -> NumberT:
-        """Get the square of the L2 norm of :param:`self`."""
+        """Get the square of the L2 norm of ``self``."""
         result: NumberT = zero(self.coeff_type)
         for coeff in self._impl._coeffs:
             result += self.coeff_type(abs(coeff)) ** 2
@@ -1229,11 +1206,11 @@ class NumericTermSum(TermSum[ImplT, SpecT, NumberT]):
 
     @property
     def l2_norm(self) -> Number:
-        """Get the L2 norm of :param:`self`."""
+        """Get the L2 norm of ``self``."""
         return cast(Number, self.l2_norm_square**0.5)
 
     def l1_normalize(self) -> None:
-        """Divide :param:`self` by its L1 norm.
+        """Divide ``self`` by its L1 norm.
 
         Note:
             This method operates in-place.
@@ -1241,7 +1218,7 @@ class NumericTermSum(TermSum[ImplT, SpecT, NumberT]):
         self._impl._coeffs.scale(1 / self.l1_norm)
 
     def l2_normalize(self) -> None:
-        """Divide :param:`self` by its L2 norm.
+        """Divide ``self`` by its L2 norm.
 
         Note:
             This method operates in-place.
@@ -1251,7 +1228,7 @@ class NumericTermSum(TermSum[ImplT, SpecT, NumberT]):
     def iter_filter_significant(
         self, atol: float = DEFAULT_ATOL
     ) -> Iterator[Term[ImplT, SpecT, NumberT]]:
-        """Lazily generate terms in :param:`self` with coefficients no less than :param:`atol`.
+        """Lazily generate terms in ``self`` with coefficients no less than ``atol``.
 
         Args:
             atol: Absolute tolerance.
@@ -1262,7 +1239,7 @@ class NumericTermSum(TermSum[ImplT, SpecT, NumberT]):
         return (term for term in self if not np.isclose(term.coeff, 0, atol=atol))
 
     def filter_significant(self, atol: float = DEFAULT_ATOL) -> Self:
-        """Eagerly get terms in :param:`self` with coefficients no less than :param:`atol`.
+        """Eagerly get terms in ``self`` with coefficients no less than ``atol``.
 
         Args:
             atol: Absolute tolerance.
@@ -1275,7 +1252,7 @@ class NumericTermSum(TermSum[ImplT, SpecT, NumberT]):
     def iter_filter_insignificant(
         self, atol: float = DEFAULT_ATOL
     ) -> Iterator[Term[ImplT, SpecT, NumberT]]:
-        """Lazily generate terms in :param:`self` with coefficients less than :param:`atol`.
+        """Lazily generate terms in ``self`` with coefficients less than ``atol``.
 
         Args:
             atol: Absolute tolerance.
@@ -1286,7 +1263,7 @@ class NumericTermSum(TermSum[ImplT, SpecT, NumberT]):
         return (term for term in self if np.isclose(term.coeff, 0, atol=atol))
 
     def filter_insignificant(self, atol: float = DEFAULT_ATOL) -> Self:
-        """Eagerly get terms in :param:`self` with coefficients less than :param:`atol`.
+        """Eagerly get terms in ``self`` with coefficients less than ``atol``.
 
         Args:
             atol: Absolute tolerance.
@@ -1308,7 +1285,7 @@ class TermRegistry(Generic[ImplT, SpecT]):
     term_type_symbolic: type[Term[ImplT, SpecT, Expr]]
 
     def __getitem__(self, coeff_type: type[CoeffT]) -> type[Term[ImplT, SpecT, CoeffT]]:
-        """Get the term type corresponding to :param:`coeff_type`."""
+        """Get the term type corresponding to ``coeff_type``."""
         if _is_int(coeff_type) or _is_float(coeff_type):
             return self.term_type_real
         elif _is_complex(coeff_type):

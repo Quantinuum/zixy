@@ -40,3 +40,13 @@ impl Display for ParseError {
         }
     }
 }
+
+impl std::error::Error for ParseError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            ParseError::BadParse(x) => Some(x),
+            ParseError::ModeBounds(x) => Some(x),
+            ParseError::CoeffUnrepresentable(x) => Some(x),
+        }
+    }
+}

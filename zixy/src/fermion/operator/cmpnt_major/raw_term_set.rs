@@ -50,3 +50,10 @@ impl<'a, C: NumRepr> ModesBased for View<'a, C> {
         self.word_iters.modes()
     }
 }
+
+impl<C: NumRepr> RawTermSet<C> {
+    pub fn as_raw_terms(&self) -> View<'_, C> {
+        use crate::container::traits::proj::Borrow;
+        self.borrow()
+    }
+}

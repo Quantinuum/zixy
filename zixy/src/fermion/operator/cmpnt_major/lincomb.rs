@@ -295,15 +295,18 @@ pub fn normalise<C: FieldElem>(raw_terms: &raw_term_set::View<C>) -> TermSet<Com
         let modes_space = raw_terms.word_iters.modes().clone();
         let mut cre_set = HashSet::<usize>::new();
         let mut ann_set = HashSet::<usize>::new();
-        if adj[0] {
-            cre_set.insert(modes[0]);
-        } else {
-            ann_set.insert(modes[0]);
-        };
-        let mut current = TermSet::<Complex64>::new(modes_space.clone());
+        let mut acc = TermSet::<Complex64>::new(modes_space.clone());
+        if !modes.is_empty() {
+            if adj[0] {
+                cre_set.insert(modes[0]);
+            } else {
+                ann_set.insert(modes[0]);
+            }
+        }
         scaled_iadd_elem(
-            &mut current.borrow_mut(),
-            Cmpnt::from_sets_unchecked(modes_space.clone(), cre_set, ann_set).borrow(),
+            &mut acc.borrow_mut(),
+            Cmpnt::from_sets_unchecked(modes_space.clone(), cre_set.clone(), ann_set.clone())
+                .borrow(),
             Complex64::new(1.0, 0.0),
         );
         // multiply with each remaing operator
@@ -315,6 +318,7 @@ pub fn normalise<C: FieldElem>(raw_terms: &raw_term_set::View<C>) -> TermSet<Com
             } else {
                 ann_set.insert(*mode);
             };
+
             let rhs = Cmpnt::from_sets_unchecked(modes_space.clone(), cre_set, ann_set);
             let mut rhs_set = TermSet::<Complex64>::new(modes_space.clone());
             scaled_iadd_elem(
@@ -322,13 +326,13 @@ pub fn normalise<C: FieldElem>(raw_terms: &raw_term_set::View<C>) -> TermSet<Com
                 rhs.borrow(),
                 Complex64::new(1.0, 0.0),
             );
-            current = mul(&current.borrow().as_terms(), &rhs_set.borrow().as_terms())
-                .expect("normalise: current and lhs_set should always have the same mode space")
+            acc = mul(&acc.borrow().as_terms(), &rhs_set.borrow().as_terms())
+                .expect("normalise: acc and lhs_set should always have the same mode space")
         }
-        // add current into out with the raw coefficient
+        // add acc into out with the raw coefficient
         scaled_iadd(
             &mut out.borrow_mut(),
-            &current.borrow_mut().as_terms(),
+            &acc.borrow_mut().as_terms(),
             coeff.to_complex(),
         );
     }
@@ -345,7 +349,9 @@ mod tests {
     use crate::container::word_iters::terms::AsViewMut;
     use crate::fermion::mode::Modes;
     use crate::fermion::operator::cmpnt::Cmpnt;
+    use crate::fermion::operator::cmpnt_major::raw_term_set::RawTermSet;
     use crate::fermion::operator::cmpnt_major::terms::Terms;
+    use crate::fermion::operator::raw_cmpnt_list::RawCmpntList;
     use rstest::rstest;
     use std::collections::HashSet;
 
@@ -554,5 +560,25 @@ mod tests {
 
         assert_eq!(max_n_body(&terms.borrow()), 2);
         assert!(max_n_body(&terms.borrow()) <= 2);
+    }
+
+    #[rstest]
+    #[case(4, vec![0, 0], vec![false, true], 2)] // a_0 a_0^+ -> 1 - a_0^+a_0
+    #[case(4, vec![0, 1], vec![false, true], 1)] // a_0 a_1^+ -> -a_1^+a_0
+    #[case(4, vec![0, 1, 0], vec![true, false, false], 2)] //a_0^+ a_1 a_0  -> -a_1 + a_0^+ a_1 a_0
+    fn test_normalise(
+        #[case] n_modes: usize,
+        #[case] modes: Vec<usize>,
+        #[case] adj: Vec<bool>,
+        #[case] expected_terms: usize,
+    ) {
+        let modes_space = Modes::from_count(n_modes);
+        let max_len = modes.len();
+        let mut raw = RawTermSet::<f64>::new(max_len, modes_space);
+        let mut tmp = Elem::<RawCmpntList>::from(&raw.terms.word_iters);
+        tmp.borrow_mut().word_iters.push(&modes, &adj);
+        scaled_iadd_elem(&mut raw.borrow_mut(), tmp.borrow(), 1.0f64);
+        let result = normalise(&raw.as_raw_terms());
+        assert_eq!(result.len(), expected_terms);
     }
 }

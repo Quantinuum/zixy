@@ -5,8 +5,10 @@ use crate::container::traits::proj::{Borrow, BorrowMut, ToOwned};
 use crate::container::traits::Elements;
 use crate::container::traits::RefElements;
 use crate::container::word_iters::lincomb::{iadd, isub, scaled_iadd, scaled_iadd_elem};
+use crate::container::word_iters::term_set::AsView;
 use crate::container::word_iters::term_set::AsViewMut;
 use crate::container::word_iters::Elem;
+use crate::fermion::operator::cmpnt::Cmpnt;
 use crate::fermion::operator::cmpnt_major::raw_term_set;
 use crate::fermion::operator::cmpnt_major::raw_term_set::RawTermSet;
 use crate::fermion::operator::cmpnt_major::term_set::{self, TermSet};
@@ -15,6 +17,7 @@ use crate::fermion::operator::products::mul_cmpnts;
 use crate::fermion::operator::raw_cmpnt_list::RawCmpntList;
 use crate::fermion::traits::{DifferentSpaces, ModesBased};
 use num_complex::Complex64;
+use std::collections::HashSet;
 
 pub fn add<C: FieldElem>(lhs: &terms::View<C>, rhs: &terms::View<C>) -> TermSet<C> {
     let mut out = TermSet::from(lhs.to_owned());
@@ -174,6 +177,56 @@ pub fn raw_mul<C: FieldElem>(
         }
     }
     Ok(out)
+}
+
+/// Convert a `RawTermSet` to a normal-ordered `TermSet` by applying fermionic anticommutation relations.
+pub fn normalise<C: FieldElem>(raw_terms: &raw_term_set::View<C>) -> TermSet<Complex64> {
+    let mut out = TermSet::<Complex64>::new(raw_terms.to_modes());
+    let n_terms = raw_terms.word_iters.len().min(raw_terms.coeffs.len());
+    for (index, coeff) in raw_terms.coeffs.iter().take(n_terms).enumerate() {
+        let (modes, adj) = raw_terms.word_iters.get(index);
+        // start with the first operator as initial Termset
+        let modes_space = raw_terms.word_iters.modes().clone();
+        let mut cre_set = HashSet::<usize>::new();
+        let mut ann_set = HashSet::<usize>::new();
+        if adj[0] {
+            cre_set.insert(modes[0]);
+        } else {
+            ann_set.insert(modes[0]);
+        };
+        let mut current = TermSet::<Complex64>::new(modes_space.clone());
+        scaled_iadd_elem(
+            &mut current.borrow_mut(),
+            Cmpnt::from_sets_unchecked(modes_space.clone(), cre_set, ann_set).borrow(),
+            Complex64::new(1.0, 0.0),
+        );
+        // multiply with each remaing operator
+        for (mode, is_cre) in modes[1..].iter().zip(adj[1..].iter()) {
+            let mut cre_set = HashSet::<usize>::new();
+            let mut ann_set = HashSet::<usize>::new();
+            if *is_cre {
+                cre_set.insert(*mode);
+            } else {
+                ann_set.insert(*mode);
+            };
+            let rhs = Cmpnt::from_sets_unchecked(modes_space.clone(), cre_set, ann_set);
+            let mut rhs_set = TermSet::<Complex64>::new(modes_space.clone());
+            scaled_iadd_elem(
+                &mut rhs_set.borrow_mut(),
+                rhs.borrow(),
+                Complex64::new(1.0, 0.0),
+            );
+            current = mul(&current.borrow().as_terms(), &rhs_set.borrow().as_terms())
+                .expect("normalise: current and lhs_set should always have the same mode space")
+        }
+        // add current into out with the raw coefficient
+        scaled_iadd(
+            &mut out.borrow_mut(),
+            &current.borrow_mut().as_terms(),
+            coeff.to_complex(),
+        );
+    }
+    out
 }
 
 #[cfg(test)]

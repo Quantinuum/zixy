@@ -263,7 +263,7 @@ pub fn raw_mul<C: FieldElem>(
     lhs: &raw_term_set::View<C>,
     rhs: &raw_term_set::View<C>,
 ) -> Result<RawTermSet<Complex64>, DifferentSpaces> {
-    let max_len = 2 * lhs.word_iters.modes().len();
+    let max_len = lhs.word_iters.max_len + rhs.word_iters.max_len;
     let mut out = RawTermSet::<Complex64>::new(max_len, lhs.to_modes());
     DifferentSpaces::check_transitive(lhs, rhs, &out)?;
     let n_lhs = lhs.word_iters.len().min(lhs.coeffs.len());
@@ -639,5 +639,38 @@ mod tests {
             HashSet::from([0, 1]),
             Complex64::new(-1.0, 0.0),
         );
+    }
+
+    #[test]
+    fn test_raw_mul() {
+        let modes_space = Modes::from_count(2);
+
+        // lhs = a_0^+ + 2*a_1^+
+        let mut lhs = RawTermSet::<f64>::new(1, modes_space.clone());
+        lhs.push_term(&[0], &[true], 1.0_f64);
+        lhs.push_term(&[1], &[true], 2.0_f64);
+
+        // rhs = 3*a_0
+        let mut rhs = RawTermSet::<f64>::new(1, modes_space.clone());
+        rhs.push_term(&[0], &[false], 3.0_f64);
+
+        let result = raw_mul(&lhs.as_raw_terms(), &rhs.as_raw_terms()).unwrap();
+
+        let check = |modes: &[usize], adj: &[bool], coeff: Complex64| {
+            let n = result.terms.word_iters.len();
+            let found = (0..n).any(|i| {
+                let (m, a) = result.terms.word_iters.get(i);
+                let c = result.terms.coeffs[i];
+                m == modes
+                    && a == adj
+                    && (c.re - coeff.re).abs() < 1e-10
+                    && (c.im - coeff.im).abs() < 1e-10
+            });
+            assert!(found, "raw term {modes:?}/{adj:?} coeff {coeff} not found");
+        };
+
+        assert_eq!(result.terms.word_iters.len(), 2);
+        check(&[0, 0], &[true, false], Complex64::new(3.0, 0.0)); // a_0^+ a_0, coeff 1*3 = 3
+        check(&[1, 0], &[true, false], Complex64::new(6.0, 0.0)); // a_1^+ a_0, coeff 2*3 = 6
     }
 }

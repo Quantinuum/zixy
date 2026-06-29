@@ -340,6 +340,30 @@ pub fn normalise<C: FieldElem>(raw_terms: &raw_term_set::View<C>) -> TermSet<Com
     out
 }
 
+/// Convert a normal-ordered `TermSet` to a `RawTermSet`.
+pub fn generalise<C: FieldElem>(terms: &term_set::View<C>) -> RawTermSet<Complex64> {
+    let max_len = 2 * terms.word_iters.modes().len();
+    let mut out = RawTermSet::<Complex64>::new(max_len, terms.to_modes());
+    let n_terms = terms.word_iters.len().min(terms.coeffs.len());
+    for (i, coeff) in terms.coeffs.iter().take(n_terms).enumerate() {
+        let cmpnt = terms.word_iters.get_elem_ref(i);
+        let mut modes = Vec::new();
+        let mut adj = Vec::new();
+        // add creation modes first (normal order)
+        for mode in cmpnt.get_cre_part().iter_set_bits_flat() {
+            modes.push(mode);
+            adj.push(true);
+        }
+        // add annihilation modes after
+        for mode in cmpnt.get_ann_part().iter_set_bits_flat() {
+            modes.push(mode);
+            adj.push(false);
+        }
+        out.push_term(&modes, &adj, coeff.to_complex());
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

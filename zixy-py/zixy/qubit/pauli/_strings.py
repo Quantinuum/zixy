@@ -109,6 +109,8 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         Returns:
             An instance of ``cls`` parsed from ``source``.
         """
+        if not source.strip():
+            return cls(qubits)
         n = len(PauliSprings(source))
         if n != 1:
             raise ValueError(f"Source string should contain one Pauli string, got {n}.")

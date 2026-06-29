@@ -24,9 +24,9 @@ def test_str():
     assert empty.to_str() == "[]"
     assert SignCoeffs.from_str(empty.to_str()) == empty
 
-    singleton = SignCoeffs.from_phases((1,))
-    assert singleton.to_str() == "[-1]"
-    assert SignCoeffs.from_str(singleton.to_str()) == singleton
+    single = SignCoeffs.from_phases((1,))
+    assert single.to_str() == "[-1]"
+    assert SignCoeffs.from_str(single.to_str()) == single
 
     for value in (Sign(False), Sign(True)):
         assert value.to_str() == str(value)

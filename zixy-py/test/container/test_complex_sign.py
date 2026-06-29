@@ -26,9 +26,9 @@ def test_str():
     assert empty.to_str() == "[]"
     assert ComplexSignCoeffs.from_str(empty.to_str()) == empty
 
-    singleton = ComplexSignCoeffs.from_phases((3,))
-    assert singleton.to_str() == "[-i]"
-    assert ComplexSignCoeffs.from_str(singleton.to_str()) == singleton
+    single = ComplexSignCoeffs.from_phases((3,))
+    assert single.to_str() == "[-i]"
+    assert ComplexSignCoeffs.from_str(single.to_str()) == single
 
     for phase in range(4):
         value = ComplexSign(phase)

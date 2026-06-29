@@ -195,6 +195,10 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
         """
         if isinstance(qubits, int):
             qubits = Qubits.from_count(qubits)
+        if not source.strip():
+            out = cls._create(cls.cmpnt_type.impl_type(qubits if qubits is not None else None))
+            out.resize(0)
+            return out
         return cls._create(
             cls.cmpnt_type.impl_type(
                 qubits if qubits is not None else None, cls._springs_type(source)

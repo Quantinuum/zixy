@@ -21,6 +21,21 @@ def test_scalar_conversions():
     assert ComplexSign.from_str("-i") == ComplexSign(3)
 
 
+def test_str():
+    empty = ComplexSignCoeffs.from_size(0)
+    assert empty.to_str() == "[]"
+    assert ComplexSignCoeffs.from_str(empty.to_str()) == empty
+
+    singleton = ComplexSignCoeffs.from_phases((3,))
+    assert singleton.to_str() == "[-i]"
+    assert ComplexSignCoeffs.from_str(singleton.to_str()) == singleton
+
+    for phase in range(4):
+        value = ComplexSign(phase)
+        assert value.to_str() == str(value)
+        assert ComplexSign.from_str(value.to_str()) == value
+
+
 def test_scalar_mul():
     # ComplexSign * ComplexSign results in ComplexSign
     assert ComplexSign(3) * ComplexSign(2) == ComplexSign(1)

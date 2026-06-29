@@ -1,6 +1,6 @@
 import pytest
 
-from zixy.utils import slice_index, slice_len, slice_of_slice, slice_to_tuple
+from zixy.utils import slice_index, slice_len, slice_of_slice, slice_to_tuple, split_top_level
 
 
 def test_slice_len():
@@ -73,3 +73,29 @@ def test_slice_index():
 
     with pytest.raises(IndexError):
         slice_index(slice(None, None, -2), -4, 6)
+
+
+def test_split_top_level():
+    assert split_top_level("") == []
+    assert split_top_level("   ") == []
+    assert split_top_level("a,b,, c ,") == ["a", "b", "c"]
+    assert split_top_level("(a,b), [c,d], {e,f}") == ["(a,b)", "[c,d]", "{e,f}"]
+    assert split_top_level("a, (b, [c, d]), {e, f, (g, h)}") == [
+        "a",
+        "(b, [c, d])",
+        "{e, f, (g, h)}",
+    ]
+    assert split_top_level("a|b|(c|d)", sep="|") == ["a", "b", "(c|d)"]
+
+    with pytest.raises(ValueError, match="Unmatched closing parenthesis"):
+        split_top_level("a)")
+    with pytest.raises(ValueError, match="Unmatched closing bracket"):
+        split_top_level("a]")
+    with pytest.raises(ValueError, match="Unmatched closing brace"):
+        split_top_level("a}")
+    with pytest.raises(ValueError, match="Unmatched opening delimiter"):
+        split_top_level("(a,b")
+    with pytest.raises(ValueError, match="Unmatched opening delimiter"):
+        split_top_level("[a,b")
+    with pytest.raises(ValueError, match="Unmatched opening delimiter"):
+        split_top_level("{a,b")

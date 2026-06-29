@@ -285,6 +285,16 @@ def test_real_terms():
     assert RealMockTermSum.from_str(str(term_sum)) == term_sum
 
 
+def test_str():
+    empty_terms = RealMockTerms(TermData(Strings(0), RealCoeffs.from_size(0)))
+    assert empty_terms.to_str() == ""
+    assert RealMockTerms.from_str(empty_terms.to_str()) == empty_terms
+
+    empty_term_set = RealMockTermSet.from_terms(empty_terms)
+    assert empty_term_set.to_str() == ""
+    assert RealMockTermSet.from_str(empty_term_set.to_str()) == empty_term_set
+
+
 def test_container_into_shape_conversions():
     cmpnts = Strings.from_iterable(("alpha", "beta", "alpha"))
     terms = cmpnts.into(RealMockTerms)

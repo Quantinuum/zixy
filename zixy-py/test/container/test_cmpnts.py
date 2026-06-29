@@ -19,6 +19,16 @@ def test_cmpnt():
         s.set(1)
 
 
+def test_str():
+    empty = String("")
+    assert empty.to_str() == ""
+    assert String.from_str(empty.to_str()) == empty
+
+    spaced = String("  spaced  ")
+    assert spaced.to_str() == "  spaced  "
+    assert String.from_str(spaced.to_str()) == spaced
+
+
 def test_cmpnt_array():
     impl = StringsImplArray()
     impl.resize(10)

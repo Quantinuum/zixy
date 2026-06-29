@@ -322,9 +322,13 @@ class StringRepresentable(ABC):
         """Return a string representation of ``self``."""
         pass
 
+    def to_str(self) -> str:
+        """Return the canonical string representation of ``self``."""
+        return repr(self)
+
     def __str__(self) -> str:
         """Return a string representation of ``self``."""
-        return repr(self)
+        return self.to_str()
 
     @classmethod
     @abstractmethod

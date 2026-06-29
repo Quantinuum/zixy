@@ -161,6 +161,9 @@ def split_top_level(s: str, sep: str = ",") -> list[str]:
 
     Returns:
         Top-level items extracted from ``s``.
+
+    Raises:
+        ValueError: If the input contains unmatched opening or closing delimiters.
     """
     items: list[str] = []
     start = 0
@@ -171,20 +174,28 @@ def split_top_level(s: str, sep: str = ",") -> list[str]:
         if c == "(":
             paren_depth += 1
         elif c == ")":
+            if paren_depth == 0:
+                raise ValueError("Unmatched closing parenthesis in input string.")
             paren_depth -= 1
         elif c == "[":
             bracket_depth += 1
         elif c == "]":
+            if bracket_depth == 0:
+                raise ValueError("Unmatched closing bracket in input string.")
             bracket_depth -= 1
         elif c == "{":
             brace_depth += 1
         elif c == "}":
+            if brace_depth == 0:
+                raise ValueError("Unmatched closing brace in input string.")
             brace_depth -= 1
         elif c == sep and paren_depth == 0 and bracket_depth == 0 and brace_depth == 0:
             item = s[start:i].strip()
             if item:
                 items.append(item)
             start = i + 1
+    if paren_depth or bracket_depth or brace_depth:
+        raise ValueError("Unmatched opening delimiter in input string.")
     item = s[start:].strip()
     if item:
         items.append(item)

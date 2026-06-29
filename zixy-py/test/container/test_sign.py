@@ -19,6 +19,20 @@ def test_scalar_conversions():
     assert Sign.from_str("-1") == Sign(True)
 
 
+def test_str():
+    empty = SignCoeffs.from_size(0)
+    assert empty.to_str() == "[]"
+    assert SignCoeffs.from_str(empty.to_str()) == empty
+
+    singleton = SignCoeffs.from_phases((1,))
+    assert singleton.to_str() == "[-1]"
+    assert SignCoeffs.from_str(singleton.to_str()) == singleton
+
+    for value in (Sign(False), Sign(True)):
+        assert value.to_str() == str(value)
+        assert Sign.from_str(value.to_str()) == value
+
+
 def test_scalar_mul():
     # only Sign * Sign results in Sign
     assert Sign(False) * Sign(False) == Sign(False)

@@ -1071,11 +1071,12 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
         source = source.strip().removeprefix("[").removesuffix("]")
         if _is_complex(cls.coeff_type):
             # normalise e.g. (1 + 2j) -> 1 + 2j
-            items = [
-                item.strip().removeprefix("(").removesuffix(")") for item in source.split(", ")
-            ]
+            items = [item.strip().removeprefix("(").removesuffix(")") for item in source.split(",")]
             source = ", ".join(item for item in items if item)
         out = cls()
+        if not source:
+            out._impl = cls.coeffs_type(0)
+            return out
         out._impl = cls.coeffs_type.parse(source)
         return out
 

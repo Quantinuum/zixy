@@ -8,7 +8,7 @@ use crate::container::errors::OutOfBounds;
 use crate::container::traits::proj::{Borrow, BorrowMut};
 use crate::container::word_iters::{Elem, WordIters};
 use crate::fermion::mode::Modes;
-use crate::fermion::operator::cmpnt_list::{CmpntList, CmpntRef};
+use crate::fermion::operator::normal::cmpnt_list::{CmpntList, CmpntRef};
 use crate::fermion::traits::ModesBased;
 
 /// A single normal-ordered pair of fermionic creation and annihilation operator strings.

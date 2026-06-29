@@ -3,7 +3,7 @@
 use crate::container::coeffs::traits::NumRepr;
 use crate::container::word_iters::terms;
 use crate::fermion::mode::Modes;
-use crate::fermion::operator::cmpnt_list::CmpntList;
+use crate::fermion::operator::normal::cmpnt_list::CmpntList;
 use crate::fermion::traits::ModesBased;
 
 /// A Fermion `CmpntList` paired with one coefficient per component, plus

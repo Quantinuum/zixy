@@ -7,7 +7,7 @@ use crate::container::word_iters;
 use crate::container::word_iters::terms;
 use crate::container::word_iters::WordIters;
 use crate::fermion::mode::Modes;
-use crate::fermion::operator::raw_cmpnt_list::RawCmpntList;
+use crate::fermion::operator::general::raw_cmpnt_list::RawCmpntList;
 use crate::fermion::traits::ModesBased;
 
 pub type RawTerms<C> = terms::Terms<RawCmpntList, C>;

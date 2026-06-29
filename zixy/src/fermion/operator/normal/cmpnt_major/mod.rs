@@ -2,7 +2,6 @@
 
 pub mod lincomb;
 pub mod num_ops;
-pub mod raw_term_set;
 pub mod term;
 pub mod term_set;
 pub mod terms;

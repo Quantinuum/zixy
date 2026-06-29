@@ -614,6 +614,22 @@ mod tests {
     }
 
     #[test]
+    fn test_generalise_preserves_order_and_coeffs() {
+        let modes = Modes::from_count(4);
+        let mut terms = TermSet::<f64>::new(modes.clone());
+        let cmpnt =
+            Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([2]), HashSet::from([0, 1]));
+        scaled_iadd_elem(&mut terms.borrow_mut(), cmpnt.borrow(), 2.0);
+
+        let result = generalise(&terms.borrow());
+        assert_eq!(result.terms.word_iters.len(), 1);
+        let (raw_modes, raw_adj) = result.terms.word_iters.get(0);
+        assert_eq!(raw_modes, vec![2, 0, 1]);
+        assert_eq!(raw_adj, vec![true, false, false]);
+        assert_eq!(result.terms.coeffs[0], Complex64::new(2.0, 0.0));
+    }
+
+    #[test]
     fn test_normalise_a0_a0dag() {
         // a_0 a_0^+ -> 1 - a_0^+ a_0
         let raw = make_raw(4, &[0, 0], &[false, true]);

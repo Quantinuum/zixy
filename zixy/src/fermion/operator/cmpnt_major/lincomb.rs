@@ -259,6 +259,8 @@ pub fn is_unitary(terms: &terms::View<Complex64>, atol: f64) -> bool {
     is_identity(&product.as_terms(), atol)
 }
 
+/// Multiply two `RawTermSet` without normal ordering, returning a `RawTermSet`.
+/// Use `normalise` to convert the result to a normal-ordered `TermSet`.
 pub fn raw_mul<C: FieldElem>(
     lhs: &raw_term_set::View<C>,
     rhs: &raw_term_set::View<C>,

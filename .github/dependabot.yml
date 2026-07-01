@@ -2,15 +2,12 @@ version: 2
 
 updates:
   - package-ecosystem: "cargo"
-    directories:
-      - "/"
-      - "/zixy/"
-      - "/zixy-py/"
+    directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 2
     commit-message:
-      prefix: "build(deps)"
+      prefix: "deps"
     groups:
       cargo-version-updates:
         patterns:
@@ -25,13 +22,12 @@ updates:
         versions: [">= 0.10.0"]
   
   - package-ecosystem: "github-actions"
-    directories:
-      - "/"
+    directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 2
     commit-message:
-      prefix: "build(deps)"
+      prefix: "deps"
     groups:
       github-actions-version-updates:
         patterns:
@@ -44,13 +40,12 @@ updates:
   - package-ecosystem: "uv"
     directories:
       - "/"
-      - "/zixy-py/"
       - "/zixy-py/docs/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 2
     commit-message:
-      prefix: "build(deps)"
+      prefix: "deps"
     groups:
       uv-version-updates:
         patterns:

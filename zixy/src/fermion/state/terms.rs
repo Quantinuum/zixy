@@ -23,7 +23,7 @@ pub type TermMutRef<'a, C /*: NumRepr*/> = terms::TermMutRef<'a, CmpntList, C>;
 pub trait AsView<C: NumRepr>: terms::AsView<CmpntList, C> {
     /// Return the particle number if all Slater determinants have the same particle number, otherwise return None.
     fn particle_number(&self) -> Option<usize> {
-        self.view().word_iters.hamming_weight().or(Some(0))
+        self.view().word_iters.hamming_weight()
     }
 }
 
@@ -47,7 +47,9 @@ pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<CmpntList, C> {
     fn push_set(&mut self, value: HashSet<usize>) -> Result<(), OutOfBounds> {
         let mut self_mut_ref = self.view_mut();
         let n_mode = self_mut_ref.get_word_iters().modes().len();
-        OutOfBounds::check(value.len().saturating_sub(1), n_mode, Dimension::Mode)?;
+        if let Some(max_ind) = value.iter().max() {
+            OutOfBounds::check(*max_ind, n_mode, Dimension::Mode)?;
+        }
         let i_cmpnt = self_mut_ref.len();
         self_mut_ref.push_clear();
         self_mut_ref
@@ -79,7 +81,7 @@ mod tests {
     use super::*;
     use crate::container::bit_matrix::AsRowRef;
     use crate::container::coeffs::unity::Unity;
-    use crate::container::traits::{Elements, MutRefElements, RefElements};
+    use crate::container::traits::{Elements, RefElements};
     use num_complex::Complex64;
 
     #[test]
@@ -105,7 +107,7 @@ mod tests {
         let mut terms = Terms::<f64>::new(Modes::from_count(4));
         terms.push_set(HashSet::from([0, 1])).unwrap();
         terms.push_set(HashSet::from([0, 1, 2])).unwrap();
-        assert_eq!(terms.particle_number(), Some(0));
+        assert_eq!(terms.particle_number(), None);
     }
 
     #[test]
@@ -116,12 +118,20 @@ mod tests {
         terms.push_set(HashSet::from([0, 2])).unwrap();
         assert_eq!(terms.len(), 2);
         assert_eq!(
-            terms.get_elem_mut_ref(0).get_word_iter_ref().to_vec(),
+            terms.get_elem_ref(0).get_word_iter_ref().to_vec(),
             vec![false, true, false, true]
         );
         assert_eq!(
             terms.get_elem_ref(1).get_word_iter_ref().to_vec(),
             vec![true, false, true, false]
         );
+    }
+
+    #[test]
+    fn test_push_set_out_of_bounds() {
+        let modes = Modes::from_count(4);
+        let mut terms = Terms::<Unity>::new(modes.clone());
+        let result = terms.push_set(HashSet::from([0, 4])); // 4 is out of bounds
+        assert!(result.is_err());
     }
 }

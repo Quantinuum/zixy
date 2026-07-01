@@ -16,7 +16,7 @@ use crate::cmpnt::springs::ModeSettings;
 use crate::cmpnt::state_springs::BinarySprings;
 use crate::container::table::Table;
 use crate::container::traits::{Compatible, Elements, EmptyClone};
-use crate::container::u64it_elems::{self, WordIters};
+use crate::container::word_iters::{self, WordIters};
 use crate::fermion::mode::Modes;
 use crate::fermion::traits::ModesBased;
 
@@ -147,6 +147,22 @@ impl<'a> ModesBased for CmpntMutRef<'a> {
     }
 }
 
+impl<'a> bit_matrix::AsRowRef for CmpntRef<'a> {
+    fn bit_mat(&self) -> &impl bit_matrix::AsBitMatrix {
+        &self.word_iters.bitsets
+    }
+}
+
+impl<'a> bit_matrix::AsRowMutRef for CmpntMutRef<'a> {
+    fn bit_mat(&self) -> &impl bit_matrix::AsBitMatrix {
+        &self.word_iters.bitsets
+    }
+
+    fn bit_mat_mut(&mut self) -> &mut impl bit_matrix::AsBitMatrix {
+        &mut self.word_iters.bitsets
+    }
+}
+
 impl<'a> AsCmpntRef for CmpntRef<'a> {
     fn cmpnt_list(&self) -> &bitset_cmpnt_list::CmpntList {
         &self.get_word_iters().bitsets
@@ -162,6 +178,7 @@ impl<'a> AsCmpntMutRef for CmpntMutRef<'a> {
         &mut self.get_word_iters_mut().bitsets
     }
 }
+
 
 #[cfg(test)]
 mod tests {

@@ -77,6 +77,30 @@ ComplexTermSpec = TermSpec[complex]
 SymbolicTermSpec = TermSpec[Expr]
 
 
+def _data_from_str(
+    source: str, qubits: int | Qubits | None, coeff_type: type[CoeffT]
+) -> TermData[Any, Any, CoeffT]:
+    """Create a new instance of :class:`~zixy.container.data.TermData` by parsing an input string.
+
+    Args:
+        source: Input string to parse.
+        qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
+            index in the input string.
+        coeff_type: The coefficient type.
+
+    Returns:
+        A new instance containing the Pauli strings and coefficients in the ``source``.
+    """
+    if isinstance(qubits, int):
+        qubits = Qubits.from_count(qubits)
+    impl, phases = QubitPauliArray.with_phases(qubits, PauliSprings(source))
+    cmpnts = Strings._create(impl)
+    coeffs_type = get_coeffs_type(coeff_type)
+    coeffs = coeffs_type.from_str(source) if "(" in source else coeffs_type.from_size(len(phases))
+    coeffs *= ComplexSignCoeffs._create(phases)
+    return TermData(cmpnts, coeffs)
+
+
 class Term(TermBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
     """A term consisting of a Pauli string and a coefficient.
 
@@ -102,12 +126,7 @@ class Term(TermBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
         """
         if isinstance(qubits, int):
             qubits = Qubits.from_count(qubits)
-        impl, phases = QubitPauliArray.with_phases(qubits, PauliSprings(source))
-        cmpnts = cls.cmpnts_type._create(impl)
-        coeffs_type = get_coeffs_type(cls.coeff_type)
-        coeffs = coeffs_type.from_str(source)
-        coeffs *= ComplexSignCoeffs._create(phases)
-        data = TermData(cmpnts, coeffs)
+        data = _data_from_str(source, qubits, cls.coeff_type)
         if len(data) != 1:
             raise ValueError(
                 f"There should be exactly one Term string in the input, not {len(data)}."
@@ -194,12 +213,8 @@ class Terms(TermsBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
         """
         if isinstance(qubits, int):
             qubits = Qubits.from_count(qubits)
-        impl, phases = QubitPauliArray.with_phases(qubits, PauliSprings(source))
-        cmpnts = cls.term_type.cmpnts_type._create(impl)
-        coeffs_type = get_coeffs_type(cls.term_type.coeff_type)
-        coeffs = coeffs_type.from_str(source)
-        coeffs *= ComplexSignCoeffs._create(phases)
-        return cls._create(TermData(cmpnts, coeffs))
+        data = _data_from_str(source, qubits, cls.term_type.coeff_type)
+        return cls._create(data)
 
     @property
     def strings(self) -> Strings:

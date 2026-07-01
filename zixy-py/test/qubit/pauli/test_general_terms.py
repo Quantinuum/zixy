@@ -98,6 +98,10 @@ def test_real_term():
 
     assert str(product) == "(-8j, Z0 Y2 Z3 X4 X5)"
 
+    term = RealTerm.from_str("X0 Y1")
+    assert str(term) == "(1.0, X0 Y1)"
+    assert term.coeff == 1.0
+
 
 def test_complex_term():
     with pytest.raises(IndexError):

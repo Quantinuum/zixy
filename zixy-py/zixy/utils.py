@@ -165,6 +165,8 @@ def split_top_level(s: str, sep: str = ",") -> list[str]:
     Raises:
         ValueError: If the input contains unmatched opening or closing delimiters.
     """
+    if len(sep) != 1:
+        raise ValueError("Separator must be a single character.")
     items: list[str] = []
     start = 0
     paren_depth = 0

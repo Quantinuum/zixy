@@ -13,6 +13,10 @@ def test_term():
     assert str(term) == "(-1, [1, 0, 1, 0, 1, 0])"
     assert str(term * Sign(True)) == "(+1, [1, 0, 1, 0, 1, 0])"
 
+    term = RealTerm.from_str("[1, 0, 1, 0, 1, 0]")
+    assert str(term) == "(1.0, [1, 0, 1, 0, 1, 0])"
+    assert term.coeff == 1.0
+
 
 def test_term_real_sum():
     lc = RealTermSum(6)

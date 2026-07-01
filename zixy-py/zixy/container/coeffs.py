@@ -57,8 +57,6 @@ from zixy.utils import (
 Number: TypeAlias = int | float | complex
 NumberT = TypeVar("NumberT", float, complex)
 
-# TODO: test for Cmpnt.__repr__ not containing a comma?
-
 
 def _imul_factor_error(lhs: Any, rhs: Any, factor: Any) -> ValueError:
     """Get an exception for an invalid in-place multiplication due to the resulting factor."""

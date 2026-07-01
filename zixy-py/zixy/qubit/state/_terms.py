@@ -90,7 +90,9 @@ class Term(TermBase[QubitStateArray, StringSpec, CoeffT, bool]):
         impl = QubitStateArray(qubits, BinarySprings(source))
         cmpnts = cls.cmpnts_type._create(impl)
         coeffs_type = get_coeffs_type(cls.coeff_type)
-        coeffs = coeffs_type.from_str(source)
+        coeffs = (
+            coeffs_type.from_str(source) if "(" in source else coeffs_type.from_size(len(cmpnts))
+        )
         data = TermData(cmpnts, coeffs)
         if len(data) != 1:
             raise ValueError(

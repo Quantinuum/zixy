@@ -4,17 +4,11 @@
 //! Assumes a "little-endian" convention whereby the occupation flag the first
 //! mode is stored in the least significant bit of the first u64.
 
-use std::fmt::Display;
-use std::hash::Hash;
-
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 
-use crate::cmpnt::bitset_cmpnt_list::{self, AsCmpntList, AsCmpntMutRef, AsCmpntRef};
-use crate::cmpnt::mode::ModeOutOfBounds;
-use crate::cmpnt::springs::ModeSettings;
-use crate::cmpnt::state_springs::BinarySprings;
-use crate::container::table::Table;
+use crate::container::bit_matrix;
 use crate::container::traits::{Compatible, Elements, EmptyClone};
 use crate::container::word_iters::{self, WordIters};
 use crate::fermion::mode::Modes;
@@ -24,7 +18,7 @@ use crate::fermion::traits::ModesBased;
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct CmpntList {
     /// Raw storage table for the Slater determinants as bitsets.
-    bitsets: bitset_cmpnt_list::CmpntList,
+    bitsets: bit_matrix::BitMatrix,
     /// Space of fermionic modes on which the Slater determinants are defined.
     modes: Modes,
 }
@@ -33,39 +27,9 @@ impl CmpntList {
     /// Create an empty `CmpntList` on the modes given.
     pub fn new(modes: Modes) -> Self {
         Self {
-            bitsets: bitset_cmpnt_list::CmpntList::new(modes.n_mode()),
+            bitsets: bit_matrix::BitMatrix::new(modes.len()),
             modes,
         }
-    }
-
-    /// Create a new instance from given `BinarySprings`.
-    pub fn from_springs(modes: Modes, springs: &BinarySprings) -> Result<Self, ModeOutOfBounds> {
-        let mut this = Self::new(modes);
-        this.set_from_springs(springs)?;
-        Ok(this)
-    }
-
-    /// Create an instance from springs with inferred modes.
-    pub fn from_springs_default(springs: &BinarySprings) -> Self {
-        Self::from_springs(
-            Modes::from_count(springs.get_mode_inds().default_n_mode()),
-            springs,
-        )
-        .unwrap()
-    }
-}
-
-impl AsCmpntList for CmpntList {
-    fn get_bitsets(&self) -> &Table {
-        self.bitsets.get_bitsets()
-    }
-
-    fn get_bitsets_mut(&mut self) -> &mut Table {
-        self.bitsets.get_bitsets_mut()
-    }
-
-    fn n_mode(&self) -> usize {
-        self.modes.n_mode()
     }
 }
 
@@ -89,10 +53,7 @@ impl ModesBased for CmpntList {
 
 impl EmptyClone for CmpntList {
     fn empty_clone(&self) -> Self {
-        Self {
-            bitsets: self.bitsets.empty_clone(),
-            modes: self.modes.clone(),
-        }
+        Self::new(self.modes.clone())
     }
 }
 
@@ -132,18 +93,18 @@ impl Display for CmpntList {
     }
 }
 
-pub type CmpntRef<'a> = u64it_elems::ElemRef<'a, CmpntList>;
-pub type CmpntMutRef<'a> = u64it_elems::ElemMutRef<'a, CmpntList>;
+pub type CmpntRef<'a> = word_iters::ElemRef<'a, CmpntList>;
+pub type CmpntMutRef<'a> = word_iters::ElemMutRef<'a, CmpntList>;
 
 impl<'a> ModesBased for CmpntRef<'a> {
     fn modes(&self) -> &Modes {
-        &self.get_word_iters().modes
+        &self.word_iters.modes
     }
 }
 
 impl<'a> ModesBased for CmpntMutRef<'a> {
     fn modes(&self) -> &Modes {
-        &self.get_word_iters().modes
+        &self.word_iters.modes
     }
 }
 
@@ -163,23 +124,6 @@ impl<'a> bit_matrix::AsRowMutRef for CmpntMutRef<'a> {
     }
 }
 
-impl<'a> AsCmpntRef for CmpntRef<'a> {
-    fn cmpnt_list(&self) -> &bitset_cmpnt_list::CmpntList {
-        &self.get_word_iters().bitsets
-    }
-}
-
-impl<'a> AsCmpntMutRef for CmpntMutRef<'a> {
-    fn cmpnt_list(&self) -> &bitset_cmpnt_list::CmpntList {
-        &self.get_word_iters().bitsets
-    }
-
-    fn cmpnt_list_mut(&mut self) -> &mut bitset_cmpnt_list::CmpntList {
-        &mut self.get_word_iters_mut().bitsets
-    }
-}
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -188,7 +132,8 @@ mod tests {
     fn test_empty() {
         {
             let v = CmpntList::new(Modes::from_count(4));
-            assert!(v.bitsets.is_empty());
+            assert_eq!(v.len(), 0);
+            assert!(v.is_empty());
         }
     }
 }

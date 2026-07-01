@@ -3,14 +3,14 @@
 use std::collections::HashSet;
 
 use crate::container::bit_matrix::AsRowMutRef;
-use crate::container::coeffs::traits::{NumRepr, NumReprVec};
+use crate::container::coeffs::traits::NumRepr;
 use crate::container::errors::{Dimension, OutOfBounds};
 use crate::container::traits::{Elements, MutRefElements};
 use crate::container::word_iters::terms::AsViewMut as _;
-use crate::container::word_iters::{terms, HasWordIters};
+use crate::container::word_iters::{terms, HasWordIters, WordIters};
 use crate::fermion::mode::Modes;
 use crate::fermion::state::cmpnt_list::CmpntList;
-use crate::fermion::traits::QubitsBased;
+use crate::fermion::traits::ModesBased;
 
 /// Stores one coeff for each component of a `CmpntList`.
 pub type Terms<C /*: NumRepr*/> = terms::Terms<CmpntList, C>;
@@ -20,10 +20,10 @@ pub type ViewMut<'a, C /*: NumRepr*/> = terms::ViewMut<'a, CmpntList, C>;
 pub type TermRef<'a, C /*: NumRepr*/> = terms::TermRef<'a, CmpntList, C>;
 pub type TermMutRef<'a, C /*: NumRepr*/> = terms::TermMutRef<'a, CmpntList, C>;
 
-pub trait AsView<C: NumRepr>: terms::AsViewMut<CmpntList, C> {
+pub trait AsView<C: NumRepr>: terms::AsView<CmpntList, C> {
     /// Return the particle number if all Slater determinants have the same particle number, otherwise return None.
     fn particle_number(&self) -> Option<usize> {
-        self.view().word_iters.hamming_weight()
+        self.view().word_iters.hamming_weight().or(Some(0))
     }
 }
 
@@ -32,7 +32,7 @@ pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<CmpntList, C> {
     /// Append a Slater determinant from an occupation vector.
     fn push_vec(&mut self, value: Vec<bool>) -> Result<(), OutOfBounds> {
         let mut self_mut_ref = self.view_mut();
-        let n_qubit = self_mut_ref.get_word_iters().modes().n_mode();
+        let n_mode = self_mut_ref.get_word_iters().modes().len();
         OutOfBounds::check(value.len().saturating_sub(1), n_mode, Dimension::Mode)?;
         let i_cmpnt = self_mut_ref.len();
         self_mut_ref.push_clear();
@@ -46,7 +46,7 @@ pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<CmpntList, C> {
     /// Append a Slater determinant from the set of set bit positions.
     fn push_set(&mut self, value: HashSet<usize>) -> Result<(), OutOfBounds> {
         let mut self_mut_ref = self.view_mut();
-        let n_qubit = self_mut_ref.get_word_iters().modes().n_mode();
+        let n_mode = self_mut_ref.get_word_iters().modes().len();
         OutOfBounds::check(value.len().saturating_sub(1), n_mode, Dimension::Mode)?;
         let i_cmpnt = self_mut_ref.len();
         self_mut_ref.push_clear();
@@ -72,35 +72,40 @@ impl<C: NumRepr> Terms<C> {
             coeffs: C::Vector::default(),
         }
     }
-
-    
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::container::bit_matrix::AsRowRef;
     use crate::container::coeffs::unity::Unity;
-    use crate::container::traits::Elements;
+    use crate::container::traits::{Elements, MutRefElements, RefElements};
     use num_complex::Complex64;
 
     #[test]
     fn test_empty() {
-        let list_unity = TermSet::<Unity>::new(Modes::from_count(3));
-        let list_real = TermSet::<f64>::new(Modes::from_count(3));
-        let list_complex = TermSet::<Complex64>::new(Modes::from_count(3));
+        let list_unity = Terms::<Unity>::new(Modes::from_count(3));
+        let list_real = Terms::<f64>::new(Modes::from_count(3));
+        let list_complex = Terms::<Complex64>::new(Modes::from_count(3));
         assert!(list_unity.is_empty());
         assert!(list_real.is_empty());
         assert!(list_complex.is_empty());
     }
 
     #[test]
-    fn test_particle_number() {
-        let modes = Modes::from_count(4);
-        let mut terms = Terms::<Unity>::new(modes.clone());
-        assert_eq!(terms.particle_number(), Some(0));
+    fn test_particle_number_uniform() {
+        let mut terms = Terms::<f64>::new(Modes::from_count(4));
+        terms.push_set(HashSet::from([0, 1])).unwrap();
         terms.push_set(HashSet::from([1, 3])).unwrap();
         assert_eq!(terms.particle_number(), Some(2));
-        terms.push_set(HashSet::from([0, 2])).unwrap();
-        assert_eq!(terms.particle_number(), None);
+    }
+
+    #[test]
+    fn test_particle_number_mixed() {
+        let mut terms = Terms::<f64>::new(Modes::from_count(4));
+        terms.push_set(HashSet::from([0, 1])).unwrap();
+        terms.push_set(HashSet::from([0, 1, 2])).unwrap();
+        assert_eq!(terms.particle_number(), Some(0));
     }
 
     #[test]
@@ -111,14 +116,12 @@ mod tests {
         terms.push_set(HashSet::from([0, 2])).unwrap();
         assert_eq!(terms.len(), 2);
         assert_eq!(
-            terms.get_elem_ref(0).get_word_iter_ref().as_vec(),
+            terms.get_elem_mut_ref(0).get_word_iter_ref().to_vec(),
             vec![false, true, false, true]
         );
         assert_eq!(
-            terms.get_elem_ref(1).get_word_iter_ref().as_vec(),
+            terms.get_elem_ref(1).get_word_iter_ref().to_vec(),
             vec![true, false, true, false]
         );
     }
-
-
 }

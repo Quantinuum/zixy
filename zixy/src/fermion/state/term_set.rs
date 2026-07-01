@@ -63,6 +63,6 @@ mod tests {
     fn test_empty() {
         let set = TermSet::<Unity>::new(Modes::from_count(4));
         assert_eq!(set.len(), 0);
-        assert(set.is_empty());
+        assert!(set.is_empty());
     }
 }

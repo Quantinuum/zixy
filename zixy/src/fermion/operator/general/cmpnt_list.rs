@@ -8,7 +8,7 @@ use crate::fermion::traits::ModesBased;
 
 /// Contiguous and compact storage for non-normal-ordered fermion operator strings.
 #[derive(Clone)]
-pub struct RawCmpntList {
+pub struct CmpntList {
     pub mode_part: PackedIntMatrix, // mode index at each operator position
     pub adj_part: BitMatrix,        // cre/ann flag per slot
     pub len_part: Vec<usize>,       // length of each string
@@ -17,8 +17,8 @@ pub struct RawCmpntList {
     pub n_bits: usize,              // number of bits per mode index
 }
 
-impl RawCmpntList {
-    /// Create a new empty `RawCmpntList` with the given mode space and maximum operator string length.
+impl CmpntList {
+    /// Create a new empty non-normal-ordered `CmpntList` with the given mode space and maximum operator string length.
     pub fn new(max_len: usize, modes: Modes) -> Self {
         let n_modes = modes.len();
         let n_bits = if n_modes <= 1 {
@@ -65,25 +65,25 @@ impl RawCmpntList {
     }
 }
 
-impl Elements for RawCmpntList {
+impl Elements for CmpntList {
     fn len(&self) -> usize {
         self.len_part.len()
     }
 }
 
-impl Compatible for RawCmpntList {
+impl Compatible for CmpntList {
     fn compatible_with(&self, other: &Self) -> bool {
         self.modes == other.modes
     }
 }
 
-impl EmptyClone for RawCmpntList {
+impl EmptyClone for CmpntList {
     fn empty_clone(&self) -> Self {
         Self::new(self.max_len, self.modes.clone())
     }
 }
 
-impl WordIters for RawCmpntList {
+impl WordIters for CmpntList {
     fn elem_u64it(&self, i: usize) -> impl Iterator<Item = u64> + Clone {
         self.mode_part
             .elem_u64it(i)
@@ -126,7 +126,7 @@ impl WordIters for RawCmpntList {
     }
 }
 
-impl ModesBased for RawCmpntList {
+impl ModesBased for CmpntList {
     fn modes(&self) -> &Modes {
         &self.modes
     }
@@ -139,7 +139,7 @@ mod tests {
 
     #[test]
     fn test_empty() {
-        let v = RawCmpntList::new(4, Modes::from_count(8));
+        let v = CmpntList::new(4, Modes::from_count(8));
         assert!(v.is_empty());
         assert_eq!(v.len(), 0);
     }
@@ -149,7 +149,7 @@ mod tests {
     #[case(&[3, 1, 2], &[true, false, true])]
     #[case(&[0], &[true])]
     fn test_push_single(#[case] modes: &[usize], #[case] adj: &[bool]) {
-        let mut v = RawCmpntList::new(4, Modes::from_count(8));
+        let mut v = CmpntList::new(4, Modes::from_count(8));
         v.push(modes, adj);
         assert_eq!(v.len(), 1);
         let (out_modes, out_adj) = v.get(0);
@@ -159,7 +159,7 @@ mod tests {
 
     #[test]
     fn test_push_multiple() {
-        let mut v = RawCmpntList::new(4, Modes::from_count(8));
+        let mut v = CmpntList::new(4, Modes::from_count(8));
         let inputs = vec![
             (vec![0, 1], vec![false, false]),
             (vec![3, 1, 2], vec![true, false, true]),

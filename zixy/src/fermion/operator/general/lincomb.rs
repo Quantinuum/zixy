@@ -3,27 +3,31 @@
 use crate::container::bit_matrix::AsRowRef;
 use crate::container::coeffs::traits::FieldElem;
 use crate::container::traits::proj::{Borrow, BorrowMut};
-use crate::container::traits::Elements;
-use crate::container::traits::RefElements;
-use crate::container::word_iters::lincomb::{scaled_iadd, scaled_iadd_elem};
-use crate::container::word_iters::term_set::AsView;
-use crate::fermion::operator::general::raw_term_set;
-use crate::fermion::operator::general::raw_term_set::RawTermSet;
+use crate::container::traits::{Elements, RefElements};
+use crate::container::word_iters::lincomb::scaled_iadd;
+use crate::container::word_iters::term_set::{
+    AsView as TermSetAsView, AsViewMut as TermSetAsViewMut,
+};
+use crate::fermion::operator::general::term_set::{
+    self as general_term_set, TermSet as GeneralTermSet,
+};
 use crate::fermion::operator::normal::cmpnt::Cmpnt;
-use crate::fermion::operator::normal::cmpnt_major::lincomb::mul;
-use crate::fermion::operator::normal::cmpnt_major::term_set::{self, TermSet};
+use crate::fermion::operator::normal::cmpnt_major::lincomb::mul as normal_mul;
+use crate::fermion::operator::normal::cmpnt_major::term_set::{
+    self as normal_term_set, TermSet as NormalTermSet,
+};
 use crate::fermion::traits::{DifferentSpaces, ModesBased};
+use itertools::Itertools;
 use num_complex::Complex64;
 use std::collections::HashSet;
 
-/// Multiply two `RawTermSet` without normal ordering, returning a `RawTermSet`.
-/// Use `normalise` to convert the result to a normal-ordered `TermSet`.
-pub fn raw_mul<C: FieldElem>(
-    lhs: &raw_term_set::View<C>,
-    rhs: &raw_term_set::View<C>,
-) -> Result<RawTermSet<Complex64>, DifferentSpaces> {
+/// Multiply two raw term sets without normal ordering, returning a raw term set.
+pub fn rmul<C: FieldElem>(
+    lhs: &general_term_set::View<C>,
+    rhs: &general_term_set::View<C>,
+) -> Result<GeneralTermSet<Complex64>, DifferentSpaces> {
     let max_len = lhs.word_iters.max_len + rhs.word_iters.max_len;
-    let mut out = RawTermSet::<Complex64>::new(max_len, lhs.to_modes());
+    let mut out = GeneralTermSet::<Complex64>::new(max_len, lhs.to_modes());
     DifferentSpaces::check_transitive(lhs, rhs, &out)?;
     let n_lhs = lhs.word_iters.len().min(lhs.coeffs.len());
     let n_rhs = rhs.word_iters.len().min(rhs.coeffs.len());
@@ -40,81 +44,60 @@ pub fn raw_mul<C: FieldElem>(
     Ok(out)
 }
 
-/// Convert a `RawTermSet` to a normal-ordered `TermSet` by applying fermionic anticommutation relations.
-pub fn normalise<C: FieldElem>(raw_terms: &raw_term_set::View<C>) -> TermSet<Complex64> {
-    let mut out = TermSet::<Complex64>::new(raw_terms.to_modes());
-    let n_terms = raw_terms.word_iters.len().min(raw_terms.coeffs.len());
-    for (index, coeff) in raw_terms.coeffs.iter().take(n_terms).enumerate() {
-        let (modes, adj) = raw_terms.word_iters.get(index);
-        // start with the first operator as initial Termset
-        let modes_space = raw_terms.word_iters.modes().clone();
-        let mut cre_set = HashSet::<usize>::new();
-        let mut ann_set = HashSet::<usize>::new();
-        let mut acc = TermSet::<Complex64>::new(modes_space.clone());
-        if !modes.is_empty() {
-            if adj[0] {
-                cre_set.insert(modes[0]);
-            } else {
-                ann_set.insert(modes[0]);
-            }
-        }
-        scaled_iadd_elem(
-            &mut acc.borrow_mut(),
-            Cmpnt::from_sets_unchecked(modes_space.clone(), cre_set.clone(), ann_set.clone())
-                .borrow(),
-            Complex64::new(1.0, 0.0),
-        );
-        // multiply with each remaing operator
-        for (mode, is_cre) in modes
-            .get(1..)
-            .unwrap_or(&[])
-            .iter()
-            .zip(adj.get(1..).unwrap_or(&[]).iter())
-        {
-            let mut cre_set = HashSet::<usize>::new();
-            let mut ann_set = HashSet::<usize>::new();
+/// Convert a raw term set to a normal-ordered term set by applying fermionic anticommutation relations.
+pub fn normalise<C: FieldElem>(terms: &general_term_set::View<C>) -> NormalTermSet<Complex64> {
+    let mut out = NormalTermSet::<Complex64>::new(terms.to_modes().clone());
+    let n_terms = terms.word_iters.len().min(terms.coeffs.len());
+    for (index, coeff) in terms.coeffs.iter().take(n_terms).enumerate() {
+        let (modes, adj) = terms.word_iters.get(index);
+        let modes_space = terms.word_iters.modes().clone();
+        let mut current = NormalTermSet::<Complex64>::new(modes_space.clone());
+        let identity = Cmpnt::new(modes_space.clone());
+        let _ = current
+            .borrow_mut()
+            .insert_elem_ref_or_update(identity.borrow(), Complex64::new(1.0, 0.0));
+
+        for (mode, is_cre) in modes.iter().zip(adj.iter()) {
+            let mut cre_set = HashSet::new();
+            let mut ann_set = HashSet::new();
             if *is_cre {
                 cre_set.insert(*mode);
             } else {
                 ann_set.insert(*mode);
-            };
-
+            }
             let rhs = Cmpnt::from_sets_unchecked(modes_space.clone(), cre_set, ann_set);
-            let mut rhs_set = TermSet::<Complex64>::new(modes_space.clone());
-            scaled_iadd_elem(
-                &mut rhs_set.borrow_mut(),
-                rhs.borrow(),
-                Complex64::new(1.0, 0.0),
-            );
-            acc = mul(&acc.borrow().as_terms(), &rhs_set.borrow().as_terms())
-                .expect("normalise: acc and lhs_set should always have the same mode space")
+            let mut rhs_set = NormalTermSet::<Complex64>::new(modes_space.clone());
+            let _ = rhs_set
+                .borrow_mut()
+                .insert_elem_ref_or_update(rhs.borrow(), Complex64::new(1.0, 0.0));
+            let product = normal_mul(&current.borrow().as_terms(), &rhs_set.borrow().as_terms())
+                .expect("normalise: mode spaces should be compatible");
+            current = product;
         }
-        // add acc into out with the raw coefficient
+
         scaled_iadd(
             &mut out.borrow_mut(),
-            &acc.borrow_mut().as_terms(),
+            &current.borrow().as_terms(),
             coeff.to_complex(),
         );
     }
     out
 }
 
-/// Convert a normal-ordered `TermSet` to a `RawTermSet`.
-pub fn generalise<C: FieldElem>(terms: &term_set::View<C>) -> RawTermSet<Complex64> {
+/// Convert a normal-ordered term set to a raw term set.
+pub fn generalise<C: FieldElem>(terms: &normal_term_set::View<C>) -> GeneralTermSet<Complex64> {
     let max_len = 2 * terms.word_iters.modes().len();
-    let mut out = RawTermSet::<Complex64>::new(max_len, terms.to_modes());
+    let mut out = GeneralTermSet::<Complex64>::new(max_len, terms.to_modes().clone());
     let n_terms = terms.word_iters.len().min(terms.coeffs.len());
     for (i, coeff) in terms.coeffs.iter().take(n_terms).enumerate() {
         let cmpnt = terms.word_iters.get_elem_ref(i);
         let mut modes = Vec::new();
         let mut adj = Vec::new();
-        // add creation modes first (normal order)
-        for mode in cmpnt.get_cre_part().iter_set_bits_flat() {
+        for mode in cmpnt.get_cre_part().to_set().into_iter().sorted() {
             modes.push(mode);
             adj.push(true);
         }
-        // add annihilation modes after
-        for mode in cmpnt.get_ann_part().iter_set_bits_flat() {
+        for mode in cmpnt.get_ann_part().to_set().into_iter().sorted() {
             modes.push(mode);
             adj.push(false);
         }
@@ -131,19 +114,20 @@ mod tests {
     use crate::container::word_iters::lincomb::scaled_iadd_elem;
     use crate::container::word_iters::term_set::AsView;
     use crate::fermion::mode::Modes;
-    use crate::fermion::operator::general::raw_term_set::RawTermSet;
+    use crate::fermion::operator::general::term_set::TermSet as GeneralTermSet;
     use crate::fermion::operator::normal::cmpnt::Cmpnt;
+    use crate::fermion::operator::normal::cmpnt_major::term_set::TermSet as NormalTermSet;
     use std::collections::HashSet;
 
-    fn make_raw(n_modes: usize, modes: &[usize], adj: &[bool]) -> RawTermSet<f64> {
+    fn make_raw(n_modes: usize, modes: &[usize], adj: &[bool]) -> GeneralTermSet<f64> {
         let modes_space = Modes::from_count(n_modes);
-        let mut raw = RawTermSet::<f64>::new(modes.len(), modes_space);
+        let mut raw = GeneralTermSet::<f64>::new(modes.len(), modes_space);
         raw.push_term(modes, adj, 1.0_f64);
         raw
     }
 
     fn check_term(
-        result: &TermSet<Complex64>,
+        result: &NormalTermSet<Complex64>,
         n_modes: usize,
         cre: HashSet<usize>,
         ann: HashSet<usize>,
@@ -165,7 +149,7 @@ mod tests {
     #[test]
     fn test_generalise_preserves_order_and_coeffs() {
         let modes = Modes::from_count(4);
-        let mut terms = TermSet::<f64>::new(modes.clone());
+        let mut terms = NormalTermSet::<f64>::new(modes.clone());
         let cmpnt =
             Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([2]), HashSet::from([0, 1]));
         scaled_iadd_elem(&mut terms.borrow_mut(), cmpnt.borrow(), 2.0);
@@ -182,7 +166,7 @@ mod tests {
     fn test_normalise_a0_a0dag() {
         // a_0 a_0^+ -> 1 - a_0^+ a_0
         let raw = make_raw(4, &[0, 0], &[false, true]);
-        let result = normalise(&raw.as_raw_terms());
+        let result = normalise(&raw.as_terms());
         assert_eq!(result.len(), 2);
         check_term(
             &result,
@@ -204,7 +188,7 @@ mod tests {
     fn test_normalise_a0_a1dag() {
         // a_0 a_1^+ -> -a_1^+ a_0
         let raw = make_raw(4, &[0, 1], &[false, true]);
-        let result = normalise(&raw.as_raw_terms());
+        let result = normalise(&raw.as_terms());
         assert_eq!(result.len(), 1);
         check_term(
             &result,
@@ -219,7 +203,7 @@ mod tests {
     fn test_normalise_a0dag_a1_a0() {
         // a_0^+ a_1 a_0 -> -a_0^+ a_0 a_1
         let raw = make_raw(4, &[0, 1, 0], &[true, false, false]);
-        let result = normalise(&raw.as_raw_terms());
+        let result = normalise(&raw.as_terms());
         assert_eq!(result.len(), 1);
         check_term(
             &result,
@@ -235,15 +219,15 @@ mod tests {
         let modes_space = Modes::from_count(2);
 
         // lhs = a_0^+ + 2*a_1^+
-        let mut lhs = RawTermSet::<f64>::new(1, modes_space.clone());
+        let mut lhs = GeneralTermSet::<f64>::new(1, modes_space.clone());
         lhs.push_term(&[0], &[true], 1.0_f64);
         lhs.push_term(&[1], &[true], 2.0_f64);
 
         // rhs = 3*a_0
-        let mut rhs = RawTermSet::<f64>::new(1, modes_space.clone());
+        let mut rhs = GeneralTermSet::<f64>::new(1, modes_space.clone());
         rhs.push_term(&[0], &[false], 3.0_f64);
 
-        let result = raw_mul(&lhs.as_raw_terms(), &rhs.as_raw_terms()).unwrap();
+        let result = rmul(&lhs.as_terms(), &rhs.as_terms()).unwrap();
 
         let check = |modes: &[usize], adj: &[bool], coeff: Complex64| {
             let n = result.terms.word_iters.len();
@@ -255,11 +239,14 @@ mod tests {
                     && (c.re - coeff.re).abs() < 1e-10
                     && (c.im - coeff.im).abs() < 1e-10
             });
-            assert!(found, "raw term {modes:?}/{adj:?} coeff {coeff} not found");
+            assert!(
+                found,
+                "Non-normal-ordered term {modes:?}/{adj:?} coeff {coeff} not found"
+            );
         };
 
         assert_eq!(result.terms.word_iters.len(), 2);
-        check(&[0, 0], &[true, false], Complex64::new(3.0, 0.0)); // a_0^+ a_0, coeff 1*3 = 3
-        check(&[1, 0], &[true, false], Complex64::new(6.0, 0.0)); // a_1^+ a_0, coeff 2*3 = 6
+        check(&[0, 0], &[true, false], Complex64::new(3.0, 0.0));
+        check(&[1, 0], &[true, false], Complex64::new(6.0, 0.0));
     }
 }

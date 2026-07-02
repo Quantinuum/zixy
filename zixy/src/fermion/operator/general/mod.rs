@@ -1,5 +1,5 @@
 //! Fermion operator linear combinations utilities for non-normal-ordered operators.
 
+pub mod cmpnt_list;
 pub mod lincomb;
-pub mod raw_cmpnt_list;
-pub mod raw_term_set;
+pub mod term_set;

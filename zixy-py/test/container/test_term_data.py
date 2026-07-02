@@ -16,6 +16,21 @@ from zixy.container.coeffs import (
 from zixy.container.data import TermData
 
 
+class SignStringTermData(TermData):
+    cmpnts_type = Strings
+    coeffs_type = SignCoeffs
+
+
+class RealStringTermData(TermData):
+    cmpnts_type = Strings
+    coeffs_type = RealCoeffs
+
+
+class ComplexStringTermData(TermData):
+    cmpnts_type = Strings
+    coeffs_type = ComplexCoeffs
+
+
 def test_sign_term_data() -> None:
     td = TermData(Strings(0), SignCoeffs.from_size(0))
     assert (len(td), len(td._cmpnts), len(td._coeffs)) == (0,) * 3

@@ -72,6 +72,23 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         """Get the default qubit space for ``source``."""
         return _default_qubits(source)
 
+    @classmethod
+    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> String:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+            qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
+                index in the input string.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        n = len(BinarySprings(source))
+        if n != 1:
+            raise ValueError(f"Source string should contain one state string, got {n}.")
+        return cls(qubits, source)
+
     def __getitem__(self, i: int) -> bool:
         """Return the bit value of the string at index ``i``."""
         return self._impl.cmpnt_get_bit(self.index, i)
@@ -138,6 +155,7 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
     cmpnt_type = String
 
     _set_type: type[StringSet]
+    _springs_type = BinarySprings
 
     @classmethod
     def new(cls, qubits: int | Qubits = 0, n: int = 0) -> Strings:

@@ -73,10 +73,6 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
             self.set(source)
         assert len(self._impl) == 1
 
-    def __repr__(self) -> str:
-        """Return a string representation of ``self``."""
-        return self._impl.cmpnt_to_string(self.index)
-
     @property
     def qubits(self) -> Qubits:
         """Get the qubits corresponding to ``self``."""
@@ -169,6 +165,8 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
     contiguous Rust-bound data object, or a view on a slice of the elements in another collection.
     """
 
+    _springs_type: type[Springs]
+
     def __init__(self, qubits: int | Qubits = 0, n: int = 0):
         """Initialize the string array.
 
@@ -182,6 +180,30 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
             )
         )
         self.resize(n)
+
+    @classmethod
+    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Self:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+            qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
+                index in the input string.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        if isinstance(qubits, int):
+            qubits = Qubits.from_count(qubits)
+        if not source.strip():
+            out = cls._create(cls.cmpnt_type.impl_type(qubits if qubits is not None else None))
+            out.resize(0)
+            return out
+        return cls._create(
+            cls.cmpnt_type.impl_type(
+                qubits if qubits is not None else None, cls._springs_type(source)
+            )
+        )
 
     @property
     def qubits(self) -> Qubits:

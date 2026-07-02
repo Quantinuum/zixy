@@ -48,7 +48,12 @@ import pandas as pd
 from sympy import Expr
 from typing_extensions import Self
 
-from zixy.container.base import ViewableItem, ViewableSequence, requires_ownership
+from zixy.container.base import (
+    StringRepresentable,
+    ViewableItem,
+    ViewableSequence,
+    requires_ownership,
+)
 from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet, ImplT, SpecT
 from zixy.container.coeffs import (
     Coeff,
@@ -75,7 +80,7 @@ from zixy.container.coeffs import (
 )
 from zixy.container.data import TermData
 from zixy.container.mixins import TermMulMixin
-from zixy.utils import DEFAULT_ATOL, DEFAULT_RTOL, slice_index_gen, slice_of_slice
+from zixy.utils import DEFAULT_ATOL, DEFAULT_RTOL, slice_index_gen, slice_of_slice, split_top_level
 
 TermSpecT: TypeAlias = (
     Cmpnt[ImplT, SpecT] | SpecT | tuple[SpecT | Cmpnt[ImplT, SpecT] | None, CoeffT | None] | None
@@ -86,6 +91,7 @@ class Term(
     ViewableItem[TermData[ImplT, SpecT, CoeffT]],
     Generic[ImplT, SpecT, CoeffT],
     TermMulMixin[ImplT, SpecT, CoeffT],
+    StringRepresentable,
 ):
     """A term consisting of a component and a coefficient.
 
@@ -256,6 +262,7 @@ class Term(
 class Terms(
     Generic[ImplT, SpecT, CoeffT],
     ViewableSequence[Term[ImplT, SpecT, CoeffT], TermData[ImplT, SpecT, CoeffT]],
+    StringRepresentable,
 ):
     """A collection of terms consisting of components and coefficients.
 
@@ -589,6 +596,20 @@ class Terms(
         out.append_iterable(source)
         return out
 
+    @classmethod
+    def from_str(cls, source: str) -> Self:
+        """Create a new instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        term_strs = split_top_level(source)
+        terms = [cls.term_type.from_str(t) for t in term_strs]
+        return cls.from_iterable(terms)
+
 
 class NumericTerms(Terms[ImplT, SpecT, NumberT]):
     """A collection of terms consisting of components and numeric coefficients.
@@ -617,7 +638,7 @@ class NumericTerms(Terms[ImplT, SpecT, NumberT]):
         return out
 
 
-class TermSet(Generic[ImplT, SpecT, CoeffT]):
+class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
     """A collection of unique terms consisting of components and coefficients.
 
     A set-like container of terms that may be used to store unique terms and perform set-like
@@ -722,6 +743,19 @@ class TermSet(Generic[ImplT, SpecT, CoeffT]):
         out = cls.__new__(cls)
         TermSet.__init__(out, terms)
         return out
+
+    @classmethod
+    def from_str(cls, source: str) -> Self:
+        """Create a new instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        terms = cls.terms_type.from_str(source)
+        return cls.from_terms(terms)
 
     def into(
         self, t: type[TermSet[ImplT, SpecT, OtherCoeffT]]

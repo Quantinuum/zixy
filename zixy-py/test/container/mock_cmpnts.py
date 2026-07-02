@@ -100,7 +100,7 @@ class StringsImplArray(ImplArray):
     def mapped_equal(self, map: dict[str, int], other: StringsImplArray) -> bool:
         if len(self) != len(other):
             return False
-        return all(self.mapped_lookup(map, s) is not None for s in other._list)
+        return all(self.mapped_lookup(map, other, i) is not None for i in range(len(other)))
 
 
 CmpntSpecT = str
@@ -114,6 +114,18 @@ class String(Cmpnt[StringsImplArray, CmpntSpecT]):
         impl.resize(1)
         super().__init__(impl)
         self.set(source)
+
+    @classmethod
+    def from_str(cls, source: str) -> String:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        return cls(source)
 
     def __repr__(self) -> str:
         return str(self._impl._list[self.index])

@@ -99,19 +99,21 @@ class String(StringBase[ImplT, SpecT, ElemT]):
 
     @classmethod
     def from_str(cls, source: str, qubits: int | Qubits | None = None) -> String:
-        """Create a new instance of ``cls`` by parsing an input string.
+        """Create an instance of ``cls`` from a string.
 
         Args:
-            source: Input string to parse.
+            source: String to parse.
             qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
                 index in the input string.
 
         Returns:
-            A new instance containing the Pauli string in the ``source``.
+            An instance of ``cls`` parsed from ``source``.
         """
+        if not source.strip():
+            return cls(qubits)
         n = len(PauliSprings(source))
         if n != 1:
-            raise ValueError(f"There should be exactly one Pauli string in the input, not {n}.")
+            raise ValueError(f"Source string should contain one Pauli string, got {n}.")
         return cls(qubits, source)
 
     def __getitem__(self, i: int) -> PauliMatrix:
@@ -251,24 +253,7 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
     cmpnt_type = String
 
     _set_type: type[StringSet]
-
-    @classmethod
-    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Strings:
-        """Create a new instance of ``cls`` by parsing an input string.
-
-        Args:
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
-                index in the input string.
-            source: Input string to parse.
-
-        Returns:
-            A new instance containing the Pauli string in the ``source``.
-        """
-        if isinstance(qubits, int):
-            qubits = Qubits.from_count(qubits)
-        return cls._create(
-            cls.cmpnt_type.impl_type(qubits if qubits is not None else None, PauliSprings(source))
-        )
+    _springs_type = PauliSprings
 
     @overload
     def __getitem__(self, indexer: int) -> String: ...

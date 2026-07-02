@@ -5,6 +5,7 @@ from zixy.qubit.pauli import (
     ComplexTermSum,
     I,
     RealTerm,
+    RealTermSet,
     RealTermSum,
     SymbolicTermSum,
     X,
@@ -30,6 +31,13 @@ def test_real_term_sum():
     lc *= 5.0
     assert lc[(X, X, Y, I, I, I)] == -4.0
     assert len(lc) == 2
+    term_set = RealTermSet.from_terms(
+        RealTermSum.from_iterable(
+            (((X, I, I, I, I, X), 3.0), ((X, X, Y, I, I, I), -4.0)), 6
+        ).to_terms()
+    )
+    assert RealTermSet.from_str(str(term_set)) == term_set
+    assert RealTermSum.from_str(str(lc), 6) == lc
 
 
 def test_real_term_add_iterable():

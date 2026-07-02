@@ -82,9 +82,20 @@ def test_string_modification():
 def test_string_from_str():
     with pytest.raises(ValueError) as err:
         String.from_str("X0 Y2, Y3, X2 Y3, X3, Z0 Z1 Z2 Z3", 4)
-    assert str(err.value) == "There should be exactly one Pauli string in the input, not 5."
+    assert str(err.value) == "Source string should contain one Pauli string, got 5."
     a = String.from_str("X0 Z1 Y2 Z3", 4)
     assert a.get_tuple() == (X, Z, Y, Z)
+    assert String.from_str(str(a), 4) == a
+
+
+def test_str():
+    empty = String(4)
+    assert empty.to_str() == ""
+    assert String.from_str(empty.to_str(), 4) == empty
+
+    single = String.from_str("X0", 1)
+    assert single.to_str() == "X0"
+    assert String.from_str(single.to_str(), 1) == single
 
 
 def test_string_to_sparse_matrix():
@@ -125,6 +136,16 @@ def test_string_array_from_str():
         str(err.value)
         == "Mode index 6 is out-of-bounds for component list with 4 modes per component."
     )
+
+
+def test_strings_str():
+    empty = Strings(4)
+    assert empty.to_str() == ""
+    assert Strings.from_str(empty.to_str(), 4) == empty
+
+    single = Strings.from_str("X0", 1)
+    assert single.to_str() == "X0"
+    assert Strings.from_str(single.to_str(), 1) == single
 
 
 def test_array_modification():
@@ -322,3 +343,16 @@ def test_string_set():
 def test_string_set_from_iterable():
     s = StringSet.from_iterable(((X,), (Y,), (X,), (I,), (Z,), (Y,), (X,)), 1)
     assert len(s) == 4
+    assert StringSet.from_str(str(s)) == s
+
+
+def test_string_set_str():
+    empty = StringSet(4)
+    assert empty.to_str() == ""
+    empty_round_trip = StringSet.from_str(empty.to_str())
+    assert len(empty_round_trip) == 0
+    assert empty_round_trip.to_str() == ""
+
+    single = StringSet.from_iterable(((X,),), 1)
+    assert single.to_str() == "X0"
+    assert StringSet.from_str(single.to_str()) == single

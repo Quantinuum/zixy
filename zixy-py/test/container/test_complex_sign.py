@@ -15,6 +15,25 @@ def test_scalar_conversions():
     for i in range(4):
         assert complex(ComplexSign(i)) == 1j**i
         assert ComplexSign.from_complex(complex(ComplexSign(i))) == ComplexSign(i)
+    assert ComplexSign.from_str("+1") == ComplexSign(0)
+    assert ComplexSign.from_str("+i") == ComplexSign(1)
+    assert ComplexSign.from_str("-1") == ComplexSign(2)
+    assert ComplexSign.from_str("-i") == ComplexSign(3)
+
+
+def test_str():
+    empty = ComplexSignCoeffs.from_size(0)
+    assert empty.to_str() == "[]"
+    assert ComplexSignCoeffs.from_str(empty.to_str()) == empty
+
+    single = ComplexSignCoeffs.from_phases((3,))
+    assert single.to_str() == "[-i]"
+    assert ComplexSignCoeffs.from_str(single.to_str()) == single
+
+    for phase in range(4):
+        value = ComplexSign(phase)
+        assert value.to_str() == str(value)
+        assert ComplexSign.from_str(value.to_str()) == value
 
 
 def test_scalar_mul():

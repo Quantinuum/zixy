@@ -29,7 +29,7 @@ from numpy.typing import NDArray
 from sympy import Expr, Symbol
 from typing_extensions import Self
 
-from zixy._zixy import Qubits, QubitStateArray
+from zixy._zixy import BinarySprings, Qubits, QubitStateArray
 from zixy.container import terms
 from zixy.container.coeffs import (
     Coeff,
@@ -52,6 +52,7 @@ from zixy.qubit._terms import (
     TermSum as TermSumBase,
 )
 from zixy.qubit.state._strings import String, Strings, StringSpec
+from zixy.utils import split_top_level
 
 TermSpec: TypeAlias = String | tuple[StringSpec | String | None, CoeffT | None] | None
 SignTermSpec = TermSpec[Sign]
@@ -71,6 +72,33 @@ class Term(TermBase[QubitStateArray, StringSpec, CoeffT, bool]):
 
     cmpnts_type = Strings
     coeff_type: type[CoeffT]
+
+    @classmethod
+    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Self:
+        """Create a new instance of ``cls`` by parsing an input string.
+
+        Args:
+            source: Input string to parse.
+            qubits: Space of qubits or a number of qubits. If ``None``, infer from the input
+                string.
+
+        Returns:
+            A new instance containing the state string and coefficient in ``source``.
+        """
+        if isinstance(qubits, int):
+            qubits = Qubits.from_count(qubits)
+        impl = QubitStateArray(qubits, BinarySprings(source))
+        cmpnts = cls.cmpnts_type._create(impl)
+        coeffs_type = get_coeffs_type(cls.coeff_type)
+        coeffs = (
+            coeffs_type.from_str(source) if "(" in source else coeffs_type.from_size(len(cmpnts))
+        )
+        data = TermData(cmpnts, coeffs)
+        if len(data) != 1:
+            raise ValueError(
+                f"There should be exactly one Term string in the input, not {len(data)}."
+            )
+        return cls._create(data)
 
     @property
     def string(self) -> String:
@@ -128,6 +156,29 @@ class Terms(TermsBase[QubitStateArray, StringSpec, CoeffT, bool]):
 
     term_type: type[Term[CoeffT]]
 
+    @classmethod
+    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Self:
+        """Create a new instance of ``cls`` by parsing an input string.
+
+        Args:
+            source: Input string to parse.
+            qubits: Space of qubits or a number of qubits. If ``None``, infer from the input
+                string.
+
+        Returns:
+            A new instance containing the state strings and coefficients in ``source``.
+        """
+        if isinstance(qubits, int):
+            qubits = Qubits.from_count(qubits)
+        term_strs = split_top_level(source)
+        parsed_terms = [cls.term_type.from_str(term_str, qubits) for term_str in term_strs]
+        out_qubits = (
+            qubits
+            if qubits is not None
+            else (parsed_terms[0].qubits if parsed_terms else Qubits.from_count(0))
+        )
+        return cls.from_iterable(parsed_terms, out_qubits)
+
     @property
     def strings(self) -> Strings:
         """Get the string components of ``self``."""
@@ -159,7 +210,20 @@ class TermSum(TermSumBase[QubitStateArray, StringSpec, CoeffT, bool], TermSet[Co
         are not.
     """
 
-    pass
+    @classmethod
+    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Self:
+        """Create a new instance of ``cls`` by parsing an input string.
+
+        Args:
+            source: Input string to parse.
+            qubits: Space of qubits or a number of qubits. If ``None``, infer from the input
+                string.
+
+        Returns:
+            A new instance containing the state strings and coefficients in ``source``.
+        """
+        terms = cls.terms_type.from_str(source, qubits)
+        return cls.from_iterable(terms, terms.qubits)
 
 
 class SignTerm(Term[Sign]):

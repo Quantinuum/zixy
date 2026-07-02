@@ -44,7 +44,7 @@ from sympy import Expr, Float, I, Integer, Symbol, diff, sympify
 from typing_extensions import Self, TypeIs
 
 from zixy import _zixy
-from zixy.container.base import ViewableSequence, requires_ownership
+from zixy.container.base import StringRepresentable, ViewableSequence, requires_ownership
 from zixy.utils import (
     DEFAULT_ATOL,
     DEFAULT_RTOL,
@@ -80,7 +80,7 @@ def _convert_error(source: Any, t: type) -> ValueError:
     )
 
 
-class RootOfUnity(ABC):
+class RootOfUnity(StringRepresentable, ABC):
     """Abstract base class for types representing roots of unity."""
 
     _impl: _zixy.RootOfUnity
@@ -238,7 +238,7 @@ class Sign(RootOfUnity):
         return other / self.to_numeric()
 
     @classmethod
-    def from_int(cls, value: int | float | complex) -> Sign:
+    def from_int(cls, value: int | float | complex) -> Self:
         """Construct an instance of ``cls`` from an integer.
 
         Raises:
@@ -251,6 +251,25 @@ class Sign(RootOfUnity):
         raise ValueError(f"value {value} is not an exact square root of unity.")
 
     from_numeric = from_int
+
+    @classmethod
+    def from_str(cls, source: str) -> Self:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+
+        Raises:
+            ValueError: If ``source`` is not exactly representable as ``cls``.
+        """
+        try:
+            value = int(source)
+            return cls.from_int(value)
+        except ValueError as e:
+            raise ValueError(f"string {source} is not an exact square root of unity.") from e
 
     def __int__(self) -> int:
         """Convert ``self`` to an integer value."""
@@ -435,7 +454,7 @@ class ComplexSign(RootOfUnity):
         return other / self.to_numeric()
 
     @classmethod
-    def from_complex(cls, value: complex | float) -> ComplexSign:
+    def from_complex(cls, value: complex | float) -> Self:
         """Construct an instance of ``cls`` from a complex value.
 
         Raises:
@@ -452,6 +471,29 @@ class ComplexSign(RootOfUnity):
         raise ValueError(f"value {value} is not an exact fourth root of unity.")
 
     from_numeric = from_complex
+
+    @classmethod
+    def from_str(cls, source: str) -> Self:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+
+        Raises:
+            ValueError: If ``source`` is not exactly representable as ``cls``.
+        """
+        try:
+            if source == "+i":
+                source = "1j"
+            elif source == "-i":
+                source = "-1j"
+            value = complex(source)
+            return cls.from_complex(value)
+        except ValueError as e:
+            raise ValueError(f"string {source} is not an exact fourth root of unity.") from e
 
     def __int__(self) -> int:
         """Convert ``self`` to an integer value.
@@ -728,7 +770,7 @@ else:
     BaseVec = object
 
 
-class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
+class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresentable):
     """A collection of coefficients.
 
     A resizable vector-like container of coefficients that may be an owning instance referencing a
@@ -1015,16 +1057,24 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
         self.resize(len(self) - 1)
 
     @classmethod
-    def parse(cls, source: str) -> Self:
-        """Construct an instance of ``cls`` from a string representation.
+    def from_str(cls, source: str) -> Self:
+        """Create an instance of ``cls`` from a string.
 
         Args:
-            source: The string to read from.
+            source: String to parse.
 
         Returns:
-            An instance of ``cls`` represented by ``source``.
+            An instance of ``cls`` parsed from ``source``.
         """
+        source = source.strip().removeprefix("[").removesuffix("]")
+        if _is_complex(cls.coeff_type):
+            # normalise e.g. (1 + 2j) -> 1 + 2j
+            items = [item.strip().removeprefix("(").removesuffix(")") for item in source.split(",")]
+            source = ", ".join(item for item in items if item)
         out = cls()
+        if not source:
+            out._impl = cls.coeffs_type(0)
+            return out
         out._impl = cls.coeffs_type.parse(source)
         return out
 
@@ -1297,17 +1347,17 @@ class ExprListWrapper(BaseVec):
         return len(self._list)
 
     @classmethod
-    def parse(self, string: str) -> Self:
-        """Construct an instance of ``cls`` from a string representation.
+    def from_str(cls, source: str) -> Self:
+        """Create an instance of ``cls`` from a string.
 
         Args:
-            string: The string to read from.
+            source: String to parse.
 
         Returns:
-            An instance of ``cls`` represented by ``string``.
+            An instance of ``cls`` parsed from ``source``.
         """
-        out = self()
-        out._list = [sympify(s) for s in string.split(",")]
+        out = cls()
+        out._list = [sympify(s) for s in source.split(",")]
         return out
 
     def __getitem__(self, index: int) -> Expr:
@@ -1567,10 +1617,10 @@ class SymbolicCoeffs(Coeffs[Expr]):
         return ComplexCoeffs.from_sequence(out)
 
     @classmethod
-    def parse(cls, source: str) -> Self:  # noqa: D102
+    def from_str(cls, source: str) -> Self:  # noqa: D102
         raise NotImplementedError("Cannot parse SymbolicCoeffs from string.")
 
-    parse.__doc__ = Coeffs.parse.__doc__
+    from_str.__doc__ = Coeffs.from_str.__doc__
 
     @property
     def np_array(self) -> NDArray[np.float64 | np.complex128]:

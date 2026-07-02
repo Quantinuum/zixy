@@ -34,7 +34,8 @@ use crate::qubit::mode::{PauliMatrix, Qubits, SymplecticPart};
 use crate::qubit::springs::PauliSprings;
 use crate::qubit::state::Array as StateArray;
 use crate::utils::{
-    to_numpy_dense_matrix, to_scipy_sparse, try_py_index, try_py_indices, ToPyResult,
+    cmpnt_to_string, to_numpy_dense_matrix, to_scipy_sparse, try_py_index, try_py_indices,
+    ToPyResult,
 };
 
 /// A list of Pauli strings
@@ -446,8 +447,7 @@ impl Array {
 
     /// Get the string representation of the indexed cmpnt.
     pub fn cmpnt_to_string(&self, i: isize) -> PyResult<String> {
-        let i = try_py_index(i, self.len())?;
-        Ok(self.0.get_elem_ref(i).to_string())
+        cmpnt_to_string(&self.0, i)
     }
 
     /// Get the indexed cmpnt as a complex sparse matrix.

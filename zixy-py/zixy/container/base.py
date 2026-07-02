@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 import builtins
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator, Sequence, Sized
 from functools import wraps
 from typing import (
@@ -312,3 +312,45 @@ class ViewableSequence(ViewableBase[ImplT, slice], Generic[T, ImplT], Sequence[T
         out = cls()
         out.resize(n)
         return out
+
+
+class StringRepresentable(ABC):
+    """Abstract base class for classes that can be represented as, and constructed from, strings."""
+
+    @abstractmethod
+    def __repr__(self) -> str:
+        """Return a string representation of ``self``."""
+        pass
+
+    def to_str(self) -> str:
+        """Return the canonical string representation of ``self``."""
+        return repr(self)
+
+    def __str__(self) -> str:
+        """Return a string representation of ``self``."""
+        return self.to_str()
+
+    @classmethod
+    @abstractmethod
+    def from_str(cls, source: str) -> Self:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        pass
+
+    @classmethod
+    def parse(cls, source: str) -> Self:
+        """Parse a string into an instance of ``cls``.
+
+        Args:
+            source: String to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        return cls.from_str(source)

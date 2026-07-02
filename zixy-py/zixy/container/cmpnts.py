@@ -41,7 +41,12 @@ from typing import (
 from typing_extensions import Self
 
 from zixy._zixy import Map
-from zixy.container.base import ViewableItem, ViewableSequence, requires_ownership
+from zixy.container.base import (
+    StringRepresentable,
+    ViewableItem,
+    ViewableSequence,
+    requires_ownership,
+)
 from zixy.container.coeffs import Coeff, CoeffT, OtherCoeffT
 from zixy.utils import slice_index_gen, slice_len, slice_of_slice, slice_to_tuple
 
@@ -59,7 +64,7 @@ ImplT = TypeVar("ImplT", bound=ImplArray)
 SpecT = TypeVar("SpecT")
 
 
-class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT]):
+class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT], StringRepresentable):
     """A component.
 
     A single component that may be an owning instance referencing a single element in a Rust-bound
@@ -118,6 +123,10 @@ class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT]):
         if not isinstance(other, Cmpnt):
             return NotImplemented
         return self._impl.cmpnts_eq([self.index], other._impl, [other.index])
+
+    def __repr__(self) -> str:
+        """Return a string representation of ``self``."""
+        return self._impl.cmpnt_to_string(self.index)
 
     @abstractmethod
     def set(self, source: SpecT | Self | None) -> None:
@@ -192,7 +201,7 @@ class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT]):
         return term_type.from_cmpnt_coeff(self, lhs)
 
 
-class CmpntSet(Generic[ImplT, SpecT]):
+class CmpntSet(Generic[ImplT, SpecT], StringRepresentable):
     """A collection of unique components.
 
     A set-like container of components that may be used to store unique components and perform
@@ -246,6 +255,19 @@ class CmpntSet(Generic[ImplT, SpecT]):
         out = cls._create(cmpnts._impl.cmpnts_clone([]))
         out.insert_iterable(cmpnts)
         return out
+
+    @classmethod
+    def from_str(cls, source: str) -> Self:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        cmpnts = cls.cmpnts_type.from_str(source)
+        return cls.from_cmpnts(cmpnts)
 
     def _empty_clone(self) -> Self:
         """Get an empty (owning, contiguous) clone of ``self``."""
@@ -440,7 +462,9 @@ class CmpntSet(Generic[ImplT, SpecT]):
         return out
 
 
-class Cmpnts(Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT]):
+class Cmpnts(
+    Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT], StringRepresentable
+):
     """A collection of components.
 
     An array-like container of components that may be an owning instance referencing a contiguous
@@ -495,6 +519,19 @@ class Cmpnts(Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT]
         """
         assert isinstance(cmpnt, cls.cmpnt_type), type(cmpnt)
         return cls._create(cmpnt.clone()._impl)
+
+    @classmethod
+    def from_str(cls, source: str) -> Self:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        cmpnt = cls.cmpnt_type.from_str(source)
+        return cls.from_cmpnt(cmpnt)
 
     def clone(self) -> Self:
         """Return a deep copy of ``self``."""

@@ -30,3 +30,49 @@ pub fn vdot<C: FieldElem>(lhs: &impl term_set::AsView<C>, rhs: &impl terms::AsVi
         )
         .sum()
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    use crate::fermion::mode::Modes;
+    use crate::fermion::state::terms::Terms;
+    use num_complex::Complex64;
+    use rstest::rstest;
+
+    #[rstest]
+    #[case(vec![], 0.0)]
+    #[case(vec![2.0], 4.0)]
+    #[case(vec![-3.0], 9.0)]
+    #[case(vec![1.0, 2.0, 3.0], 14.0)]
+    #[case(vec![0.0, 0.0, 0.0], 0.0)]
+    #[case(vec![0.0, 2.0, 0.0], 4.0)]
+    fn test_l2_norm_square(#[case] coeffs: Vec<f64>, #[case] expected: f64) {
+        let modes = Modes::from_count(coeffs.len());
+        let mut state: terms::Terms<f64> = Terms::new(modes);
+        for c in coeffs {
+            state.coeffs.push(c);
+        }
+        assert_eq!(l2_norm_square(&state), expected);
+    }
+
+    #[rstest]
+    #[case(vec![Complex64::new(3.0, 4.0)], 25.0)]
+    #[case(vec![Complex64::new(0.0, 5.0)], 25.0)]
+    #[case(vec![Complex64::new(1.0, 1.0)], 2.0)]
+    #[case(vec![Complex64::new(1.0, 1.0), Complex64::new(2.0, -2.0)], 10.0)]
+    #[case(vec![Complex64::new(-3.0, 4.0)], 25.0)]
+    #[case(vec![Complex64::new(0.0, 0.0), Complex64::new(1.0, 0.0)], 1.0)]
+    #[case(vec![Complex64::new(1e-9, 1e-9)], 2e-18)]
+    fn test_l2_norm_square_complex(
+        #[case] coeffs: Vec<num_complex::Complex<f64>>,
+        #[case] expected: f64,
+    ) {
+        let modes = Modes::from_count(coeffs.len());
+        let mut state: terms::Terms<num_complex::Complex<f64>> = Terms::new(modes);
+        for c in coeffs {
+            state.coeffs.push(c);
+        }
+        assert_eq!(l2_norm_square(&state), expected);
+    }
+}

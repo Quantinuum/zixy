@@ -5,7 +5,6 @@ pub mod bit_matrix;
 pub mod coeffs;
 pub mod errors;
 pub mod map;
-pub mod packed_int_matrix;
 pub mod quicksort;
 pub mod table;
 pub mod traits;

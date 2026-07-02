@@ -1,20 +1,20 @@
 use crate::container::bit_matrix::AsBitMatrix;
 use crate::container::bit_matrix::BitMatrix;
-use crate::container::packed_int_matrix::PackedIntMatrix;
 use crate::container::traits::{Compatible, Elements, EmptyClone};
 use crate::container::word_iters::WordIters;
+use crate::fermion::mode::ModeInds;
 use crate::fermion::mode::Modes;
 use crate::fermion::traits::ModesBased;
 
 /// Contiguous and compact storage for non-normal-ordered fermion operator strings.
 #[derive(Clone)]
 pub struct CmpntList {
-    pub mode_part: PackedIntMatrix, // mode index at each operator position
-    pub adj_part: BitMatrix,        // cre/ann flag per slot
-    pub len_part: Vec<usize>,       // length of each string
-    pub modes: Modes,               // list of modes
-    pub max_len: usize,             // max operator slots per row
-    pub n_bits: usize,              // number of bits per mode index
+    pub mode_part: ModeInds,  // mode index at each operator position
+    pub adj_part: BitMatrix,  // cre/ann flag per slot
+    pub len_part: Vec<usize>, // length of each string
+    pub modes: Modes,         // list of modes
+    pub max_len: usize,       // max operator slots per row
+    pub n_bits: usize,        // number of bits per mode index
 }
 
 impl CmpntList {
@@ -27,7 +27,7 @@ impl CmpntList {
             (usize::BITS as usize) - (n_modes - 1).leading_zeros() as usize
         };
         Self {
-            mode_part: PackedIntMatrix::new(n_bits, max_len),
+            mode_part: ModeInds::new(n_bits, max_len),
             adj_part: BitMatrix::new(max_len),
             len_part: Vec::new(),
             modes,

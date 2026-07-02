@@ -6,15 +6,14 @@ use crate::fermion::operator::general::term_set::{
     self as general_term_set, TermSet as GeneralTermSet,
 };
 use crate::fermion::traits::{DifferentSpaces, ModesBased};
-use num_complex::Complex64;
 
 /// Multiply two raw term sets without normal ordering, returning a raw term set.
 pub fn rmul<C: FieldElem>(
     lhs: &general_term_set::View<C>,
     rhs: &general_term_set::View<C>,
-) -> Result<GeneralTermSet<Complex64>, DifferentSpaces> {
+) -> Result<GeneralTermSet<C>, DifferentSpaces> {
     let max_len = lhs.word_iters.max_len + rhs.word_iters.max_len;
-    let mut out = GeneralTermSet::<Complex64>::new(max_len, lhs.to_modes());
+    let mut out = GeneralTermSet::<C>::new(max_len, lhs.to_modes());
     DifferentSpaces::check_transitive(lhs, rhs, &out)?;
     let n_lhs = lhs.word_iters.len().min(lhs.coeffs.len());
     let n_rhs = rhs.word_iters.len().min(rhs.coeffs.len());
@@ -24,7 +23,7 @@ pub fn rmul<C: FieldElem>(
             let (rhs_modes, rhs_adj) = rhs.word_iters.get(i_rhs);
             let modes: Vec<usize> = lhs_modes.iter().chain(rhs_modes.iter()).copied().collect();
             let adj: Vec<bool> = lhs_adj.iter().chain(rhs_adj.iter()).copied().collect();
-            let c = lhs_coeff.to_complex() * rhs_coeff.to_complex();
+            let c = *lhs_coeff * *rhs_coeff;
             out.push_term(&modes, &adj, c);
         }
     }
@@ -53,15 +52,12 @@ mod tests {
 
         let result = rmul(&lhs.as_terms(), &rhs.as_terms()).unwrap();
 
-        let check = |modes: &[usize], adj: &[bool], coeff: Complex64| {
+        let check = |modes: &[usize], adj: &[bool], coeff: f64| {
             let n = result.terms.word_iters.len();
             let found = (0..n).any(|i| {
                 let (m, a) = result.terms.word_iters.get(i);
                 let c = result.terms.coeffs[i];
-                m == modes
-                    && a == adj
-                    && (c.re - coeff.re).abs() < 1e-10
-                    && (c.im - coeff.im).abs() < 1e-10
+                m == modes && a == adj && c == coeff
             });
             assert!(
                 found,
@@ -70,7 +66,7 @@ mod tests {
         };
 
         assert_eq!(result.terms.word_iters.len(), 2);
-        check(&[0, 0], &[true, false], Complex64::new(3.0, 0.0));
-        check(&[1, 0], &[true, false], Complex64::new(6.0, 0.0));
+        check(&[0, 0], &[true, false], 3.0);
+        check(&[1, 0], &[true, false], 6.0);
     }
 }

@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
 use crate::container::bit_matrix;
+use crate::container::table::Table;
 use crate::container::traits::{Compatible, Elements, EmptyClone};
 use crate::container::word_iters::{self, WordIters};
 use crate::fermion::mode::Modes;
@@ -121,6 +122,20 @@ impl<'a> bit_matrix::AsRowMutRef for CmpntMutRef<'a> {
 
     fn bit_mat_mut(&mut self) -> &mut impl bit_matrix::AsBitMatrix {
         &mut self.word_iters.bitsets
+    }
+}
+
+impl bit_matrix::AsBitMatrix for CmpntList {
+    fn get_table(&self) -> &Table {
+        self.bitsets.get_table()
+    }
+
+    fn get_table_mut(&mut self) -> &mut Table {
+        self.bitsets.get_table_mut()
+    }
+
+    fn n_bit(&self) -> usize {
+        self.bitsets.n_bit()
     }
 }
 

@@ -1,12 +1,13 @@
 //! Fermion state-specific linear combination utilities.
 
+use crate::container::bit_matrix::AsBitMatrix;
 use crate::container::coeffs::traits::FieldElem;
-//use crate::container::errors::{Dimension, OutOfBounds};
-//use crate::container::traits::proj::BorrowMut;
+use crate::container::errors::{Dimension, OutOfBounds};
+use crate::container::traits::proj::BorrowMut;
 use crate::container::traits::RefElements;
-//use crate::container::word_iters;
-//use crate::container::word_iters::term_set::AsViewMut;
-//use crate::fermion::mode::Modes;
+use crate::container::word_iters;
+use crate::container::word_iters::term_set::AsViewMut;
+use crate::fermion::mode::Modes;
 use crate::fermion::state::{term_set, terms};
 
 /// Sum of squares of the coefficients of the given fermion state.
@@ -29,6 +30,76 @@ pub fn vdot<C: FieldElem>(lhs: &impl term_set::AsView<C>, rhs: &impl terms::AsVi
             },
         )
         .sum()
+}
+
+/// Reverse the bit order of the lowest n bits of index.
+/// Pure relabeling: no sign consequence for fermion states.
+pub fn invert_endian(index: u64, n: usize) -> u64 {
+    let mut out = 0u64;
+    for i in 0..n {
+        out |= ((index >> i) & 1) << (n - 1 - i);
+    }
+    out
+}
+
+/// Convert a fermion state linear combination to a dense vector representation.
+/// If big_endian is true, the bit associated with mode 0 is the most significant in the index.
+/// Else, the occupation flag mode n_mode - 1 is the most significant bit.
+pub fn to_dense<C: FieldElem>(
+    state: &impl terms::AsView<C>,
+    big_endian: bool,
+) -> Result<Vec<C>, OutOfBounds> {
+    let state_ref = state.view();
+    let n = state_ref.word_iters.n_bit();
+    OutOfBounds::check(n, 64, Dimension::Mode)?;
+
+    let mut out: Vec<C> = vec![C::ZERO; 1 << n];
+    for term in state_ref.iter() {
+        let ind = term.get_word_iter_ref().get_u64it().next().unwrap_or(0);
+        let ind = if big_endian {
+            invert_endian(ind, n)
+        } else {
+            ind
+        };
+        out[ind as usize] = term.get_coeff();
+    }
+    Ok(out)
+}
+
+/// Create a state linear combination from a dense array slice of coefficients.
+pub fn assign_from_dense<C: FieldElem>(
+    out: &mut term_set::ViewMut<C>,
+    source: &[C],
+    big_endian: bool,
+) {
+    let n = out.word_iters.n_bit();
+    let n_take = source.len().min(1 << n);
+    out.clear();
+    for (i, c) in source.iter().take(n_take).enumerate() {
+        if *c == C::ZERO {
+            continue;
+        }
+        word_iters::lincomb::scaled_iadd_u64it(
+            out,
+            std::iter::once(if big_endian {
+                invert_endian(i as u64, n)
+            } else {
+                i as u64
+            }),
+            *c,
+        );
+    }
+}
+
+/// Create a state linear combination from a dense array slice of coefficients.
+pub fn from_dense<C: FieldElem>(
+    modes: Modes,
+    source: &[C],
+    big_endian: bool,
+) -> term_set::TermSet<C> {
+    let mut out: term_set::TermSet<C> = term_set::TermSet::<C>::new(modes);
+    assign_from_dense(&mut out.borrow_mut(), source, big_endian);
+    out
 }
 
 #[cfg(test)]

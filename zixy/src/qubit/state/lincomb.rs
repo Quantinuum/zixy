@@ -8,8 +8,8 @@ use crate::container::traits::RefElements;
 use crate::container::word_iters;
 use crate::container::word_iters::term_set::AsViewMut;
 use crate::qubit::mode::Qubits;
-use crate::qubit::pauli::cmpnt_major::encoding::invert_endian;
 use crate::qubit::state::{term_set, terms};
+use crate::utils::arith::invert_endian;
 
 pub fn l2_norm_square<C: FieldElem>(state: &impl terms::AsView<C>) -> f64 {
     state.view().coeffs.iter().map(|c| c.magnitude_sq()).sum()

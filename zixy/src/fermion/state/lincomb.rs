@@ -9,6 +9,7 @@ use crate::container::word_iters;
 use crate::container::word_iters::term_set::AsViewMut;
 use crate::fermion::mode::Modes;
 use crate::fermion::state::{term_set, terms};
+use crate::utils::arith::invert_endian;
 
 /// Sum of squares of the coefficients of the given fermion state.
 pub fn l2_norm_square<C: FieldElem>(state: &impl terms::AsView<C>) -> f64 {
@@ -30,16 +31,6 @@ pub fn vdot<C: FieldElem>(lhs: &impl term_set::AsView<C>, rhs: &impl terms::AsVi
             },
         )
         .sum()
-}
-
-/// Reverse the bit order of the lowest n bits of index.
-/// Pure relabeling: no sign consequence for fermion states.
-pub fn invert_endian(index: u64, n: usize) -> u64 {
-    let mut out = 0u64;
-    for i in 0..n {
-        out |= ((index >> i) & 1) << (n - 1 - i);
-    }
-    out
 }
 
 /// Convert a fermion state linear combination to a dense vector representation.

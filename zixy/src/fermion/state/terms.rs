@@ -58,6 +58,14 @@ pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<CmpntList, C> {
             .assign_set_unchecked(value);
         Ok(())
     }
+
+    /// Append a Slater determinant with the given coefficient.
+    fn push_set_with_coeff(&mut self, value: HashSet<usize>, coeff: C) -> Result<(), OutOfBounds> {
+        self.push_set(value)?;
+        let idx = self.view_mut().len() - 1;
+        self.view_mut().get_elem_mut_ref(idx).set_coeff(coeff);
+        Ok(())
+    }
 }
 
 impl<C: NumRepr> AsView<C> for Terms<C> {}

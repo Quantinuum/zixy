@@ -1,5 +1,10 @@
 //! Extends `CmpntList` with associated coefficients.
 
+use crate::cmpnt::parse::ParseError;
+use crate::cmpnt::springs::ModeSettings;
+use crate::cmpnt::state_springs::BinarySprings;
+use crate::container::coeffs::traits::NewUnitsWithLen;
+use crate::container::coeffs::traits::NumReprVec;
 use std::collections::HashSet;
 
 use crate::container::bit_matrix::AsRowMutRef;
@@ -74,6 +79,45 @@ impl<C: NumRepr> Terms<C> {
             coeffs: C::Vector::default(),
         }
     }
+
+    /// Create state terms from parsed binary springs on the given mode space, using unit coefficients.
+    pub fn from_springs(modes: Modes, springs: &BinarySprings) -> Result<Self, ParseError> {
+        let cmpnts = CmpntList::from_springs(modes, springs)?;
+        let coeffs = C::Vector::new_units_with_len(cmpnts.len());
+        Ok(Self::from((cmpnts, coeffs)))
+    }
+
+    /// Create state terms from parsed binary springs, inferring a count-based mode space and using unit coefficients.
+    pub fn from_springs_default(springs: &BinarySprings) -> Result<Self, ParseError> {
+        let n_mode = springs.get_mode_inds().default_n_mode() as usize;
+        Self::from_springs(Modes::from_count(n_mode), springs)
+    }
+
+    /// Create from the given sparse strings and coeff vector.
+    /// If `coeffs` is shorter than `springs`, it is padded to the length of `springs`` before attempting to absorb phases.
+    /// Else if `springs` is shorter than `coeffs`, it is padded to the length of `coeffs` with empty strings.
+    pub fn from_springs_coeffs(
+        modes: Modes,
+        mut springs: BinarySprings,
+        mut coeffs: C::Vector,
+    ) -> Result<Self, ParseError> {
+        if coeffs.len() < springs.len() {
+            coeffs.resize_with_units(springs.len());
+        }
+        springs.append_empty(springs.len().saturating_sub(coeffs.len()));
+        let list = CmpntList::from_springs(modes, &springs)?;
+        Ok(Self::from((list, coeffs)))
+    }
+
+    /// Create from the given sparse strings and coeff vector, absorbing any phases into the coefficient if representable, else return error.
+    /// Infer a Count-type mode space from the springs object.
+    pub fn from_springs_coeffs_default(
+        springs: BinarySprings,
+        coeffs: C::Vector,
+    ) -> Result<Self, ParseError> {
+        let n_mode = springs.get_mode_inds().default_n_mode() as usize;
+        Self::from_springs_coeffs(Modes::from_count(n_mode), springs, coeffs)
+    }
 }
 
 #[cfg(test)]
@@ -82,6 +126,7 @@ mod tests {
     use crate::container::bit_matrix::AsRowRef;
     use crate::container::coeffs::unity::Unity;
     use crate::container::traits::{Elements, RefElements};
+    use crate::fermion::state::terms::AsView;
     use num_complex::Complex64;
 
     #[test]
@@ -133,5 +178,68 @@ mod tests {
         let mut terms = Terms::<Unity>::new(modes.clone());
         let result = terms.push_set(HashSet::from([0, 4])); // 4 is out of bounds
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_terms_from_springs_out_of_bounds() -> Result<(), ParseError> {
+        let modes = Modes::from_count(2);
+        let springs = BinarySprings::from_str("[1, 0, 1, 0]")?;
+        assert!(Terms::<f64>::from_springs(modes, &springs).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn test_terms_from_springs() -> Result<(), ParseError> {
+        let modes = Modes::from_count(3);
+        let springs = BinarySprings::from_str("[1, 0, 1]")?;
+        let terms = Terms::<f64>::from_springs(modes, &springs)?;
+        assert_eq!(terms.len(), 1);
+        assert_eq!(
+            terms.get_elem_ref(0).get_word_iter_ref().to_vec(),
+            vec![true, false, true]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_terms_from_springs_default() -> Result<(), ParseError> {
+        let springs = BinarySprings::from_str("[1, 0, 1]")?;
+        let terms = Terms::<f64>::from_springs_default(&springs)?;
+        assert_eq!(terms.len(), 1);
+        assert_eq!(
+            terms.get_elem_ref(0).get_word_iter_ref().to_vec(),
+            vec![true, false, true]
+        );
+        assert_eq!(terms.coeffs[0], 1.0);
+        Ok(())
+    }
+
+    #[test]
+    fn test_terms_from_springs_coeffs() -> Result<(), ParseError> {
+        let modes = Modes::from_count(3);
+        let springs = BinarySprings::from_str("[1, 0, 1]")?;
+        let coeffs = vec![0.5];
+        let terms = Terms::<f64>::from_springs_coeffs(modes, springs, coeffs)?;
+        assert_eq!(terms.len(), 1);
+        assert_eq!(
+            terms.get_elem_ref(0).get_word_iter_ref().to_vec(),
+            vec![true, false, true]
+        );
+        assert_eq!(terms.coeffs[0], 0.5);
+        Ok(())
+    }
+
+    #[test]
+    fn test_terms_from_springs_coeffs_default() -> Result<(), ParseError> {
+        let springs = BinarySprings::from_str("[1, 0, 1]")?;
+        let coeffs = vec![0.5];
+        let terms = Terms::<f64>::from_springs_coeffs_default(springs, coeffs)?;
+        assert_eq!(terms.len(), 1);
+        assert_eq!(
+            terms.get_elem_ref(0).get_word_iter_ref().to_vec(),
+            vec![true, false, true]
+        );
+        assert_eq!(terms.coeffs[0], 0.5);
+        Ok(())
     }
 }

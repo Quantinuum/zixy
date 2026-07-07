@@ -8,7 +8,12 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
+use crate::cmpnt::springs::ModeSettings;
+use crate::cmpnt::state_springs::BinarySprings;
 use crate::container::bit_matrix;
+use crate::container::bit_matrix::AsBitMatrix;
+use crate::container::errors::OutOfBounds;
+use crate::container::table::Table;
 use crate::container::traits::{Compatible, Elements, EmptyClone};
 use crate::container::word_iters::{self, WordIters};
 use crate::fermion::mode::Modes;
@@ -30,6 +35,22 @@ impl CmpntList {
             bitsets: bit_matrix::BitMatrix::new(modes.len()),
             modes,
         }
+    }
+
+    /// Create a new instance from given `BinarySprings`.
+    pub fn from_springs(modes: Modes, springs: &BinarySprings) -> Result<Self, OutOfBounds> {
+        let mut this = Self::new(modes);
+        this.set_from_springs(springs)?;
+        Ok(this)
+    }
+
+    /// Create an instance from springs with an inferred qubit space.
+    pub fn from_springs_default(springs: &BinarySprings) -> Self {
+        Self::from_springs(
+            Modes::from_count(springs.get_mode_inds().default_n_mode() as usize),
+            springs,
+        )
+        .unwrap()
     }
 }
 
@@ -124,9 +145,26 @@ impl<'a> bit_matrix::AsRowMutRef for CmpntMutRef<'a> {
     }
 }
 
+impl bit_matrix::AsBitMatrix for CmpntList {
+    fn get_table(&self) -> &Table {
+        self.bitsets.get_table()
+    }
+
+    fn get_table_mut(&mut self) -> &mut Table {
+        self.bitsets.get_table_mut()
+    }
+
+    fn n_bit(&self) -> usize {
+        self.bitsets.n_bit()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::container::bit_matrix::AsRowRef;
+    use crate::container::traits::RefElements;
+    use rstest::rstest;
 
     #[test]
     fn test_empty() {
@@ -135,5 +173,31 @@ mod tests {
             assert_eq!(v.len(), 0);
             assert!(v.is_empty());
         }
+    }
+
+    #[rstest]
+    #[case("[], [0, 0, 0, 1]", 
+        vec![vec![0, 0, 0, 0], vec![0, 0, 0, 1]])]
+    #[case("[], [0, 0, 0, 1], []",
+        vec![vec![0, 0, 0, 0], vec![0, 0, 0, 1], vec![0, 0, 0, 0]])]
+    #[case(
+        "[0, 1, 0, 1, 1, 0], [1, 0, 1, 1, 0]",
+        vec![vec![0, 1, 0, 1, 1, 0], vec![1, 0, 1, 1, 0, 0]]
+    )]
+    fn test_from_springs(#[case] input: &str, #[case] output: Vec<Vec<i32>>) {
+        let springs = BinarySprings::from_str(input);
+        assert!(springs.is_ok());
+        let springs = springs.unwrap();
+        let cmpnts = CmpntList::from_springs_default(&springs);
+        let vecs = (0..cmpnts.len())
+            .map(|i| {
+                cmpnts
+                    .get_elem_ref(i)
+                    .iter()
+                    .map(|x| if x { 1 } else { 0 })
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(output, vecs);
     }
 }

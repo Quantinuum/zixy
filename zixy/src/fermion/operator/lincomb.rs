@@ -140,6 +140,48 @@ mod tests {
     }
 
     #[test]
+    fn test_normolise_repeated_annihilation_vanishes() {
+        // a_0 a_0 -> 0
+        let raw = make_raw(4, &[0, 0], &[false, false]);
+        let result = normalise(&raw.as_terms());
+        assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn test_normalise_already_normal_ordered_unchanged() {
+        // a_^0+ a_1 already normal-ordered, so no anticommutations are needed and the
+        // coefficient should remain unchanged.
+        let raw = make_raw(4, &[0, 1], &[true, false]);
+        let result = normalise(&raw.as_terms());
+        assert_eq!(result.len(), 1);
+        check_term(
+            &result,
+            4,
+            HashSet::from([0]),
+            HashSet::from([1]),
+            Complex64::new(1.0, 0.0),
+        );
+    }
+
+    #[test]
+    fn test_normalise_combines_multiple_raw_terms() {
+        // a_0 a_0^+ + a_0^+ a_0 -> 1
+        let modes_space = Modes::from_count(4);
+        let mut raw = GeneralTermSet::<f64>::new(2, modes_space.clone());
+        raw.push_term(&[0, 0], &[false, true], 1.0);
+        raw.push_term(&[0, 0], &[true, false], 1.0);
+        let result = normalise(&raw.as_terms());
+        assert_eq!(result.len(), 1);
+        check_term(
+            &result,
+            4,
+            HashSet::new(),
+            HashSet::new(),
+            Complex64::new(1.0, 0.0),
+        );
+    }
+
+    #[test]
     fn test_normalise_a0_a0dag() {
         // a_0 a_0^+ -> 1 - a_0^+ a_0
         let raw = make_raw(4, &[0, 0], &[false, true]);

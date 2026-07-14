@@ -80,7 +80,9 @@ pub struct ModeInds {
 impl ModeInds {
     /// Create a new empty row
     pub fn new(n_bits: usize, max_len: usize) -> Self {
-        let row_size = divceil((n_bits * max_len) as isize, 64) as usize;
+        assert!((1..=64).contains(&n_bits), "n_bits must be in 1..=64");
+        let slots_per_word = 64 / n_bits;
+        let row_size = divceil(max_len as isize, slots_per_word as isize) as usize;
         Self {
             table: Table::new(row_size),
             n_bits,

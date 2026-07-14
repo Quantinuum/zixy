@@ -10,27 +10,7 @@ use crate::container::word_iters::term_set::AsViewMut;
 use crate::qubit::mode::Qubits;
 use crate::qubit::state::{term_set, terms};
 use crate::utils::arith::invert_endian;
-
-pub fn l2_norm_square<C: FieldElem>(state: &impl terms::AsView<C>) -> f64 {
-    state.view().coeffs.iter().map(|c| c.magnitude_sq()).sum()
-}
-
-pub fn l2_norm<C: FieldElem>(state: &impl terms::AsView<C>) -> f64 {
-    l2_norm_square(state).sqrt()
-}
-
-/// Take the inner product of a basis state linear combination with another.
-pub fn vdot<C: FieldElem>(lhs: &impl term_set::AsView<C>, rhs: &impl terms::AsView<C>) -> C {
-    rhs.view()
-        .iter()
-        .map(
-            |rhs| match lhs.lookup_coeff_elem_ref(rhs.get_word_iter_ref()) {
-                Some(lhs) => lhs.complex_conj() * rhs.get_coeff(),
-                None => C::ZERO,
-            },
-        )
-        .sum()
-}
+pub use crate::utils::vector_ops::{l2_norm, l2_norm_square, vdot};
 
 /// If big_endian is true, the bit associated with mode 0 is the most significant in the index integer
 /// Else, the bit associated with mode n_qubit - 1 is the most significant

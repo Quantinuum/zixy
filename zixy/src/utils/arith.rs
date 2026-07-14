@@ -44,9 +44,13 @@ pub fn ceil_log2<T: PrimInt>(num: T) -> Option<T> {
     })
 }
 
-/// Invert the endianness of a single integer from little to big or big to little.
+/// Invert the bit-endianness of a single integer (little-endian to big-endian or vice versa) with a given number of bits.
 pub fn invert_endian(i: u64, n_bit: usize) -> u64 {
-    i.reverse_bits() >> 64_usize.saturating_sub(n_bit)
+    assert!(
+        n_bit > 0 && n_bit <= 64,
+        "n_bit must be in the range 1..=64"
+    );
+    i.reverse_bits() >> (64 - n_bit)
 }
 
 #[cfg(test)]

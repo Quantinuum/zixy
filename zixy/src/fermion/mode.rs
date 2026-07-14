@@ -91,19 +91,23 @@ impl ModeInds {
 
     /// Calculate which u64 and bit offset within it corresponds to slot `i_slot`.
     pub fn get_offset(&self, i_slot: usize) -> (usize, usize) {
-        let bit_pos = i_slot * self.n_bits;
-        let i_u64 = bit_pos / 64;
-        let bit_offset = bit_pos % 64;
+        let slots_per_word = 64 / self.n_bits;
+        let i_u64 = i_slot / slots_per_word;
+        let bit_offset = (i_slot % slots_per_word) * self.n_bits;
         (i_u64, bit_offset)
     }
 
     /// Push a new row of packed integers into the matrix.
     pub fn push_vec(&mut self, values: &[usize]) {
+        self.push_iter(values.iter().copied());
+    }
+
+    pub fn push_iter<I: IntoIterator<Item = usize>>(&mut self, values: I) {
         self.table.push_clear();
         let last_row = self.table.len() - 1;
-        for (i, value) in values.iter().enumerate() {
+        for (i, value) in values.into_iter().enumerate() {
             let (i_u64, bit_offset) = self.get_offset(i);
-            self.table[last_row][i_u64] |= (*value as u64) << bit_offset;
+            self.table[last_row][i_u64] |= (value as u64) << bit_offset;
         }
     }
 
@@ -111,7 +115,11 @@ impl ModeInds {
     pub fn get_value(&self, i_row: usize, i_slot: usize) -> usize {
         let (i_u64, bit_offset) = self.get_offset(i_slot);
         // Extra safety measure to ensure only the n_bit bits for this slot
-        let mask = (1u64 << self.n_bits) - 1;
+        let mask = if self.n_bits == 64 {
+            u64::MAX
+        } else {
+            (1u64 << self.n_bits) - 1
+        };
         let shifted = self.table[i_row][i_u64] >> bit_offset;
         (shifted & mask) as usize
     }
@@ -149,5 +157,46 @@ impl ModeInds {
     /// Resize to `n` rows.
     pub fn resize(&mut self, n: usize) {
         self.table.resize(n);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_roundtrip_slots_spanning_multiple_words() {
+        let mut inds = ModeInds::new(3, 32);
+        let values: Vec<usize> = (0..32).map(|i| i % 8).collect();
+        inds.push_vec(&values);
+        assert_eq!(inds.read_row(0, values.len()), values);
+    }
+
+    #[test]
+    fn test_roundtrip_n_bits_64() {
+        let mut inds = ModeInds::new(64, 3);
+        let values = vec![u64::MAX as usize, 0, 42];
+        inds.push_vec(&values);
+        assert_eq!(inds.read_row(0, values.len()), values);
+    }
+
+    #[test]
+    fn test_slots_never_straddle_word_boundary() {
+        let inds = ModeInds::new(5, 16);
+        let (i_u64, bit_offset) = inds.get_offset(12);
+        assert_eq!((i_u64, bit_offset), (1, 0));
+        let (i_u64, bit_offset) = inds.get_offset(11);
+        assert_eq!((i_u64, bit_offset), (0, 55));
+    }
+
+    #[test]
+    fn test_multiple_rows_roundtrip() {
+        let mut inds = ModeInds::new(3, 32);
+        let row0: Vec<usize> = (0..32).map(|i| i % 8).collect();
+        let row1: Vec<usize> = (0..32).map(|i| (31 - i) % 8).collect();
+        inds.push_vec(&row0);
+        inds.push_vec(&row1);
+        assert_eq!(inds.read_row(0, row0.len()), row0);
+        assert_eq!(inds.read_row(1, row1.len()), row1);
     }
 }

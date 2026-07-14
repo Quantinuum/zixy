@@ -21,10 +21,8 @@ pub fn rmul<C: FieldElem>(
         let (lhs_modes, lhs_adj) = lhs.word_iters.get(i_lhs);
         for (i_rhs, rhs_coeff) in rhs.coeffs.iter().take(n_rhs).enumerate() {
             let (rhs_modes, rhs_adj) = rhs.word_iters.get(i_rhs);
-            let modes: Vec<usize> = lhs_modes.iter().chain(rhs_modes.iter()).copied().collect();
-            let adj: Vec<bool> = lhs_adj.iter().chain(rhs_adj.iter()).copied().collect();
             let c = *lhs_coeff * *rhs_coeff;
-            out.push_term(&modes, &adj, c);
+            out.push_concat_term(&lhs_modes, &lhs_adj, &rhs_modes, &rhs_adj, c);
         }
     }
     Ok(out)

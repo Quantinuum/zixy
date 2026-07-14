@@ -140,7 +140,7 @@ mod tests {
     }
 
     #[test]
-    fn test_normolise_repeated_annihilation_vanishes() {
+    fn test_normalise_repeated_annihilation_vanishes() {
         // a_0 a_0 -> 0
         let raw = make_raw(4, &[0, 0], &[false, false]);
         let result = normalise(&raw.as_terms());

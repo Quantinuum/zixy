@@ -39,6 +39,23 @@ impl<C: NumRepr> TermSet<C> {
         self.map.insert(k, i);
         self.terms.coeffs.push(coeff);
     }
+
+    pub fn push_concat_term(
+        &mut self,
+        lhs_modes: &[usize],
+        lhs_adj: &[bool],
+        rhs_modes: &[usize],
+        rhs_adj: &[bool],
+        coeff: C,
+    ) {
+        let i = self.terms.word_iters.len();
+        self.terms
+            .word_iters
+            .push_concat(lhs_modes, lhs_adj, rhs_modes, rhs_adj);
+        let k = self.terms.word_iters.hash_at_index(i);
+        self.map.insert(k, i);
+        self.terms.coeffs.push(coeff);
+    }
 }
 
 impl<C: NumRepr> ModesBased for TermSet<C> {

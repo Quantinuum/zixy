@@ -109,9 +109,9 @@ mod tests {
     use crate::container::coeffs::traits::HasCoeffs;
     use crate::container::traits::proj::{Borrow, BorrowMut};
     use crate::container::traits::{Elements, EmptyFrom};
-    use crate::container::word_iters::_word_iters::HasWordIters;
     use crate::container::word_iters::term_set::test_defs::StringCmpnts;
     use crate::container::word_iters::term_set::AsView;
+    use crate::container::word_iters::HasWordIters;
     use crate::container::word_iters::{term_set, Elem};
 
     use super::*;

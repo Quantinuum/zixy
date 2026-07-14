@@ -4,19 +4,18 @@
 //! Assumes a "little-endian" convention whereby the occupation flag the first
 //! mode is stored in the least significant bit of the first u64.
 
-use std::fmt::Display;
-use std::hash::Hash;
-
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 
-use crate::cmpnt::bitset_cmpnt_list::{self, AsCmpntList, AsCmpntMutRef, AsCmpntRef};
-use crate::cmpnt::mode::ModeOutOfBounds;
 use crate::cmpnt::springs::ModeSettings;
 use crate::cmpnt::state_springs::BinarySprings;
+use crate::container::bit_matrix;
+use crate::container::bit_matrix::AsBitMatrix;
+use crate::container::errors::OutOfBounds;
 use crate::container::table::Table;
 use crate::container::traits::{Compatible, Elements, EmptyClone};
-use crate::container::u64it_elems::{self, WordIters};
+use crate::container::word_iters::{self, WordIters};
 use crate::fermion::mode::Modes;
 use crate::fermion::traits::ModesBased;
 
@@ -24,7 +23,7 @@ use crate::fermion::traits::ModesBased;
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct CmpntList {
     /// Raw storage table for the Slater determinants as bitsets.
-    bitsets: bitset_cmpnt_list::CmpntList,
+    bitsets: bit_matrix::BitMatrix,
     /// Space of fermionic modes on which the Slater determinants are defined.
     modes: Modes,
 }
@@ -33,39 +32,25 @@ impl CmpntList {
     /// Create an empty `CmpntList` on the modes given.
     pub fn new(modes: Modes) -> Self {
         Self {
-            bitsets: bitset_cmpnt_list::CmpntList::new(modes.n_mode()),
+            bitsets: bit_matrix::BitMatrix::new(modes.len()),
             modes,
         }
     }
 
     /// Create a new instance from given `BinarySprings`.
-    pub fn from_springs(modes: Modes, springs: &BinarySprings) -> Result<Self, ModeOutOfBounds> {
+    pub fn from_springs(modes: Modes, springs: &BinarySprings) -> Result<Self, OutOfBounds> {
         let mut this = Self::new(modes);
         this.set_from_springs(springs)?;
         Ok(this)
     }
 
-    /// Create an instance from springs with inferred modes.
+    /// Create an instance from springs with an inferred fermionic mode space.
     pub fn from_springs_default(springs: &BinarySprings) -> Self {
         Self::from_springs(
-            Modes::from_count(springs.get_mode_inds().default_n_mode()),
+            Modes::from_count(springs.get_mode_inds().default_n_mode() as usize),
             springs,
         )
         .unwrap()
-    }
-}
-
-impl AsCmpntList for CmpntList {
-    fn get_bitsets(&self) -> &Table {
-        self.bitsets.get_bitsets()
-    }
-
-    fn get_bitsets_mut(&mut self) -> &mut Table {
-        self.bitsets.get_bitsets_mut()
-    }
-
-    fn n_mode(&self) -> usize {
-        self.modes.n_mode()
     }
 }
 
@@ -89,10 +74,7 @@ impl ModesBased for CmpntList {
 
 impl EmptyClone for CmpntList {
     fn empty_clone(&self) -> Self {
-        Self {
-            bitsets: self.bitsets.empty_clone(),
-            modes: self.modes.clone(),
-        }
+        Self::new(self.modes.clone())
     }
 }
 
@@ -132,46 +114,90 @@ impl Display for CmpntList {
     }
 }
 
-pub type CmpntRef<'a> = u64it_elems::ElemRef<'a, CmpntList>;
-pub type CmpntMutRef<'a> = u64it_elems::ElemMutRef<'a, CmpntList>;
+pub type CmpntRef<'a> = word_iters::ElemRef<'a, CmpntList>;
+pub type CmpntMutRef<'a> = word_iters::ElemMutRef<'a, CmpntList>;
 
 impl<'a> ModesBased for CmpntRef<'a> {
     fn modes(&self) -> &Modes {
-        &self.get_word_iters().modes
+        &self.word_iters.modes
     }
 }
 
 impl<'a> ModesBased for CmpntMutRef<'a> {
     fn modes(&self) -> &Modes {
-        &self.get_word_iters().modes
+        &self.word_iters.modes
     }
 }
 
-impl<'a> AsCmpntRef for CmpntRef<'a> {
-    fn cmpnt_list(&self) -> &bitset_cmpnt_list::CmpntList {
-        &self.get_word_iters().bitsets
+impl<'a> bit_matrix::AsRowRef for CmpntRef<'a> {
+    fn bit_mat(&self) -> &impl bit_matrix::AsBitMatrix {
+        &self.word_iters.bitsets
     }
 }
 
-impl<'a> AsCmpntMutRef for CmpntMutRef<'a> {
-    fn cmpnt_list(&self) -> &bitset_cmpnt_list::CmpntList {
-        &self.get_word_iters().bitsets
+impl<'a> bit_matrix::AsRowMutRef for CmpntMutRef<'a> {
+    fn bit_mat(&self) -> &impl bit_matrix::AsBitMatrix {
+        &self.word_iters.bitsets
     }
 
-    fn cmpnt_list_mut(&mut self) -> &mut bitset_cmpnt_list::CmpntList {
-        &mut self.get_word_iters_mut().bitsets
+    fn bit_mat_mut(&mut self) -> &mut impl bit_matrix::AsBitMatrix {
+        &mut self.word_iters.bitsets
+    }
+}
+
+impl bit_matrix::AsBitMatrix for CmpntList {
+    fn get_table(&self) -> &Table {
+        self.bitsets.get_table()
+    }
+
+    fn get_table_mut(&mut self) -> &mut Table {
+        self.bitsets.get_table_mut()
+    }
+
+    fn n_bit(&self) -> usize {
+        self.bitsets.n_bit()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::container::bit_matrix::AsRowRef;
+    use crate::container::traits::RefElements;
+    use rstest::rstest;
 
     #[test]
     fn test_empty() {
         {
             let v = CmpntList::new(Modes::from_count(4));
-            assert!(v.bitsets.is_empty());
+            assert_eq!(v.len(), 0);
+            assert!(v.is_empty());
         }
+    }
+
+    #[rstest]
+    #[case("[], [0, 0, 0, 1]", 
+        vec![vec![0, 0, 0, 0], vec![0, 0, 0, 1]])]
+    #[case("[], [0, 0, 0, 1], []",
+        vec![vec![0, 0, 0, 0], vec![0, 0, 0, 1], vec![0, 0, 0, 0]])]
+    #[case(
+        "[0, 1, 0, 1, 1, 0], [1, 0, 1, 1, 0]",
+        vec![vec![0, 1, 0, 1, 1, 0], vec![1, 0, 1, 1, 0, 0]]
+    )]
+    fn test_from_springs(#[case] input: &str, #[case] output: Vec<Vec<i32>>) {
+        let springs = BinarySprings::from_str(input);
+        assert!(springs.is_ok());
+        let springs = springs.unwrap();
+        let cmpnts = CmpntList::from_springs_default(&springs);
+        let vecs = (0..cmpnts.len())
+            .map(|i| {
+                cmpnts
+                    .get_elem_ref(i)
+                    .iter()
+                    .map(|x| if x { 1 } else { 0 })
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(output, vecs);
     }
 }

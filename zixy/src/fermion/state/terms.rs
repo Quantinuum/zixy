@@ -38,7 +38,9 @@ pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<CmpntList, C> {
     fn push_vec(&mut self, value: Vec<bool>) -> Result<(), OutOfBounds> {
         let mut self_mut_ref = self.view_mut();
         let n_mode = self_mut_ref.get_word_iters().modes().len();
-        OutOfBounds::check(value.len().saturating_sub(1), n_mode, Dimension::Mode)?;
+        if let Some(max_ind) = value.len().checked_sub(1) {
+            OutOfBounds::check(max_ind, n_mode, Dimension::Mode)?;
+        }
         let i_cmpnt = self_mut_ref.len();
         self_mut_ref.push_clear();
         self_mut_ref
@@ -104,7 +106,7 @@ impl<C: NumRepr> Terms<C> {
         if coeffs.len() < springs.len() {
             coeffs.resize_with_units(springs.len());
         }
-        springs.append_empty(springs.len().saturating_sub(coeffs.len()));
+        springs.append_empty(coeffs.len().saturating_sub(springs.len()));
         let list = CmpntList::from_springs(modes, &springs)?;
         Ok(Self::from((list, coeffs)))
     }
@@ -125,6 +127,7 @@ mod tests {
     use super::*;
     use crate::container::bit_matrix::AsRowRef;
     use crate::container::coeffs::unity::Unity;
+    use crate::container::errors::OutOfBounds;
     use crate::container::traits::{Elements, RefElements};
     use crate::fermion::state::terms::AsView;
     use num_complex::Complex64;
@@ -156,11 +159,11 @@ mod tests {
     }
 
     #[test]
-    fn test_push_vec_and_set() {
+    fn test_push_vec_and_set() -> Result<(), OutOfBounds> {
         let modes = Modes::from_count(4);
         let mut terms = Terms::<Unity>::new(modes.clone());
-        terms.push_vec(vec![false, true, false, true]).unwrap();
-        terms.push_set(HashSet::from([0, 2])).unwrap();
+        terms.push_vec(vec![false, true, false, true])?;
+        terms.push_set(HashSet::from([0, 2]))?;
         assert_eq!(terms.len(), 2);
         assert_eq!(
             terms.get_elem_ref(0).get_word_iter_ref().to_vec(),
@@ -170,6 +173,7 @@ mod tests {
             terms.get_elem_ref(1).get_word_iter_ref().to_vec(),
             vec![true, false, true, false]
         );
+        Ok(())
     }
 
     #[test]
@@ -225,6 +229,7 @@ mod tests {
             terms.get_elem_ref(0).get_word_iter_ref().to_vec(),
             vec![true, false, true]
         );
+        assert_eq!(terms.coeffs.len(), 1);
         assert_eq!(terms.coeffs[0], 0.5);
         Ok(())
     }
@@ -239,6 +244,7 @@ mod tests {
             terms.get_elem_ref(0).get_word_iter_ref().to_vec(),
             vec![true, false, true]
         );
+        assert_eq!(terms.coeffs.len(), 1);
         assert_eq!(terms.coeffs[0], 0.5);
         Ok(())
     }

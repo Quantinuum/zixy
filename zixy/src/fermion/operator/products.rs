@@ -332,6 +332,40 @@ pub fn mul_cmpnts(lhs: &CmpntRef, rhs: &CmpntRef) -> (CmpntList, SignVec) {
     (helper.cmpnts, helper.signs)
 }
 
+/// Compute the number of set bits of `word` at positions strictly below each set bit of `at`, summed together.
+/// This is the anti-symmetric exchange count picked up by inserting or removing, one at a time in descending
+/// mode-index order, the ladder operators flagged in `at` against the fixed occupation pattern `word`.
+fn count_before_each_set_bit(word: u64, mut at: u64) -> u32 {
+    let mut count = 0;
+    while at != 0 {
+        let lowest = at & at.wrapping_neg();
+        count += (word & (lowest - 1)).count_ones();
+        at &= at - 1;
+    }
+    count
+}
+
+// Apply a single normal-ordered ladder operator component, given as its creation and annihilation mode bitsets,
+/// to a Slater determinant ket occupation bitset.
+///
+/// Returns `None` if the fermionic exclusion principle forbids the term, i.e. if `ann` is not a subset of `ket`,
+/// or if any mode flagged in `cre` is already occupied after removing the modes in `ann`. Otherwise, returns the
+/// resulting occupation bitset together with the anti-symmetric exchange sign picked up by normal-ordering the
+/// application, assuming both `cre` and `ann` list their modes in ascending order (consistent with the rest of
+/// this module).
+pub fn apply_op_ket_u64(cre: u64, ann: u64, ket: u64) -> Option<(u64, Sign)> {
+    if ket & ann != ann {
+        return None;
+    }
+    let ket_after_ann = ket & !ann;
+    if cre & ket_after_ann != 0 {
+        return None;
+    }
+    let exponent =
+        count_before_each_set_bit(ket, ann) + count_before_each_set_bit(ket_after_ann, cre);
+    Some((ket_after_ann | cre, Sign(exponent & 1 == 1)))
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;
@@ -446,5 +480,30 @@ mod tests {
         let result_signs = SignVec::from_phases(&result_signs);
         assert_eq!(helper.cmpnts, result_cmpnts);
         assert_eq!(helper.signs, result_signs);
+    }
+
+    #[rstest]
+    // c_0^+ |vac> = |0>
+    #[case(0b1, 0b0, 0b0, Some((0b1, false)))]
+    // c_1^+ c_0 |1_0> = |1_1>, no modes in between to pick up a sign.
+    #[case(0b10, 0b1, 0b1, Some((0b10, false)))]
+    // c_2^+ c_0 |1_0 1_1> = -|1_1 1_2>, one occupied mode (1) sits strictly between 0 and 2.
+    #[case(0b100, 0b1, 0b011, Some((0b110, true)))]
+    // c_0^+ c_0 |1_0> = |1_0>, the number operator on an occupied mode leaves the ket unchanged.
+    #[case(0b1, 0b1, 0b1, Some((0b1, false)))]
+    // annihilating an unoccupied mode is forbidden.
+    #[case(0b0, 0b1, 0b0, None)]
+    // creating into an already occupied mode is forbidden.
+    #[case(0b1, 0b0, 0b1, None)]
+    fn test_apply_op_ket_u64(
+        #[case] cre: u64,
+        #[case] ann: u64,
+        #[case] ket: u64,
+        #[case] expected: Option<(u64, bool)>,
+    ) {
+        assert_eq!(
+            apply_op_ket_u64(cre, ann, ket),
+            expected.map(|(bits, sign)| (bits, Sign(sign)))
+        );
     }
 }

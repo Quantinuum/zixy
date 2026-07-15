@@ -787,6 +787,20 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
         Coeffs.__init__(out, data, indexer)
         return out
 
+    def _coerce_for_storage(self, value: CoeffT) -> CoeffT | _zixy.RootOfUnity:
+        """Convert a coefficient to the underlying storage representation."""
+        if _is_sign(self.coeff_type) or _is_complex_sign(self.coeff_type):
+            return value._impl
+        return value
+
+    def _coerce_from_storage(self, value: CoeffT | _zixy.RootOfUnity) -> CoeffT:
+        """Convert an underlying stored coefficient to the public Python type."""
+        if _is_sign(self.coeff_type) or _is_complex_sign(self.coeff_type):
+            return self.coeff_type(value.to_phase())
+        if not isinstance(value, self.coeff_type):
+            raise TypeError(f"Expected coefficient of type {self.coeff_type}, got {type(value)}")
+        return value
+
     def clone(self) -> Self:
         """Return a deep copy of ``self``."""
         out = self._empty_clone()
@@ -845,13 +859,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
             return type(self)._create(
                 self._impl, slice_of_slice(self.slice, indexer, len(self._impl))
             )
-        if _is_sign(self.coeff_type) or _is_complex_sign(self.coeff_type):
-            coeff = self.coeff_type(self._impl[self.map_index(indexer)].to_phase())
-        else:
-            coeff = self._impl[self.map_index(indexer)]
-        if not isinstance(coeff, self.coeff_type):
-            raise TypeError(f"Expected coefficient of type {self.coeff_type}, got {type(coeff)}")
-        return coeff
+        return self._coerce_from_storage(self._impl[self.map_index(indexer)])
 
     def _set_scalar(self, index: int, value: CoeffT | None = None) -> None:
         """Set the indexed element to the given value.
@@ -864,11 +872,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
             # None indicates the default value (i.e. unity)
             self[index] = unit(self.coeff_type)
             return
-        if _is_sign(self.coeff_type) or _is_complex_sign(self.coeff_type):
-            data = value._impl
-        else:
-            data = value
-        self._impl[self.map_index(index)] = data
+        self._impl[self.map_index(index)] = self._coerce_for_storage(value)
 
     def __setitem__(
         self, indexer: int | builtins.slice, source: CoeffT | Coeffs[CoeffT] | None = None
@@ -969,10 +973,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec]):
             This method operates in-place.
         """
         for _ in range(n):
-            if _is_sign(self.coeff_type) or _is_complex_sign(self.coeff_type):
-                self._impl.append(value._impl)
-            else:
-                self._impl.append(value)
+            self._impl.append(self._coerce_for_storage(value))
 
     @requires_ownership
     def append(self, value: CoeffT) -> None:
@@ -1335,6 +1336,12 @@ class ExprListWrapper(BaseVec):
         return iter(self._list)
 
     @staticmethod
+    def _iter_normalized(values: Iterable[Coeff]) -> Iterator[Expr]:
+        """Yield normalized SymPy expressions for the given coefficients."""
+        for value in values:
+            yield ExprListWrapper.normalize(value)
+
+    @staticmethod
     def simplify_integer_floats(expr: Expr) -> Expr:
         """Simplify any floating point numbers that are exactly representable as integers.
 
@@ -1373,42 +1380,9 @@ class ExprListWrapper(BaseVec):
             in ``source``.
         """
         out = cls()
-        out._list = ExprListWrapper._sympify_coeffs(source)
+        values = source if isinstance(source, Sequence) else (source,)
+        out._list = list(ExprListWrapper._iter_normalized(values))
         return out
-
-    @staticmethod
-    def _sympify_coeff(coeff: Coeff) -> Expr:
-        """Convert a coefficient to a SymPy expression.
-
-        Args:
-            coeff: Value to sympify.
-
-        Returns:
-            A sympy expression
-        """
-        if isinstance(coeff, Expr):
-            return coeff
-        elif isinstance(coeff, int | float | complex):
-            return sympify(coeff)
-        elif isinstance(coeff, Sign):
-            return sympify(int(coeff))
-        elif isinstance(coeff, ComplexSign):
-            return sympify(complex(coeff))
-        raise TypeError("Not a scalar convertible to Expr.")
-
-    @staticmethod
-    def _sympify_coeffs(coeffs: Coeff | Sequence[Coeff]) -> list[Expr]:
-        """Convert a coefficient or sequence of coefficients to a list of SymPy expressions.
-
-        Args:
-            coeffs: Coefficient or sequence of coefficients to sympify.
-
-        Returns:
-            A list of sympy expressions.
-        """
-        if isinstance(coeffs, Sequence):
-            return [ExprListWrapper._sympify_coeff(coeff) for coeff in coeffs]
-        return [ExprListWrapper._sympify_coeff(coeffs)]
 
     @staticmethod
     def simplify(coeff: Expr) -> Expr:
@@ -1450,13 +1424,7 @@ class ExprListWrapper(BaseVec):
         Args:
             indexer: A slice of coefficients within ``self`` to evaluate.
         """
-        out: list[float] = []
-        for coeff in self._list[indexer]:
-            value = coeff.evalf()
-            if not np.can_cast(float, type(value), casting="safe"):
-                raise TypeError(f"Cannot cast from {type(value)} to float")
-            out.append(float(value))
-        return out
+        return self._evaluate(indexer, float)
 
     def evaluate_complex(self, indexer: slice) -> list[complex] | None:
         """Evaluate the indexed element(s) as complex numbers.
@@ -1464,13 +1432,21 @@ class ExprListWrapper(BaseVec):
         Args:
             indexer: A slice of coefficients within ``self`` to evaluate.
         """
-        out: list[complex] = []
-        for coeff in self._list[indexer]:
-            value = coeff.evalf()
-            if not np.can_cast(complex, type(value), casting="safe"):
-                raise TypeError(f"Cannot cast from {type(value)} to complex")
-            out.append(complex(value))
-        return out
+        return self._evaluate(indexer, complex)
+
+    @staticmethod
+    def _cast_evalf(value_type: type[float] | type[complex], coeff: Expr) -> float | complex:
+        """Evaluate an expression numerically and cast it to the requested numeric type."""
+        value = coeff.evalf()
+        if not np.can_cast(value_type, type(value), casting="safe"):
+            raise TypeError(f"Cannot cast from {type(value)} to {value_type.__name__}")
+        return value_type(value)
+
+    def _evaluate(
+        self, indexer: slice, value_type: type[float] | type[complex]
+    ) -> list[float] | list[complex]:
+        """Evaluate a slice of coefficients numerically."""
+        return [self._cast_evalf(value_type, coeff) for coeff in self._list[indexer]]
 
     def append(self, value: Expr) -> None:
         """Append ``value`` to the end of ``self``.
@@ -1495,7 +1471,7 @@ class ExprListWrapper(BaseVec):
         Note:
             This method operates in-place.
         """
-        self._list.extend([ExprListWrapper.normalize(1) for _ in range(n - len(self))])
+        self._list.extend(ExprListWrapper._iter_normalized(1 for _ in range(n - len(self))))
         self._list = self._list[:n]
         assert len(self) == n
 
@@ -1509,8 +1485,9 @@ class ExprListWrapper(BaseVec):
         Note:
             This method operates in-place.
         """
-        coeffs = [self.simplify_integer_floats(func(coeff)) for coeff in self._list[indexer]]
-        self._list[indexer] = coeffs
+        self._list[indexer] = [
+            self.simplify_integer_floats(func(coeff)) for coeff in self._list[indexer]
+        ]
 
     def differentiate(self, indexer: slice, variable: Symbol | str) -> None:
         """Differentiate partially with respect to ``variable`` in-place.

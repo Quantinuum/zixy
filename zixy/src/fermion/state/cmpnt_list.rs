@@ -44,7 +44,7 @@ impl CmpntList {
         Ok(this)
     }
 
-    /// Create an instance from springs with an inferred qubit space.
+    /// Create an instance from springs with an inferred fermionic mode space.
     pub fn from_springs_default(springs: &BinarySprings) -> Self {
         Self::from_springs(
             Modes::from_count(springs.get_mode_inds().default_n_mode() as usize),

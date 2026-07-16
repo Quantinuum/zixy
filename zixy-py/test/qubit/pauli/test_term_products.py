@@ -11,6 +11,7 @@ from zixy.qubit.pauli import (
     SignTerms,
     String,
     SymbolicTerm,
+    SymplecticPart,
     X,
     Y,
     Z,
@@ -141,6 +142,26 @@ def test_sign_terms_canonicalize():
     assert terms[0].string.get_tuple() == (X, I, X)
     assert terms[1].string.get_tuple() == (I, X, X)
     assert terms[2].string.get_tuple() == (Z, Z, Z)
+    # use manual canonicalization order to revert back
+    imul_ops = terms.canonicalize([(0, SymplecticPart.Z), (0, SymplecticPart.X), (2, SymplecticPart.X)], [0, 1, 2], [])
+    correct_ops = [
+        # move Z0 up
+        (0, 2),
+        # eliminate Z0s
+        (2, 0),
+        # moveX0 up
+        (1, 2),
+        # eliminate X0s
+        (0, 1),
+        (2, 1),
+        # X2 already in place
+        # eliminate X2s
+        (0, 2),
+    ]
+    assert imul_ops == correct_ops
+    assert terms[0].string.get_tuple() == tuples[0]
+    assert terms[1].string.get_tuple() == tuples[1]
+    assert terms[2].string.get_tuple() == tuples[2]
 
     null = SignTerms(0)
     # the unique tableau with 0 qubits is in canonical form, so no imuls

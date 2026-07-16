@@ -143,7 +143,9 @@ def test_sign_terms_canonicalize():
     assert terms[1].string.get_tuple() == (I, X, X)
     assert terms[2].string.get_tuple() == (Z, Z, Z)
     # use manual canonicalization order to revert back
-    imul_ops = terms.canonicalize([(0, SymplecticPart.Z), (0, SymplecticPart.X), (2, SymplecticPart.X)], [0, 1, 2], [])
+    imul_ops = terms.canonicalize(
+        [(0, SymplecticPart.Z), (0, SymplecticPart.X), (2, SymplecticPart.X)], [0, 1, 2], []
+    )
     correct_ops = [
         # move Z0 up
         (0, 2),

@@ -39,6 +39,11 @@ impl CmpntList {
     /// Push a new operator string defined by mode indices and cre/ann flags.
     /// `modes` and `adj` must have the same length.
     pub fn push(&mut self, modes: &[usize], adj: &[bool]) {
+        assert_eq!(
+            modes.len(),
+            adj.len(),
+            "modes and adj must have the same length"
+        );
         self.mode_part.push_vec(modes);
         self.adj_part.push_clear();
         let last_row = self.adj_part.len() - 1;
@@ -46,6 +51,33 @@ impl CmpntList {
             self.adj_part.set_bit_unchecked(last_row, i, *value);
         }
         self.len_part.push(modes.len());
+    }
+
+    pub fn push_concat(
+        &mut self,
+        lhs_modes: &[usize],
+        lhs_adj: &[bool],
+        rhs_modes: &[usize],
+        rhs_adj: &[bool],
+    ) {
+        assert_eq!(
+            lhs_modes.len(),
+            lhs_adj.len(),
+            "lhs modes and adj must have the same length"
+        );
+        assert_eq!(
+            rhs_modes.len(),
+            rhs_adj.len(),
+            "rhs modes and adj must have the same length"
+        );
+        self.mode_part
+            .push_iter(lhs_modes.iter().chain(rhs_modes.iter()).copied());
+        self.adj_part.push_clear();
+        let last_row = self.adj_part.len() - 1;
+        for (i, value) in lhs_adj.iter().chain(rhs_adj.iter()).enumerate() {
+            self.adj_part.set_bit_unchecked(last_row, i, *value);
+        }
+        self.len_part.push(lhs_modes.len() + rhs_modes.len());
     }
 
     /// Return true if no operator strings are stored.

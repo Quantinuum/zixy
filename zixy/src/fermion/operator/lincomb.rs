@@ -247,7 +247,8 @@ mod tests {
     #[case(8, vec![(vec![0, 1, 2, 3, 4, 5, 6, 7],
         vec![false, false, false, false, true, true, true, true], 1.0)],
         vec![(vec![4, 5, 6, 7], vec![0, 1, 2, 3], 1.0)])]
-    // cases below are from inquanto/tests/operators/test_fermion_operator.py
+    // cases below are from
+    // https://github.com/quantinuum-dev/inquanto/blob/develop/tests/operators/test_fermion_operator.py
     // term = FermionOperatorString.from_string("F0 F0^ F1 F0")
     // ordered_fo = FermionOperator._normal_ordered_ladder_term(term, 0.1)
     // assert str(ordered_fo) == "(0.1, F1  F0 )"
@@ -282,19 +283,24 @@ mod tests {
         #[case] input_term: Vec<(Vec<usize>, Vec<bool>, f64)>,
         #[case] inquanto_results: Vec<(Vec<usize>, Vec<usize>, f64)>,
     ) {
-        let modes_space_spin_minor = Modes::from_pair_count_spin_minor(n_modes);
-        let mut raw_spin_minor = GeneralTermSet::<f64>::new(n_modes, modes_space_spin_minor);
+        let modes_space = Modes::from_count(n_modes);
+        let max_len = input_term
+            .iter()
+            .map(|(m, _a, _c)| m.len())
+            .max()
+            .unwrap_or(0);
+        let mut raw = GeneralTermSet::<f64>::new(max_len, modes_space);
         for (modes, adj, coeff) in input_term {
-            raw_spin_minor.push_term(modes.as_slice(), adj.as_slice(), coeff);
+            raw.push_term(modes.as_slice(), adj.as_slice(), coeff);
         }
-        let result_sm = normalise(&raw_spin_minor.as_terms());
-        assert_eq!(result_sm.len(), inquanto_results.len());
+        let result = normalise(&raw.as_terms());
+        assert_eq!(result.len(), inquanto_results.len());
         for inq_result in inquanto_results {
             let (vec_cre, vec_ann, inq_coeff) = inq_result;
-            let inq_cre = HashSet::from_iter(vec_cre.into_iter());
-            let inq_ann = HashSet::from_iter(vec_ann.into_iter());
+            let inq_cre = vec_cre.into_iter().collect();
+            let inq_ann = vec_ann.into_iter().collect();
             check_term(
-                &result_sm,
+                &result,
                 n_modes,
                 inq_cre,
                 inq_ann,

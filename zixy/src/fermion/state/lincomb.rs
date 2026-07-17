@@ -36,7 +36,7 @@ pub fn to_dense<C: FieldElem>(
     Ok(out)
 }
 
-/// Create a state linear combination from a dense array slice of coefficients.
+/// Populate an existing state linear combination in place from a dense array slice of coefficients.
 pub fn assign_from_dense<C: FieldElem>(
     out: &mut term_set::ViewMut<C>,
     source: &[C],
@@ -61,7 +61,7 @@ pub fn assign_from_dense<C: FieldElem>(
     }
 }
 
-/// Create a state linear combination from a dense array slice of coefficients.
+/// Create and return a  new state linear combination from a dense array slice of coefficients.
 pub fn from_dense<C: FieldElem>(
     modes: Modes,
     source: &[C],
@@ -135,13 +135,21 @@ mod tests {
     fn test_to_dense() {
         let modes = Modes::from_count(3);
         let mut terms = Terms::<f64>::new(modes);
-        terms
-            .push_set_with_coeff(HashSet::from([0, 2]), 5.0)
-            .unwrap();
+        terms.push_set_with_coeff(HashSet::from([2]), 5.0).unwrap();
+
+        // little-endian: occupied mode 2 -> index 0b100 = 4
         let dense = to_dense(&terms, false).unwrap();
         assert_eq!(dense.len(), 8);
         for (i, &c) in dense.iter().enumerate() {
-            let expected = if i == 5 { 5.0 } else { 0.0 };
+            let expected = if i == 4 { 5.0 } else { 0.0 };
+            assert_eq!(c, expected);
+        }
+
+        // big-endian: occupied mode 2 -> index 0b001 = 1
+        let dense = to_dense(&terms, true).unwrap();
+        assert_eq!(dense.len(), 8);
+        for (i, &c) in dense.iter().enumerate() {
+            let expected = if i == 1 { 5.0 } else { 0.0 };
             assert_eq!(c, expected);
         }
     }

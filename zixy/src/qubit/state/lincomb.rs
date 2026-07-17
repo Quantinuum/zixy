@@ -35,7 +35,7 @@ pub fn to_dense<C: FieldElem>(
     Ok(out)
 }
 
-/// Create a state linear combination from a dense array slice of coefficients.
+/// Populate an existing state linear combination in place from a dense array slice of coefficients.
 pub fn assign_from_dense<C: FieldElem>(
     out: &mut term_set::ViewMut<C>,
     source: &[C],
@@ -60,7 +60,7 @@ pub fn assign_from_dense<C: FieldElem>(
     }
 }
 
-/// Create a state linear combination from a dense array slice of coefficients.
+/// Create and return a  new state linear combination from a dense array slice of coefficients.
 pub fn from_dense<C: FieldElem>(
     qubits: Qubits,
     source: &[C],

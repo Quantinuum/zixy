@@ -6,8 +6,8 @@ use crate::container::coeffs::traits::NumReprVec;
 use crate::container::traits::{Elements, MutRefElements, RefElements};
 use crate::container::word_iters::{ElemMutRef, ElemRef, WordIters};
 use crate::fermion::mode::Modes;
-use crate::fermion::operator::cmpnt_list::{CmpntList, CmpntRef};
-use crate::fermion::operator::cre_or_ann;
+use crate::fermion::operator::normal::cmpnt_list::{CmpntList, CmpntRef};
+use crate::fermion::operator::normal::cre_or_ann;
 use crate::fermion::traits::ModesBased;
 
 /// Stores variables to support the recursive computation of normal-ordered fermion operator products.
@@ -415,7 +415,7 @@ mod tests {
     ) {
         use crate::container::traits::proj::Borrow;
         use crate::container::traits::EmptyClone;
-        use crate::fermion::operator::cmpnt::Cmpnt;
+        use crate::fermion::operator::normal::cmpnt::Cmpnt;
 
         let modes = Modes::from_count(n_mode);
         let (lhs_cre, lhs_ann) = lhs;

@@ -8,8 +8,8 @@ use crate::container::traits::proj::Borrow;
 use crate::container::word_iters::terms;
 use crate::container::word_iters::terms::AsViewMut;
 use crate::fermion::mode::Modes;
-use crate::fermion::operator::cmpnt_list::CmpntList;
-use crate::fermion::operator::cmpnt_major::terms::Terms;
+use crate::fermion::operator::normal::cmpnt_list::CmpntList;
+use crate::fermion::operator::normal::cmpnt_major::terms::Terms;
 use crate::fermion::traits::ModesBased;
 
 /// A single fermion operator with a generically-typed coefficient.

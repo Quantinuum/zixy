@@ -11,7 +11,7 @@ use crate::container::traits::{
 };
 use crate::container::word_iters::{self, WordIters};
 use crate::fermion::mode::Modes;
-use crate::fermion::operator::cre_or_ann;
+use crate::fermion::operator::normal::cre_or_ann;
 use crate::fermion::traits::ModesBased;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};

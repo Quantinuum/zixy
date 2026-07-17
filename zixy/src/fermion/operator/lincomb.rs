@@ -94,6 +94,7 @@ mod tests {
     use crate::fermion::operator::general::term_set::TermSet as GeneralTermSet;
     use crate::fermion::operator::normal::cmpnt::Cmpnt;
     use crate::fermion::operator::normal::cmpnt_major::term_set::TermSet as NormalTermSet;
+    use rstest::rstest;
     use std::collections::HashSet;
 
     fn make_raw(n_modes: usize, modes: &[usize], adj: &[bool]) -> GeneralTermSet<f64> {
@@ -231,5 +232,80 @@ mod tests {
             HashSet::from([0, 1]),
             Complex64::new(-1.0, 0.0),
         );
+    }
+
+    #[rstest]
+    // note inquanto reorders modes in cre/ann substrings:
+    // e.g. str(op_5ann.normal_ordered()) == "(1.0, F4  F3  F2  F1  F0 )"
+    // op_5ann = FermionOperator([(1.0, "F0 F1 F2 F3 F4")])
+    #[case(5, vec![(vec![0, 1, 2, 3, 4], vec![false, false, false, false, false], 1.0)],
+        vec![(vec![], vec![0, 1, 2, 3, 4], 1.0)])]
+    // op_5cre = FermionOperator([(1.0, "F0^ F1^ F2^ F3^ F4^")])
+    #[case(5, vec![(vec![0, 1, 2, 3, 4], vec![true, true, true, true, true], 1.0)],
+        vec![(vec![0, 1, 2, 3, 4], vec![], 1.0)])]
+    // op = FermionOperator([(1.0, "F0 F1 F2 F3 F4^ F5^ F6^ F7^")])
+    #[case(8, vec![(vec![0, 1, 2, 3, 4, 5, 6, 7],
+        vec![false, false, false, false, true, true, true, true], 1.0)],
+        vec![(vec![4, 5, 6, 7], vec![0, 1, 2, 3], 1.0)])]
+    // cases below are from
+    // https://github.com/quantinuum-dev/inquanto/blob/develop/tests/operators/test_fermion_operator.py
+    // term = FermionOperatorString.from_string("F0 F0^ F1 F0")
+    // ordered_fo = FermionOperator._normal_ordered_ladder_term(term, 0.1)
+    // assert str(ordered_fo) == "(0.1, F1  F0 )"
+    // note that after normal ordering in zixy the coeff is -0.1 and string is "F0 F1"
+    #[case(2, vec![(vec![0, 0, 1, 0], vec![false, true, false, false], 0.1)],
+        vec![(vec![], vec![1, 0], -0.1)])]
+    // each pair of cases below should have same normal ordered form for Ai and Bi:
+    // assert operatorAi.normal_ordered().approx_equal_to(operatorBi.normal_ordered())
+    // operatorA1 = FermionOperator([(1.0, "F0^ F1 F0 F1^")])
+    #[case(2, vec![(vec![0, 1, 0, 1], vec![true, false, false, true], 1.0)],
+        vec![(vec![0], vec![0], -1.0), (vec![0, 1], vec![0, 1], -1.0)])]
+    // operatorB1 = FermionOperator([(-1.0, "F0^ F0 F1 F1^")])
+    #[case(2, vec![(vec![0, 0, 1, 1], vec![true, false, false, true], -1.0)],
+        vec![(vec![0], vec![0], -1.0), (vec![0, 1], vec![0, 1], -1.0)])]
+    // operatorA2 = FermionOperator([(1.0, "F1^ F2 F2^ F1")])
+    #[case(3, vec![(vec![1, 2, 2, 1], vec![true, false, true, false], 1.0)],
+        vec![(vec![1], vec![1], 1.0), (vec![1, 2], vec![1, 2], 1.0)])]
+    // operatorB2 = FermionOperator([(1.0, "F1^ F1"), (1.0, "F1^ F2^ F1 F2")])
+    #[case(3, vec![(vec![1, 1], vec![true, false], 1.0),
+        (vec![1, 2, 1, 2], vec![true, true, false, false], 1.0)],
+        vec![(vec![1], vec![1], 1.0), (vec![1, 2], vec![1, 2], 1.0)])]
+    // operatorA3 = FermionOperator([(1.0, ""), (-1.0, "F1^ F1"), (-1.0, "F2^ F2")])
+    #[case(3, vec![(vec![], vec![], 1.0), (vec![1, 1], vec![true, false], -1.0),
+        (vec![2, 2], vec![true, false], -1.0)],
+        vec![(vec![], vec![], 1.0), (vec![1], vec![1], -1.0), (vec![2], vec![2], -1.0)])]
+    // operatorB3 = FermionOperator([(1.0, "F1 F1^ F2 F2^"), (-1.0, "F2^ F1^ F1 F2")])
+    #[case(3, vec![(vec![1, 1, 2, 2], vec![false, true, false, true], 1.0),
+        (vec![2, 1, 1, 2], vec![true, true, false, false], -1.0)],
+        vec![(vec![], vec![], 1.0), (vec![1], vec![1], -1.0), (vec![2], vec![2], -1.0)])]
+    fn test_normalise_against_inquanto(
+        #[case] n_modes: usize,
+        #[case] input_term: Vec<(Vec<usize>, Vec<bool>, f64)>,
+        #[case] inquanto_results: Vec<(Vec<usize>, Vec<usize>, f64)>,
+    ) {
+        let modes_space = Modes::from_count(n_modes);
+        let max_len = input_term
+            .iter()
+            .map(|(m, _a, _c)| m.len())
+            .max()
+            .unwrap_or(0);
+        let mut raw = GeneralTermSet::<f64>::new(max_len, modes_space);
+        for (modes, adj, coeff) in input_term {
+            raw.push_term(modes.as_slice(), adj.as_slice(), coeff);
+        }
+        let result = normalise(&raw.as_terms());
+        assert_eq!(result.len(), inquanto_results.len());
+        for inq_result in inquanto_results {
+            let (vec_cre, vec_ann, inq_coeff) = inq_result;
+            let inq_cre = vec_cre.into_iter().collect();
+            let inq_ann = vec_ann.into_iter().collect();
+            check_term(
+                &result,
+                n_modes,
+                inq_cre,
+                inq_ann,
+                Complex64::new(inq_coeff, 0.0),
+            );
+        }
     }
 }

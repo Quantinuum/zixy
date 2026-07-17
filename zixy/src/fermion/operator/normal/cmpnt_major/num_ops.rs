@@ -9,8 +9,8 @@ use crate::container::traits::Elements;
 use crate::container::word_iters::term_set::AsViewMut;
 use crate::container::word_iters::terms::AsViewMut as TermsAsViewMut;
 use crate::fermion::mode::Modes;
-use crate::fermion::operator::cmpnt::Cmpnt;
-use crate::fermion::operator::cmpnt_major::term_set::TermSet;
+use crate::fermion::operator::normal::cmpnt::Cmpnt;
+use crate::fermion::operator::normal::cmpnt_major::term_set::TermSet;
 
 /// Create a number operator over the given set of mode indices.
 pub fn num_op_from_inds<C: FieldElem>(
@@ -47,7 +47,7 @@ mod tests {
     use crate::container::traits::{Elements, RefElements};
     use crate::container::word_iters::term_set::AsView;
     use crate::fermion::mode::Modes;
-    use crate::fermion::operator::cmpnt::Cmpnt;
+    use crate::fermion::operator::normal::cmpnt::Cmpnt;
     use std::collections::HashSet;
 
     #[test]

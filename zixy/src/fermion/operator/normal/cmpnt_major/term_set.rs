@@ -4,8 +4,8 @@ use crate::container::coeffs::traits::NumRepr;
 use crate::container::map::Map;
 use crate::container::word_iters;
 use crate::fermion::mode::Modes;
-use crate::fermion::operator::cmpnt_list::CmpntList;
-use crate::fermion::operator::cmpnt_major::terms::Terms;
+use crate::fermion::operator::normal::cmpnt_list::CmpntList;
+use crate::fermion::operator::normal::cmpnt_major::terms::Terms;
 use crate::fermion::traits::ModesBased;
 
 pub type TermSet<C /*: NumRepr*/> = word_iters::term_set::TermSet<CmpntList, C>;

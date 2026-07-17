@@ -19,12 +19,12 @@ use crate::container::word_iters::lincomb::{iadd, isub, scaled_iadd_elem};
 use crate::container::word_iters::term_set::AsViewMut;
 use crate::qubit::mode::{PauliMatrix, Qubits};
 use crate::qubit::pauli::cmpnt_major::cmpnt::PauliWord;
-use crate::qubit::pauli::cmpnt_major::encoding::invert_endian;
 use crate::qubit::pauli::cmpnt_major::num_ops::{num_op, num_op_odd_pos};
 use crate::qubit::pauli::cmpnt_major::term_set::{self, TermSet};
 use crate::qubit::pauli::cmpnt_major::terms::{self, Terms};
 use crate::qubit::pauli::springs::Springs;
 use crate::qubit::traits::{DifferentQubits, PauliWordMutRef, QubitsBased};
+use crate::utils::arith::invert_endian;
 
 pub fn assign_from_mul<C: FieldElem>(
     out: &mut term_set::ViewMut<Complex64>,

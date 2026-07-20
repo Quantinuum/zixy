@@ -81,6 +81,36 @@ impl<'a, C: NumRepr> AsView<C> for View<'a, C> {}
 impl<C: NumRepr> AsViewMut<C> for Terms<C> {}
 impl<'a, C: NumRepr> AsViewMut<C> for ViewMut<'a, C> {}
 
+impl<C: NumRepr> ModesBased for Terms<C> {
+    fn modes(&self) -> &Modes {
+        self.word_iters.modes()
+    }
+}
+
+impl<'a, C: NumRepr> ModesBased for View<'a, C> {
+    fn modes(&self) -> &Modes {
+        self.word_iters.modes()
+    }
+}
+
+impl<'a, C: NumRepr> ModesBased for ViewMut<'a, C> {
+    fn modes(&self) -> &Modes {
+        self.word_iters.modes()
+    }
+}
+
+impl<'a, C: NumRepr> ModesBased for TermRef<'a, C> {
+    fn modes(&self) -> &Modes {
+        self.word_iters.modes()
+    }
+}
+
+impl<'a, C: NumRepr> ModesBased for TermMutRef<'a, C> {
+    fn modes(&self) -> &Modes {
+        self.word_iters.modes()
+    }
+}
+
 impl<C: NumRepr> Terms<C> {
     /// Create a new list of state strings on the given space of modes.
     pub fn new(modes: Modes) -> Self {

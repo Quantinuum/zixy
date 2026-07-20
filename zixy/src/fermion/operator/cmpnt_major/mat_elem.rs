@@ -18,6 +18,7 @@ use crate::fermion::operator::products::apply_op_ket_u64;
 use crate::fermion::operator::products::ApplyResult;
 use crate::fermion::state;
 use crate::fermion::state::cmpnt::BasisState;
+use crate::fermion::state::cmpnt_list::AssignResult;
 use crate::fermion::state::cmpnt_list::CmpntList as StateList;
 use crate::fermion::state::cmpnt_list::CmpntRef as StateRef;
 use crate::fermion::traits::ModesBased;
@@ -216,11 +217,12 @@ pub fn apply<C: FieldElem>(
     let mut tmp = BasisState::new(state.word_iters.to_modes());
     for (op_cmpnt, op_coeff) in op.word_iters.iter().zip(op.coeffs.iter()) {
         for (state_cmpnt, state_coeff) in state.word_iters.iter().zip(state.coeffs.iter()) {
-            let Some(sign) = tmp
+            let sign = match tmp
                 .borrow_mut()
                 .assign_mul_by_op(op_cmpnt.clone(), state_cmpnt)
-            else {
-                continue;
+            {
+                AssignResult::Applied(sign) => sign,
+                AssignResult::Zero => continue,
             };
             let mut c = sign.to_complex();
             c *= op_coeff.to_complex();

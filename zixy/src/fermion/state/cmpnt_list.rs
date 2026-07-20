@@ -149,22 +149,28 @@ impl<'a> bit_matrix::AsRowMutRef for CmpntMutRef<'a> {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AssignResult {
+    Applied(Sign),
+    Zero,
+}
+
 impl<'a> CmpntMutRef<'a> {
     /// Set the value of this referenced Slater determinant to the result of applying the given normal-ordered
-    /// ladder operator component to `rhs`, returning the anti-symmetric exchange sign of the result, or `None`
+    /// ladder operator component to `rhs`, returning the anti-symmetric exchange sign of the result, or `Zero
     /// if the fermionic exclusion principle forbids the term (an annihilated mode is unoccupied in `rhs`, or a
     /// created mode is already occupied).
     /// Assumes the mode space fits in a single `u64` word.
-    pub fn assign_mul_by_op(&mut self, op: operator::CmpntRef, rhs: CmpntRef) -> Option<Sign> {
+    pub fn assign_mul_by_op(&mut self, op: operator::CmpntRef, rhs: CmpntRef) -> AssignResult {
         let cre = op.get_cre_part().get_u64it().next().unwrap_or(0);
         let ann = op.get_ann_part().get_u64it().next().unwrap_or(0);
         let ket = rhs.get_u64it().next().unwrap_or(0);
         let (result, sign) = match apply_op_ket_u64(cre, ann, ket) {
-            ApplyResult::Applied(bits, sign) => (bits, sign),
-            ApplyResult::Zero => return None,
+            ApplyResult::Applied(result, sign) => (result, sign),
+            ApplyResult::Zero => return AssignResult::Zero,
         };
         *self.get_u64it_mut().next().unwrap() = result;
-        Some(sign)
+        AssignResult::Applied(sign)
     }
 }
 
@@ -247,7 +253,7 @@ mod tests {
             .get_elem_mut_ref(0)
             .assign_mul_by_op(op.borrow(), ket.get_elem_ref(0));
 
-        assert_eq!(sign, Some(Sign(true)));
+        assert_eq!(sign, AssignResult::Applied(Sign(true)));
         assert_eq!(out.get_elem_ref(0).to_set(), HashSet::from([1, 2]));
     }
 
@@ -274,6 +280,6 @@ mod tests {
             .get_elem_mut_ref(0)
             .assign_mul_by_op(op.borrow(), ket.get_elem_ref(0));
 
-        assert_eq!(sign, None);
+        assert_eq!(sign, AssignResult::Zero);
     }
 }

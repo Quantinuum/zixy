@@ -15,6 +15,7 @@ use crate::container::word_iters::WordIters;
 use crate::fermion::operator::cmpnt_major as fermion_op;
 use crate::fermion::operator::cmpnt_major::lincomb;
 use crate::fermion::operator::products::apply_op_ket_u64;
+use crate::fermion::operator::products::ApplyResult;
 use crate::fermion::state;
 use crate::fermion::state::cmpnt::BasisState;
 use crate::fermion::state::cmpnt_list::CmpntList as StateList;
@@ -59,14 +60,16 @@ pub fn mat_elem_cmpnts<C: FieldElem>(
             .get_u64it()
             .next()
             .expect("operator has zero annihilation operators");
-        let Some((result, sign)) = apply_op_ket_u64(cre, ann, ket_word) else {
-            continue;
-        };
-        if result != bra_word {
-            continue;
-        }
-        if let Ok(phase) = C::try_represent(sign) {
-            contrib_sum += *op_coeff * phase;
+        match apply_op_ket_u64(cre, ann, ket_word) {
+            ApplyResult::Applied(bits, sign) => {
+                if bits != bra_word {
+                    continue;
+                }
+                if let Ok(phase) = C::try_represent(sign) {
+                    contrib_sum += *op_coeff * phase;
+                }
+            }
+            ApplyResult::Zero => continue,
         }
     }
     contrib_sum

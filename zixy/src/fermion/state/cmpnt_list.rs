@@ -20,6 +20,7 @@ use crate::container::word_iters::{self, WordIters};
 use crate::fermion::mode::Modes;
 use crate::fermion::operator::cmpnt_list as operator;
 use crate::fermion::operator::products::apply_op_ket_u64;
+use crate::fermion::operator::products::ApplyResult;
 use crate::fermion::traits::ModesBased;
 
 /// Contiguous and compact storage for Slater determinants
@@ -158,7 +159,10 @@ impl<'a> CmpntMutRef<'a> {
         let cre = op.get_cre_part().get_u64it().next().unwrap_or(0);
         let ann = op.get_ann_part().get_u64it().next().unwrap_or(0);
         let ket = rhs.get_u64it().next().unwrap_or(0);
-        let (result, sign) = apply_op_ket_u64(cre, ann, ket)?;
+        let (result, sign) = match apply_op_ket_u64(cre, ann, ket) {
+            ApplyResult::Applied(bits, sign) => (bits, sign),
+            ApplyResult::Zero => return None,
+        };
         *self.get_u64it_mut().next().unwrap() = result;
         Some(sign)
     }

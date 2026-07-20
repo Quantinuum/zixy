@@ -345,25 +345,32 @@ fn count_before_each_set_bit(word: u64, mut at: u64) -> u32 {
     count
 }
 
+/// Result of applying a single normal-ordered ladder operator component to a Slater determinant ket.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ApplyResult {
+    Applied(u64, Sign),
+    /// The fermionic exclusion principle forbids the term, i.e. if `ann` is not a subset of `ket`,
+    /// or if any mode flagged in `cre` is already occupied after removing the modes in `ann`.
+    Zero,
+}
+
 // Apply a single normal-ordered ladder operator component, given as its creation and annihilation mode bitsets,
 /// to a Slater determinant ket occupation bitset.
-///
-/// Returns `None` if the fermionic exclusion principle forbids the term, i.e. if `ann` is not a subset of `ket`,
+/// Returns `ApplyResult::Zero` if the fermionic exclusion principle forbids the term, i.e. if `ann` is not a subset of `ket`,
 /// or if any mode flagged in `cre` is already occupied after removing the modes in `ann`. Otherwise, returns the
 /// resulting occupation bitset together with the anti-symmetric exchange sign picked up by normal-ordering the
-/// application, assuming both `cre` and `ann` list their modes in ascending order (consistent with the rest of
-/// this module).
-pub fn apply_op_ket_u64(cre: u64, ann: u64, ket: u64) -> Option<(u64, Sign)> {
+/// application, assuming both `cre` and `ann` list their modes in ascending order.
+pub fn apply_op_ket_u64(cre: u64, ann: u64, ket: u64) -> ApplyResult {
     if ket & ann != ann {
-        return None;
+        return ApplyResult::Zero;
     }
     let ket_after_ann = ket & !ann;
     if cre & ket_after_ann != 0 {
-        return None;
+        return ApplyResult::Zero;
     }
     let exponent =
         count_before_each_set_bit(ket, ann) + count_before_each_set_bit(ket_after_ann, cre);
-    Some((ket_after_ann | cre, Sign(exponent & 1 == 1)))
+    ApplyResult::Applied(ket_after_ann | cre, Sign(exponent & 1 == 1))
 }
 
 #[cfg(test)]
@@ -501,9 +508,11 @@ mod tests {
         #[case] ket: u64,
         #[case] expected: Option<(u64, bool)>,
     ) {
-        assert_eq!(
-            apply_op_ket_u64(cre, ann, ket),
-            expected.map(|(bits, sign)| (bits, Sign(sign)))
-        );
+        let expected = match expected {
+            Some((bits, sign)) => ApplyResult::Applied(bits, Sign(sign)),
+            None => ApplyResult::Zero,
+        };
+        let result = apply_op_ket_u64(cre, ann, ket);
+        assert_eq!(result, expected);
     }
 }

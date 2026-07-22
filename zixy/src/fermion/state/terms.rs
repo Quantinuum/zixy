@@ -38,7 +38,9 @@ pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<CmpntList, C> {
     fn push_vec(&mut self, value: Vec<bool>) -> Result<(), OutOfBounds> {
         let mut self_mut_ref = self.view_mut();
         let n_mode = self_mut_ref.get_word_iters().modes().len();
-        OutOfBounds::check(value.len().saturating_sub(1), n_mode, Dimension::Mode)?;
+        if let Some(max_ind) = value.len().checked_sub(1) {
+            OutOfBounds::check(max_ind, n_mode, Dimension::Mode)?;
+        }
         let i_cmpnt = self_mut_ref.len();
         self_mut_ref.push_clear();
         self_mut_ref
@@ -78,6 +80,36 @@ impl<'a, C: NumRepr> AsView<C> for View<'a, C> {}
 
 impl<C: NumRepr> AsViewMut<C> for Terms<C> {}
 impl<'a, C: NumRepr> AsViewMut<C> for ViewMut<'a, C> {}
+
+impl<C: NumRepr> ModesBased for Terms<C> {
+    fn modes(&self) -> &Modes {
+        self.word_iters.modes()
+    }
+}
+
+impl<'a, C: NumRepr> ModesBased for View<'a, C> {
+    fn modes(&self) -> &Modes {
+        self.word_iters.modes()
+    }
+}
+
+impl<'a, C: NumRepr> ModesBased for ViewMut<'a, C> {
+    fn modes(&self) -> &Modes {
+        self.word_iters.modes()
+    }
+}
+
+impl<'a, C: NumRepr> ModesBased for TermRef<'a, C> {
+    fn modes(&self) -> &Modes {
+        self.word_iters.modes()
+    }
+}
+
+impl<'a, C: NumRepr> ModesBased for TermMutRef<'a, C> {
+    fn modes(&self) -> &Modes {
+        self.word_iters.modes()
+    }
+}
 
 impl<C: NumRepr> Terms<C> {
     /// Create a new list of state strings on the given space of modes.

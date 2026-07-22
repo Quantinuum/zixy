@@ -65,6 +65,14 @@ pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<CmpntList, C> {
             .assign_set_unchecked(value);
         Ok(())
     }
+
+    /// Append a Slater determinant with the given coefficient.
+    fn push_set_with_coeff(&mut self, value: HashSet<usize>, coeff: C) -> Result<(), OutOfBounds> {
+        self.push_set(value)?;
+        let idx = self.view_mut().len() - 1;
+        self.view_mut().get_elem_mut_ref(idx).set_coeff(coeff);
+        Ok(())
+    }
 }
 
 impl<C: NumRepr> AsView<C> for Terms<C> {}
@@ -72,6 +80,36 @@ impl<'a, C: NumRepr> AsView<C> for View<'a, C> {}
 
 impl<C: NumRepr> AsViewMut<C> for Terms<C> {}
 impl<'a, C: NumRepr> AsViewMut<C> for ViewMut<'a, C> {}
+
+impl<C: NumRepr> ModesBased for Terms<C> {
+    fn modes(&self) -> &Modes {
+        self.word_iters.modes()
+    }
+}
+
+impl<'a, C: NumRepr> ModesBased for View<'a, C> {
+    fn modes(&self) -> &Modes {
+        self.word_iters.modes()
+    }
+}
+
+impl<'a, C: NumRepr> ModesBased for ViewMut<'a, C> {
+    fn modes(&self) -> &Modes {
+        self.word_iters.modes()
+    }
+}
+
+impl<'a, C: NumRepr> ModesBased for TermRef<'a, C> {
+    fn modes(&self) -> &Modes {
+        self.word_iters.modes()
+    }
+}
+
+impl<'a, C: NumRepr> ModesBased for TermMutRef<'a, C> {
+    fn modes(&self) -> &Modes {
+        self.word_iters.modes()
+    }
+}
 
 impl<C: NumRepr> Terms<C> {
     /// Create a new list of state strings on the given space of modes.

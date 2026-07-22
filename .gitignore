@@ -14,3 +14,6 @@ zixy-py/docs/jupyter_execute
 
 # IDE environment files
 .vscode/
+
+
+uv.lock

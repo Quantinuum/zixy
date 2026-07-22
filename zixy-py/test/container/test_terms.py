@@ -285,6 +285,48 @@ def test_real_terms():
     assert RealMockTermSum.from_str(str(term_sum)) == term_sum
 
 
+def test_termsum_vectorised_coeff_multiplication():
+    term_sum = RealMockTermSum.from_iterable((("alpha", 1.0), ("beta", -2.0), ("alpha", 3.0)))
+    coeffs = RealCoeffs.from_sequence((2.0, 0.5))
+    assert tuple(term_sum.to_terms().coeffs) == (4.0, -2.0)
+    term_sum *= coeffs
+    assert tuple(term_sum.to_terms().coeffs) == (8.0, -1.0)
+
+    with pytest.raises(ValueError):
+        term_sum_2 = RealMockTermSum.from_iterable(
+            (("alpha", 1.0), ("beta", -2.0), ("alpha", 3.0), ("gamma", 4.0))
+        )
+        term_sum_2 *= coeffs
+
+    term_sum *= term_sum.to_terms().coeffs[::-1]
+    assert tuple(term_sum.to_terms().coeffs) == (-8.0, -8.0)
+
+
+def test_terms_vectorised_coeff_multiplication():
+    class MockTerm(Term[StringsImplArray, str, float]):
+        cmpnts_type = Strings
+        coeff_type = float
+
+        @classmethod
+        def from_str(cls, source: str) -> Self:
+            return _mock_term_from_str(cls, source)
+
+    class MockTerms(NumericTerms[StringsImplArray, str, float]):
+        term_type = MockTerm
+
+    terms_1 = MockTerms(TermData(Strings(3), RealCoeffs.from_sequence((1.0, -3.0, 0.5))))
+    coeffs = RealCoeffs.from_sequence((2.0, 0.5, -1.0))
+    terms_1 *= coeffs
+    assert tuple(terms_1.coeffs) == (2.0, -1.5, -0.5)
+
+    with pytest.raises(ValueError):
+        terms_2 = MockTerms(TermData(Strings(4), RealCoeffs.from_scalar(1.0, 4)))
+        terms_2 *= coeffs
+
+    terms_1 *= terms_1.coeffs[::-1]
+    assert tuple(terms_1.coeffs) == (-1.0, 2.25, -1.0)
+
+
 def test_str():
     empty_terms = RealMockTerms(TermData(Strings(0), RealCoeffs.from_size(0)))
     assert empty_terms.to_str() == ""

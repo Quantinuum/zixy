@@ -12,11 +12,15 @@ use crate::cmpnt::springs::ModeSettings;
 use crate::cmpnt::state_springs::BinarySprings;
 use crate::container::bit_matrix;
 use crate::container::bit_matrix::AsBitMatrix;
+use crate::container::coeffs::sign::Sign;
 use crate::container::errors::OutOfBounds;
 use crate::container::table::Table;
 use crate::container::traits::{Compatible, Elements, EmptyClone};
 use crate::container::word_iters::{self, WordIters};
 use crate::fermion::mode::Modes;
+use crate::fermion::operator::cmpnt_list as operator;
+use crate::fermion::operator::products::apply_op_ket_u64;
+use crate::fermion::operator::products::ApplyResult;
 use crate::fermion::traits::ModesBased;
 
 /// Contiguous and compact storage for Slater determinants
@@ -44,7 +48,7 @@ impl CmpntList {
         Ok(this)
     }
 
-    /// Create an instance from springs with an inferred qubit space.
+    /// Create an instance from springs with an inferred fermionic mode space.
     pub fn from_springs_default(springs: &BinarySprings) -> Self {
         Self::from_springs(
             Modes::from_count(springs.get_mode_inds().default_n_mode() as usize),
@@ -145,6 +149,31 @@ impl<'a> bit_matrix::AsRowMutRef for CmpntMutRef<'a> {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AssignResult {
+    Applied(Sign),
+    Zero,
+}
+
+impl<'a> CmpntMutRef<'a> {
+    /// Set the value of this referenced Slater determinant to the result of applying the given normal-ordered
+    /// ladder operator component to `rhs`, returning the anti-symmetric exchange sign of the result, or `Zero
+    /// if the fermionic exclusion principle forbids the term (an annihilated mode is unoccupied in `rhs`, or a
+    /// created mode is already occupied).
+    /// Assumes the mode space fits in a single `u64` word.
+    pub fn assign_mul_by_op(&mut self, op: operator::CmpntRef, rhs: CmpntRef) -> AssignResult {
+        let cre = op.get_cre_part().get_u64it().next().unwrap_or(0);
+        let ann = op.get_ann_part().get_u64it().next().unwrap_or(0);
+        let ket = rhs.get_u64it().next().unwrap_or(0);
+        let (result, sign) = match apply_op_ket_u64(cre, ann, ket) {
+            ApplyResult::Applied(result, sign) => (result, sign),
+            ApplyResult::Zero => return AssignResult::Zero,
+        };
+        *self.get_u64it_mut().next().unwrap() = result;
+        AssignResult::Applied(sign)
+    }
+}
+
 impl bit_matrix::AsBitMatrix for CmpntList {
     fn get_table(&self) -> &Table {
         self.bitsets.get_table()
@@ -199,5 +228,58 @@ mod tests {
             })
             .collect::<Vec<_>>();
         assert_eq!(output, vecs);
+    }
+
+    #[test]
+    fn test_assign_mul_by_op() {
+        use crate::container::bit_matrix::AsRowMutRef;
+        use crate::container::traits::proj::Borrow;
+        use crate::container::traits::MutRefElements;
+        use crate::fermion::operator::cmpnt::Cmpnt;
+        use std::collections::HashSet;
+
+        let modes = Modes::from_count(3);
+        // c_2^+ c_0, applied to |1_0 1_1> should give -|1_1 1_2>.
+        let op = Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([2]), HashSet::from([0]));
+
+        let mut ket = CmpntList::new(modes.clone());
+        ket.push_clear();
+        ket.get_elem_mut_ref(0)
+            .assign_set_unchecked(HashSet::from([0, 1]));
+
+        let mut out = CmpntList::new(modes);
+        out.push_clear();
+        let sign = out
+            .get_elem_mut_ref(0)
+            .assign_mul_by_op(op.borrow(), ket.get_elem_ref(0));
+
+        assert_eq!(sign, AssignResult::Applied(Sign(true)));
+        assert_eq!(out.get_elem_ref(0).to_set(), HashSet::from([1, 2]));
+    }
+
+    #[test]
+    fn test_assign_mul_by_op_forbidden() {
+        use crate::container::bit_matrix::AsRowMutRef;
+        use crate::container::traits::proj::Borrow;
+        use crate::container::traits::MutRefElements;
+        use crate::fermion::operator::cmpnt::Cmpnt;
+        use std::collections::HashSet;
+
+        let modes = Modes::from_count(3);
+        // c_0 annihilating an unoccupied mode 0 is forbidden.
+        let op = Cmpnt::from_sets_unchecked(modes.clone(), HashSet::new(), HashSet::from([0]));
+
+        let mut ket = CmpntList::new(modes.clone());
+        ket.push_clear();
+        ket.get_elem_mut_ref(0)
+            .assign_set_unchecked(HashSet::from([1]));
+
+        let mut out = CmpntList::new(modes);
+        out.push_clear();
+        let sign = out
+            .get_elem_mut_ref(0)
+            .assign_mul_by_op(op.borrow(), ket.get_elem_ref(0));
+
+        assert_eq!(sign, AssignResult::Zero);
     }
 }

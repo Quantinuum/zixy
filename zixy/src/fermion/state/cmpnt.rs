@@ -72,14 +72,16 @@ mod tests {
 
     #[test]
     fn test_from_set() {
-        let state = Elem<CmpntList>::from_set(Modes::from_count(4), HashSet::from([1, 3])).unwrap();
+        let state =
+            Elem::<CmpntList>::from_set(Modes::from_count(4), HashSet::from([1, 3])).unwrap();
         assert_eq!(state.borrow().to_set(), HashSet::from([1, 3]));
     }
 
     #[test]
     fn test_from_cmpnt_ref() {
-        let cmpnt = Elem<CmpntList>::from_set(Modes::from_count(4), HashSet::from([1, 3])).unwrap();
-        let state = Elem<CmpntList>::from_cmpnt_ref(cmpnt.borrow());
+        let cmpnt =
+            Elem::<CmpntList>::from_set(Modes::from_count(4), HashSet::from([1, 3])).unwrap();
+        let state = Elem::<CmpntList>::from_cmpnt_ref(cmpnt.borrow());
         assert_eq!(state.borrow().to_set(), HashSet::from([1, 3]));
     }
 }

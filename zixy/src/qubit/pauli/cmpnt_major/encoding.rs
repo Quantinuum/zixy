@@ -57,33 +57,3 @@ pub fn get_qubit(x_slice: &[u64], z_slice: &[u64], i_qubit: usize) -> PauliMatri
         }
     }
 }
-
-/// Invert the endianness of a single integer from little to big or big to little.
-pub fn invert_endian(i: u64, n_bit: usize) -> u64 {
-    i.reverse_bits() >> 64_usize.saturating_sub(n_bit)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_invert_endian() {
-        for n_bit in [1, 10, 20, 23, 63, 64] {
-            // check with individual set bits
-            for i_bit in 0..n_bit {
-                let inp = 1_u64 << i_bit;
-                let out = 1_u64 << (n_bit - 1 - i_bit);
-                assert_eq!(invert_endian(inp, n_bit), out);
-                assert_eq!(invert_endian(out, n_bit), inp);
-                // check with pairs of set bits
-                for j_bit in 0..i_bit {
-                    let inp = (1_u64 << i_bit) + (1_u64 << j_bit);
-                    let out = (1_u64 << (n_bit - 1 - i_bit)) + (1_u64 << (n_bit - 1 - j_bit));
-                    assert_eq!(invert_endian(inp, n_bit), out);
-                    assert_eq!(invert_endian(out, n_bit), inp);
-                }
-            }
-        }
-    }
-}

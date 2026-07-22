@@ -18,9 +18,9 @@ use crate::container::table::Table;
 use crate::container::traits::{Compatible, Elements, EmptyClone};
 use crate::container::word_iters::{self, WordIters};
 use crate::fermion::mode::Modes;
-use crate::fermion::operator::cmpnt_list as operator;
-use crate::fermion::operator::products::apply_op_ket_u64;
-use crate::fermion::operator::products::ApplyResult;
+use crate::fermion::operator::normal::cmpnt_list as operator;
+use crate::fermion::operator::normal::products::apply_op_ket_u64;
+use crate::fermion::operator::normal::products::ApplyResult;
 use crate::fermion::traits::ModesBased;
 
 /// Contiguous and compact storage for Slater determinants
@@ -235,7 +235,7 @@ mod tests {
         use crate::container::bit_matrix::AsRowMutRef;
         use crate::container::traits::proj::Borrow;
         use crate::container::traits::MutRefElements;
-        use crate::fermion::operator::cmpnt::Cmpnt;
+        use crate::fermion::operator::normal::cmpnt::Cmpnt;
         use std::collections::HashSet;
 
         let modes = Modes::from_count(3);
@@ -262,7 +262,7 @@ mod tests {
         use crate::container::bit_matrix::AsRowMutRef;
         use crate::container::traits::proj::Borrow;
         use crate::container::traits::MutRefElements;
-        use crate::fermion::operator::cmpnt::Cmpnt;
+        use crate::fermion::operator::normal::cmpnt::Cmpnt;
         use std::collections::HashSet;
 
         let modes = Modes::from_count(3);

@@ -17,7 +17,6 @@ use crate::fermion::operator::cmpnt_major::lincomb;
 use crate::fermion::operator::products::apply_op_ket_u64;
 use crate::fermion::operator::products::ApplyResult;
 use crate::fermion::state;
-use crate::fermion::state::cmpnt::BasisState;
 use crate::fermion::state::cmpnt_list::AssignResult;
 use crate::fermion::state::cmpnt_list::CmpntList as StateList;
 use crate::fermion::state::cmpnt_list::CmpntRef as StateRef;
@@ -214,7 +213,7 @@ pub fn apply<C: FieldElem>(
     state: &state::terms::View<C>,
     out: &mut state::term_set::ViewMut<Complex64>,
 ) {
-    let mut tmp = BasisState::new(state.word_iters.to_modes());
+    let mut tmp = word_iters::Elem::<StateList>::new(state.word_iters.to_modes());
     for (op_cmpnt, op_coeff) in op.word_iters.iter().zip(op.coeffs.iter()) {
         for (state_cmpnt, state_coeff) in state.word_iters.iter().zip(state.coeffs.iter()) {
             let sign = match tmp

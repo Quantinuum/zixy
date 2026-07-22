@@ -11,7 +11,7 @@ use crate::fermion::state::cmpnt_list::{CmpntList, CmpntMutRef, CmpntRef};
 use crate::fermion::traits::ModesBased;
 
 /// A single Slater determinant.
-/// All functionality which does not pertain to the instantiation of `BasisState` is to be accessed via the
+/// All functionality which does not pertain to the instantiation of `Elem<CmpntList>` is to be accessed via the
 /// borrow and borrow_mut functions.
 impl Elem<CmpntList> {
     /// Borrow an immutable projected view.
@@ -64,8 +64,6 @@ impl fmt::Display for Elem<CmpntList> {
     }
 }
 
-pub type BasisState = Elem<CmpntList>;
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -74,14 +72,14 @@ mod tests {
 
     #[test]
     fn test_from_set() {
-        let state = BasisState::from_set(Modes::from_count(4), HashSet::from([1, 3])).unwrap();
+        let state = Elem<CmpntList>::from_set(Modes::from_count(4), HashSet::from([1, 3])).unwrap();
         assert_eq!(state.borrow().to_set(), HashSet::from([1, 3]));
     }
 
     #[test]
     fn test_from_cmpnt_ref() {
-        let cmpnt = BasisState::from_set(Modes::from_count(4), HashSet::from([1, 3])).unwrap();
-        let state = BasisState::from_cmpnt_ref(cmpnt.borrow());
+        let cmpnt = Elem<CmpntList>::from_set(Modes::from_count(4), HashSet::from([1, 3])).unwrap();
+        let state = Elem<CmpntList>::from_cmpnt_ref(cmpnt.borrow());
         assert_eq!(state.borrow().to_set(), HashSet::from([1, 3]));
     }
 }

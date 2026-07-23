@@ -42,7 +42,7 @@ homepage = "https://github.com/quantinuum/zixy/tree/main"
 repository = "https://github.com/quantinuum/zixy/tree/main"
 
 [build-system]
-requires = ["maturin~=1.7"]
+requires = ["maturin~=1.14"]
 build-backend = "maturin"
 
 [tool.maturin]

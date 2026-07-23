@@ -54,3 +54,7 @@ updates:
         applies-to: security-updates
         patterns:
           - "*"
+    ignore:
+      - dependency-name: "pandas"
+        # Breaking API change which breaks CI as it requires Python >=3.11.
+        versions: [">= 3.0.0"]

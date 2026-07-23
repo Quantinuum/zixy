@@ -431,7 +431,7 @@ class Terms(
         for term in self:
             term.coeff = typesafe_mul(term.coeff, scalar)
 
-    def scale_per_element(self, coeffs: Coeffs[CoeffT]) -> None:
+    def scale_by_coeffs(self, coeffs: Coeffs[CoeffT]) -> None:
         """Scale all elements by the corresponding coefficients.
 
         Args:
@@ -455,7 +455,7 @@ class Terms(
     def __imul__(self, coeff: CoeffT | Coeffs[CoeffT]) -> Self:
         """Multiply ``self`` by ``coeff`` in-place."""
         if isinstance(coeff, Coeffs):
-            self.scale_per_element(coeff)
+            self.scale_by_coeffs(coeff)
         else:
             self.scale(coeff)
         return self

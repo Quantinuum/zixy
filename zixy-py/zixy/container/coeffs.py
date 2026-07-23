@@ -958,7 +958,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
         for i in range(len(self)):
             self[i] = typesafe_mul(self[i], scalar)
 
-    def scale_per_element(self, coeffs: Coeffs[CoeffT]) -> None:
+    def scale_by_coeffs(self, coeffs: Coeffs[CoeffT]) -> None:
         """Scale all elements by the corresponding elements of ``coeffs``.
 
         Args:
@@ -988,7 +988,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
         if isinstance(rhs, Coeff):
             self.scale(rhs)
         elif isinstance(rhs, Coeffs):
-            self.scale_per_element(rhs)
+            self.scale_by_coeffs(rhs)
         else:
             for i, c in enumerate(rhs):
                 if i >= len(self):

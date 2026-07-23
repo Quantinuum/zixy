@@ -1402,6 +1402,12 @@ class ExprListWrapper(BaseVec):
         """
         self._list[index] = ExprListWrapper.simplify_integer_floats(sympify(value))
 
+    def __eq__(self, other: object) -> bool:
+        """Return whether ``self`` and ``other`` are equal."""
+        if not isinstance(other, ExprListWrapper):
+            return NotImplemented
+        return self.same_as(other) or self._list == other._list
+
     @staticmethod
     def simplify_integer_floats(expr: Expr) -> Expr:
         """Simplify any floating point numbers that are exactly representable as integers.
@@ -1477,6 +1483,9 @@ class ExprListWrapper(BaseVec):
         if isinstance(coeffs, Sequence):
             return [ExprListWrapper._sympify_coeff(coeff) for coeff in coeffs]
         return [ExprListWrapper._sympify_coeff(coeffs)]
+
+    def same_as(self, other: ExprListWrapper) -> bool:
+        return self._list is other._list
 
     def append(self, value: Expr) -> None:
         """Append ``value`` to the end of ``self``.

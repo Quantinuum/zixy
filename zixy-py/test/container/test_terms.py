@@ -333,6 +333,7 @@ def test_termsum_vectorised_coeff_multiplication():
     coeffs = RealCoeffs.from_sequence((2.0, 0.5))
     assert tuple(term_sum.to_terms().coeffs) == (4.0, -2.0)
     term_sum *= coeffs
+    # (4.0, -2.0).(2.0, 0.5) = (8.0, -1.0)
     assert tuple(term_sum.to_terms().coeffs) == (8.0, -1.0)
 
     with pytest.raises(ValueError):
@@ -342,6 +343,7 @@ def test_termsum_vectorised_coeff_multiplication():
         term_sum_2 *= coeffs
 
     term_sum *= term_sum.to_terms().coeffs[::-1]
+    # (4.0, -2.0).(-2.0, 4.0) = (-8.0, -8.0)
     assert tuple(term_sum.to_terms().coeffs) == (-8.0, -8.0)
 
 
@@ -360,6 +362,7 @@ def test_terms_vectorised_coeff_multiplication():
     terms_1 = MockTerms(TermData(Strings(3), RealCoeffs.from_sequence((1.0, -3.0, 0.5))))
     coeffs = RealCoeffs.from_sequence((2.0, 0.5, -1.0))
     terms_1 *= coeffs
+    # (1.0, -3.0, 0.5).(2.0, 0.5, -1.0) = (2.0, -1.5, -0.5)
     assert tuple(terms_1.coeffs) == (2.0, -1.5, -0.5)
 
     with pytest.raises(ValueError):
@@ -367,6 +370,7 @@ def test_terms_vectorised_coeff_multiplication():
         terms_2 *= coeffs
 
     terms_1 *= terms_1.coeffs[::-1]
+    # (2.0, -1.5, -0.5).(-0.5, -1.5, 2.0) = (-1.0, 2.25, -1.0)
     assert tuple(terms_1.coeffs) == (-1.0, 2.25, -1.0)
 
 
@@ -390,19 +394,22 @@ def test_sign_terms_vectorised_coeff_multiplication():
     terms_1 = MockTerms(
         TermData(
             Strings(3),
-            SignCoeffs.from_sequence((Sign(False), Sign(True), Sign(True))),
+            SignCoeffs.from_sequence((Sign(True), Sign(False), Sign(True))),
         )
     )
-    coeffs = SignCoeffs.from_sequence((Sign(True), Sign(False), Sign(True)))
+    coeffs = SignCoeffs.from_sequence((Sign(False), Sign(True), Sign(False)))
     terms_1 *= coeffs
-    assert tuple(term.phase for term in terms_1.coeffs) == (True, True, False)
+    # False represents +1 and True represents -1.
+    # (-1, +1, -1).(+1, -1, +1) = (-1, -1, -1)
+    assert tuple(term.phase for term in terms_1.coeffs) == (True, True, True)
 
     with pytest.raises(ValueError):
         terms_2 = MockTerms(TermData(Strings(4), SignCoeffs.from_scalar(Sign(False), 4)))
         terms_2 *= coeffs
 
     terms_1 *= terms_1.coeffs[::-1]
-    assert tuple(term.phase for term in terms_1.coeffs) == (True, False, True)
+    # (-1, -1, -1).(-1, -1, -1) = (+1, +1, +1)
+    assert tuple(term.phase for term in terms_1.coeffs) == (False, False, False)
 
 
 def test_complex_termsum_vectorised_coeff_multiplication():
@@ -411,6 +418,7 @@ def test_complex_termsum_vectorised_coeff_multiplication():
     )
     coeffs = ComplexCoeffs.from_sequence((1j, 2 - 1j))
     assert tuple(term_sum.to_terms().coeffs) == (4 + 1j, -2 + 1j)
+    # (4 + 1j, -2 + 1j).(1j, 2 - 1j) = (-1 + 4j, -3 + 4j)
     term_sum *= coeffs
     assert tuple(term_sum.to_terms().coeffs) == (-1 + 4j, -3 + 4j)
 
@@ -421,6 +429,7 @@ def test_complex_termsum_vectorised_coeff_multiplication():
         term_sum_2 *= coeffs
 
     term_sum *= term_sum.to_terms().coeffs[::-1]
+    # (-1 + 4j, -3 + 4j).(-3 + 4j, -1 + 4j) = (-13 - 16j, -13 - 16j)
     assert tuple(term_sum.to_terms().coeffs) == (-13 - 16j, -13 - 16j)
 
 
@@ -433,6 +442,7 @@ def test_symbolic_terms_vectorised_coeff_multiplication():
     )
     coeffs = SymbolicCoeffs.from_sequence((sympify(2), sympify("x"), sympify(-1)))
     terms *= coeffs
+    # (x, y, x + y).(2, x, -1) = (2*x, x*y, -x - y)
     assert tuple(terms.coeffs) == (sympify("2*x"), sympify("x*y"), sympify("-x - y"))
 
     with pytest.raises(ValueError):
@@ -442,6 +452,7 @@ def test_symbolic_terms_vectorised_coeff_multiplication():
         terms_2 *= coeffs
 
     terms *= terms.coeffs[::-1]
+    # (2*x, x*y, -x - y).(-x - y, x*y, 2*x) = (2*x*(-x - y), x**2*y**2, 2*x*(-x-y))
     assert tuple(terms.coeffs) == (
         sympify("2*x*(-x - y)"),
         sympify("x**2*y**2"),

@@ -1,5 +1,5 @@
 //! Fermion operator in linear combination utilities, including conversions between
-//! raw and normal-ordered representations.
+//! general and normal-ordered representations.
 
 use crate::container::bit_matrix::AsRowRef;
 use crate::container::coeffs::traits::FieldElem;
@@ -21,8 +21,10 @@ use itertools::Itertools;
 use num_complex::Complex64;
 use std::collections::HashSet;
 
-/// Convert a raw term set to a normal-ordered term set by applying fermionic anticommutation relations.
-pub fn normalise<C: FieldElem>(terms: &general_term_set::View<C>) -> NormalTermSet<Complex64> {
+/// Convert a general term set to a normal-ordered term set by applying fermionic anticommutation relations.
+pub fn to_normal_order<C: FieldElem>(
+    terms: &general_term_set::View<C>,
+) -> NormalTermSet<Complex64> {
     let mut out = NormalTermSet::<Complex64>::new(terms.to_modes().clone());
     let n_terms = terms.word_iters.len().min(terms.coeffs.len());
     for (index, coeff) in terms.coeffs.iter().take(n_terms).enumerate() {
@@ -48,7 +50,7 @@ pub fn normalise<C: FieldElem>(terms: &general_term_set::View<C>) -> NormalTermS
                 .borrow_mut()
                 .insert_elem_ref_or_update(rhs.borrow(), Complex64::new(1.0, 0.0));
             let product = normal_mul(&current.borrow().as_terms(), &rhs_set.borrow().as_terms())
-                .expect("normalise: mode spaces should be compatible");
+                .expect("to_normal_order: mode spaces should be compatible");
             current = product;
         }
 
@@ -61,8 +63,8 @@ pub fn normalise<C: FieldElem>(terms: &general_term_set::View<C>) -> NormalTermS
     out
 }
 
-/// Convert a normal-ordered term set to a raw term set.
-pub fn generalise<C: FieldElem>(terms: &normal_term_set::View<C>) -> GeneralTermSet<Complex64> {
+/// Convert a normal-ordered term set to a general term set, preserving order.
+pub fn to_general<C: FieldElem>(terms: &normal_term_set::View<C>) -> GeneralTermSet<Complex64> {
     let max_len = 2 * terms.word_iters.modes().len();
     let mut out = GeneralTermSet::<Complex64>::new(max_len, terms.to_modes().clone());
     let n_terms = terms.word_iters.len().min(terms.coeffs.len());
@@ -96,11 +98,11 @@ mod tests {
     use crate::fermion::operator::normal::cmpnt_major::term_set::TermSet as NormalTermSet;
     use std::collections::HashSet;
 
-    fn make_raw(n_modes: usize, modes: &[usize], adj: &[bool]) -> GeneralTermSet<f64> {
+    fn make_general(n_modes: usize, modes: &[usize], adj: &[bool]) -> GeneralTermSet<f64> {
         let modes_space = Modes::from_count(n_modes);
-        let mut raw = GeneralTermSet::<f64>::new(modes.len(), modes_space);
-        raw.push_term(modes, adj, 1.0_f64);
-        raw
+        let mut general = GeneralTermSet::<f64>::new(modes.len(), modes_space);
+        general.push_term(modes, adj, 1.0_f64);
+        general
     }
 
     fn check_term(
@@ -124,35 +126,35 @@ mod tests {
     }
 
     #[test]
-    fn test_generalise_preserves_order_and_coeffs() {
+    fn test_to_general_preserves_order_and_coeffs() {
         let modes = Modes::from_count(4);
         let mut terms = NormalTermSet::<f64>::new(modes.clone());
         let cmpnt =
             Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([2]), HashSet::from([0, 1]));
         scaled_iadd_elem(&mut terms.borrow_mut(), cmpnt.borrow(), 2.0);
 
-        let result = generalise(&terms.borrow());
+        let result = to_general(&terms.borrow());
         assert_eq!(result.terms.word_iters.len(), 1);
-        let (raw_modes, raw_adj) = result.terms.word_iters.get(0);
-        assert_eq!(raw_modes, vec![2, 0, 1]);
-        assert_eq!(raw_adj, vec![true, false, false]);
+        let (general_modes, general_adj) = result.terms.word_iters.get(0);
+        assert_eq!(general_modes, vec![2, 0, 1]);
+        assert_eq!(general_adj, vec![true, false, false]);
         assert_eq!(result.terms.coeffs[0], Complex64::new(2.0, 0.0));
     }
 
     #[test]
-    fn test_normalise_repeated_annihilation_vanishes() {
+    fn test_to_normal_order_repeated_annihilation_vanishes() {
         // a_0 a_0 -> 0
-        let raw = make_raw(4, &[0, 0], &[false, false]);
-        let result = normalise(&raw.as_terms());
+        let general = make_general(4, &[0, 0], &[false, false]);
+        let result = to_normal_order(&general.as_terms());
         assert_eq!(result.len(), 0);
     }
 
     #[test]
-    fn test_normalise_already_normal_ordered_unchanged() {
+    fn test_to_normal_order_already_normal_ordered_unchanged() {
         // a_^0+ a_1 already normal-ordered, so no anticommutations are needed and the
         // coefficient should remain unchanged.
-        let raw = make_raw(4, &[0, 1], &[true, false]);
-        let result = normalise(&raw.as_terms());
+        let general = make_general(4, &[0, 1], &[true, false]);
+        let result = to_normal_order(&general.as_terms());
         assert_eq!(result.len(), 1);
         check_term(
             &result,
@@ -164,13 +166,13 @@ mod tests {
     }
 
     #[test]
-    fn test_normalise_combines_multiple_raw_terms() {
+    fn test_to_normal_order_combines_multiple_general_terms() {
         // a_0 a_0^+ + a_0^+ a_0 -> 1
         let modes_space = Modes::from_count(4);
-        let mut raw = GeneralTermSet::<f64>::new(2, modes_space.clone());
-        raw.push_term(&[0, 0], &[false, true], 1.0);
-        raw.push_term(&[0, 0], &[true, false], 1.0);
-        let result = normalise(&raw.as_terms());
+        let mut general = GeneralTermSet::<f64>::new(2, modes_space.clone());
+        general.push_term(&[0, 0], &[false, true], 1.0);
+        general.push_term(&[0, 0], &[true, false], 1.0);
+        let result = to_normal_order(&general.as_terms());
         assert_eq!(result.len(), 1);
         check_term(
             &result,
@@ -182,10 +184,10 @@ mod tests {
     }
 
     #[test]
-    fn test_normalise_a0_a0dag() {
+    fn test_to_normal_order_a0_a0dag() {
         // a_0 a_0^+ -> 1 - a_0^+ a_0
-        let raw = make_raw(4, &[0, 0], &[false, true]);
-        let result = normalise(&raw.as_terms());
+        let general = make_general(4, &[0, 0], &[false, true]);
+        let result = to_normal_order(&general.as_terms());
         assert_eq!(result.len(), 2);
         check_term(
             &result,
@@ -204,10 +206,10 @@ mod tests {
     }
 
     #[test]
-    fn test_normalise_a0_a1dag() {
+    fn test_to_normal_order_a0_a1dag() {
         // a_0 a_1^+ -> -a_1^+ a_0
-        let raw = make_raw(4, &[0, 1], &[false, true]);
-        let result = normalise(&raw.as_terms());
+        let general = make_general(4, &[0, 1], &[false, true]);
+        let result = to_normal_order(&general.as_terms());
         assert_eq!(result.len(), 1);
         check_term(
             &result,
@@ -219,10 +221,10 @@ mod tests {
     }
 
     #[test]
-    fn test_normalise_a0dag_a1_a0() {
+    fn test_to_normal_order_a0dag_a1_a0() {
         // a_0^+ a_1 a_0 -> -a_0^+ a_0 a_1
-        let raw = make_raw(4, &[0, 1, 0], &[true, false, false]);
-        let result = normalise(&raw.as_terms());
+        let general = make_general(4, &[0, 1, 0], &[true, false, false]);
+        let result = to_normal_order(&general.as_terms());
         assert_eq!(result.len(), 1);
         check_term(
             &result,

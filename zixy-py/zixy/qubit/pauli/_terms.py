@@ -39,6 +39,7 @@ from zixy._zixy import (
 from zixy.container import terms
 from zixy.container.coeffs import (
     Coeff,
+    Coeffs,
     CoeffT,
     ComplexCoeffs,
     ComplexSign,
@@ -684,11 +685,14 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
     def __mul__(self, other: Coeff) -> Self: ...
 
     @overload
+    def __mul__(self, other: Coeffs[float]) -> Self: ...
+
+    @overload
     def __mul__(self, other: Self) -> ComplexTermSum: ...
 
-    def __mul__(self, other: Self | Coeff) -> Self | ComplexTermSum:
+    def __mul__(self, other: Self | Coeff | Coeffs[float]) -> Self | ComplexTermSum:
         """Multiplication of ``self`` by ``other``."""
-        if isinstance(other, Coeff):
+        if isinstance(other, Coeff | Coeffs):
             return super().__mul__(other)
         elif not isinstance(other, RealTermSum):
             return NotImplemented
@@ -931,9 +935,9 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
             big_endian,
         )
 
-    def __mul__(self, other: Self | Coeff) -> Self | ComplexTermSum:
+    def __mul__(self, other: Self | Coeff | Coeffs[complex]) -> Self | ComplexTermSum:
         """Multiplication of ``self`` by ``other``."""
-        if isinstance(other, Coeff):
+        if isinstance(other, Coeff | Coeffs):
             return super().__mul__(other)
         elif not isinstance(other, ComplexTermSum):
             return NotImplemented
@@ -1251,9 +1255,12 @@ class SymbolicTermSum(TermSum[Expr]):
     @overload
     def __mul__(self, other: Self) -> Self: ...
 
-    def __mul__(self, other: Self | Coeff) -> Self | SymbolicTermSum:
+    @overload
+    def __mul__(self, other: Coeffs[Expr]) -> Self: ...
+
+    def __mul__(self, other: Self | Coeff | Coeffs[Expr]) -> Self | SymbolicTermSum:
         """Multiplication of ``self`` by ``other``."""
-        if isinstance(other, Coeff):
+        if isinstance(other, Coeff | Coeffs):
             return super().__mul__(other)
         elif not isinstance(other, SymbolicTermSum):
             return NotImplemented

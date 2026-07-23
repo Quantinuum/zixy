@@ -972,13 +972,13 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
                 f"Length of coeffs ({len(coeffs)}) does not match length of self ({len(self)})"
             )
 
-        if self._impl.same_as(coeffs._impl):
+        if type(coeffs) is type(self) and self._impl.same_as(coeffs._impl):
             coeffs = coeffs.clone()
 
         for i in range(len(self)):
             self[i] = typesafe_mul(self[i], coeffs[i])
 
-    def __imul__(self, rhs: Coeff | Iterable[Coeff]) -> Self:
+    def __imul__(self, rhs: Coeff | Coeffs[CoeffT] | Iterable[Coeff]) -> Self:
         """Multiply ``self`` by ``rhs`` in-place.
 
         Raises:

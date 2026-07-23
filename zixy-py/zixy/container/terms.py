@@ -446,7 +446,7 @@ class Terms(
                 f"{type(coeffs)} of length {len(coeffs)}."
             )
 
-        if coeffs._impl.same_as(self._impl._coeffs._impl):
+        if type(coeffs) is self.coeffs_type and coeffs._impl.same_as(self._impl._coeffs._impl):
             coeffs = coeffs.clone()
 
         for item, coeff in zip(self, coeffs):
@@ -1161,8 +1161,7 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
 
     def __imul__(self, scalar: Coeff | Coeffs[CoeffT]) -> Self:
         """In-place multiplication of ``self`` by ``scalar``."""
-        coeffs = self._impl._coeffs
-        coeffs *= scalar
+        self._impl._coeffs *= scalar
         return self
 
     def __itruediv__(self, scalar: Coeff) -> Self:

@@ -4,7 +4,7 @@ import pytest
 from mock_cmpnts import String, Strings, StringSet, StringsImplArray
 from typing_extensions import Self
 
-from zixy.container.coeffs import ComplexSign, RealCoeffs, Sign, SignCoeffs
+from zixy.container.coeffs import ComplexCoeffs, ComplexSign, RealCoeffs, Sign, SignCoeffs
 from zixy.container.data import TermData
 from zixy.container.terms import NumericTerms, NumericTermSum, Term, Terms, TermSet
 
@@ -65,9 +65,19 @@ class ComplexMockTerm(Term[StringsImplArray, str, complex]):
 class ComplexMockTerms(NumericTerms[StringsImplArray, str, complex]):
     term_type = ComplexMockTerm
 
+    def __init__(self, data: TermData[StringsImplArray, str, complex] | None = None):
+        super().__init__(TermData(Strings(0), ComplexCoeffs.from_size(0)) if data is None else data)
+
 
 class ComplexMockTermSet(TermSet[StringsImplArray, str, complex]):
     terms_type = ComplexMockTerms
+
+
+class ComplexMockTermSum(NumericTermSum[StringsImplArray, str, complex]):
+    terms_type = ComplexMockTerms
+
+    def __init__(self):
+        super().__init__(ComplexMockTerms())
 
 
 def test_sign_terms():
@@ -325,6 +335,60 @@ def test_terms_vectorised_coeff_multiplication():
 
     terms_1 *= terms_1.coeffs[::-1]
     assert tuple(terms_1.coeffs) == (-1.0, 2.25, -1.0)
+
+
+def test_sign_terms_vectorised_coeff_multiplication():
+    class MockTerm(Term[StringsImplArray, str, Sign]):
+        cmpnts_type = Strings
+        coeff_type = Sign
+
+        @classmethod
+        def from_str(cls, source: str) -> Self:
+            return _mock_term_from_str(cls, source)
+
+    class MockTerms(Terms[StringsImplArray, str, Sign]):
+        term_type = MockTerm
+
+        def __init__(self, data: TermData[StringsImplArray, str, Sign] | None = None):
+            super().__init__(
+                TermData(Strings(0), SignCoeffs.from_size(0)) if data is None else data
+            )
+
+    terms_1 = MockTerms(
+        TermData(
+            Strings(3),
+            SignCoeffs.from_sequence((Sign(False), Sign(True), Sign(True))),
+        )
+    )
+    coeffs = SignCoeffs.from_sequence((Sign(True), Sign(False), Sign(True)))
+    terms_1 *= coeffs
+    assert tuple(term.phase for term in terms_1.coeffs) == (True, True, False)
+
+    with pytest.raises(ValueError):
+        terms_2 = MockTerms(TermData(Strings(4), SignCoeffs.from_scalar(Sign(False), 4)))
+        terms_2 *= coeffs
+
+    terms_1 *= terms_1.coeffs[::-1]
+    assert tuple(term.phase for term in terms_1.coeffs) == (True, False, True)
+
+
+def test_complex_termsum_vectorised_coeff_multiplication():
+    term_sum = ComplexMockTermSum.from_iterable(
+        (("alpha", 1 + 2j), ("beta", -2 + 1j), ("alpha", 3 - 1j))
+    )
+    coeffs = ComplexCoeffs.from_sequence((1j, 2 - 1j))
+    assert tuple(term_sum.to_terms().coeffs) == (4 + 1j, -2 + 1j)
+    term_sum *= coeffs
+    assert tuple(term_sum.to_terms().coeffs) == (-1 + 4j, -3 + 4j)
+
+    with pytest.raises(ValueError):
+        term_sum_2 = ComplexMockTermSum.from_iterable(
+            (("alpha", 1 + 2j), ("beta", -2 + 1j), ("gamma", 0.5 - 1j))
+        )
+        term_sum_2 *= coeffs
+
+    term_sum *= term_sum.to_terms().coeffs[::-1]
+    assert tuple(term_sum.to_terms().coeffs) == (-13 - 16j, -13 - 16j)
 
 
 def test_str():

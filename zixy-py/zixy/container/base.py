@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import builtins
+import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator, Sequence, Sized
 from functools import wraps
@@ -346,6 +347,9 @@ class StringRepresentable(ABC):
     @classmethod
     def parse(cls, source: str) -> Self:
         """Parse a string into an instance of ``cls``.
+        
+        Deprecated:
+            use :meth:`from_str` instead.
 
         Args:
             source: String to parse.
@@ -353,4 +357,9 @@ class StringRepresentable(ABC):
         Returns:
             An instance of ``cls`` parsed from ``source``.
         """
+        warnings.warn(
+            f''{cls.__name__}.parse is deprecated, use {cls.__name__}.from_str instead.", 
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return cls.from_str(source)

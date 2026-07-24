@@ -151,7 +151,7 @@ def test_sign_terms_canonicalize():
         (0, 2),
         # eliminate Z0s
         (2, 0),
-        # moveX0 up
+        # move X0 up
         (1, 2),
         # eliminate X0s
         (0, 1),

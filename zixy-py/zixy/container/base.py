@@ -347,7 +347,7 @@ class StringRepresentable(ABC):
     @classmethod
     def parse(cls, source: str) -> Self:
         """Parse a string into an instance of ``cls``.
-        
+
         Deprecated:
             use :meth:`from_str` instead.
 
@@ -358,7 +358,7 @@ class StringRepresentable(ABC):
             An instance of ``cls`` parsed from ``source``.
         """
         warnings.warn(
-            f"{cls.__name__}.parse is deprecated, use {cls.__name__}.from_str instead.", 
+            f"{cls.__name__}.parse is deprecated, use {cls.__name__}.from_str instead.",
             DeprecationWarning,
             stacklevel=2,
         )

@@ -616,14 +616,15 @@ def test_real_vec():
     view = v[:]
     with pytest.raises(ValueError):
         view.resize(1)
-        
+
+
 def test_parse_deprecated():
     assert RealCoeffs.from_str("1.0, 2.0") == RealCoeffs.from_sequence([1.0, 2.0])
-    with pytest.deprecated_call(): 
+    with pytest.deprecated_call():
         assert RealCoeffs.from_str("1.0, 2.0") == RealCoeffs.from_sequence([1.0, 2.0])
-    with pytest.raises (NotImplementedError):
+    with pytest.raises(NotImplementedError):
         SymbolicCoeffs.from_str("x, y")
-    with pytest.deprecated_call(), pytest.raises (NotImplementedError):
+    with pytest.deprecated_call(), pytest.raises(NotImplementedError):
         SymbolicCoeffs.from_str("x, y")
 
 

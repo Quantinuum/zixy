@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import warnings
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Generic, TypeVar, cast, overload
 
@@ -327,19 +328,36 @@ class StringSet(Generic[ImplT, SpecT, ElemT], CmpntSet[ImplT, SpecT]):
     def from_strings(cls, strings: Strings[ImplT, SpecT, ElemT]) -> StringSet[ImplT, SpecT, ElemT]:
         """Create a new instance of ``cls`` from the strings in ``strings``.
 
+        Deprecated:
+            Use :meth:`~zixy.container.cmpnts.CmpntSet.from_cmpnts` instead.
+
         Args:
             strings: Owned or viewed strings with which to populate the new instance.
 
         Returns:
             A new instance of ``cls`` containing the strings in ``strings``.
         """
+        warnings.warn(
+            f"{cls.__name__}.from_strings is deprecated, use {cls.__name__}.from_cmpnts instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return cls.from_cmpnts(strings)
 
     def to_strings(self) -> Strings[ImplT, SpecT, ElemT]:
         """Create a new array of strings owning copies of all those contained in ``self``.
 
+        Deprecated:
+            Use :meth:`~zixy.container.cmpnts.CmpntSet.to_cmpnts` instead.
+
         Returns:
             New :class:`Strings` instance containing copies of the strings in ``self``. The
             type is determined by :attr:`~zixy.qubit._strings.StringSet.cmpnts_type`.
         """
+        warnings.warn(
+            f"{type(self).__name__}.to_strings is deprecated, "
+            f"use {type(self).__name__}.to_cmpnts instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return cast(Strings[ImplT, SpecT, ElemT], self.to_cmpnts())

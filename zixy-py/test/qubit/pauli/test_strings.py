@@ -340,6 +340,17 @@ def test_string_set():
     assert StringSet.from_cmpnts(strings).to_cmpnts() == strings
 
 
+def test_string_set_deprecated_string_conversions():
+    strings = Strings.from_iterable(((X,), (Y,)), 1)
+
+    with pytest.deprecated_call(match="StringSet.from_strings is deprecated"):
+        string_set = StringSet.from_strings(strings)
+    with pytest.deprecated_call(match="StringSet.to_strings is deprecated"):
+        round_tripped = string_set.to_strings()
+
+    assert round_tripped == strings
+
+
 def test_string_set_from_iterable():
     s = StringSet.from_iterable(((X,), (Y,), (X,), (I,), (Z,), (Y,), (X,)), 1)
     assert len(s) == 4

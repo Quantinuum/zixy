@@ -34,7 +34,7 @@ dependencies = [
     "scipy>=1.15.2",
     "sympy>=1.14.0",
     "pandas>=2.2.3",
-    "typing_extensions>=4.9.0",
+    "typing_extensions>=4.16.0",
 ]
 
 [project.urls]
@@ -42,7 +42,7 @@ homepage = "https://github.com/quantinuum/zixy/tree/main"
 repository = "https://github.com/quantinuum/zixy/tree/main"
 
 [build-system]
-requires = ["maturin~=1.7"]
+requires = ["maturin~=1.14"]
 build-backend = "maturin"
 
 [tool.maturin]

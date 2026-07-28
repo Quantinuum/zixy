@@ -37,7 +37,7 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Report

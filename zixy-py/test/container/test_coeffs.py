@@ -618,6 +618,16 @@ def test_real_vec():
         view.resize(1)
 
 
+def test_parse_deprecated():
+    assert RealCoeffs.from_str("1.0, 2.0") == RealCoeffs.from_sequence([1.0, 2.0])
+    with pytest.deprecated_call():
+        assert RealCoeffs.parse("1.0, 2.0") == RealCoeffs.from_sequence([1.0, 2.0])
+    with pytest.raises(NotImplementedError):
+        SymbolicCoeffs.from_str("x, y")
+    with pytest.deprecated_call(), pytest.raises(NotImplementedError):
+        SymbolicCoeffs.parse("x, y")
+
+
 def test_complex_vec():
     assert len(ComplexCoeffs.from_scalar(2 + 1j)) == 1
     assert len(ComplexCoeffs.from_scalar(2 + 1j, 5)) == 5

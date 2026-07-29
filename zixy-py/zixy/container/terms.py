@@ -420,7 +420,7 @@ class Terms(
             self[indexer].set(source)
 
     def scale(self, scalar: CoeffT) -> None:
-        """Scale all elements by a given factor.
+        """Scale all elements by a scalar factor.
 
         Args:
             scalar: Scalar factor by which to scale all elements.
@@ -432,7 +432,7 @@ class Terms(
             term.coeff = typesafe_mul(term.coeff, scalar)
 
     def scale_by_coeffs(self, coeffs: Coeffs[CoeffT]) -> None:
-        """Scale all elements by the corresponding coefficients.
+        """Scale all elements by the corresponding coefficient vector.
 
         Args:
             coeffs: Coefficients by which to scale the elements of ``self``.
@@ -453,12 +453,19 @@ class Terms(
             item.coeff = typesafe_mul(item.coeff, coeff)
 
     def __imul__(self, coeff: CoeffT | Coeffs[CoeffT]) -> Self:
-        """Multiply ``self`` by ``coeff`` in-place."""
+        """Multiply ``self`` in-place by a scalar or coefficient vector."""
         if isinstance(coeff, Coeffs):
             self.scale_by_coeffs(coeff)
         else:
             self.scale(coeff)
         return self
+
+    def __mul__(self, coeff: CoeffT | Coeffs[CoeffT]) -> Self:
+        """Return ``self`` multiplied by a scalar or coefficient vector."""
+        out = self._empty_clone()
+        out.append_iterable(self)
+        out *= coeff
+        return out
 
     def _empty_clone(self) -> Self:
         """Get an empty (owning, contiguous) clone of ``self``."""
@@ -1159,9 +1166,9 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
         out -= rhs
         return out
 
-    def __imul__(self, scalar: Coeff | Coeffs[CoeffT]) -> Self:
-        """In-place multiplication of ``self`` by ``scalar``."""
-        self._impl._coeffs *= scalar
+    def __imul__(self, coeff: Coeff | Coeffs[CoeffT]) -> Self:
+        """Multiply ``self`` in-place by a scalar or coefficient vector."""
+        self._impl._coeffs *= coeff
         return self
 
     def __itruediv__(self, scalar: Coeff) -> Self:
@@ -1172,15 +1179,15 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
             self *= 1 / scalar
         return self
 
-    def __mul__(self, scalar: Coeff | Coeffs[CoeffT]) -> Self:
-        """Multiplication of ``self`` by ``scalar``."""
+    def __mul__(self, coeff: Coeff | Coeffs[CoeffT]) -> Self:
+        """Return ``self`` multiplied by a scalar or coefficient vector."""
         out = self.clone()
-        out *= scalar
+        out *= coeff
         return out
 
-    def __rmul__(self, scalar: Coeff | Coeffs[CoeffT]) -> Self:
-        """Multiplication of ``scalar`` by ``self``."""
-        return self * scalar
+    def __rmul__(self, coeff: Coeff | Coeffs[CoeffT]) -> Self:
+        """Return ``self`` multiplied by a scalar or coefficient vector."""
+        return self * coeff
 
     def __truediv__(self, scalar: Coeff) -> Self:
         """Division of ``self`` by ``scalar``."""

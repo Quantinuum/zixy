@@ -462,8 +462,7 @@ class Terms(
 
     def __mul__(self, coeff: CoeffT | Coeffs[CoeffT]) -> Self:
         """Return ``self`` multiplied by a scalar or coefficient vector."""
-        out = self._empty_clone()
-        out.append_iterable(self)
+        out = self.clone()
         out *= coeff
         return out
 

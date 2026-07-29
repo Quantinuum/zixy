@@ -466,6 +466,12 @@ class Terms(
         out *= coeff
         return out
 
+    def __rmul__(self, coeff: CoeffT | Coeffs[CoeffT]) -> Self:
+        """Return ``self`` multiplied by a scalar or coefficient vector."""
+        out = self.clone()
+        out *= coeff
+        return out
+
     def _empty_clone(self) -> Self:
         """Get an empty (owning, contiguous) clone of ``self``."""
         return self._create(self._impl._empty_clone())

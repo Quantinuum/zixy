@@ -8,10 +8,10 @@ dependencies = [
     "furo>=2025.9.25",
     "myst-nb>=1.4.0",
     "sphinx-copybutton",
-    "pandas>=3.0.3",
+    "pandas>=3.0.5",
     "scipy",
     "zixy",
-    "sphinx-autodoc-typehints>=3.11.0",
+    "sphinx-autodoc-typehints>=3.13.0",
     "jupyterlab",
     "ipykernel>=7.3.0",
 ]

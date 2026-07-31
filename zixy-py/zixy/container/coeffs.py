@@ -958,7 +958,27 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
         for i in range(len(self)):
             self[i] = typesafe_mul(self[i], scalar)
 
-    def __imul__(self, rhs: Coeff | Iterable[Coeff]) -> Self:
+    def scale_by_coeffs(self, coeffs: Coeffs[CoeffT]) -> None:
+        """Scale all elements by the corresponding elements of ``coeffs``.
+
+        Args:
+            coeffs: Coefficients by which to scale the elements of ``self``.
+
+        Note:
+            This method operates in-place.
+        """
+        if len(coeffs) != len(self):
+            raise ValueError(
+                f"Length of coeffs ({len(coeffs)}) does not match length of self ({len(self)})"
+            )
+
+        if type(coeffs) is type(self) and self._impl.same_as(coeffs._impl):
+            coeffs = coeffs.clone()
+
+        for i in range(len(self)):
+            self[i] = typesafe_mul(self[i], coeffs[i])
+
+    def __imul__(self, rhs: Coeff | Coeffs[CoeffT] | Iterable[Coeff]) -> Self:
         """Multiply ``self`` by ``rhs`` in-place.
 
         Raises:
@@ -967,6 +987,8 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
         """
         if isinstance(rhs, Coeff):
             self.scale(rhs)
+        elif isinstance(rhs, Coeffs):
+            self.scale_by_coeffs(rhs)
         else:
             for i, c in enumerate(rhs):
                 if i >= len(self):
@@ -1380,6 +1402,12 @@ class ExprListWrapper(BaseVec):
         """
         self._list[index] = ExprListWrapper.simplify_integer_floats(sympify(value))
 
+    def __eq__(self, other: object) -> bool:
+        """Return whether ``self`` and ``other`` are equal."""
+        if not isinstance(other, ExprListWrapper):
+            return NotImplemented
+        return self.same_as(other) or self._list == other._list
+
     @staticmethod
     def simplify_integer_floats(expr: Expr) -> Expr:
         """Simplify any floating point numbers that are exactly representable as integers.
@@ -1455,6 +1483,9 @@ class ExprListWrapper(BaseVec):
         if isinstance(coeffs, Sequence):
             return [ExprListWrapper._sympify_coeff(coeff) for coeff in coeffs]
         return [ExprListWrapper._sympify_coeff(coeffs)]
+
+    def same_as(self, other: ExprListWrapper) -> bool:
+        return self._list is other._list
 
     def append(self, value: Expr) -> None:
         """Append ``value`` to the end of ``self``.

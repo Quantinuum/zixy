@@ -2,11 +2,19 @@ from __future__ import annotations
 
 import pytest
 from mock_cmpnts import String, Strings, StringSet, StringsImplArray
+from sympy import Expr, sympify
 from typing_extensions import Self
 
-from zixy.container.coeffs import ComplexSign, RealCoeffs, Sign, SignCoeffs
+from zixy.container.coeffs import (
+    ComplexCoeffs,
+    ComplexSign,
+    RealCoeffs,
+    Sign,
+    SignCoeffs,
+    SymbolicCoeffs,
+)
 from zixy.container.data import TermData
-from zixy.container.terms import NumericTerms, NumericTermSum, Term, Terms, TermSet
+from zixy.container.terms import NumericTerms, NumericTermSum, Term, Terms, TermSet, TermSum
 
 
 def _mock_term_from_str(cls: type[Term[StringsImplArray, str, object]], source: str) -> object:
@@ -65,9 +73,44 @@ class ComplexMockTerm(Term[StringsImplArray, str, complex]):
 class ComplexMockTerms(NumericTerms[StringsImplArray, str, complex]):
     term_type = ComplexMockTerm
 
+    def __init__(self, data: TermData[StringsImplArray, str, complex] | None = None):
+        super().__init__(TermData(Strings(0), ComplexCoeffs.from_size(0)) if data is None else data)
+
 
 class ComplexMockTermSet(TermSet[StringsImplArray, str, complex]):
     terms_type = ComplexMockTerms
+
+
+class ComplexMockTermSum(NumericTermSum[StringsImplArray, str, complex]):
+    terms_type = ComplexMockTerms
+
+    def __init__(self):
+        super().__init__(ComplexMockTerms())
+
+
+class SymbolicMockTerm(Term[StringsImplArray, str, Expr]):
+    cmpnts_type = Strings
+    coeff_type = Expr
+
+    @classmethod
+    def from_str(cls, source: str) -> Self:
+        return _mock_term_from_str(cls, source)
+
+
+class SymbolicMockTerms(Terms[StringsImplArray, str, Expr]):
+    term_type = SymbolicMockTerm
+
+    def __init__(self, data: TermData[StringsImplArray, str, Expr] | None = None):
+        super().__init__(
+            TermData(Strings(0), SymbolicCoeffs.from_size(0)) if data is None else data
+        )
+
+
+class SymbolicMockTermSum(TermSum[StringsImplArray, str, Expr]):
+    terms_type = SymbolicMockTerms
+
+    def __init__(self):
+        super().__init__(SymbolicMockTerms())
 
 
 def test_sign_terms():
@@ -283,6 +326,184 @@ def test_real_terms():
         RealMockTermSet.from_terms(term_sum.to_terms())
     )
     assert RealMockTermSum.from_str(str(term_sum)) == term_sum
+
+
+def test_termsum_vectorised_coeff_multiplication():
+    term_sum = RealMockTermSum.from_iterable((("alpha", 1.0), ("beta", -2.0), ("alpha", 3.0)))
+    coeffs = RealCoeffs.from_sequence((2.0, 0.5))
+    assert tuple(term_sum.to_terms().coeffs) == (4.0, -2.0)
+    term_sum_omul = term_sum * coeffs
+    term_sum_rmul = coeffs * term_sum
+    term_sum *= coeffs
+    # (4.0, -2.0).(2.0, 0.5) = (8.0, -1.0)
+    assert tuple(term_sum.to_terms().coeffs) == (8.0, -1.0)
+    assert tuple(term_sum_omul.to_terms().coeffs) == (8.0, -1.0)
+    assert tuple(term_sum_rmul.to_terms().coeffs) == (8.0, -1.0)
+
+    with pytest.raises(ValueError):
+        term_sum_2 = RealMockTermSum.from_iterable(
+            (("alpha", 1.0), ("beta", -2.0), ("alpha", 3.0), ("gamma", 4.0))
+        )
+        term_sum_2 *= coeffs
+
+    term_sum *= term_sum.to_terms().coeffs[::-1]
+    # (4.0, -2.0).(-2.0, 4.0) = (-8.0, -8.0)
+    assert tuple(term_sum.to_terms().coeffs) == (-8.0, -8.0)
+
+
+def test_terms_vectorised_coeff_multiplication():
+    class MockTerm(Term[StringsImplArray, str, float]):
+        cmpnts_type = Strings
+        coeff_type = float
+
+        @classmethod
+        def from_str(cls, source: str) -> Self:
+            return _mock_term_from_str(cls, source)
+
+    class MockTerms(NumericTerms[StringsImplArray, str, float]):
+        term_type = MockTerm
+
+    terms = MockTerms(TermData(Strings(3), RealCoeffs.from_sequence((1.0, -3.0, 0.5))))
+    coeffs = RealCoeffs.from_sequence((2.0, 0.5, -1.0))
+    term_rmul = coeffs * terms
+    terms_omul = terms * coeffs
+    terms *= coeffs
+    # (1.0, -3.0, 0.5).(2.0, 0.5, -1.0) = (2.0, -1.5, -0.5)
+    assert tuple(terms.coeffs) == (2.0, -1.5, -0.5)
+    assert tuple(terms_omul.coeffs) == (2.0, -1.5, -0.5)
+    assert tuple(term_rmul.coeffs) == (2.0, -1.5, -0.5)
+
+    with pytest.raises(ValueError):
+        terms_2 = MockTerms(TermData(Strings(4), RealCoeffs.from_scalar(1.0, 4)))
+        terms_2 *= coeffs
+
+    terms *= terms.coeffs[::-1]
+    # (2.0, -1.5, -0.5).(-0.5, -1.5, 2.0) = (-1.0, 2.25, -1.0)
+    assert tuple(terms.coeffs) == (-1.0, 2.25, -1.0)
+
+
+def test_sign_terms_vectorised_coeff_multiplication():
+    class MockTerm(Term[StringsImplArray, str, Sign]):
+        cmpnts_type = Strings
+        coeff_type = Sign
+
+        @classmethod
+        def from_str(cls, source: str) -> Self:
+            return _mock_term_from_str(cls, source)
+
+    class MockTerms(Terms[StringsImplArray, str, Sign]):
+        term_type = MockTerm
+
+        def __init__(self, data: TermData[StringsImplArray, str, Sign] | None = None):
+            super().__init__(
+                TermData(Strings(0), SignCoeffs.from_size(0)) if data is None else data
+            )
+
+    terms = MockTerms(
+        TermData(
+            Strings(3),
+            SignCoeffs.from_sequence((Sign(True), Sign(False), Sign(True))),
+        )
+    )
+    coeffs = SignCoeffs.from_sequence((Sign(False), Sign(True), Sign(False)))
+    terms_omul = terms * coeffs
+    terms_rmul = coeffs * terms
+    terms *= coeffs
+    # False represents +1 and True represents -1.
+    # (-1, +1, -1).(+1, -1, +1) = (-1, -1, -1)
+    assert tuple(term.phase for term in terms.coeffs) == (True, True, True)
+    assert tuple(term.phase for term in terms_omul.coeffs) == (True, True, True)
+    assert tuple(term.phase for term in terms_rmul.coeffs) == (True, True, True)
+
+    with pytest.raises(ValueError):
+        terms_2 = MockTerms(TermData(Strings(4), SignCoeffs.from_scalar(Sign(False), 4)))
+        terms_2 *= coeffs
+
+    terms *= terms.coeffs[::-1]
+    # (-1, -1, -1).(-1, -1, -1) = (+1, +1, +1)
+    assert tuple(term.phase for term in terms.coeffs) == (False, False, False)
+
+
+def test_complex_termsum_vectorised_coeff_multiplication():
+    term_sum = ComplexMockTermSum.from_iterable(
+        (("alpha", 1 + 2j), ("beta", -2 + 1j), ("alpha", 3 - 1j))
+    )
+    coeffs = ComplexCoeffs.from_sequence((1j, 2 - 1j))
+    assert tuple(term_sum.to_terms().coeffs) == (4 + 1j, -2 + 1j)
+    # (4 + 1j, -2 + 1j).(1j, 2 - 1j) = (-1 + 4j, -3 + 4j)
+    term_sum_omul = term_sum * coeffs
+    term_sum_rmul = coeffs * term_sum
+    term_sum *= coeffs
+    assert tuple(term_sum.to_terms().coeffs) == (-1 + 4j, -3 + 4j)
+    assert tuple(term_sum_omul.to_terms().coeffs) == (-1 + 4j, -3 + 4j)
+    assert tuple(term_sum_rmul.to_terms().coeffs) == (-1 + 4j, -3 + 4j)
+
+    with pytest.raises(ValueError):
+        term_sum_2 = ComplexMockTermSum.from_iterable(
+            (("alpha", 1 + 2j), ("beta", -2 + 1j), ("gamma", 0.5 - 1j))
+        )
+        term_sum_2 *= coeffs
+
+    term_sum *= term_sum.to_terms().coeffs[::-1]
+    # (-1 + 4j, -3 + 4j).(-3 + 4j, -1 + 4j) = (-13 - 16j, -13 - 16j)
+    assert tuple(term_sum.to_terms().coeffs) == (-13 - 16j, -13 - 16j)
+
+
+def test_symbolic_terms_vectorised_coeff_multiplication():
+    terms = SymbolicMockTerms(
+        TermData(
+            Strings(3),
+            SymbolicCoeffs.from_sequence((sympify("x"), sympify("y"), sympify("x + y"))),
+        )
+    )
+    coeffs = SymbolicCoeffs.from_sequence((sympify(2), sympify("x"), sympify(-1)))
+    terms_omul = terms * coeffs
+    terms_rmul = coeffs * terms
+    terms *= coeffs
+    # (x, y, x + y).(2, x, -1) = (2*x, x*y, -x - y)
+    assert tuple(terms.coeffs) == (sympify("2*x"), sympify("x*y"), sympify("-x - y"))
+    assert tuple(terms_omul.coeffs) == (sympify("2*x"), sympify("x*y"), sympify("-x - y"))
+    assert tuple(terms_rmul.coeffs) == (sympify("2*x"), sympify("x*y"), sympify("-x - y"))
+
+    with pytest.raises(ValueError):
+        terms_2 = SymbolicMockTerms(
+            TermData(Strings(4), SymbolicCoeffs.from_sequence((sympify(1),) * 4))
+        )
+        terms_2 *= coeffs
+
+    terms *= terms.coeffs[::-1]
+    # (2*x, x*y, -x - y).(-x - y, x*y, 2*x) = (2*x*(-x - y), x**2*y**2, 2*x*(-x-y))
+    assert tuple(terms.coeffs) == (
+        sympify("2*x*(-x - y)"),
+        sympify("x**2*y**2"),
+        sympify("2*x*(-x-y)"),
+    )
+
+
+def test_symbolic_termsum_vectorised_coeff_multiplication():
+    term_sum = SymbolicMockTermSum.from_iterable(
+        (("alpha", sympify("x")), ("beta", sympify("y")), ("alpha", sympify(2)))
+    )
+    coeffs = SymbolicCoeffs.from_sequence((sympify("z"), sympify(-1)))
+    assert tuple(term_sum.to_terms().coeffs) == (sympify("x + 2"), sympify("y"))
+    term_sum_rmul = coeffs * term_sum
+    term_sum_omul = term_sum * coeffs
+    term_sum *= coeffs
+    assert tuple(term_sum.to_terms().coeffs) == (sympify("z*(x + 2)"), sympify("-y"))
+    assert tuple(term_sum_omul.to_terms().coeffs) == (sympify("z*(x + 2)"), sympify("-y"))
+    assert tuple(term_sum_rmul.to_terms().coeffs) == (sympify("z*(x + 2)"), sympify("-y"))
+
+    with pytest.raises(ValueError):
+        term_sum_2 = SymbolicMockTermSum.from_iterable(
+            (("alpha", sympify("x")), ("beta", sympify("y")), ("gamma", sympify("z")))
+        )
+        term_sum_2 *= coeffs
+
+    term_sum *= term_sum.to_terms().coeffs[::-1]
+    assert tuple(term_sum.to_terms().coeffs) == (
+        sympify("-y*z*(x + 2)"),
+        sympify("-y*z*(x + 2)"),
+    )
 
 
 def test_str():

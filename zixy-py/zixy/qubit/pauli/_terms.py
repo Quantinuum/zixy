@@ -35,6 +35,7 @@ from zixy._zixy import (
     QubitPauliArray,
     Qubits,
     SymplecticPart,
+    UnorderedFermionOpReal,
 )
 from zixy.container import terms
 from zixy.container.coeffs import (
@@ -678,7 +679,12 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         out_real_coeffs = out._impl._coeffs
         assert isinstance(out_real_coeffs, RealCoeffs)
         out_coeffs = out_real_coeffs._impl
-        mapper._impl.op_encode_real(fermion_ops, out_impl, out_map, out_coeffs)
+        mapper._impl.op_encode_real(
+            UnorderedFermionOpReal([(list(ops), coeff) for ops, coeff in fermion_ops]),
+            out_impl,
+            out_map,
+            out_coeffs,
+        )
         return out
 
     @overload  # type: ignore[override]

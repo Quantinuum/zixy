@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import pytest
-from mock_cmpnts import String, Strings, StringSet, StringsImplArray
+
+from .mock_cmpnts import String, Strings, StringSet, StringsImplArray
 
 
 def test_cmpnt():

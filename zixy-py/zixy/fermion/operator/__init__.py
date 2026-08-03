@@ -12,26 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Submodule for fermionic operators and mappings."""
+"""Submodule for fermionic ladder-operator strings and terms."""
 
-from zixy.fermion.mappings import Contribution, JordanWignerMapper
-from zixy.fermion.operator import (
-    ComplexTerm,
-    ComplexTerms,
-    ComplexTermSet,
-    ComplexTermSum,
-    RealTerm,
-    RealTerms,
-    RealTermSet,
-    RealTermSum,
+from zixy._zixy import (
+    FermionSprings,
+    GeneralFermionOperatorArray,
+    Modes,
+    NormalFermionOperatorArray,
+)
+from zixy.fermion.operator._strings import String, Strings, StringSet, StringSpec
+from zixy.fermion.operator._terms import (
     SignTerm,
     SignTerms,
     SignTermSet,
     SignTermSum,
-    String,
-    Strings,
-    StringSet,
-    StringSpec,
+    RealTerm,
+    RealTerms,
+    RealTermSet,
+    RealTermSum,
+    ComplexTerm,
+    ComplexTerms,
+    ComplexTermSet,
+    ComplexTermSum,
     SymbolicTerm,
     SymbolicTerms,
     SymbolicTermSet,
@@ -39,8 +41,10 @@ from zixy.fermion.operator import (
 )
 
 __all__ = [
-    "Contribution",
-    "JordanWignerMapper",
+    "Modes",
+    "FermionSprings",
+    "NormalFermionOperatorArray",
+    "GeneralFermionOperatorArray",
     "StringSpec",
     "String",
     "Strings",

@@ -184,10 +184,11 @@ impl WordIters for CmpntList {
 
     fn fmt_elem(&self, i: usize) -> String {
         let mut out = self.cre_part.get_elem_ref(i).to_string();
-        if !out.is_empty() {
+        let ann = self.ann_part.get_elem_ref(i).to_string();
+        if !out.is_empty() && !ann.is_empty() {
             out.push(' ');
         }
-        out += self.ann_part.get_elem_ref(i).to_string().as_str();
+        out += ann.as_str();
         out
     }
 }

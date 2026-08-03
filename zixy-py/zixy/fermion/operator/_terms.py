@@ -591,17 +591,45 @@ class SymbolicTerms(Terms[Expr]):
         """Get the coefficients of ``self``."""
         return cast(SymbolicCoeffs, self._data.coeffs[self.slice])
 
+    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
+        """Substitute values into the symbolic coefficients in-place."""
+        self.coeffs.isubs(values)
+
+    def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTerms:
+        """Return a copy with values substituted into the symbolic coefficients."""
+        return SymbolicTerms._create(TermData(self.strings.clone(), self.coeffs.subs(values)))
+
 
 class SymbolicTermSet(TermSet[Expr]):
     """A collection of unique terms with normal-ordered strings and symbolic coefficients."""
 
     terms_type = SymbolicTerms
 
+    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
+        """Substitute values into the symbolic coefficients in-place."""
+        self.coeffs.isubs(values)
+
+    def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTermSet:
+        """Return a copy with values substituted into the symbolic coefficients."""
+        out = self.clone()
+        out.isubs(values)
+        return out
+
 
 class SymbolicTermSum(TermSum[Expr]):
     """A sum of terms consisting of normal-ordered fermionic strings and symbolic coefficients."""
 
     terms_type = SymbolicTerms
+
+    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
+        """Substitute values into the symbolic coefficients in-place."""
+        self.coeffs.isubs(values)
+
+    def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTermSum:
+        """Return a copy with values substituted into the symbolic coefficients."""
+        out = self.clone()
+        out.isubs(values)
+        return out
 
 
 def _string_to_ladder_ops(string: String) -> list[tuple[int, bool]]:

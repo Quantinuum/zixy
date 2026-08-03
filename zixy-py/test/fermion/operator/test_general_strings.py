@@ -1,6 +1,6 @@
 import pytest
 
-from zixy.fermion.operator.general import String, Strings, StringSet
+from zixy.fermion.operator.general import RealTerm, String, Strings, StringSet
 
 
 def test_string_access():
@@ -19,6 +19,35 @@ def test_string_modification():
     string.set("F3 F1^")
     assert string.get_ops() == [(3, False), (1, True)]
     assert str(string) == "F3 F1^"
+
+
+def test_string_scalar_mul():
+    string = String(4, "F0^ F1")
+
+    term = string * 2.0
+
+    assert isinstance(term, RealTerm)
+    assert term.string == string
+    assert term.coeff == 2.0
+
+
+def test_string_mul():
+    lhs = String(3, "F1 F0^")
+    rhs = String(3, "F2")
+
+    product = lhs * rhs
+
+    assert isinstance(product, RealTerm)
+    assert str(product) == "(1.0, F1 F0^ F2)"
+    assert product.string.get_ops() == [(1, False), (0, True), (2, False)]
+
+
+def test_string_mul_errors():
+    lhs = String(2, "F0")
+    rhs = String(3, "F0")
+
+    with pytest.raises(ValueError, match="different modes"):
+        lhs * rhs
 
 
 def test_array_sizing():

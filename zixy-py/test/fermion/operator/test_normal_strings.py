@@ -1,6 +1,6 @@
 import pytest
 
-from zixy.fermion.operator.normal import String, Strings, StringSet
+from zixy.fermion.operator.normal import RealTerm, RealTermSum, String, Strings, StringSet
 
 
 def test_array_sizing():
@@ -83,6 +83,46 @@ def test_string_from_str():
 
     assert str(string) == "F0^ F1"
     assert String.from_str(str(string), 4) == string
+
+
+def test_string_scalar_mul():
+    string = String(4, "F0^ F1")
+
+    term = string * 2.0
+
+    assert isinstance(term, RealTerm)
+    assert term.string == string
+    assert term.coeff == 2.0
+
+
+def test_string_mul():
+    lhs = String(2, "F0^")
+    rhs = String(2, "F1")
+
+    product = lhs * rhs
+
+    assert isinstance(product, RealTermSum)
+    assert str(product) == "(1.0, F0^ F1)"
+
+
+def test_string_mul_with_contraction():
+    lhs = String(1, "F0")
+    rhs = String(1, "F0^")
+
+    product = lhs * rhs
+
+    assert isinstance(product, RealTermSum)
+    assert str(product) == "(1.0, ), (-1.0, F0^ F0)"
+
+
+def test_string_mul_with_zero_product():
+    lhs = String(1, "F0^")
+    rhs = String(1, "F0^")
+
+    product = lhs * rhs
+
+    assert isinstance(product, RealTermSum)
+    assert len(product) == 0
 
 
 def test_string_from_str_errors():

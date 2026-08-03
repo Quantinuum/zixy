@@ -3,5 +3,6 @@ pub mod mappings;
 pub mod mode;
 pub mod operator;
 pub mod springs;
+pub mod state;
 #[allow(dead_code)]
 pub mod unordered_fermion_operator;

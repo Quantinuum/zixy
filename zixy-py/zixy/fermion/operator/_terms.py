@@ -35,6 +35,7 @@ from zixy.container.coeffs import (
     CoeffT,
     ComplexCoeffs,
     Number,
+    RealCoeffs,
     Sign,
     SymbolicCoeffs,
     get_coeffs_type,
@@ -57,6 +58,10 @@ from zixy.fermion.operator._strings import (
     _default_modes,
     parse_ladder_product,
     parse_term_source,
+)
+from zixy.fermion.state._terms import (
+    ComplexTermSum as ComplexState,
+    RealTermSum as RealState,
 )
 
 TermSpec: TypeAlias = String | tuple[StringSpec | String | None, CoeffT | None] | None
@@ -484,6 +489,63 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
         """Return the terms as raw ladder-operator products and coefficients."""
         return [(_string_to_ladder_ops(cast(RealTerm, term).string), term.coeff) for term in self]
 
+    def apply(self, state: RealState) -> ComplexState:
+        """Apply ``self`` to a state.
+
+        Args:
+            state: The state to apply to.
+
+        Returns:
+            The resulting state.
+        """
+        out = ComplexState(self.modes)
+        assert isinstance(self._impl._coeffs, RealCoeffs)
+        assert isinstance(state._impl._coeffs, RealCoeffs)
+        assert isinstance(out._impl._coeffs, ComplexCoeffs)
+        self._impl._cmpnts._impl.apply_to_state_real(
+            self._impl._coeffs._impl,
+            state._impl._cmpnts._impl,
+            state._impl._coeffs._impl,
+            out._impl._cmpnts._impl,
+            out._cmpnt_set._map,
+            out._impl._coeffs._impl,
+        )
+        return out
+
+    def mat_elem(self, bra: RealState, ket: RealState) -> float:
+        """Evaluate the matrix element of ``self`` between a bra and ket state.
+
+        Args:
+            bra: The bra state.
+            ket: The ket state.
+
+        Returns:
+            The resulting matrix element.
+        """
+        assert isinstance(self._impl._coeffs, RealCoeffs)
+        assert isinstance(bra._impl._coeffs, RealCoeffs)
+        assert isinstance(ket._impl._coeffs, RealCoeffs)
+        return float(
+            self._impl._cmpnts._impl.mat_elem_real(
+                self._impl._coeffs._impl,
+                bra._impl._cmpnts._impl,
+                bra._impl._coeffs._impl,
+                ket._impl._cmpnts._impl,
+                ket._impl._coeffs._impl,
+            )
+        )
+
+    def exp_val(self, state: RealState) -> float:
+        """Evaluate the expectation value of ``self`` with respect to a state.
+
+        Args:
+            state: The state to evaluate with respect to.
+
+        Returns:
+            The resulting expectation value.
+        """
+        return self.mat_elem(state, state)
+
 
 class ComplexTerm(Term[complex]):
     """A term consisting of a normal-ordered fermionic string and a complex coefficient."""
@@ -564,6 +626,63 @@ class ComplexTermSum(
         return self.strings._impl.lincomb_active_modes_complex(
             self.strings._impl, self.coeffs._impl
         )
+
+    def apply(self, state: ComplexState) -> ComplexState:
+        """Apply ``self`` to a state.
+
+        Args:
+            state: The state to apply to.
+
+        Returns:
+            The resulting state.
+        """
+        out = ComplexState(self.modes)
+        assert isinstance(self._impl._coeffs, ComplexCoeffs)
+        assert isinstance(state._impl._coeffs, ComplexCoeffs)
+        assert isinstance(out._impl._coeffs, ComplexCoeffs)
+        self._impl._cmpnts._impl.apply_to_state_complex(
+            self._impl._coeffs._impl,
+            state._impl._cmpnts._impl,
+            state._impl._coeffs._impl,
+            out._impl._cmpnts._impl,
+            out._cmpnt_set._map,
+            out._impl._coeffs._impl,
+        )
+        return out
+
+    def mat_elem(self, bra: ComplexState, ket: ComplexState) -> complex:
+        """Evaluate the matrix element of ``self`` between a bra and ket state.
+
+        Args:
+            bra: The bra state.
+            ket: The ket state.
+
+        Returns:
+            The resulting matrix element.
+        """
+        assert isinstance(self._impl._coeffs, ComplexCoeffs)
+        assert isinstance(bra._impl._coeffs, ComplexCoeffs)
+        assert isinstance(ket._impl._coeffs, ComplexCoeffs)
+        return complex(
+            self._impl._cmpnts._impl.mat_elem_complex(
+                self._impl._coeffs._impl,
+                bra._impl._cmpnts._impl,
+                bra._impl._coeffs._impl,
+                ket._impl._cmpnts._impl,
+                ket._impl._coeffs._impl,
+            )
+        )
+
+    def exp_val(self, state: ComplexState) -> complex:
+        """Evaluate the expectation value of ``self`` with respect to a state.
+
+        Args:
+            state: The state to evaluate with respect to.
+
+        Returns:
+            The resulting expectation value.
+        """
+        return self.mat_elem(state, state)
 
 
 class SymbolicTerm(Term[Expr]):

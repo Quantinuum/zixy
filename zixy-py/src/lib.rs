@@ -27,6 +27,7 @@ fn _zixy(_py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     m.add_class::<crate::fermion::mappings::JordanWignerMapper>()?;
     m.add_class::<crate::fermion::mode::Modes>()?;
     m.add_class::<crate::fermion::springs::FermionSprings>()?;
+    m.add_class::<crate::fermion::state::Array>()?;
     m.add_class::<crate::fermion::operator::NormalArray>()?;
     m.add_class::<crate::fermion::operator::GeneralArray>()?;
 

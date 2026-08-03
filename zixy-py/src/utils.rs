@@ -15,6 +15,7 @@ use zixy::container::coeffs::traits::Unrepresentable;
 use zixy::container::errors::IndistinctError;
 use zixy::container::errors::OutOfBounds;
 use zixy::container::word_iters::WordIters;
+use zixy::fermion::traits::DifferentSpaces;
 use zixy::qubit::mode::{BasisError, CoincidentIndex, DifferentModeCounts};
 use zixy::qubit::pauli::cmpnt_major::mat_elem::SubspaceNonorthogonal;
 use zixy::qubit::traits::DifferentQubits;
@@ -312,6 +313,12 @@ impl ErrorToException for BasisError {
             BasisError::Counts(x) => x.get_exception(),
             BasisError::Coincident(x) => x.get_exception(),
         }
+    }
+}
+
+impl ErrorToException for DifferentSpaces {
+    fn get_exception(&self) -> PyErr {
+        PyValueError::new_err(format!("{self}"))
     }
 }
 

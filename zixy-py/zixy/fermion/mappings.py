@@ -191,9 +191,10 @@ class JordanWignerMapper(Mapper):
         """
         if isinstance(qubits, int):
             qubits = Qubits.from_count(qubits)
+        self.qubits = qubits
         self._impl = Impl(qubits, list(mode_ordering) if mode_ordering is not None else None)
 
-    def encode(self, fermion_ops: Sequence[tuple[int, bool]]) -> Contribution[float]:
+    def encode(self, fermion_ops: Any) -> Contribution[float]:
         """Encode a sequence of fermionic operators.
 
         Args:
@@ -204,6 +205,11 @@ class JordanWignerMapper(Mapper):
         Returns:
             The encoded contribution.
         """
+        if hasattr(fermion_ops, "get_ops"):
+            fermion_ops = fermion_ops.get_ops()
+        elif hasattr(fermion_ops, "get_sets"):
+            cre, ann = fermion_ops.get_sets()
+            fermion_ops = [(i, True) for i in cre] + [(i, False) for i in ann]
         fermion_ops = [(int(i), bool(b)) for i, b in fermion_ops]
         self._impl.op_load_product(fermion_ops)
         return Contribution(self, 1)

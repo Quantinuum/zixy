@@ -1,7 +1,23 @@
-from typing import Any, Sized, Sequence, ClassVar, TypeVar, Generic
-from typing_extensions import Self
+# Copyright 2026 Quantinuum
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from collections.abc import Sequence, Sized
+from typing import Any, ClassVar, Generic, TypeVar
+
+from numpy import bool_, complex128, float64, uint8
 from numpy.typing import NDArray
-from numpy import bool_, uint8, float64, complex128
+from typing_extensions import Self
 
 class Map:
     def __init__(self, *args: Any, **kwargs: Any) -> None: ...
@@ -62,6 +78,9 @@ class ComplexVec(BaseVec):
     def __setitem__(self, index: int, value: complex) -> None: ...
     def same_as(self, other: ComplexVec) -> bool: ...
 
+class UnorderedFermionOpReal:
+    def __init__(self, terms: Sequence[tuple[Sequence[tuple[int, bool]], float]]) -> None: ...
+
 class Qubits(Sized):
     def __init__(self, qubits: Qubits) -> None: ...
     def __len__(self) -> int: ...
@@ -74,6 +93,16 @@ class Qubits(Sized):
     def from_inds(cls, inds: list[int]) -> Self: ...
     @classmethod
     def from_hilbert_space_dim(cls, n: int) -> Self: ...
+
+class Modes(Sized):
+    def __len__(self) -> int: ...
+    def __eq__(self, other: object) -> bool: ...
+    @classmethod
+    def from_count(cls, source: int) -> Self: ...
+    @classmethod
+    def from_pair_count_spin_major(cls, n: int) -> Self: ...
+    @classmethod
+    def from_pair_count_spin_minor(cls, n: int) -> Self: ...
 
 class ImplArray(Sized):
     def resize(self, n: int) -> None: ...
@@ -91,6 +120,147 @@ class ImplArray(Sized):
     def mapped_lookup(self, map: Map, other: Self, index: int) -> int | None: ...
     def mapped_remove(self, map: Map, other: Self, index: int) -> int | None: ...
     def mapped_equal(self, map: Map, other: Self) -> bool: ...
+
+class FermionSprings:
+    def __init__(self, source: str | None = ...) -> None: ...
+
+class NormalFermionOperatorArray(ImplArray):
+    modes: Modes
+    def __init__(self, modes: Modes | None = ..., springs: FermionSprings | None = ...) -> None: ...
+    def append_clear(self) -> None: ...
+    def cmpnt_clear(self, i: int) -> None: ...
+    def cmpnt_set_from_sets(self, i: int, cre: set[int], ann: set[int]) -> None: ...
+    def cmpnt_set_from_lists(self, i: int, cre: list[bool], ann: list[bool]) -> None: ...
+    def cmpnt_get_sets(self, i: int) -> tuple[list[int], list[int]]: ...
+    def cmpnt_set_cre(self, i_cmpnt: int, i_mode: int, value: bool) -> None: ...
+    def cmpnt_set_ann(self, i_cmpnt: int, i_mode: int, value: bool) -> None: ...
+    def cmpnt_get_cre(self, i_cmpnt: int, i_mode: int) -> bool: ...
+    def cmpnt_get_ann(self, i_cmpnt: int, i_mode: int) -> bool: ...
+    def cmpnt_count_n_body(self, i: int) -> int: ...
+    def cmpnt_particle_number_change(self, i: int) -> int: ...
+    def dagger_get_signs(self) -> SignVec: ...
+    def cmpnt_mul(
+        self, index: int, rhs: NormalFermionOperatorArray, rhs_index: int
+    ) -> tuple[NormalFermionOperatorArray, SignVec]: ...
+    @staticmethod
+    def from_ladder_product(
+        modes: Modes, ops: Sequence[tuple[int, bool]]
+    ) -> tuple[NormalFermionOperatorArray, ComplexVec]: ...
+    @staticmethod
+    def lincomb_mul_real(
+        lhs_impl: NormalFermionOperatorArray,
+        lhs_coeffs: RealVec,
+        rhs_impl: NormalFermionOperatorArray,
+        rhs_coeffs: RealVec,
+    ) -> tuple[NormalFermionOperatorArray, ComplexVec]: ...
+    @staticmethod
+    def lincomb_mul_complex(
+        lhs_impl: NormalFermionOperatorArray,
+        lhs_coeffs: ComplexVec,
+        rhs_impl: NormalFermionOperatorArray,
+        rhs_coeffs: ComplexVec,
+    ) -> tuple[NormalFermionOperatorArray, ComplexVec]: ...
+    @staticmethod
+    def lincomb_commutator_real(
+        lhs_impl: NormalFermionOperatorArray,
+        lhs_coeffs: RealVec,
+        rhs_impl: NormalFermionOperatorArray,
+        rhs_coeffs: RealVec,
+    ) -> tuple[NormalFermionOperatorArray, ComplexVec]: ...
+    @staticmethod
+    def lincomb_anticommutator_real(
+        lhs_impl: NormalFermionOperatorArray,
+        lhs_coeffs: RealVec,
+        rhs_impl: NormalFermionOperatorArray,
+        rhs_coeffs: RealVec,
+    ) -> tuple[NormalFermionOperatorArray, ComplexVec]: ...
+    @staticmethod
+    def lincomb_commutator_complex(
+        lhs_impl: NormalFermionOperatorArray,
+        lhs_coeffs: ComplexVec,
+        rhs_impl: NormalFermionOperatorArray,
+        rhs_coeffs: ComplexVec,
+    ) -> tuple[NormalFermionOperatorArray, ComplexVec]: ...
+    @staticmethod
+    def lincomb_anticommutator_complex(
+        lhs_impl: NormalFermionOperatorArray,
+        lhs_coeffs: ComplexVec,
+        rhs_impl: NormalFermionOperatorArray,
+        rhs_coeffs: ComplexVec,
+    ) -> tuple[NormalFermionOperatorArray, ComplexVec]: ...
+    @staticmethod
+    def lincomb_is_hermitian_real(
+        cmpnts: NormalFermionOperatorArray, coeffs: RealVec, atol: float
+    ) -> bool: ...
+    @staticmethod
+    def lincomb_is_hermitian_complex(
+        cmpnts: NormalFermionOperatorArray, coeffs: ComplexVec, atol: float
+    ) -> bool: ...
+    @staticmethod
+    def lincomb_conserves_particle_number_real(
+        cmpnts: NormalFermionOperatorArray, coeffs: RealVec, atol: float
+    ) -> bool: ...
+    @staticmethod
+    def lincomb_conserves_particle_number_complex(
+        cmpnts: NormalFermionOperatorArray, coeffs: ComplexVec, atol: float
+    ) -> bool: ...
+    @staticmethod
+    def lincomb_max_n_body_real(cmpnts: NormalFermionOperatorArray, coeffs: RealVec) -> int: ...
+    @staticmethod
+    def lincomb_max_n_body_complex(
+        cmpnts: NormalFermionOperatorArray, coeffs: ComplexVec
+    ) -> int: ...
+    @staticmethod
+    def lincomb_active_modes_real(
+        cmpnts: NormalFermionOperatorArray, coeffs: RealVec
+    ) -> set[int]: ...
+    @staticmethod
+    def lincomb_active_modes_complex(
+        cmpnts: NormalFermionOperatorArray, coeffs: ComplexVec
+    ) -> set[int]: ...
+    @staticmethod
+    def lincomb_to_general_real(
+        cmpnts: NormalFermionOperatorArray, map: Map, coeffs: RealVec
+    ) -> tuple[GeneralFermionOperatorArray, ComplexVec]: ...
+    @staticmethod
+    def lincomb_to_general_complex(
+        cmpnts: NormalFermionOperatorArray, map: Map, coeffs: ComplexVec
+    ) -> tuple[GeneralFermionOperatorArray, ComplexVec]: ...
+
+class GeneralFermionOperatorArray(ImplArray):
+    modes: Modes
+    max_len: int
+    def __init__(self, modes: Modes, max_len: int = ...) -> None: ...
+    def append_clear(self) -> None: ...
+    def cmpnt_clear(self, i: int) -> None: ...
+    def cmpnt_set_from_ops(self, i: int, modes: list[int], adj: list[bool]) -> None: ...
+    def cmpnt_get_ops(self, i: int) -> tuple[list[int], list[bool]]: ...
+    @staticmethod
+    def from_ladder_product(
+        modes: Modes, ops: Sequence[tuple[int, bool]]
+    ) -> GeneralFermionOperatorArray: ...
+    @staticmethod
+    def lincomb_mul_real(
+        lhs_impl: GeneralFermionOperatorArray,
+        lhs_coeffs: RealVec,
+        rhs_impl: GeneralFermionOperatorArray,
+        rhs_coeffs: RealVec,
+    ) -> tuple[GeneralFermionOperatorArray, RealVec]: ...
+    @staticmethod
+    def lincomb_mul_complex(
+        lhs_impl: GeneralFermionOperatorArray,
+        lhs_coeffs: ComplexVec,
+        rhs_impl: GeneralFermionOperatorArray,
+        rhs_coeffs: ComplexVec,
+    ) -> tuple[GeneralFermionOperatorArray, ComplexVec]: ...
+    @staticmethod
+    def lincomb_to_normal_order_real(
+        cmpnts: GeneralFermionOperatorArray, coeffs: RealVec
+    ) -> tuple[NormalFermionOperatorArray, ComplexVec]: ...
+    @staticmethod
+    def lincomb_to_normal_order_complex(
+        cmpnts: GeneralFermionOperatorArray, coeffs: ComplexVec
+    ) -> tuple[NormalFermionOperatorArray, ComplexVec]: ...
 
 ElemT = TypeVar("ElemT")
 SpringsT = TypeVar("SpringsT", bound=Springs)
@@ -133,7 +303,9 @@ class QubitPauliArray(QubitArray[PauliSprings, PauliMatrix]):
     def cmpnt_mul(
         self, index: int, rhs: QubitPauliArray, rhs_index: int
     ) -> tuple[QubitPauliArray, ComplexSign]: ...
-    def cmpnts_mul_pairwise(self, rhs: QubitPauliArray) -> tuple[QubitPauliArray, ComplexSignVec]: ...
+    def cmpnts_mul_pairwise(
+        self, rhs: QubitPauliArray
+    ) -> tuple[QubitPauliArray, ComplexSignVec]: ...
     def cmpnt_to_sparse_matrix(self, index: int, big_endian: bool = ...) -> Any: ...
     def cmpnt_phase_of_mul(
         self, index: int, rhs: QubitPauliArray, rhs_index: int
@@ -369,7 +541,7 @@ class JordanWignerMapper:
     ) -> None: ...
     def op_encode_real(
         self,
-        fermion_ops: Sequence[tuple[Sequence[tuple[int, bool]], float]],
+        fermion_ops: UnorderedFermionOpReal | Sequence[tuple[Sequence[tuple[int, bool]], float]],
         cmpnts: QubitPauliArray,
         map: Map,
         coeffs: RealVec,

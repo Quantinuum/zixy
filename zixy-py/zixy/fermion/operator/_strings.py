@@ -193,6 +193,11 @@ class String(Cmpnt[ImplT, StringSpec]):
         """Get the creation and annihilation mode sets."""
         return self._impl.cmpnt_get_sets(self.index)
 
+    def get_ops(self) -> list[tuple[int, bool]]:
+        """Get the normal-ordered ladder-operator product as ``(mode, is_creation)`` pairs."""
+        cre, ann = self.get_sets()
+        return [(i, True) for i in cre] + [(i, False) for i in ann]
+
     @property
     def creations(self) -> list[int]:
         """Get the creation mode indices."""

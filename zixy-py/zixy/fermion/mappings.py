@@ -25,21 +25,24 @@ from typing_extensions import Self
 from zixy._zixy import JordanWignerMapper as Impl, Qubits
 from zixy.container.coeffs import Coeff, CoeffT, OtherCoeffT
 from zixy.container.mixins import CoeffDivMixin, CoeffMulMixin
+from zixy.fermion.operator._strings import String as NormalString
+from zixy.fermion.operator.general._strings import String as GeneralString
+
+FermionString = NormalString | GeneralString
 
 
 class Mapper(ABC):
     """Base class for fermion to qubit mappers."""
 
     _impl: Impl
+    qubits: Qubits
 
     @abstractmethod
-    def encode(self, fermion_ops: Sequence[tuple[int, bool]]) -> Contribution[float]:
-        """Encode a sequence of fermionic creation and annihilation operators to qubit operators.
+    def encode(self, fermion_string: FermionString) -> Contribution[float]:
+        """Encode a fermionic string to qubit operators.
 
         Args:
-            fermion_ops: A sequence of tuples, where each tuple consists of an integer index
-                indicating the mode and a boolean indicating whether it's a creation (``True``) or
-                annihilation (``False``) operator.
+            fermion_string: The fermionic string to encode.
 
         Returns:
             The encoded contribution to a linear combination of qubit Pauli strings.
@@ -60,7 +63,7 @@ class Mapper(ABC):
         Returns:
             The encoded contribution.
         """
-        return self.encode(((c, True), (a, False)))
+        return self.encode(GeneralString(len(self.qubits), [(c, True), (a, False)]))
 
     def encode_n(self, i: int) -> Contribution[float]:
         r"""Encode the local number operator for a given mode.
@@ -93,7 +96,12 @@ class Mapper(ABC):
         Returns:
             The encoded contribution.
         """
-        return self.encode(((c1, True), (a1, False), (c2, True), (a2, False)))
+        return self.encode(
+            GeneralString(
+                len(self.qubits),
+                [(c1, True), (a1, False), (c2, True), (a2, False)],
+            )
+        )
 
     def encode_nn(self, i: int, j: int) -> Contribution[float]:
         r"""Encode the product of two local number operators.
@@ -127,7 +135,12 @@ class Mapper(ABC):
         Returns:
             The encoded contribution.
         """
-        return self.encode(((c1, True), (c2, True), (a1, False), (a2, False)))
+        return self.encode(
+            GeneralString(
+                len(self.qubits),
+                [(c1, True), (c2, True), (a1, False), (a2, False)],
+            )
+        )
 
 
 class Contribution(CoeffMulMixin[CoeffT], CoeffDivMixin[CoeffT]):
@@ -194,22 +207,14 @@ class JordanWignerMapper(Mapper):
         self.qubits = qubits
         self._impl = Impl(qubits, list(mode_ordering) if mode_ordering is not None else None)
 
-    def encode(self, fermion_ops: Any) -> Contribution[float]:
-        """Encode a sequence of fermionic operators.
+    def encode(self, fermion_string: FermionString) -> Contribution[float]:
+        """Encode a fermionic string.
 
         Args:
-            fermion_ops: A sequence of tuples, where each tuple consists of an integer index
-                indicating the mode and a boolean indicating whether it's a creation (``True``) or
-                annihilation (``False``) operator.
+            fermion_string: The fermionic string to encode.
 
         Returns:
             The encoded contribution.
         """
-        if hasattr(fermion_ops, "get_ops"):
-            fermion_ops = fermion_ops.get_ops()
-        elif hasattr(fermion_ops, "get_sets"):
-            cre, ann = fermion_ops.get_sets()
-            fermion_ops = [(i, True) for i in cre] + [(i, False) for i in ann]
-        fermion_ops = [(int(i), bool(b)) for i, b in fermion_ops]
-        self._impl.op_load_product(fermion_ops)
+        self._impl.op_load_product(fermion_string.get_ops())
         return Contribution(self, 1)

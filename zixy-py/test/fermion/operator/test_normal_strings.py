@@ -40,6 +40,13 @@ def test_string_access():
         ([5], []),
         ([], [4]),
     ]
+    assert [string.get_ops() for string in strings] == [
+        [(0, True), (2, True), (1, False), (3, False)],
+        [(0, True), (2, True), (1, False), (3, False)],
+        [],
+        [(5, True)],
+        [(4, False)],
+    ]
     assert strings[1:4].clone() == Strings.from_iterable(specs[1:4], 6)
 
 

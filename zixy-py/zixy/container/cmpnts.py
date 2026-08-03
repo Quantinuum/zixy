@@ -177,29 +177,6 @@ class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT], StringRepresentable):
                 f"Index {self.index} is out of bounds for an array of length {len(self._impl)}"
             )
 
-    @overload
-    def __mul__(self, rhs: Cmpnt[ImplT, SpecT]) -> Term[ImplT, SpecT, OtherCoeffT]: ...
-
-    @overload
-    def __mul__(self, rhs: CoeffT) -> Term[ImplT, SpecT, CoeffT]: ...
-
-    def __mul__(
-        self, rhs: CoeffT | Cmpnt[ImplT, SpecT]
-    ) -> Term[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, OtherCoeffT]:
-        """Return the product of ``self`` and ``rhs``."""
-        if not isinstance(rhs, Coeff):
-            # Cmpnt multiplication is not defined for base Cmpnt, but may be define by derived class
-            return NotImplemented
-        term_type = self._term_registry[type(rhs)]
-        return term_type.from_cmpnt_coeff(self, rhs)
-
-    def __rmul__(self, lhs: CoeffT) -> Term[ImplT, SpecT, CoeffT]:
-        """Return the product of ``lhs`` and ``self``."""
-        if not isinstance(lhs, Coeff):
-            return NotImplemented
-        term_type = self._term_registry[type(lhs)]
-        return term_type.from_cmpnt_coeff(self, lhs)
-
 
 class CmpntSet(Generic[ImplT, SpecT], StringRepresentable):
     """A collection of unique components.

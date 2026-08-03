@@ -54,7 +54,7 @@ from zixy.qubit._strings import (
 from zixy.utils import slice_equal
 
 if TYPE_CHECKING:
-    from zixy.qubit.pauli._terms import Term, TermRegistry
+    from zixy.qubit.pauli._terms import ComplexSignTerm, Term, TermRegistry
 
 StringSpec: TypeAlias = (
     None  # signifies the clear string
@@ -161,13 +161,12 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         """Check whether the string is diagonal (only :math:`I` and :math:`Z`)."""
         return self.count(PauliMatrix.I) + self.count(PauliMatrix.Z) == len(self.qubits)
 
-    @overload  # type: ignore[override]
-    def __mul__(self, rhs: String) -> Term[ComplexSign]: ...
-
+    @overload
+    def __mul__(self, rhs: String) -> ComplexSignTerm: ...
     @overload
     def __mul__(self, rhs: CoeffT) -> Term[CoeffT]: ...
 
-    def __mul__(self, rhs: CoeffT | String) -> Term[CoeffT] | Term[ComplexSign]:
+    def __mul__(self, rhs: CoeffT | String) -> Term[CoeffT] | ComplexSignTerm:
         """Multiplication of ``self`` by ``rhs``."""
         if not isinstance(rhs, Coeff | String):
             return NotImplemented
@@ -176,7 +175,15 @@ class String(StringBase[ImplT, SpecT, ElemT]):
             phases = ComplexSignCoeffs.from_scalar(ComplexSign(phase))
             term_type = self._term_registry[ComplexSign]
             return term_type._create(TermData(Strings._create(product), phases))
-        return super().__mul__(rhs)  # type: ignore[return-value]
+        term_type = self._term_registry[type(rhs)]
+        return term_type.from_cmpnt_coeff(self, rhs)
+
+    def __rmul__(self, lhs: CoeffT) -> Term[CoeffT]:
+        """Return the product of ``lhs`` and ``self``."""
+        if not isinstance(lhs, Coeff):
+            return NotImplemented
+        term_type = self._term_registry[type(lhs)]
+        return term_type.from_cmpnt_coeff(self, lhs)
 
     def __imul__(self, rhs: String) -> Self:  # type: ignore
         """In-place multiplication of ``self`` by ``rhs``."""

@@ -23,12 +23,13 @@ The structure of this module parallels that of :mod:`~zixy.container.cmpnts`.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, TypeAlias, overload
+from typing import TYPE_CHECKING, Any, TypeAlias, overload
 
 from typing_extensions import Self
 
 from zixy._zixy import Modes, NormalFermionOperatorArray
 from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet
+from zixy.container.coeffs import Coeff, CoeffT, Sign
 
 if TYPE_CHECKING:
     from zixy.fermion.operator._terms import TermRegistry
@@ -197,6 +198,29 @@ class String(Cmpnt[ImplT, StringSpec]):
         """Get the normal-ordered ladder-operator product as ``(mode, is_creation)`` pairs."""
         cre, ann = self.get_sets()
         return [(i, True) for i in cre] + [(i, False) for i in ann]
+
+    @overload  # type: ignore[override]
+    def __mul__(self, rhs: String) -> Any: ...
+
+    @overload
+    def __mul__(self, rhs: CoeffT) -> Any: ...
+
+    def __mul__(self, rhs: String | CoeffT) -> Any:
+        """Multiplication of ``self`` by ``rhs``.
+
+        Multiplication by a scalar returns a term. Multiplication by another normal-ordered string
+        returns a term sum, since normal-ordering can produce zero, one, or multiple terms.
+        """
+        if isinstance(rhs, Coeff):
+            return super().__mul__(rhs)
+        if not isinstance(rhs, String):
+            return NotImplemented
+        impl, signs = self._impl.cmpnt_mul(self.index, rhs._impl, rhs.index)
+        term_type = self._term_registry[float]
+        out = term_type._term_sum_type(self.modes)  # type: ignore[attr-defined]
+        for i in range(len(impl)):
+            out += term_type.from_cmpnt_coeff(Strings._create(impl)[i], float(int(Sign(signs[i]))))
+        return out
 
     @property
     def creations(self) -> list[int]:

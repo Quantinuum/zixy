@@ -23,12 +23,13 @@ The structure of this module parallels that of :mod:`~zixy.container.cmpnts`.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, TypeAlias, overload
+from typing import TYPE_CHECKING, Any, TypeAlias, overload
 
 from typing_extensions import Self
 
 from zixy._zixy import GeneralFermionOperatorArray, Modes
 from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet
+from zixy.container.coeffs import Coeff, CoeffT
 from zixy.fermion.operator._strings import parse_ladder_product, parse_term_source
 
 if TYPE_CHECKING:
@@ -121,6 +122,28 @@ class String(Cmpnt[ImplT, StringSpec]):
         """Get the raw ladder-operator product as ``(mode, is_creation)`` pairs."""
         modes, adj = self._impl.cmpnt_get_ops(self.index)
         return list(zip(modes, adj, strict=True))
+
+    @overload  # type: ignore[override]
+    def __mul__(self, rhs: String) -> Any: ...
+
+    @overload
+    def __mul__(self, rhs: CoeffT) -> Any: ...
+
+    def __mul__(self, rhs: String | CoeffT) -> Any:
+        """Multiplication of ``self`` by ``rhs``.
+
+        Multiplication by a scalar returns a term. Multiplication by another raw string returns a
+        single real term whose string is the concatenated ladder-operator product.
+        """
+        if isinstance(rhs, Coeff):
+            return super().__mul__(rhs)
+        if not isinstance(rhs, String):
+            return NotImplemented
+        if self.modes != rhs.modes:
+            raise ValueError("Cannot multiply strings defined over different modes.")
+        term_type = self._term_registry[float]
+        string = String(self.modes, self.get_ops() + rhs.get_ops())
+        return term_type.from_cmpnt_coeff(string, 1.0)
 
 
 class Strings(Cmpnts[ImplT, StringSpec]):

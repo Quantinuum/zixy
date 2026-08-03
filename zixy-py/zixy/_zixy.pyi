@@ -226,6 +226,40 @@ class NormalFermionOperatorArray(ImplArray):
     def lincomb_to_general_complex(
         cmpnts: NormalFermionOperatorArray, map: Map, coeffs: ComplexVec
     ) -> tuple[GeneralFermionOperatorArray, ComplexVec]: ...
+    def apply_to_state_real(
+        self,
+        coeffs: RealVec,
+        state_impl: FermionStateArray,
+        state_coeffs: RealVec,
+        out_impl: FermionStateArray,
+        out_map: Map,
+        out_coeffs: ComplexVec,
+    ) -> None: ...
+    def apply_to_state_complex(
+        self,
+        coeffs: ComplexVec,
+        state_impl: FermionStateArray,
+        state_coeffs: ComplexVec,
+        out_impl: FermionStateArray,
+        out_map: Map,
+        out_coeffs: ComplexVec,
+    ) -> None: ...
+    def mat_elem_real(
+        self,
+        coeffs: RealVec,
+        bra_impl: FermionStateArray,
+        bra_coeffs: RealVec,
+        ket_impl: FermionStateArray,
+        ket_coeffs: RealVec,
+    ) -> float: ...
+    def mat_elem_complex(
+        self,
+        coeffs: ComplexVec,
+        bra_impl: FermionStateArray,
+        bra_coeffs: ComplexVec,
+        ket_impl: FermionStateArray,
+        ket_coeffs: ComplexVec,
+    ) -> complex: ...
 
 class GeneralFermionOperatorArray(ImplArray):
     modes: Modes
@@ -496,6 +530,47 @@ class QubitStateArray(QubitArray[BinarySprings, bool]):
         map: Map,
         coeffs: ComplexVec,
         rhs_cmpnts: QubitStateArray,
+        rhs_coeffs: ComplexVec,
+    ) -> complex: ...
+
+class FermionStateArray(ImplArray):
+    modes: Modes
+    def __init__(
+        self, modes: Modes | None = ..., source: BinarySprings | None = ...
+    ) -> None: ...
+    def append_clear(self) -> None: ...
+    def cmpnt_clear(self, i: int) -> None: ...
+    def cmpnt_set_bit(self, i_cmpnt: int, i_mode: int, bit: bool) -> None: ...
+    def cmpnt_get_bit(self, i_cmpnt: int, i_mode: int) -> bool: ...
+    def cmpnt_set_from_list(self, index: int, source: list[bool]) -> None: ...
+    def cmpnt_set_from_set(self, index: int, source: set[int]) -> None: ...
+    def cmpnt_set_from_spring(
+        self, index: int, source: BinarySprings, spring_index: int
+    ) -> None: ...
+    def cmpnt_get_list(self, index: int) -> list[bool]: ...
+    def cmpnt_get_set(self, index: int) -> set[int]: ...
+    def cmpnt_count(self, index: int, bit: bool) -> int: ...
+    def refresh_map(self, map: Map) -> None: ...
+    def to_dense_real(self, coeffs: RealVec, big_endian: bool) -> NDArray[float64]: ...
+    def to_dense_complex(self, coeffs: ComplexVec, big_endian: bool) -> NDArray[complex128]: ...
+    def from_dense_real(
+        self, map: Map, coeffs: RealVec, source: list[float], big_endian: bool
+    ) -> None: ...
+    def from_dense_complex(
+        self, map: Map, coeffs: ComplexVec, source: list[complex], big_endian: bool
+    ) -> None: ...
+    def vdot_real(
+        self,
+        map: Map,
+        coeffs: RealVec,
+        rhs_cmpnts: FermionStateArray,
+        rhs_coeffs: RealVec,
+    ) -> float: ...
+    def vdot_complex(
+        self,
+        map: Map,
+        coeffs: ComplexVec,
+        rhs_cmpnts: FermionStateArray,
         rhs_coeffs: ComplexVec,
     ) -> complex: ...
 

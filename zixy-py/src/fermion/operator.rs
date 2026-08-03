@@ -22,6 +22,7 @@ use crate::container::coeffs::{ComplexVec, RealVec, SignVec};
 use crate::container::map::Map;
 use crate::fermion::mode::Modes;
 use crate::fermion::springs::FermionSprings;
+use crate::fermion::state::Array as StateArray;
 use crate::utils::{try_py_index, try_py_indices, ToPyResult};
 
 /// A list of normal-ordered fermion ladder-operator products.
@@ -596,6 +597,114 @@ impl NormalArray {
         let out =
             zixy::fermion::operator::lincomb::to_general(&normal_set_complex(cmpnts, map, coeffs));
         general_set_to_py_complex(out)
+    }
+
+    /// Apply this normal-ordered operator to a real state.
+    fn apply_to_state_real(
+        &self,
+        coeffs: &RealVec,
+        state_cmpnts: &StateArray,
+        state_coeffs: &RealVec,
+        out_cmpnts: &mut StateArray,
+        out_map: &mut Map,
+        out_coeffs: &mut ComplexVec,
+    ) {
+        use zixy::fermion::operator::normal::cmpnt_major::mat_elem::apply;
+        use zixy::fermion::state;
+        let op = normal::cmpnt_major::terms::View {
+            word_iters: &self.0,
+            coeffs: &coeffs.0,
+        };
+        let state = state::terms::View {
+            word_iters: &state_cmpnts.0,
+            coeffs: &state_coeffs.0,
+        };
+        let mut out = state::term_set::ViewMut {
+            word_iters: &mut out_cmpnts.0,
+            map: &mut out_map.0,
+            coeffs: &mut out_coeffs.0,
+        };
+        apply::<f64>(&op, &state, &mut out);
+    }
+
+    /// Apply this normal-ordered operator to a complex state.
+    fn apply_to_state_complex(
+        &self,
+        coeffs: &ComplexVec,
+        state_cmpnts: &StateArray,
+        state_coeffs: &ComplexVec,
+        out_cmpnts: &mut StateArray,
+        out_map: &mut Map,
+        out_coeffs: &mut ComplexVec,
+    ) {
+        use zixy::fermion::operator::normal::cmpnt_major::mat_elem::apply;
+        use zixy::fermion::state;
+        let op = normal::cmpnt_major::terms::View {
+            word_iters: &self.0,
+            coeffs: &coeffs.0,
+        };
+        let state = state::terms::View {
+            word_iters: &state_cmpnts.0,
+            coeffs: &state_coeffs.0,
+        };
+        let mut out = state::term_set::ViewMut {
+            word_iters: &mut out_cmpnts.0,
+            map: &mut out_map.0,
+            coeffs: &mut out_coeffs.0,
+        };
+        apply::<Complex64>(&op, &state, &mut out);
+    }
+
+    /// Evaluate a real matrix element between real states.
+    fn mat_elem_real(
+        &self,
+        coeffs: &RealVec,
+        bra_cmpnts: &StateArray,
+        bra_coeffs: &RealVec,
+        ket_cmpnts: &StateArray,
+        ket_coeffs: &RealVec,
+    ) -> f64 {
+        use zixy::fermion::operator::normal::cmpnt_major::mat_elem::mat_elem;
+        use zixy::fermion::state;
+        let op = normal::cmpnt_major::terms::View {
+            word_iters: &self.0,
+            coeffs: &coeffs.0,
+        };
+        let bra = state::terms::View {
+            word_iters: &bra_cmpnts.0,
+            coeffs: &bra_coeffs.0,
+        };
+        let ket = state::terms::View {
+            word_iters: &ket_cmpnts.0,
+            coeffs: &ket_coeffs.0,
+        };
+        mat_elem(&op, &bra, &ket)
+    }
+
+    /// Evaluate a complex matrix element between complex states.
+    fn mat_elem_complex(
+        &self,
+        coeffs: &ComplexVec,
+        bra_cmpnts: &StateArray,
+        bra_coeffs: &ComplexVec,
+        ket_cmpnts: &StateArray,
+        ket_coeffs: &ComplexVec,
+    ) -> Complex64 {
+        use zixy::fermion::operator::normal::cmpnt_major::mat_elem::mat_elem;
+        use zixy::fermion::state;
+        let op = normal::cmpnt_major::terms::View {
+            word_iters: &self.0,
+            coeffs: &coeffs.0,
+        };
+        let bra = state::terms::View {
+            word_iters: &bra_cmpnts.0,
+            coeffs: &bra_coeffs.0,
+        };
+        let ket = state::terms::View {
+            word_iters: &ket_cmpnts.0,
+            coeffs: &ket_coeffs.0,
+        };
+        mat_elem(&op, &bra, &ket)
     }
 }
 

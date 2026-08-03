@@ -22,7 +22,7 @@ The structure of this module parallels that of :mod:`~zixy.container.terms` and
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, TypeAlias, cast, overload
+from typing import TYPE_CHECKING, Any, TypeAlias, cast, overload
 
 import numpy as np
 from numpy.typing import NDArray
@@ -61,7 +61,6 @@ from zixy.container.coeffs import (
 )
 from zixy.container.data import TermData
 from zixy.container.terms import NumericTerms, NumericTermSum
-from zixy.fermion import mappings
 from zixy.qubit._terms import (
     Term as TermBase,
     Terms as TermsBase,
@@ -76,6 +75,9 @@ from zixy.qubit.state._terms import (
     RealTermSum as RealState,
 )
 from zixy.utils import DEFAULT_COMMUTES_ATOL
+
+if TYPE_CHECKING:
+    from zixy.fermion.mappings import Mapper
 
 TermSpec: TypeAlias = String | StringSpec | tuple[StringSpec | String, CoeffT | None]
 SignTermSpec = TermSpec[Sign]
@@ -866,7 +868,7 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
     def from_fermionic(
         cls,
         qubits: int | Qubits,
-        mapper: mappings.Mapper,
+        mapper: Mapper,
         fermion_ops: Sequence[tuple[Sequence[tuple[int, bool]], float]],
     ) -> Self:
         """Create an instance of ``cls`` from a fermionic operator given a mapping.
@@ -965,26 +967,14 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
             tuple(coeffs),
         )
 
-    def __iadd__(self, rhs: RealTerm | Self | mappings.Contribution[float]) -> Self:  # type: ignore[override,misc]
+    def __iadd__(self, rhs: RealTerm | Self) -> Self:  # type: ignore[override,misc]
         """In-place addition of ``self`` by ``rhs``."""
-        if isinstance(rhs, mappings.Contribution):
-            assert isinstance(self._impl._coeffs, RealCoeffs)  # TODO: resolve
-            rhs._mapper._impl.op_contribute_real(
-                self._impl._cmpnts._impl,
-                self._cmpnt_set._map,
-                self._impl._coeffs._impl,
-                rhs._c,
-            )
-        else:
-            super().__iadd__(rhs)
+        super().__iadd__(rhs)
         return self
 
-    def __isub__(self, rhs: RealTerm | Self | mappings.Contribution[float]) -> Self:  # type: ignore[override,misc]
+    def __isub__(self, rhs: RealTerm | Self) -> Self:  # type: ignore[override,misc]
         """In-place subtraction of ``self`` by ``rhs``."""
-        if isinstance(rhs, mappings.Contribution):
-            self.__iadd__(-rhs)
-        else:
-            super().__isub__(rhs)
+        super().__isub__(rhs)
         return self
 
     def apply(self, state: RealState) -> ComplexState:
@@ -1242,26 +1232,14 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
             subspace._impl,
         )
 
-    def __iadd__(self, rhs: ComplexTerm | Self | mappings.Contribution[complex]) -> Self:  # type: ignore[override,misc]
+    def __iadd__(self, rhs: ComplexTerm | Self) -> Self:  # type: ignore[override,misc]
         """In-place addition of ``self`` by ``rhs``."""
-        if isinstance(rhs, mappings.Contribution):
-            assert isinstance(self._impl._coeffs, ComplexCoeffs)  # TODO: resolve
-            rhs._mapper._impl.op_contribute_complex(
-                self._impl._cmpnts._impl,
-                self._cmpnt_set._map,
-                self._impl._coeffs._impl,
-                rhs._c,
-            )
-        else:
-            super().__iadd__(rhs)
+        super().__iadd__(rhs)
         return self
 
-    def __isub__(self, rhs: ComplexTerm | Self | mappings.Contribution[complex]) -> Self:  # type: ignore[override,misc]
+    def __isub__(self, rhs: ComplexTerm | Self) -> Self:  # type: ignore[override,misc]
         """In-place subtraction of ``self`` by ``rhs``."""
-        if isinstance(rhs, mappings.Contribution):
-            self.__iadd__(-rhs)
-        else:
-            super().__isub__(rhs)
+        super().__isub__(rhs)
         return self
 
     def apply(self, state: ComplexState) -> ComplexState:

@@ -54,7 +54,7 @@ from zixy.qubit._strings import (
 from zixy.utils import slice_equal
 
 if TYPE_CHECKING:
-    from zixy.qubit.pauli._terms import ComplexSignTerm, Term, TermRegistry
+    from zixy.qubit.pauli._terms import ComplexSignTerm, Term
 
 StringSpec: TypeAlias = (
     None  # signifies the clear string
@@ -88,7 +88,6 @@ class String(StringBase[ImplT, SpecT, ElemT]):
     """
 
     impl_type = ImplT
-    _term_registry: TermRegistry
 
     _springs_type = PauliSprings
 
@@ -170,19 +169,21 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         """Multiplication of ``self`` by ``rhs``."""
         if not isinstance(rhs, Coeff | String):
             return NotImplemented
+        from zixy.qubit.pauli._terms import ComplexSignTerm, get_term_type  # noqa: PLC0415
+
         if isinstance(rhs, String):
             product, phase = self._impl.cmpnt_mul(self.index, rhs._impl, rhs.index)
             phases = ComplexSignCoeffs.from_scalar(ComplexSign(phase))
-            term_type = self._term_registry[ComplexSign]
-            return term_type._create(TermData(Strings._create(product), phases))
-        term_type = self._term_registry[type(rhs)]
-        return term_type.from_cmpnt_coeff(self, rhs)
+            return ComplexSignTerm._create(TermData(Strings._create(product), phases))
+        return get_term_type(type(rhs)).from_cmpnt_coeff(self, rhs)
 
     def __rmul__(self, lhs: CoeffT) -> Term[CoeffT]:
         """Return the product of ``lhs`` and ``self``."""
         if not isinstance(lhs, Coeff):
             return NotImplemented
-        term_type = self._term_registry[type(lhs)]
+        from zixy.qubit.pauli._terms import get_term_type  # noqa: PLC0415
+
+        term_type = get_term_type(type(lhs))
         return term_type.from_cmpnt_coeff(self, lhs)
 
     def __imul__(self, rhs: String) -> Self:  # type: ignore

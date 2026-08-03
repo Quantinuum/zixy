@@ -30,13 +30,7 @@ from __future__ import annotations
 import builtins
 from abc import abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Sequence
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Generic,
-    TypeVar,
-    overload,
-)
+from typing import TYPE_CHECKING, Any, Generic, TypeVar, overload
 
 from typing_extensions import Self
 
@@ -47,12 +41,7 @@ from zixy.container.base import (
     ViewableSequence,
     requires_ownership,
 )
-from zixy.container.coeffs import Coeff, CoeffT, OtherCoeffT
 from zixy.utils import slice_index_gen, slice_len, slice_of_slice, slice_to_tuple
-
-if TYPE_CHECKING:
-    from zixy.container.terms import Term, TermRegistry
-
 
 if TYPE_CHECKING:
     from zixy._zixy import ImplArray
@@ -72,7 +61,6 @@ class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT], StringRepresentable):
     """
 
     impl_type: type[ImplT]
-    _term_registry: TermRegistry[ImplT, SpecT]
 
     _impl: ImplT
     _index: int | None

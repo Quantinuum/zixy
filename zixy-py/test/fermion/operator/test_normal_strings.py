@@ -57,18 +57,18 @@ def test_string_modification():
     assert string.creations == [0, 2]
     assert string.annihilations == [1, 3]
 
-    assert string["cre", 0]
-    assert not string["ann", 0]
-    string["cre", 0] = False
-    string["ann", 0] = True
+    assert string[0, True]
+    assert not string[0, False]
+    string[0, True] = False
+    string[0, False] = True
 
     assert string.get_sets() == ([2], [0, 1, 3])
     assert str(string) == "F2^ F0 F1 F3"
 
     with pytest.raises(KeyError):
-        string["bad", 0]
+        string[0, "bad"]
     with pytest.raises(KeyError):
-        string["bad", 0] = True
+        string[0, "bad"] = True
 
 
 def test_string_from_bool_list_spec():

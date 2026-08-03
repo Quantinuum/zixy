@@ -28,16 +28,22 @@ from typing import TYPE_CHECKING, TypeAlias, overload
 from typing_extensions import Self
 
 from zixy._zixy import BinarySprings, FermionStateArray, Modes
-from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet
+from zixy.fermion._strings import (
+    String as FermionString,
+    Strings as FermionStrings,
+    StringSet as FermionStringSet,
+)
 
 if TYPE_CHECKING:
     from zixy.fermion.state._terms import TermRegistry
 
 StringSpec: TypeAlias = None | Sequence[bool] | set[int] | str
+ElemT = bool
+SpecT = StringSpec
 ImplT = FermionStateArray
 
 
-def _default_modes(source: StringSpec = None) -> Modes:
+def _default_modes(source: SpecT = None) -> Modes:
     """Construct the default modes for a string specifier."""
     if isinstance(source, set):
         return Modes.from_count(max(source, default=-1) + 1)
@@ -48,7 +54,7 @@ def _default_modes(source: StringSpec = None) -> Modes:
     return Modes.from_count(len(source))
 
 
-class String(Cmpnt[ImplT, StringSpec]):
+class String(FermionString[ImplT, SpecT, ElemT]):
     """A fermionic occupation-number state string.
 
     A single mode-based state string that may be an owning instance referencing a single element in
@@ -57,28 +63,7 @@ class String(Cmpnt[ImplT, StringSpec]):
 
     impl_type = ImplT
     _term_registry: TermRegistry
-
-    def __init__(self, modes: int | Modes | None = None, source: StringSpec = None):
-        """Initialize the string.
-
-        Args:
-            modes: The mode space or number of modes.
-            source: The string specifier to use for default modes and initial value.
-        """
-        if modes is None:
-            modes = _default_modes(source)
-        elif isinstance(modes, int):
-            modes = Modes.from_count(modes)
-        impl = self.impl_type(modes)
-        impl.resize(1)
-        super().__init__(impl)
-        if source is not None:
-            self.set(source)
-
-    @property
-    def modes(self) -> Modes:
-        """Get the modes corresponding to ``self``."""
-        return self._impl.modes
+    _get_default_modes = staticmethod(_default_modes)
 
     @classmethod
     def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
@@ -122,7 +107,7 @@ class String(Cmpnt[ImplT, StringSpec]):
         """Get the string as a set of occupied mode indices."""
         return self._impl.cmpnt_get_set(self.index)
 
-    def set(self, source: StringSpec | String | None) -> None:
+    def set(self, source: SpecT | String | None) -> None:
         """Set the value of the string.
 
         Args:
@@ -134,10 +119,7 @@ class String(Cmpnt[ImplT, StringSpec]):
         if source is None:
             self._impl.cmpnt_clear(self.index)
         elif isinstance(source, String):
-            if self._impl.same_as(source._impl):
-                self._impl.cmpnt_copy_internal(self.index, source.index)
-            else:
-                self._impl.cmpnt_copy_external(self.index, source._impl, source.index)
+            self._set_copy(source)
         elif isinstance(source, set):
             self._impl.cmpnt_set_from_set(self.index, source)
         elif isinstance(source, tuple | list):
@@ -177,7 +159,7 @@ class String(Cmpnt[ImplT, StringSpec]):
         return int(self == other)
 
 
-class Strings(Cmpnts[ImplT, StringSpec]):
+class Strings(FermionStrings[ImplT, SpecT, ElemT]):
     """A collection of fermionic occupation-number state strings.
 
     An array-like container of mode-based state strings that may be an owning instance referencing
@@ -187,17 +169,6 @@ class Strings(Cmpnts[ImplT, StringSpec]):
 
     cmpnt_type = String
     _set_type: type[StringSet]
-
-    def __init__(self, modes: int | Modes = 0, n: int = 0):
-        if isinstance(modes, int):
-            modes = Modes.from_count(modes)
-        super().__init__(self.cmpnt_type.impl_type(modes))
-        self.resize(n)
-
-    @property
-    def modes(self) -> Modes:
-        """Get the modes corresponding to ``self``."""
-        return self._impl.modes
 
     @classmethod
     def new(cls, modes: int | Modes = 0, n: int = 0) -> Self:
@@ -236,7 +207,7 @@ class Strings(Cmpnts[ImplT, StringSpec]):
         return tuple(self[i].get_set() for i in range(len(self)))
 
 
-class StringSet(CmpntSet[ImplT, StringSpec]):
+class StringSet(FermionStringSet[ImplT, SpecT, ElemT]):
     """A collection of unique fermionic occupation-number state strings.
 
     A set-like container of mode-based state strings that may be used to store unique components
@@ -244,18 +215,6 @@ class StringSet(CmpntSet[ImplT, StringSpec]):
     """
 
     cmpnts_type = Strings
-
-    def __init__(self, modes: int | Modes = 0):
-        if isinstance(modes, self.cmpnts_type.cmpnt_type.impl_type):
-            CmpntSet.__init__(self, modes)
-            self._impl.refresh_map(self._map)
-            return
-        CmpntSet.__init__(self, self.cmpnts_type(modes)._impl)
-
-    @property
-    def modes(self) -> Modes:
-        """Get the modes corresponding to ``self``."""
-        return self._impl.modes
 
 
 Strings._set_type = StringSet

@@ -39,8 +39,7 @@ def test_mapper_helper_methods_match_explicit_products():
     mapper = JordanWignerMapper(4)
 
     assert str(mapper.encode_ca(2, 1)) == (
-        "(0.25j, Y1 X2), ((0.25+0j), Y1 Y2), "
-        "((0.25+0j), X1 X2), (-0.25j, X1 Y2)"
+        "(0.25j, Y1 X2), ((0.25+0j), Y1 Y2), " "((0.25+0j), X1 X2), (-0.25j, X1 Y2)"
     )
 
     explicit = mapper.encode(GeneralString(4, "F0^ F0 F1^ F1"))
@@ -84,6 +83,5 @@ def test_mapper_accepts_general_string():
 
     assert isinstance(terms, PauliComplexTermSum)
     assert str(terms) == (
-        "(-0.25j, Y0 X1), ((-0.25+0j), X0 X1), "
-        "((-0.25+0j), Y0 Y1), (0.25j, X0 Y1)"
+        "(-0.25j, Y0 X1), ((-0.25+0j), X0 X1), " "((-0.25+0j), Y0 Y1), (0.25j, X0 Y1)"
     )

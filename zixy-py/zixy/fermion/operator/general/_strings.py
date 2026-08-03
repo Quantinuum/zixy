@@ -23,23 +23,33 @@ The structure of this module parallels that of :mod:`~zixy.container.cmpnts`.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, TypeAlias, overload
+from typing import TYPE_CHECKING, TypeAlias, overload
 
 from typing_extensions import Self
 
 from zixy._zixy import GeneralFermionOperatorArray, Modes
 from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet
 from zixy.container.coeffs import Coeff, CoeffT
-from zixy.fermion.operator._strings import parse_ladder_product, parse_term_source
+from zixy.fermion._strings import _as_modes
+from zixy.fermion.operator._strings import (
+    LadderOp,
+    String as OperatorString,
+    Strings as OperatorStrings,
+    StringSet as OperatorStringSet,
+    parse_ladder_product,
+    parse_term_source,
+)
 
 if TYPE_CHECKING:
-    from zixy.fermion.operator.general._terms import TermRegistry
+    from zixy.fermion.operator.general._terms import Term, TermRegistry
 
-StringSpec: TypeAlias = None | str | Sequence[tuple[int, bool]]
+StringSpec: TypeAlias = None | str | Sequence[LadderOp]
+ElemT = list[LadderOp]
+SpecT = StringSpec
 ImplT = GeneralFermionOperatorArray
 
 
-def _default_modes(source: StringSpec = None) -> Modes:
+def _default_modes(source: SpecT = None) -> Modes:
     """Construct the default modes for a string specifier."""
     if source is None:
         return Modes.from_count(0)
@@ -47,7 +57,7 @@ def _default_modes(source: StringSpec = None) -> Modes:
     return Modes.from_count(max((i for i, _ in ops), default=-1) + 1)
 
 
-class String(Cmpnt[ImplT, StringSpec]):
+class String(OperatorString[ImplT, SpecT, ElemT]):
     """A raw fermionic ladder-operator string.
 
     A single mode-based raw fermionic string that may be an owning instance referencing a single
@@ -57,31 +67,32 @@ class String(Cmpnt[ImplT, StringSpec]):
     impl_type = ImplT
     _term_registry: TermRegistry
 
-    def __init__(self, modes: int | Modes | None = None, source: StringSpec = None):
+    @staticmethod
+    def _get_default_modes(source: SpecT | None = None) -> Modes:
+        """Get the default modes for this string type based on a string specifier."""
+        return _default_modes(source)
+
+    def __init__(self, modes: int | Modes | None = None, source: SpecT = None):
+        """Initialize the string.
+
+        Args:
+            modes: The mode space or number of modes.
+            source: The string specifier to use for default modes and initial value.
+        """
         if modes is None:
-            modes = _default_modes(source)
-        elif isinstance(modes, int):
-            modes = Modes.from_count(modes)
+            modes = self._get_default_modes(source)
+        modes = _as_modes(modes)
         ops = parse_ladder_product(source) if isinstance(source, str) else list(source or ())
         impl = self.impl_type(modes, len(ops))
         impl.resize(1)
-        super().__init__(impl)
+        Cmpnt.__init__(self, impl)
         if source is not None:
             self.set(ops)
-
-    @property
-    def modes(self) -> Modes:
-        """Get the modes corresponding to ``self``."""
-        return self._impl.modes
 
     @property
     def max_len(self) -> int:
         """Get the maximum operator-product length supported by the backing array."""
         return self._impl.max_len
-
-    def __repr__(self) -> str:
-        """Return a sparse-string representation of ``self``."""
-        return self._impl.cmpnt_to_string(self.index)
 
     @classmethod
     def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
@@ -97,7 +108,7 @@ class String(Cmpnt[ImplT, StringSpec]):
         """
         return cls(modes, source)
 
-    def set(self, source: StringSpec | String | None) -> None:
+    def set(self, source: SpecT | String | None) -> None:
         """Set the value of the string.
 
         Args:
@@ -109,44 +120,91 @@ class String(Cmpnt[ImplT, StringSpec]):
         if source is None:
             self._impl.cmpnt_clear(self.index)
         elif isinstance(source, String):
-            if self._impl.same_as(source._impl):
-                self._impl.cmpnt_copy_internal(self.index, source.index)
-            else:
-                self._impl.cmpnt_copy_external(self.index, source._impl, source.index)
+            self._set_copy(source)
         else:
             ops = parse_ladder_product(source) if isinstance(source, str) else list(source)
             modes, adj = zip(*ops, strict=True) if ops else ((), ())
             self._impl.cmpnt_set_from_ops(self.index, list(modes), list(adj))
 
-    def get_ops(self) -> list[tuple[int, bool]]:
+    def get_ops(self) -> list[LadderOp]:
         """Get the raw ladder-operator product as ``(mode, is_creation)`` pairs."""
         modes, adj = self._impl.cmpnt_get_ops(self.index)
         return list(zip(modes, adj, strict=True))
 
+    def get_sets(self) -> tuple[list[int], list[int]]:
+        """Get the creation and annihilation mode lists.
+
+        This is a grouped view of the ordered ladder-operator product and does not preserve
+        operator order.
+        """
+        cre: list[int] = []
+        ann: list[int] = []
+        for mode, is_creation in self.get_ops():
+            if is_creation:
+                cre.append(mode)
+            else:
+                ann.append(mode)
+        return cre, ann
+
+    def __getitem__(self, item: LadderOp) -> bool:
+        """Return whether an operator appears on a mode.
+
+        Args:
+            item: Pair of ``(mode, is_creation)``, where ``is_creation`` is ``True`` for a
+                creation operator and ``False`` for an annihilation operator.
+
+        Note:
+            Raw fermionic strings store an ordered product rather than creation and annihilation
+            bitsets. This check scans the operator product, so it scales linearly with the string
+            length and only reports whether the requested operator appears at least once.
+        """
+        mode, is_creation = item
+        if is_creation is not True and is_creation is not False:
+            raise KeyError(is_creation)
+        return any(
+            op_mode == mode and op_is_creation is is_creation
+            for op_mode, op_is_creation in self.get_ops()
+        )
+
+    def dagger(self) -> None:
+        """Take the adjoint of ``self`` in-place, ignoring the scalar sign.
+
+        The adjoint of a raw ladder-operator product reverses the operator order and swaps each
+        creation operator with an annihilation operator.
+        """
+        self.set([(mode, not is_creation) for mode, is_creation in reversed(self.get_ops())])
+
+    def daggered(self) -> Self:
+        """Return the adjoint of ``self``, ignoring the scalar sign."""
+        out = self.clone()
+        out.dagger()
+        return out
+
     @overload  # type: ignore[override]
-    def __mul__(self, rhs: String) -> Any: ...
+    def __mul__(self, rhs: String) -> Term[float]: ...
 
     @overload
-    def __mul__(self, rhs: CoeffT) -> Any: ...
+    def __mul__(self, rhs: CoeffT) -> Term[CoeffT]: ...
 
-    def __mul__(self, rhs: String | CoeffT) -> Any:
+    def __mul__(self, rhs: String | CoeffT) -> Term[float] | Term[CoeffT]:
         """Multiplication of ``self`` by ``rhs``.
 
         Multiplication by a scalar returns a term. Multiplication by another raw string returns a
         single real term whose string is the concatenated ladder-operator product.
         """
         if isinstance(rhs, Coeff):
-            return super().__mul__(rhs)
+            scalar_term_type = self._term_registry[type(rhs)]
+            return scalar_term_type.from_cmpnt_coeff(self, rhs)
         if not isinstance(rhs, String):
             return NotImplemented
         if self.modes != rhs.modes:
             raise ValueError("Cannot multiply strings defined over different modes.")
-        term_type = self._term_registry[float]
+        real_term_type = self._term_registry.term_type_real
         string = String(self.modes, self.get_ops() + rhs.get_ops())
-        return term_type.from_cmpnt_coeff(string, 1.0)
+        return real_term_type.from_cmpnt_coeff(string, 1.0)
 
 
-class Strings(Cmpnts[ImplT, StringSpec]):
+class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
     """A collection of raw fermionic ladder-operator strings.
 
     An array-like container of mode-based raw fermionic strings that may be an owning instance
@@ -158,15 +216,9 @@ class Strings(Cmpnts[ImplT, StringSpec]):
     _set_type: type[StringSet]
 
     def __init__(self, modes: int | Modes = 0, n: int = 0, max_len: int = 0):
-        if isinstance(modes, int):
-            modes = Modes.from_count(modes)
-        super().__init__(self.cmpnt_type.impl_type(modes, max_len))
+        modes = _as_modes(modes)
+        Cmpnts.__init__(self, self.cmpnt_type.impl_type(modes, max_len))
         self.resize(n)
-
-    @property
-    def modes(self) -> Modes:
-        """Get the modes corresponding to ``self``."""
-        return self._impl.modes
 
     @property
     def max_len(self) -> int:
@@ -201,7 +253,7 @@ class Strings(Cmpnts[ImplT, StringSpec]):
         return super().__getitem__(indexer)  # type: ignore[return-value]
 
 
-class StringSet(CmpntSet[ImplT, StringSpec]):
+class StringSet(OperatorStringSet[ImplT, SpecT, ElemT]):
     """A collection of unique raw fermionic ladder-operator strings.
 
     A set-like container of mode-based raw fermionic strings that may be used to store unique
@@ -210,12 +262,7 @@ class StringSet(CmpntSet[ImplT, StringSpec]):
 
     cmpnts_type = Strings
 
-    def __init__(self, modes: int | Modes | ImplT = 0, max_len: int = 0):
-        if isinstance(modes, self.cmpnts_type.cmpnt_type.impl_type):
-            CmpntSet.__init__(self, modes)
-            return
-        if isinstance(modes, int):
-            modes = Modes.from_count(modes)
+    def __init__(self, modes: int | Modes = 0, max_len: int = 0):
         CmpntSet.__init__(self, self.cmpnts_type(modes, max_len=max_len)._impl)
 
 

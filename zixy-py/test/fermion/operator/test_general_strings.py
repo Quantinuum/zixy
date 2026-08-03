@@ -8,6 +8,13 @@ def test_string_access():
 
     assert str(string) == "F1 F0^ F2"
     assert string.get_ops() == [(1, False), (0, True), (2, False)]
+    assert string.get_sets() == ([0], [1, 2])
+    assert string[0, True]
+    assert not string[0, False]
+    assert string[1, False]
+
+    with pytest.raises(KeyError):
+        string[0, "bad"]
 
 
 def test_string_modification():
@@ -19,6 +26,20 @@ def test_string_modification():
     string.set("F3 F1^")
     assert string.get_ops() == [(3, False), (1, True)]
     assert str(string) == "F3 F1^"
+
+
+def test_string_dagger():
+    string = String(4, "F0^ F1 F2^")
+
+    daggered = string.daggered()
+
+    assert daggered is not string
+    assert string.get_ops() == [(0, True), (1, False), (2, True)]
+    assert daggered.get_ops() == [(2, False), (1, True), (0, False)]
+    assert str(daggered) == "F2 F1^ F0"
+
+    string.dagger()
+    assert string == daggered
 
 
 def test_string_scalar_mul():

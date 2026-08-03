@@ -44,10 +44,12 @@ from zixy.container.data import TermData
 from zixy.container.terms import (
     NumericTerms,
     NumericTermSum,
-    Term as TermBase,
-    Terms as TermsBase,
-    TermSet as TermSetBase,
-    TermSum as TermSumBase,
+)
+from zixy.fermion._terms import (
+    Term as FermionTerm,
+    Terms as FermionTerms,
+    TermSet as FermionTermSet,
+    TermSum as FermionTermSum,
 )
 from zixy.fermion.state._strings import String, Strings, StringSpec
 from zixy.utils import split_top_level
@@ -87,7 +89,7 @@ def _modes_from_dense_len(n: int) -> Modes:
     return Modes.from_count(n.bit_length() - 1)
 
 
-class Term(TermBase[FermionStateArray, StringSpec, CoeffT]):
+class Term(FermionTerm[FermionStateArray, StringSpec, CoeffT, bool]):
     """A term consisting of a fermionic state string and a coefficient.
 
     A single mode-based term consisting of a state string and a coefficient that may be an owning
@@ -101,7 +103,7 @@ class Term(TermBase[FermionStateArray, StringSpec, CoeffT]):
     def __init__(self, modes: int | Modes = 0, source: TermSpec[CoeffT] = None):
         cmpnts = self.cmpnts_type(modes, 1)
         coeffs = get_coeffs_type(self.coeff_type).from_size(1)
-        TermBase.__init__(self, TermData(cmpnts, coeffs))
+        terms.Term.__init__(self, TermData(cmpnts, coeffs))
         self.set(source)
 
     @classmethod
@@ -130,26 +132,14 @@ class Term(TermBase[FermionStateArray, StringSpec, CoeffT]):
             )
         return cls._create(data)
 
-    @property
-    def string(self) -> String:
-        """Get the string component of the term."""
-        return cast(String, self.cmpnt)
 
-    @property
-    def modes(self) -> Modes:
-        """Get the modes corresponding to ``self``."""
-        return self.string.modes
-
-
-class Terms(TermsBase[FermionStateArray, StringSpec, CoeffT]):
+class Terms(FermionTerms[FermionStateArray, StringSpec, CoeffT, bool]):
     """A collection of terms consisting of fermionic state strings and coefficients."""
 
     term_type: type[Term[CoeffT]]
 
     def __init__(self, modes: int | Modes = 0, n: int = 0):
-        cmpnts = self.term_type.cmpnts_type(modes, n)
-        coeffs = get_coeffs_type(self.term_type.coeff_type).from_size(n)
-        TermsBase.__init__(self, TermData(cmpnts, coeffs))
+        FermionTerms.__init__(self, modes, n)
 
     @classmethod
     def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
@@ -163,37 +153,17 @@ class Terms(TermsBase[FermionStateArray, StringSpec, CoeffT]):
             out_modes = parsed_terms[0].modes if parsed_terms else Modes.from_count(0)
         return cls.from_iterable(parsed_terms, out_modes)
 
-    @property
-    def strings(self) -> Strings:
-        """Get the string components of ``self``."""
-        return cast(Strings, self.cmpnts)
 
-    @property
-    def modes(self) -> Modes:
-        """Get the modes corresponding to ``self``."""
-        return self.strings.modes
-
-
-class TermSet(TermSetBase[FermionStateArray, StringSpec, CoeffT]):
+class TermSet(FermionTermSet[FermionStateArray, StringSpec, CoeffT, bool]):
     """A collection of unique terms consisting of fermionic state strings and coefficients."""
 
     terms_type: type[Terms[CoeffT]]
 
     def __init__(self, modes: int | Modes = 0):
-        TermSetBase.__init__(self, self.terms_type(modes))
-
-    @property
-    def strings(self) -> Strings:
-        """Get the components of ``self``."""
-        return cast(Strings, self._impl._cmpnts)
-
-    @property
-    def modes(self) -> Modes:
-        """Get the modes corresponding to ``self``."""
-        return self.strings.modes
+        FermionTermSet.__init__(self, modes)
 
 
-class TermSum(TermSumBase[FermionStateArray, StringSpec, CoeffT], TermSet[CoeffT]):
+class TermSum(FermionTermSum[FermionStateArray, StringSpec, CoeffT, bool], TermSet[CoeffT]):
     """A sum of terms consisting of fermionic state strings and coefficients."""
 
     @classmethod

@@ -46,18 +46,23 @@ from zixy.container.data import TermData
 from zixy.container.terms import (
     NumericTerms,
     NumericTermSum,
-    Term as TermBase,
-    Terms as TermsBase,
-    TermSet as TermSetBase,
-    TermSum as TermSumBase,
+)
+from zixy.fermion._terms import (
+    Term as FermionTerm,
+    Terms as FermionTerms,
+    TermSet as FermionTermSet,
+    TermSum as FermionTermSum,
 )
 from zixy.fermion.operator._strings import (
+    LadderOp,
+    parse_ladder_product,
+    parse_term_source,
+)
+from zixy.fermion.operator.normal._strings import (
     String,
     Strings,
     StringSpec,
     _default_modes,
-    parse_ladder_product,
-    parse_term_source,
 )
 from zixy.fermion.state._terms import (
     ComplexTermSum as ComplexState,
@@ -106,7 +111,9 @@ def _product_sign(cre: list[int], ann: list[int]) -> Sign:
     return Sign(((n_cre * (n_cre - 1) // 2) + (n_ann * (n_ann - 1) // 2)) & 1)
 
 
-class Term(TermBase[NormalFermionOperatorArray, StringSpec, CoeffT]):
+class Term(
+    FermionTerm[NormalFermionOperatorArray, StringSpec, CoeffT, tuple[list[int], list[int]]]
+):
     """A term consisting of a normal-ordered fermionic string and a coefficient.
 
     A single mode-based term consisting of a normal-ordered fermionic string and a coefficient that
@@ -120,18 +127,13 @@ class Term(TermBase[NormalFermionOperatorArray, StringSpec, CoeffT]):
     def __init__(self, modes: int | Modes = 0, source: TermSpec[CoeffT] = None):
         cmpnts = self.cmpnts_type(modes, 1)
         coeffs = get_coeffs_type(self.coeff_type).from_size(1)
-        TermBase.__init__(self, TermData(cmpnts, coeffs))
+        terms.Term.__init__(self, TermData(cmpnts, coeffs))
         self.set(source)
 
     @property
     def string(self) -> String:
         """Get the string component of the term."""
         return cast(String, self.cmpnt)
-
-    @property
-    def modes(self) -> Modes:
-        """Get the modes corresponding to ``self``."""
-        return self.string.modes
 
     @classmethod
     def term_data_from_str(
@@ -219,7 +221,9 @@ class Term(TermBase[NormalFermionOperatorArray, StringSpec, CoeffT]):
         return out
 
 
-class Terms(TermsBase[NormalFermionOperatorArray, StringSpec, CoeffT]):
+class Terms(
+    FermionTerms[NormalFermionOperatorArray, StringSpec, CoeffT, tuple[list[int], list[int]]]
+):
     """A collection of terms consisting of normal-ordered fermionic strings and coefficients.
 
     An array-like container of mode-based terms consisting of normal-ordered fermionic strings and
@@ -231,19 +235,12 @@ class Terms(TermsBase[NormalFermionOperatorArray, StringSpec, CoeffT]):
     term_type: type[Term[CoeffT]]
 
     def __init__(self, modes: int | Modes = 0, n: int = 0):
-        cmpnts = self.term_type.cmpnts_type(modes, n)
-        coeffs = get_coeffs_type(self.term_type.coeff_type).from_size(n)
-        TermsBase.__init__(self, TermData(cmpnts, coeffs))
+        FermionTerms.__init__(self, modes, n)
 
     @property
     def strings(self) -> Strings:
-        """Get the components of ``self``."""
+        """Get the string components of the terms."""
         return cast(Strings, self.cmpnts)
-
-    @property
-    def modes(self) -> Modes:
-        """Get the modes corresponding to ``self``."""
-        return self.strings.modes
 
     @classmethod
     def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
@@ -261,7 +258,9 @@ class Terms(TermsBase[NormalFermionOperatorArray, StringSpec, CoeffT]):
         return cls._create(cls.term_type.term_data_from_str(source, modes))
 
 
-class TermSet(TermSetBase[NormalFermionOperatorArray, StringSpec, CoeffT]):
+class TermSet(
+    FermionTermSet[NormalFermionOperatorArray, StringSpec, CoeffT, tuple[list[int], list[int]]]
+):
     """A collection of unique terms consisting of normal-ordered fermionic strings and coefficients.
 
     A set-like container of mode-based terms that may be used to store unique terms and perform
@@ -275,11 +274,11 @@ class TermSet(TermSetBase[NormalFermionOperatorArray, StringSpec, CoeffT]):
     terms_type: type[Terms[CoeffT]]
 
     def __init__(self, modes: int | Modes = 0):
-        TermSetBase.__init__(self, self.terms_type(modes))
+        FermionTermSet.__init__(self, modes)
 
     @property
     def strings(self) -> Strings:
-        """Get the components of ``self``."""
+        """Get the string components of the terms."""
         return cast(Strings, self._impl._cmpnts)
 
     @property
@@ -287,13 +286,11 @@ class TermSet(TermSetBase[NormalFermionOperatorArray, StringSpec, CoeffT]):
         """Get the coefficients of ``self``."""
         return self._impl._coeffs
 
-    @property
-    def modes(self) -> Modes:
-        """Get the modes corresponding to ``self``."""
-        return self.strings.modes
 
-
-class TermSum(TermSumBase[NormalFermionOperatorArray, StringSpec, CoeffT], TermSet[CoeffT]):
+class TermSum(
+    FermionTermSum[NormalFermionOperatorArray, StringSpec, CoeffT, tuple[list[int], list[int]]],
+    TermSet[CoeffT],
+):
     """A sum of terms consisting of normal-ordered fermionic strings and coefficients.
 
     A set-like container of mode-based terms that may be used to store unique terms and perform
@@ -339,7 +336,7 @@ class TermSum(TermSumBase[NormalFermionOperatorArray, StringSpec, CoeffT], TermS
         out = type(self)(self.modes)
         for term in cast(Iterable[Term[CoeffT]], self):
             out += term.daggered()
-        TermSumBase.__init__(self, out.to_terms())
+        terms.TermSum.__init__(self, out.to_terms())
 
     def daggered(self) -> Self:
         """Return the adjoint of ``self``."""
@@ -487,7 +484,7 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
                 out += mapper.encode(term.string) * term.coeff
         return out
 
-    def to_ladder_ops(self) -> list[tuple[list[tuple[int, bool]], float]]:
+    def to_ladder_ops(self) -> list[tuple[list[LadderOp], float]]:
         """Return the terms as raw ladder-operator products and coefficients."""
         return [(_string_to_ladder_ops(cast(RealTerm, term).string), term.coeff) for term in self]
 
@@ -754,7 +751,7 @@ class SymbolicTermSum(TermSum[Expr]):
         return out
 
 
-def _string_to_ladder_ops(string: String) -> list[tuple[int, bool]]:
+def _string_to_ladder_ops(string: String) -> list[LadderOp]:
     cre, ann = string.get_sets()
     return [(i, True) for i in cre] + [(i, False) for i in ann]
 

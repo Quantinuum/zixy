@@ -46,9 +46,14 @@ from zixy.container.terms import (
     Term as TermBase,
     Terms as TermsBase,
     TermSet as TermSetBase,
-    TermSum as TermSumBase,
 )
-from zixy.fermion.operator._strings import parse_ladder_product, parse_term_source
+from zixy.fermion._terms import (
+    Term as FermionTerm,
+    Terms as FermionTerms,
+    TermSet as FermionTermSet,
+    TermSum as FermionTermSum,
+)
+from zixy.fermion.operator._strings import LadderOp, parse_ladder_product, parse_term_source
 from zixy.fermion.operator._terms import _parse_coeff
 from zixy.fermion.operator.general._strings import (
     String,
@@ -76,7 +81,7 @@ def _max_len_from_term_source(source: TermSpec[Any]) -> int:
     return _max_len_from_string_source(source)
 
 
-class Term(TermBase[GeneralFermionOperatorArray, StringSpec, CoeffT]):
+class Term(FermionTerm[GeneralFermionOperatorArray, StringSpec, CoeffT, list[LadderOp]]):
     """A term consisting of a raw fermionic string and a coefficient.
 
     A single mode-based term consisting of a raw fermionic string and a coefficient that may be an
@@ -99,11 +104,6 @@ class Term(TermBase[GeneralFermionOperatorArray, StringSpec, CoeffT]):
     def string(self) -> String:
         """Get the string component of the term."""
         return cast(String, self.cmpnt)
-
-    @property
-    def modes(self) -> Modes:
-        """Get the modes corresponding to ``self``."""
-        return self.string.modes
 
     @classmethod
     def term_data_from_str(
@@ -170,7 +170,7 @@ class Term(TermBase[GeneralFermionOperatorArray, StringSpec, CoeffT]):
         return term_type.from_cmpnt_coeff(string, coeff)
 
 
-class Terms(TermsBase[GeneralFermionOperatorArray, StringSpec, CoeffT]):
+class Terms(FermionTerms[GeneralFermionOperatorArray, StringSpec, CoeffT, list[LadderOp]]):
     """A collection of terms consisting of raw fermionic strings and coefficients.
 
     An array-like container of mode-based terms consisting of raw fermionic strings and
@@ -188,13 +188,8 @@ class Terms(TermsBase[GeneralFermionOperatorArray, StringSpec, CoeffT]):
 
     @property
     def strings(self) -> Strings:
-        """Get the components of ``self``."""
+        """Get the string components of the terms."""
         return cast(Strings, self.cmpnts)
-
-    @property
-    def modes(self) -> Modes:
-        """Get the modes corresponding to ``self``."""
-        return self.strings.modes
 
     @classmethod
     def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
@@ -212,7 +207,9 @@ class Terms(TermsBase[GeneralFermionOperatorArray, StringSpec, CoeffT]):
         return cls._create(cls.term_type.term_data_from_str(source, modes))
 
 
-class TermSet(TermSetBase[GeneralFermionOperatorArray, StringSpec, CoeffT]):
+class TermSet(
+    FermionTermSet[GeneralFermionOperatorArray, StringSpec, CoeffT, list[LadderOp]]
+):
     """A collection of unique terms consisting of raw fermionic strings and coefficients.
 
     A set-like container of mode-based terms that may be used to store unique terms and perform
@@ -230,7 +227,7 @@ class TermSet(TermSetBase[GeneralFermionOperatorArray, StringSpec, CoeffT]):
 
     @property
     def strings(self) -> Strings:
-        """Get the components of ``self``."""
+        """Get the string components of the terms."""
         return cast(Strings, self._impl._cmpnts)
 
     @property
@@ -239,17 +236,15 @@ class TermSet(TermSetBase[GeneralFermionOperatorArray, StringSpec, CoeffT]):
         return self._impl._coeffs
 
     @property
-    def modes(self) -> Modes:
-        """Get the modes corresponding to ``self``."""
-        return self.strings.modes
-
-    @property
     def max_len(self) -> int:
         """Get the maximum operator-product length supported by the backing array."""
         return self.strings.max_len
 
 
-class TermSum(TermSumBase[GeneralFermionOperatorArray, StringSpec, CoeffT], TermSet[CoeffT]):
+class TermSum(
+    FermionTermSum[GeneralFermionOperatorArray, StringSpec, CoeffT, list[LadderOp]],
+    TermSet[CoeffT],
+):
     """A sum of terms consisting of raw fermionic strings and coefficients.
 
     A set-like container of mode-based terms that may be used to store unique terms and perform
@@ -259,6 +254,9 @@ class TermSum(TermSumBase[GeneralFermionOperatorArray, StringSpec, CoeffT], Term
         Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
         are not.
     """
+
+    def __init__(self, modes: int | Modes = 0, max_len: int = 0):
+        TermSet.__init__(self, modes, max_len=max_len)
 
     @classmethod
     def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:

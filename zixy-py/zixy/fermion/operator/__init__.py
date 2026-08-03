@@ -20,7 +20,7 @@ from zixy._zixy import (
     Modes,
     NormalFermionOperatorArray,
 )
-from zixy.fermion.operator._strings import String, Strings, StringSet, StringSpec
+from zixy.fermion.operator.normal._strings import String, Strings, StringSet, StringSpec
 from zixy.fermion.operator._terms import (
     SignTerm,
     SignTerms,

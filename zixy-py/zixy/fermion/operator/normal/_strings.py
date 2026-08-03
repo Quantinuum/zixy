@@ -12,6 +12,245 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Normal-ordered fermionic ladder-operator string components."""
+"""Normal-ordered fermionic ladder-operator string components and collections of such strings.
 
-from zixy.fermion.operator._strings import *  # noqa: F403
+Normal-ordered fermionic strings are components representing products of creation operators
+followed by annihilation operators, acting on a register of fermionic modes.
+
+The structure of this module parallels that of :mod:`~zixy.container.cmpnts`.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, TypeAlias, overload
+
+from typing_extensions import Self
+
+from zixy._zixy import Modes, NormalFermionOperatorArray
+from zixy.container.coeffs import Coeff, CoeffT, Sign
+from zixy.fermion.operator._strings import (
+    LadderOp,
+    String as OperatorString,
+    Strings as OperatorStrings,
+    StringSet as OperatorStringSet,
+    parse_ladder_product,
+    parse_term_source,
+)
+
+if TYPE_CHECKING:
+    from zixy.fermion.operator._terms import RealTermSum, Term, TermRegistry
+
+StringSpec: TypeAlias = (
+    None | str | tuple[Sequence[int] | Sequence[bool], Sequence[int] | Sequence[bool]]
+)
+ElemT = tuple[list[int], list[int]]
+SpecT = StringSpec
+ImplT = NormalFermionOperatorArray
+
+
+def _default_modes(source: SpecT = None) -> Modes:
+    """Construct the default modes for a string specifier."""
+    if source is None:
+        return Modes.from_count(0)
+    if isinstance(source, str):
+        max_mode = -1
+        for mode, _ in parse_ladder_product(source):
+            max_mode = max(max_mode, mode)
+        return Modes.from_count(max_mode + 1)
+    cre, ann = source
+    if not cre and not ann:
+        return Modes.from_count(0)
+    if all(isinstance(x, bool) for x in cre) and all(isinstance(x, bool) for x in ann):
+        return Modes.from_count(max(len(cre), len(ann)))
+    return Modes.from_count(max((*cre, *ann), default=-1) + 1)
+
+
+class String(OperatorString[ImplT, SpecT, ElemT]):
+    """A normal-ordered fermionic ladder-operator string.
+
+    A single mode-based normal-ordered fermionic string that may be an owning instance referencing
+    a single element in a Rust-bound data object, or a view on an element in another collection.
+    """
+
+    impl_type = ImplT
+    _term_registry: TermRegistry
+
+    @staticmethod
+    def _get_default_modes(source: SpecT | None = None) -> Modes:
+        """Get the default modes for this string type based on a string specifier."""
+        return _default_modes(source)
+
+    @classmethod
+    def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
+        """Create an instance of ``cls`` by parsing an input string.
+
+        Args:
+            source: String to parse.
+            modes: Space of modes or a number of modes. If ``None``, infer from the max mode
+                index in the input string.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        return cls(modes, source)
+
+    def set(self, source: SpecT | String | None) -> None:
+        """Set the value of the string.
+
+        Args:
+            source: Specification for the new normal-ordered string.
+
+        Note:
+            This method operates in-place.
+        """
+        if source is None:
+            self._impl.cmpnt_clear(self.index)
+        elif isinstance(source, String):
+            self._set_copy(source)
+        elif isinstance(source, str):
+            cmpnts, signs = self._impl.from_ladder_product(self.modes, parse_ladder_product(source))
+            if len(cmpnts) != 1 or signs[0] != 1:
+                raise ValueError(
+                    "Fermion string does not normal-order to exactly one positive component."
+                )
+            self._impl.cmpnt_copy_external(self.index, cmpnts, 0)
+        elif isinstance(source, tuple) and len(source) == 2:
+            cre, ann = source
+            if all(isinstance(x, bool) for x in cre) and all(isinstance(x, bool) for x in ann):
+                self._impl.cmpnt_set_from_lists(
+                    self.index, [bool(x) for x in cre], [bool(x) for x in ann]
+                )
+            else:
+                self._impl.cmpnt_set_from_sets(self.index, set(cre), set(ann))
+        else:
+            self.raise_spec_type_error(source)
+
+    def get_ops(self) -> list[LadderOp]:
+        """Get the normal-ordered ladder-operator product as ``(mode, is_creation)`` pairs."""
+        cre, ann = self.get_sets()
+        return [(i, True) for i in cre] + [(i, False) for i in ann]
+
+    def get_sets(self) -> tuple[list[int], list[int]]:
+        """Get the creation and annihilation mode sets."""
+        return self._impl.cmpnt_get_sets(self.index)
+
+    def __getitem__(self, item: LadderOp) -> bool:
+        """Return whether an operator is present on a mode.
+
+        Args:
+            item: Pair of ``(mode, is_creation)``, where ``is_creation`` is ``True`` for a
+                creation operator and ``False`` for an annihilation operator.
+        """
+        mode, is_creation = item
+        if is_creation is True:
+            return self._impl.cmpnt_get_cre(self.index, mode)
+        if is_creation is False:
+            return self._impl.cmpnt_get_ann(self.index, mode)
+        raise KeyError(is_creation)
+
+    def __setitem__(self, item: LadderOp, value: bool) -> None:
+        """Set whether an operator is present on a mode.
+
+        Args:
+            item: Pair of ``(mode, is_creation)``, where ``is_creation`` is ``True`` for a
+                creation operator and ``False`` for an annihilation operator.
+            value: Whether the operator is present.
+        """
+        mode, is_creation = item
+        if is_creation is True:
+            self._impl.cmpnt_set_cre(self.index, mode, value)
+        elif is_creation is False:
+            self._impl.cmpnt_set_ann(self.index, mode, value)
+        else:
+            raise KeyError(is_creation)
+
+    def dagger(self) -> None:
+        """Take the adjoint of ``self`` in-place, ignoring the scalar sign."""
+        cre, ann = self.get_sets()
+        self.set((ann, cre))
+
+    def daggered(self) -> Self:
+        """Return the adjoint of ``self``, ignoring the scalar sign."""
+        out = self.clone()
+        out.dagger()
+        return out
+
+    @overload  # type: ignore[override]
+    def __mul__(self, rhs: String) -> RealTermSum: ...
+
+    @overload
+    def __mul__(self, rhs: CoeffT) -> Term[CoeffT]: ...
+
+    def __mul__(self, rhs: String | CoeffT) -> RealTermSum | Term[CoeffT]:
+        """Multiplication of ``self`` by ``rhs``.
+
+        Multiplication by a scalar returns a term. Multiplication by another normal-ordered string
+        returns a term sum, since normal-ordering can produce zero, one, or multiple terms.
+        """
+        if isinstance(rhs, Coeff):
+            scalar_term_type = self._term_registry[type(rhs)]
+            return scalar_term_type.from_cmpnt_coeff(self, rhs)
+        if not isinstance(rhs, String):
+            return NotImplemented
+        impl, signs = self._impl.cmpnt_mul(self.index, rhs._impl, rhs.index)
+        from zixy.fermion.operator._terms import RealTermSum  # noqa: PLC0415
+
+        real_term_type = self._term_registry.term_type_real
+        out = RealTermSum(self.modes)
+        for i in range(len(impl)):
+            out += real_term_type.from_cmpnt_coeff(
+                Strings._create(impl)[i], float(int(Sign(signs[i])))
+            )
+        return out
+
+
+class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
+    """A collection of normal-ordered fermionic ladder-operator strings.
+
+    An array-like container of mode-based normal-ordered fermionic strings that may be an owning
+    instance referencing a contiguous Rust-bound data object, or a view on a slice of the elements
+    in another collection.
+    """
+
+    cmpnt_type = String
+    _set_type: type[StringSet]
+
+    @classmethod
+    def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
+        """Create an instance of ``cls`` by parsing an input string.
+
+        Args:
+            source: String to parse.
+            modes: Space of modes or a number of modes. If ``None``, infer from the max mode
+                index in the input string.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        terms = parse_term_source(source)
+        if modes is None:
+            modes = _default_modes(" ".join(cmpnt for cmpnt, _ in terms))
+        out = cls(modes)
+        out.append_iterable(cmpnt for cmpnt, _ in terms)
+        return out
+
+    @overload
+    def __getitem__(self, indexer: int) -> String: ...
+    @overload
+    def __getitem__(self, indexer: slice) -> Self: ...
+    def __getitem__(self, indexer: int | slice) -> String | Self:
+        return super().__getitem__(indexer)  # type: ignore[return-value]
+
+
+class StringSet(OperatorStringSet[ImplT, SpecT, ElemT]):
+    """A collection of unique normal-ordered fermionic ladder-operator strings.
+
+    A set-like container of mode-based normal-ordered fermionic strings that may be used to store
+    unique strings and perform set-like operations on them.
+    """
+
+    cmpnts_type = Strings
+
+
+Strings._set_type = StringSet

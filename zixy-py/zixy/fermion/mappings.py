@@ -21,8 +21,8 @@ from collections.abc import Sequence
 
 from zixy._zixy import JordanWignerMapper as Impl, Qubits
 from zixy.container.coeffs import ComplexCoeffs
-from zixy.fermion.operator._strings import String as NormalString
 from zixy.fermion.operator.general._strings import String as GeneralString
+from zixy.fermion.operator.normal._strings import String as NormalString
 from zixy.qubit.pauli import ComplexTermSum as PauliComplexTermSum
 
 FermionString = NormalString | GeneralString

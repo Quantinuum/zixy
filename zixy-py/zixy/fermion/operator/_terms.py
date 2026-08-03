@@ -471,16 +471,18 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
     def to_qubit(self, mapper: Any) -> Any:
         """Map this fermionic term sum to a qubit Pauli term sum."""
         from zixy.qubit.pauli import (  # noqa: PLC0415
-            RealTerm as PauliRealTerm,
-            RealTermSum as PauliRealTermSum,
+            ComplexTerm as PauliComplexTerm,
+            ComplexTermSum as PauliComplexTermSum,
             String as PauliString,
         )
 
-        out = PauliRealTermSum(mapper.qubits)
+        out = PauliComplexTermSum(mapper.qubits)
         for term in self:
             term = cast(RealTerm, term)
             if term.string.get_sets() == ([], []):
-                out += PauliRealTerm.from_cmpnt_coeff(PauliString(mapper.qubits), term.coeff)
+                out += PauliComplexTerm.from_cmpnt_coeff(
+                    PauliString(mapper.qubits), complex(term.coeff)
+                )
             else:
                 out += mapper.encode(term.string) * term.coeff
         return out

@@ -258,6 +258,16 @@ class Term(
         coeff = coeff.replace("-0j", "+0j")
         return f"({coeff}, {self.cmpnt})"
 
+    def __pos__(self) -> Self:
+        """Return ``self``."""
+        return self
+
+    def __neg__(self) -> Self:
+        """Return the negation of ``self``."""
+        out = self.clone()
+        out.coeff = typesafe_mul(out.coeff, -1)
+        return out
+
 
 class Terms(
     Generic[ImplT, SpecT, CoeffT],
@@ -470,6 +480,16 @@ class Terms(
         """Return ``self`` multiplied by a scalar or coefficient vector."""
         out = self.clone()
         out *= coeff
+        return out
+
+    def __pos__(self) -> Self:
+        """Return ``self``."""
+        return self
+
+    def __neg__(self) -> Self:
+        """Return the negation of ``self``."""
+        out = self.clone()
+        out *= cast(CoeffT, -1)
         return out
 
     def _empty_clone(self) -> Self:
@@ -1170,6 +1190,14 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
         out = self.clone()
         out -= rhs
         return out
+
+    def __pos__(self) -> Self:
+        """Return ``self``."""
+        return self
+
+    def __neg__(self) -> Self:
+        """Return the negation of ``self``."""
+        return self * -1
 
     def __imul__(self, coeff: Coeff | Coeffs[CoeffT]) -> Self:
         """Multiply ``self`` in-place by a scalar or coefficient vector."""

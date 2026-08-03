@@ -187,5 +187,13 @@ class StringSet(CmpntSet[ImplT, StringSpec]):
 
     cmpnts_type = Strings
 
+    def __init__(self, modes: int | Modes | ImplT = 0, max_len: int = 0):
+        if isinstance(modes, self.cmpnts_type.cmpnt_type.impl_type):
+            CmpntSet.__init__(self, modes)
+            return
+        if isinstance(modes, int):
+            modes = Modes.from_count(modes)
+        CmpntSet.__init__(self, self.cmpnts_type(modes, max_len=max_len)._impl)
+
 
 Strings._set_type = StringSet

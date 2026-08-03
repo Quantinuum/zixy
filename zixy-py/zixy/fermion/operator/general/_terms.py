@@ -37,6 +37,7 @@ from zixy.container.coeffs import (
     RealCoeffs,
     SymbolicCoeffs,
     get_coeffs_type,
+    unit,
 )
 from zixy.container.data import TermData
 from zixy.container.terms import (
@@ -59,6 +60,22 @@ from zixy.fermion.operator.general._strings import (
 TermSpec: TypeAlias = String | tuple[StringSpec | String | None, CoeffT | None] | None
 
 
+def _max_len_from_string_source(source: StringSpec | String | None) -> int:
+    if isinstance(source, String):
+        return len(source.get_ops())
+    if isinstance(source, str):
+        return len(parse_ladder_product(source))
+    if source is None:
+        return 0
+    return len(source)
+
+
+def _max_len_from_term_source(source: TermSpec[Any]) -> int:
+    if isinstance(source, tuple) and len(source) == 2:
+        return _max_len_from_string_source(source[0])
+    return _max_len_from_string_source(source)
+
+
 class Term(TermBase[GeneralFermionOperatorArray, StringSpec, CoeffT]):
     """A term consisting of a raw fermionic string and a coefficient.
 
@@ -70,8 +87,10 @@ class Term(TermBase[GeneralFermionOperatorArray, StringSpec, CoeffT]):
     cmpnts_type = Strings
     coeff_type: type[CoeffT]
 
-    def __init__(self, modes: int | Modes = 0, source: TermSpec[CoeffT] = None):
-        cmpnts = self.cmpnts_type(modes, 1)
+    def __init__(self, modes: int | Modes = 0, source: TermSpec[CoeffT] = None, max_len: int = 0):
+        if max_len == 0:
+            max_len = _max_len_from_term_source(source)
+        cmpnts = self.cmpnts_type(modes, 1, max_len)
         coeffs = get_coeffs_type(self.coeff_type).from_size(1)
         TermBase.__init__(self, TermData(cmpnts, coeffs))
         self.set(source)
@@ -132,6 +151,23 @@ class Term(TermBase[GeneralFermionOperatorArray, StringSpec, CoeffT]):
                 f"There should be exactly one Term string in the input, not {len(data)}."
             )
         return cls._create(data)
+
+    def __mul__(self, rhs: Any) -> Any:
+        """Multiplication of ``self`` by ``rhs``."""
+        if isinstance(rhs, Coeff):
+            coeff = self.coeff * rhs
+            term_type = cast(Any, self.string._term_registry)[type(coeff)]
+            return term_type.from_cmpnt_coeff(self.string, coeff)
+        if isinstance(rhs, String):
+            rhs = type(self).from_cmpnt_coeff(rhs, unit(self.coeff_type))
+        if not isinstance(rhs, Term):
+            return NotImplemented
+        if self.modes != rhs.modes:
+            raise ValueError("Cannot multiply terms defined over different modes.")
+        coeff = self.coeff * rhs.coeff
+        term_type = cast(Any, self.string._term_registry)[type(coeff)]
+        string = String(self.modes, self.string.get_ops() + rhs.string.get_ops())
+        return term_type.from_cmpnt_coeff(string, coeff)
 
 
 class Terms(TermsBase[GeneralFermionOperatorArray, StringSpec, CoeffT]):
@@ -370,17 +406,45 @@ class SymbolicTerms(Terms[Expr]):
         """Get the coefficients of ``self``."""
         return cast(SymbolicCoeffs, self._data.coeffs[self.slice])
 
+    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
+        """Substitute values into the symbolic coefficients in-place."""
+        self.coeffs.isubs(values)
+
+    def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTerms:
+        """Return a copy with values substituted into the symbolic coefficients."""
+        return SymbolicTerms._create(TermData(self.strings.clone(), self.coeffs.subs(values)))
+
 
 class SymbolicTermSet(TermSet[Expr]):
     """A collection of unique terms with raw fermionic strings and symbolic coefficients."""
 
     terms_type = SymbolicTerms
 
+    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
+        """Substitute values into the symbolic coefficients in-place."""
+        self.coeffs.isubs(values)
+
+    def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTermSet:
+        """Return a copy with values substituted into the symbolic coefficients."""
+        out = self.clone()
+        out.isubs(values)
+        return out
+
 
 class SymbolicTermSum(TermSum[Expr]):
     """A sum of terms consisting of raw fermionic strings and symbolic coefficients."""
 
     terms_type = SymbolicTerms
+
+    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
+        """Substitute values into the symbolic coefficients in-place."""
+        self.coeffs.isubs(values)
+
+    def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTermSum:
+        """Return a copy with values substituted into the symbolic coefficients."""
+        out = self.clone()
+        out.isubs(values)
+        return out
 
 
 class TermRegistry(terms.TermRegistry[GeneralFermionOperatorArray, StringSpec]):

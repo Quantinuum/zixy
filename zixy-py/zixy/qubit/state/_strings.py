@@ -38,7 +38,7 @@ from zixy.qubit.pauli import String as PauliString
 
 if TYPE_CHECKING:
     from zixy.container.coeffs import CoeffT
-    from zixy.qubit.state._terms import Term
+    from zixy.qubit.state._terms import Term, TermRegistry
 
 StringSpec = Sequence[bool] | set[int] | str
 ElemT = bool
@@ -143,18 +143,14 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         """Return the product of ``self`` and ``rhs``."""
         if not isinstance(rhs, Coeff):
             return NotImplemented
-        from zixy.qubit.state._terms import get_term_type  # noqa: PLC0415
-
-        term_type = get_term_type(type(rhs))
+        term_type = self._term_registry[type(rhs)]
         return term_type.from_cmpnt_coeff(self, rhs)
 
     def __rmul__(self, lhs: CoeffT) -> Term[CoeffT]:
         """Return the product of ``lhs`` and ``self``."""
         if not isinstance(lhs, Coeff):
             return NotImplemented
-        from zixy.qubit.state._terms import get_term_type  # noqa: PLC0415
-
-        term_type = get_term_type(type(lhs))
+        term_type = self._term_registry[type(lhs)]
         return term_type.from_cmpnt_coeff(self, lhs)
 
     def vdot(self, other: String) -> int:

@@ -16,30 +16,15 @@ def test_real_term_sum_to_qubit_handles_identity_contractions():
     assert str(qubit_terms) == "(0.5, ), (0.5, Z0)"
 
 
-def test_existing_from_fermionic_sequence_remains_compatible():
-    mapper = JordanWignerMapper(2)
-
-    terms = PauliRealTermSum.from_fermionic(
-        mapper.qubits,
-        mapper,
-        [([(0, False), (0, True)], 1.0)],
-    )
-
-    assert str(terms) == "(0.5, ), (0.5, Z0)"
-
-
-def test_native_and_sequence_mapping_agree():
+def test_native_and_explicit_string_mapping_agree():
     mapper = JordanWignerMapper(2)
     fermion_terms = NormalRealTermSum.from_str("F0 F0^", 2)
 
     via_native = fermion_terms.to_qubit(mapper)
-    via_sequence = PauliRealTermSum.from_fermionic(
-        mapper.qubits,
-        mapper,
-        [([(0, False), (0, True)], 1.0)],
-    )
+    via_string = PauliRealTermSum(mapper.qubits)
+    via_string += mapper.encode(GeneralString(2, "F0 F0^"))
 
-    assert via_native == via_sequence
+    assert via_native == via_string
 
 
 def test_mapper_accepts_native_normal_string():
@@ -56,7 +41,7 @@ def test_mapper_helper_methods_match_explicit_products():
     assert mapper.encode_ca(2, 1).coeff == 1
     assert mapper.encode_ca(2, 1)._mapper is mapper
 
-    explicit = mapper.encode(((0, True), (0, False), (1, True), (1, False)))
+    explicit = mapper.encode(GeneralString(4, "F0^ F0 F1^ F1"))
     helper = mapper.encode_nn(0, 1)
     assert helper.coeff == explicit.coeff
     assert helper._mapper is explicit._mapper

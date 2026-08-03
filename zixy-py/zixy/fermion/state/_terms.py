@@ -55,6 +55,13 @@ from zixy.fermion.state._strings import String, Strings, StringSpec
 from zixy.utils import split_top_level
 
 TermSpec: TypeAlias = String | tuple[StringSpec | String | None, CoeffT | None] | None
+ElemT = bool
+SpecT = StringSpec
+ImplT = FermionStateArray
+SignTermSpec = TermSpec[Sign]
+RealTermSpec = TermSpec[float]
+ComplexTermSpec = TermSpec[complex]
+SymbolicTermSpec = TermSpec[Expr]
 
 
 def _parse_term_source(source: str) -> tuple[str, str | None]:
@@ -89,7 +96,7 @@ def _modes_from_dense_len(n: int) -> Modes:
     return Modes.from_count(n.bit_length() - 1)
 
 
-class Term(FermionTerm[FermionStateArray, StringSpec, CoeffT, bool]):
+class Term(FermionTerm[ImplT, SpecT, CoeffT, ElemT]):
     """A term consisting of a fermionic state string and a coefficient.
 
     A single mode-based term consisting of a state string and a coefficient that may be an owning
@@ -99,12 +106,6 @@ class Term(FermionTerm[FermionStateArray, StringSpec, CoeffT, bool]):
 
     cmpnts_type = Strings
     coeff_type: type[CoeffT]
-
-    def __init__(self, modes: int | Modes = 0, source: TermSpec[CoeffT] = None):
-        cmpnts = self.cmpnts_type(modes, 1)
-        coeffs = get_coeffs_type(self.coeff_type).from_size(1)
-        terms.Term.__init__(self, TermData(cmpnts, coeffs))
-        self.set(source)
 
     @classmethod
     def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
@@ -133,13 +134,10 @@ class Term(FermionTerm[FermionStateArray, StringSpec, CoeffT, bool]):
         return cls._create(data)
 
 
-class Terms(FermionTerms[FermionStateArray, StringSpec, CoeffT, bool]):
+class Terms(FermionTerms[ImplT, SpecT, CoeffT, ElemT]):
     """A collection of terms consisting of fermionic state strings and coefficients."""
 
     term_type: type[Term[CoeffT]]
-
-    def __init__(self, modes: int | Modes = 0, n: int = 0):
-        FermionTerms.__init__(self, modes, n)
 
     @classmethod
     def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
@@ -154,16 +152,13 @@ class Terms(FermionTerms[FermionStateArray, StringSpec, CoeffT, bool]):
         return cls.from_iterable(parsed_terms, out_modes)
 
 
-class TermSet(FermionTermSet[FermionStateArray, StringSpec, CoeffT, bool]):
+class TermSet(FermionTermSet[ImplT, SpecT, CoeffT, ElemT]):
     """A collection of unique terms consisting of fermionic state strings and coefficients."""
 
     terms_type: type[Terms[CoeffT]]
 
-    def __init__(self, modes: int | Modes = 0):
-        FermionTermSet.__init__(self, modes)
 
-
-class TermSum(FermionTermSum[FermionStateArray, StringSpec, CoeffT, bool], TermSet[CoeffT]):
+class TermSum(FermionTermSum[ImplT, SpecT, CoeffT, ElemT], TermSet[CoeffT]):
     """A sum of terms consisting of fermionic state strings and coefficients."""
 
     @classmethod

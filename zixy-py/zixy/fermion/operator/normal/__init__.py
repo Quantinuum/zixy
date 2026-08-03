@@ -16,7 +16,7 @@
 
 from zixy._zixy import FermionSprings, Modes, NormalFermionOperatorArray
 from zixy.fermion.operator.normal._strings import String, Strings, StringSet, StringSpec
-from zixy.fermion.operator._terms import (
+from zixy.fermion.operator.normal._terms import (
     ComplexTerm,
     ComplexTerms,
     ComplexTermSet,

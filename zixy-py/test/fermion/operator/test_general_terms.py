@@ -53,6 +53,19 @@ def test_complex_term():
     assert str(scaled) == "((2+4j), F1 F0^)"
 
 
+def test_complex_term_dagger():
+    term = ComplexTerm(3, ("F0^ F1 F2^", 1 + 2j))
+
+    adjoint = term.daggered()
+
+    assert adjoint is not term
+    assert str(term) == "((1+2j), F0^ F1 F2^)"
+    assert str(adjoint) == "((1-2j), F2 F1^ F0)"
+
+    term.dagger()
+    assert term == adjoint
+
+
 def test_real_terms():
     terms = RealTerms(4, max_len=2)
     assert len(terms) == 0
@@ -192,6 +205,19 @@ def test_complex_term_product():
     rhs = ComplexTermSum.from_str("(2, F1^)", 2)
 
     assert str(lhs * rhs) == "(2j, F0 F1^)"
+
+
+def test_complex_term_sum_dagger():
+    term_sum = ComplexTermSum.from_str("(1j, F0^ F1), (2, F2)", 3)
+
+    adjoint = term_sum.daggered()
+
+    assert adjoint is not term_sum
+    assert str(term_sum) == "(1j, F0^ F1), ((2+0j), F2)"
+    assert str(adjoint) == "(-1j, F1^ F0), ((2+0j), F2^)"
+
+    term_sum.dagger()
+    assert term_sum == adjoint
 
 
 def test_symbolic_term_product():

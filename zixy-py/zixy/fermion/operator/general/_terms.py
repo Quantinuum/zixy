@@ -47,14 +47,15 @@ from zixy.container.terms import (
     Terms as TermsBase,
     TermSet as TermSetBase,
 )
-from zixy.fermion._terms import (
-    Term as FermionTerm,
-    Terms as FermionTerms,
-    TermSet as FermionTermSet,
-    TermSum as FermionTermSum,
-)
 from zixy.fermion.operator._strings import LadderOp, parse_ladder_product, parse_term_source
-from zixy.fermion.operator._terms import _parse_coeff
+from zixy.fermion.operator._terms import (
+    Term as OperatorTerm,
+    Terms as OperatorTerms,
+    TermSet as OperatorTermSet,
+    TermSum as OperatorTermSum,
+    _parse_coeff,
+)
+from zixy.fermion.operator.general._mixins import TermMulMixin
 from zixy.fermion.operator.general._strings import (
     String,
     Strings,
@@ -63,6 +64,12 @@ from zixy.fermion.operator.general._strings import (
 )
 
 TermSpec: TypeAlias = String | tuple[StringSpec | String | None, CoeffT | None] | None
+ElemT = list[LadderOp]
+SpecT = StringSpec
+ImplT = GeneralFermionOperatorArray
+RealTermSpec = TermSpec[float]
+ComplexTermSpec = TermSpec[complex]
+SymbolicTermSpec = TermSpec[Expr]
 
 
 def _max_len_from_string_source(source: StringSpec | String | None) -> int:
@@ -81,7 +88,7 @@ def _max_len_from_term_source(source: TermSpec[Any]) -> int:
     return _max_len_from_string_source(source)
 
 
-class Term(FermionTerm[GeneralFermionOperatorArray, StringSpec, CoeffT, list[LadderOp]]):
+class Term(TermMulMixin[CoeffT], OperatorTerm[ImplT, SpecT, CoeffT, ElemT]):
     """A term consisting of a raw fermionic string and a coefficient.
 
     A single mode-based term consisting of a raw fermionic string and a coefficient that may be an
@@ -99,11 +106,6 @@ class Term(FermionTerm[GeneralFermionOperatorArray, StringSpec, CoeffT, list[Lad
         coeffs = get_coeffs_type(self.coeff_type).from_size(1)
         TermBase.__init__(self, TermData(cmpnts, coeffs))
         self.set(source)
-
-    @property
-    def string(self) -> String:
-        """Get the string component of the term."""
-        return cast(String, self.cmpnt)
 
     @classmethod
     def term_data_from_str(
@@ -152,6 +154,11 @@ class Term(FermionTerm[GeneralFermionOperatorArray, StringSpec, CoeffT, list[Lad
             )
         return cls._create(data)
 
+    @property
+    def string(self) -> String:
+        """Get the string component of the term."""
+        return cast(String, self.cmpnt)
+
     def __mul__(self, rhs: Any) -> Any:
         """Multiplication of ``self`` by ``rhs``."""
         if isinstance(rhs, Coeff):
@@ -169,8 +176,20 @@ class Term(FermionTerm[GeneralFermionOperatorArray, StringSpec, CoeffT, list[Lad
         string = String(self.modes, self.string.get_ops() + rhs.string.get_ops())
         return term_type.from_cmpnt_coeff(string, coeff)
 
+    def dagger(self) -> None:
+        """Take the adjoint of ``self`` in-place."""
+        self.string.dagger()
+        if hasattr(self.coeff, "conjugate"):
+            self.coeff = self.coeff.conjugate()
 
-class Terms(FermionTerms[GeneralFermionOperatorArray, StringSpec, CoeffT, list[LadderOp]]):
+    def daggered(self) -> Self:
+        """Return the adjoint of ``self``."""
+        out = self.clone()
+        out.dagger()
+        return out
+
+
+class Terms(OperatorTerms[ImplT, SpecT, CoeffT, ElemT]):
     """A collection of terms consisting of raw fermionic strings and coefficients.
 
     An array-like container of mode-based terms consisting of raw fermionic strings and
@@ -207,9 +226,7 @@ class Terms(FermionTerms[GeneralFermionOperatorArray, StringSpec, CoeffT, list[L
         return cls._create(cls.term_type.term_data_from_str(source, modes))
 
 
-class TermSet(
-    FermionTermSet[GeneralFermionOperatorArray, StringSpec, CoeffT, list[LadderOp]]
-):
+class TermSet(OperatorTermSet[ImplT, SpecT, CoeffT, ElemT]):
     """A collection of unique terms consisting of raw fermionic strings and coefficients.
 
     A set-like container of mode-based terms that may be used to store unique terms and perform
@@ -241,10 +258,7 @@ class TermSet(
         return self.strings.max_len
 
 
-class TermSum(
-    FermionTermSum[GeneralFermionOperatorArray, StringSpec, CoeffT, list[LadderOp]],
-    TermSet[CoeffT],
-):
+class TermSum(OperatorTermSum[ImplT, SpecT, CoeffT, ElemT], TermSet[CoeffT]):
     """A sum of terms consisting of raw fermionic strings and coefficients.
 
     A set-like container of mode-based terms that may be used to store unique terms and perform
@@ -326,6 +340,19 @@ class TermSum(
                 ComplexCoeffs._create(coeffs),
             )
         )
+
+    def dagger(self) -> None:
+        """Take the adjoint of ``self`` in-place."""
+        out = type(self)(self.modes, max_len=self.max_len)
+        for term in self:
+            out += cast(Term[CoeffT], term).daggered()
+        terms.TermSum.__init__(self, out.to_terms())
+
+    def daggered(self) -> Self:
+        """Return the adjoint of ``self``."""
+        out = self.clone()
+        out.dagger()
+        return out
 
 
 class RealTerm(Term[float]):

@@ -39,7 +39,7 @@ from zixy.fermion.operator._strings import (
 )
 
 if TYPE_CHECKING:
-    from zixy.fermion.operator._terms import RealTermSum, Term, TermRegistry
+    from zixy.fermion.operator.normal._terms import RealTermSum, Term, TermRegistry
 
 StringSpec: TypeAlias = (
     None | str | tuple[Sequence[int] | Sequence[bool], Sequence[int] | Sequence[bool]]
@@ -194,7 +194,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         if not isinstance(rhs, String):
             return NotImplemented
         impl, signs = self._impl.cmpnt_mul(self.index, rhs._impl, rhs.index)
-        from zixy.fermion.operator._terms import RealTermSum  # noqa: PLC0415
+        from zixy.fermion.operator.normal._terms import RealTermSum  # noqa: PLC0415
 
         real_term_type = self._term_registry.term_type_real
         out = RealTermSum(self.modes)

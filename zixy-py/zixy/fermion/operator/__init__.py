@@ -21,7 +21,7 @@ from zixy._zixy import (
     NormalFermionOperatorArray,
 )
 from zixy.fermion.operator.normal._strings import String, Strings, StringSet, StringSpec
-from zixy.fermion.operator._terms import (
+from zixy.fermion.operator.normal._terms import (
     SignTerm,
     SignTerms,
     SignTermSet,

@@ -12,6 +12,7 @@ from zixy.fermion.operator.normal import (
     RealTermSet,
     RealTermSum,
     SignTerm,
+    SignTermSum,
     String,
     SymbolicTerm,
     SymbolicTerms,
@@ -61,6 +62,87 @@ def test_complex_term():
 
     adjoint = ComplexTerm.from_str("(1j, F0^ F1)", 2).daggered()
     assert str(adjoint) == "(-1j, F1^ F0)"
+
+
+def test_sign_term_mul_by_string():
+    term = SignTerm(2, "F0")
+    string = String(2, "F0^")
+
+    product = term * string
+
+    assert type(product) is SignTermSum
+    assert str(product) == "(+1, ), (-1, F0^ F0)"
+
+
+def test_real_term_mul_by_string():
+    term = RealTerm(2, ("F0", 2.0))
+    string = String(2, "F0^")
+
+    product = term * string
+
+    assert type(product) is RealTermSum
+    assert str(product) == "(2.0, ), (-2.0, F0^ F0)"
+
+
+def test_complex_term_mul_by_string():
+    term = ComplexTerm(2, ("F0", 1j))
+    string = String(2, "F0^")
+
+    product = term * string
+
+    assert type(product) is ComplexTermSum
+    assert str(product) == "(1j, ), ((-0-1j), F0^ F0)"
+
+
+def test_symbolic_term_mul_by_string():
+    a = sympify("a")
+    term = SymbolicTerm(2, ("F0", a))
+    string = String(2, "F0^")
+
+    product = term * string
+
+    assert type(product) is SymbolicTermSum
+    assert str(product) == "(a, ), (-a, F0^ F0)"
+
+
+def test_sign_term_mul_by_sign_term():
+    lhs = SignTerm(2, "F0")
+    rhs = SignTerm(2, "F0^")
+
+    product = lhs * rhs
+
+    assert type(product) is SignTermSum
+    assert str(product) == "(+1, ), (-1, F0^ F0)"
+
+
+def test_real_term_mul_by_real_term():
+    lhs = RealTerm(2, ("F0", 2.0))
+    rhs = RealTerm(2, ("F0^", 3.0))
+
+    product = lhs * rhs
+
+    assert type(product) is RealTermSum
+    assert str(product) == "(6.0, ), (-6.0, F0^ F0)"
+
+
+def test_real_term_mul_by_complex_term():
+    lhs = RealTerm(2, ("F0", 2.0))
+    rhs = ComplexTerm(2, ("F0^", 1j))
+
+    product = lhs * rhs
+
+    assert type(product) is ComplexTermSum
+    assert str(product) == "(2j, ), ((-0-2j), F0^ F0)"
+
+
+def test_symbolic_term_mul_by_symbolic_term():
+    lhs = SymbolicTerm(2, ("F0", sympify("a")))
+    rhs = SymbolicTerm(2, ("F0^", sympify("b")))
+
+    product = lhs * rhs
+
+    assert type(product) is SymbolicTermSum
+    assert str(product) == "(a*b, ), (-a*b, F0^ F0)"
 
 
 def test_real_terms():

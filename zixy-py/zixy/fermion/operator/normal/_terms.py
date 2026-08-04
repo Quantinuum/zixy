@@ -85,6 +85,10 @@ from zixy.qubit.pauli._terms import (
 
 if TYPE_CHECKING:
     from zixy.fermion.mappings import Mapper
+    from zixy.fermion.operator.general._terms import (
+        ComplexTermSum as GeneralComplexTermSum,
+        RealTermSum as GeneralRealTermSum,
+    )
 
 TermSpec: TypeAlias = String | tuple[StringSpec | String | None, CoeffT | None] | None
 ElemT = tuple[list[int], list[int]]
@@ -319,34 +323,6 @@ class TermSum(OperatorTermSum[ImplT, SpecT, CoeffT, ElemT], TermSet[CoeffT]):
         out = self.clone()
         out.dagger()
         return out
-
-    def to_general(self) -> Any:
-        """Convert this normal-ordered term sum to the raw general representation."""
-        from zixy.fermion.operator.general import (  # noqa: PLC0415
-            ComplexTermSum,
-            RealTermSum,
-            Strings as GeneralStrings,
-        )
-
-        if self.terms_type.term_type.coeff_type is float:
-            impl, coeffs = self.strings._impl.lincomb_to_general_real(
-                self.strings._impl, self._cmpnt_set._map, self.coeffs._impl
-            )
-            return RealTermSum._create(
-                TermData(
-                    GeneralStrings._create(impl),
-                    RealCoeffs._create(coeffs),
-                )
-            )
-        impl, coeffs = self.strings._impl.lincomb_to_general_complex(
-            self.strings._impl, self._cmpnt_set._map, self.coeffs._impl
-        )
-        return ComplexTermSum._create(
-            TermData(
-                GeneralStrings._create(impl),
-                ComplexCoeffs._create(coeffs),
-            )
-        )
 
 
 class SignTerm(Term[Sign]):
@@ -638,6 +614,25 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
         """Return the terms as raw ladder-operator products and coefficients."""
         return [(_string_to_ladder_ops(term.cmpnt.into(String)), term.coeff) for term in self]
 
+    def to_general(self) -> GeneralRealTermSum:
+        """Convert this normal-ordered term sum to the raw general representation."""
+        from zixy.fermion.operator.general._strings import (  # noqa: PLC0415
+            Strings as GeneralStrings,
+        )
+        from zixy.fermion.operator.general._terms import (  # noqa: PLC0415
+            RealTermSum as GeneralRealTermSum,
+        )
+
+        impl, coeffs = self.strings._impl.lincomb_to_general_real(
+            self.strings._impl, self._cmpnt_set._map, self.coeffs._impl
+        )
+        return GeneralRealTermSum._create(
+            TermData(
+                GeneralStrings._create(impl),
+                RealCoeffs._create(coeffs),
+            )
+        )
+
     def apply(self, state: RealState) -> ComplexState:
         """Apply ``self`` to a state.
 
@@ -867,6 +862,25 @@ class ComplexTermSum(
     def to_ladder_ops(self) -> list[tuple[list[LadderOp], complex]]:
         """Return the terms as raw ladder-operator products and coefficients."""
         return [(_string_to_ladder_ops(term.cmpnt.into(String)), term.coeff) for term in self]
+
+    def to_general(self) -> GeneralComplexTermSum:
+        """Convert this normal-ordered term sum to the raw general representation."""
+        from zixy.fermion.operator.general._strings import (  # noqa: PLC0415
+            Strings as GeneralStrings,
+        )
+        from zixy.fermion.operator.general._terms import (  # noqa: PLC0415
+            ComplexTermSum as GeneralComplexTermSum,
+        )
+
+        impl, coeffs = self.strings._impl.lincomb_to_general_complex(
+            self.strings._impl, self._cmpnt_set._map, self.coeffs._impl
+        )
+        return GeneralComplexTermSum._create(
+            TermData(
+                GeneralStrings._create(impl),
+                ComplexCoeffs._create(coeffs),
+            )
+        )
 
     def apply(self, state: ComplexState) -> ComplexState:
         """Apply ``self`` to a state.

@@ -73,6 +73,10 @@ from zixy.qubit.pauli._terms import ComplexTermSum as PauliComplexTermSum
 
 if TYPE_CHECKING:
     from zixy.fermion.mappings import Mapper
+    from zixy.fermion.operator.normal._terms import (
+        ComplexTermSum as NormalComplexTermSum,
+        RealTermSum as NormalRealTermSum,
+    )
 
 TermSpec: TypeAlias = String | tuple[StringSpec | String | None, CoeffT | None] | None
 ElemT = list[LadderOp]
@@ -322,34 +326,6 @@ class TermSum(OperatorTermSum[ImplT, SpecT, CoeffT, ElemT], TermSet[CoeffT]):
         out.add_iterable(source)
         return out
 
-    def normal_ordered(self) -> Any:
-        """Return ``self`` converted to normal-ordered form."""
-        from zixy.fermion.operator.normal import (  # noqa: PLC0415
-            ComplexTermSum,
-            RealTermSum,
-            Strings as NormalStrings,
-        )
-
-        if self.terms_type.term_type.coeff_type is float:
-            impl, coeffs = self.strings._impl.lincomb_to_normal_order_real(
-                self.strings._impl, self.coeffs._impl
-            )
-            return RealTermSum._create(
-                TermData(
-                    NormalStrings._create(impl),
-                    RealCoeffs._create(coeffs),
-                )
-            )
-        impl, coeffs = self.strings._impl.lincomb_to_normal_order_complex(
-            self.strings._impl, self.coeffs._impl
-        )
-        return ComplexTermSum._create(
-            TermData(
-                NormalStrings._create(impl),
-                ComplexCoeffs._create(coeffs),
-            )
-        )
-
     def dagger(self) -> None:
         """Take the adjoint of ``self`` in-place."""
         out = type(self)(self.modes, max_len=self.max_len)
@@ -459,7 +435,6 @@ class RealTermSum(NumericTermSum[GeneralFermionOperatorArray, StringSpec, float]
         rhs_impl = rhs._impl._cmpnts._impl
         rhs_coeffs = rhs._impl._coeffs._impl
         # TODO: support output by reference
-        # TODO: shouldn't this be real?
         impl, coeffs = lhs_impl.lincomb_mul_real(lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs)
         data = TermData(Strings._create(impl), RealCoeffs._create(coeffs))
         return RealTermSum._create(data)
@@ -492,6 +467,23 @@ class RealTermSum(NumericTermSum[GeneralFermionOperatorArray, StringSpec, float]
         for term in self:
             out += mapper_.encode(term.cmpnt.into(String), term.coeff)
         return out
+
+    def to_normal_ordered(self) -> NormalRealTermSum:
+        """Convert this raw general term sum to the normal-ordered representation."""
+        from zixy.fermion.operator.normal._strings import Strings as NormalStrings  # noqa: PLC0415
+        from zixy.fermion.operator.normal._terms import (  # noqa: PLC0415
+            RealTermSum as NormalRealTermSum,
+        )
+
+        impl, coeffs = self.strings._impl.lincomb_to_normal_order_real(
+            self.strings._impl, self.coeffs._impl
+        )
+        return NormalRealTermSum._create(
+            TermData(
+                NormalStrings._create(impl),
+                RealCoeffs._create(coeffs),
+            )
+        )
 
 
 class ComplexTerm(Term[complex]):
@@ -623,6 +615,23 @@ class ComplexTermSum(
         for term in self:
             out += mapper_.encode(term.cmpnt.into(String), term.coeff)
         return out
+
+    def to_normal_ordered(self) -> NormalComplexTermSum:
+        """Convert this raw general term sum to the normal-ordered representation."""
+        from zixy.fermion.operator.normal._strings import Strings as NormalStrings  # noqa: PLC0415
+        from zixy.fermion.operator.normal._terms import (  # noqa: PLC0415
+            ComplexTermSum as NormalComplexTermSum,
+        )
+
+        impl, coeffs = self.strings._impl.lincomb_to_normal_order_complex(
+            self.strings._impl, self.coeffs._impl
+        )
+        return NormalComplexTermSum._create(
+            TermData(
+                NormalStrings._create(impl),
+                ComplexCoeffs._create(coeffs),
+            )
+        )
 
 
 class SymbolicTerm(Term[Expr]):

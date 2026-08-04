@@ -2,6 +2,10 @@ import pytest
 from sympy import sympify
 
 from zixy.container.coeffs import ComplexSign, Sign
+from zixy.fermion.operator.general import (
+    ComplexTermSum as GeneralComplexTermSum,
+    RealTermSum as GeneralRealTermSum,
+)
 from zixy.fermion.operator.normal import (
     ComplexTerm,
     ComplexTerms,
@@ -353,13 +357,30 @@ def test_operator_properties():
     assert hopping.active_modes() == {0, 1}
 
 
-def test_to_general():
-    terms = RealTermSum.from_str("F2^ F0 F1", 3)
+@pytest.mark.parametrize(
+    ("term_sum_type", "expected_type", "source", "expected", "expected_ops"),
+    (
+        (
+            RealTermSum,
+            GeneralRealTermSum,
+            "F2^ F0 F1",
+            "(1.0, F2^ F0 F1)",
+            [(2, True), (0, False), (1, False)],
+        ),
+        (
+            ComplexTermSum,
+            GeneralComplexTermSum,
+            "(1j, F0^ F1)",
+            "(1j, F0^ F1)",
+            [(0, True), (1, False)],
+        ),
+    ),
+)
+def test_to_general(term_sum_type, expected_type, source, expected, expected_ops):
+    terms = term_sum_type.from_str(source, 3)
 
     general_terms = terms.to_general()
 
-    assert str(general_terms) == "(1.0, F2^ F0 F1)"
-    assert general_terms.to_terms()[0].string.get_ops() == [(2, True), (0, False), (1, False)]
-
-    complex_terms = ComplexTermSum.from_str("(1j, F0^ F1)", 2)
-    assert str(complex_terms.to_general()) == "(1j, F0^ F1)"
+    assert type(general_terms) is expected_type
+    assert str(general_terms) == expected
+    assert general_terms.to_terms()[0].string.get_ops() == expected_ops

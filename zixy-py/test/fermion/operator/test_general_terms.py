@@ -15,6 +15,10 @@ from zixy.fermion.operator.general import (
     SymbolicTerms,
     SymbolicTermSum,
 )
+from zixy.fermion.operator.normal import (
+    ComplexTermSum as NormalComplexTermSum,
+    RealTermSum as NormalRealTermSum,
+)
 
 
 def test_real_term():
@@ -249,9 +253,101 @@ def test_symbolic_term_product():
     assert str(lhs * rhs) == "(a*b, F0 F0^)"
 
 
-def test_normal_ordered():
-    assert str(RealTermSum.from_str("F0 F0^", 2).normal_ordered()) == (
-        "(1.0, ), (-1.0, F0^ F0)"
-    )
-    assert str(RealTermSum.from_str("F0 F0^, F0^ F0", 2).normal_ordered()) == ("(1.0, )")
-    assert str(RealTermSum.from_str("F1 F0^", 2).normal_ordered()) == ("(-1.0, F0^ F1)")
+@pytest.mark.parametrize(
+    ("term_sum_type", "expected_type", "source", "modes", "expected"),
+    (
+        (
+            RealTermSum,
+            NormalRealTermSum,
+            "F0 F0^",
+            2,
+            "(1.0, ), (-1.0, F0^ F0)",
+        ),
+        (
+            ComplexTermSum,
+            NormalComplexTermSum,
+            "F0 F0^",
+            2,
+            "((1+0j), ), ((-1+0j), F0^ F0)",
+        ),
+        (
+            RealTermSum,
+            NormalRealTermSum,
+            "F0 F0^, F0^ F0",
+            2,
+            "(1.0, )",
+        ),
+        (
+            ComplexTermSum,
+            NormalComplexTermSum,
+            "F0 F0^, F0^ F0",
+            2,
+            "((1+0j), )",
+        ),
+        (
+            RealTermSum,
+            NormalRealTermSum,
+            "F1 F0^",
+            2,
+            "(-1.0, F0^ F1)",
+        ),
+        (
+            ComplexTermSum,
+            NormalComplexTermSum,
+            "F1 F0^",
+            2,
+            "((-1+0j), F0^ F1)",
+        ),
+        (
+            RealTermSum,
+            NormalRealTermSum,
+            "F0 F1 F1^",
+            2,
+            "(1.0, F0), (1.0, F1^ F0 F1)",
+        ),
+        (
+            ComplexTermSum,
+            NormalComplexTermSum,
+            "(1j, F0 F1 F1^)",
+            2,
+            "(1j, F0), (1j, F1^ F0 F1)",
+        ),
+        (
+            RealTermSum,
+            NormalRealTermSum,
+            "F2 F0^ F1^",
+            3,
+            "(-1.0, F0^ F1^ F2)",
+        ),
+        (
+            ComplexTermSum,
+            NormalComplexTermSum,
+            "F2 F0^ F1^",
+            3,
+            "((-1+0j), F0^ F1^ F2)",
+        ),
+        (
+            RealTermSum,
+            NormalRealTermSum,
+            "F0 F0^ F1 F1^",
+            3,
+            "(1.0, ), (-1.0, F1^ F1), (-1.0, F0^ F0), "
+            "(-1.0, F0^ F1^ F0 F1)",
+        ),
+        (
+            ComplexTermSum,
+            NormalComplexTermSum,
+            "(2j, F0 F0^ F1 F1^), (1-1j, F0 F0^)",
+            3,
+            "((1+1j), ), (-2j, F1^ F1), ((-1-1j), F0^ F0), "
+            "(-2j, F0^ F1^ F0 F1)",
+        ),
+    ),
+)
+def test_to_normal_ordered(term_sum_type, expected_type, source, modes, expected):
+    terms = term_sum_type.from_str(source, modes)
+
+    normal_ordered = terms.to_normal_ordered()
+
+    assert type(normal_ordered) is expected_type
+    assert str(normal_ordered) == expected

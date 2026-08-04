@@ -64,6 +64,43 @@ def test_complex_term():
     assert str(adjoint) == "(-1j, F1^ F0)"
 
 
+@pytest.mark.parametrize(
+    ("term", "expected"),
+    (
+        (SignTerm.from_str("F0^ F1", 2), "(+1, F1^ F0)"),
+        (RealTerm.from_str("(2, F0^ F1)", 2), "(2.0, F1^ F0)"),
+        (ComplexTerm.from_str("(1j, F0^ F1)", 2), "(-1j, F1^ F0)"),
+        (SymbolicTerm(2, ("F0^ F1", sympify("a"))), "(conjugate(a), F1^ F0)"),
+    ),
+)
+def test_term_dagger(term, expected):
+    out = term.dagger()
+
+    assert out is None
+    assert str(term) == expected
+
+
+@pytest.mark.parametrize(
+    ("term", "original", "expected"),
+    (
+        (SignTerm.from_str("F0^ F1", 2), "(+1, F0^ F1)", "(+1, F1^ F0)"),
+        (RealTerm.from_str("(2, F0^ F1)", 2), "(2.0, F0^ F1)", "(2.0, F1^ F0)"),
+        (ComplexTerm.from_str("(1j, F0^ F1)", 2), "(1j, F0^ F1)", "(-1j, F1^ F0)"),
+        (
+            SymbolicTerm(2, ("F0^ F1", sympify("a"))),
+            "(a, F0^ F1)",
+            "(conjugate(a), F1^ F0)",
+        ),
+    ),
+)
+def test_term_daggered(term, original, expected):
+    adjoint = term.daggered()
+
+    assert adjoint is not term
+    assert str(adjoint) == expected
+    assert str(term) == original
+
+
 def test_sign_term_mul_by_string():
     term = SignTerm(2, "F0")
     string = String(2, "F0^")

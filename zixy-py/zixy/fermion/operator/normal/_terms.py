@@ -21,7 +21,6 @@ that are normal-ordered fermionic strings, as defined in
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, overload
 
 from sympy import Expr, Symbol
@@ -311,8 +310,8 @@ class TermSum(OperatorTermSum[ImplT, SpecT, CoeffT, ElemT], TermSet[CoeffT]):
     def dagger(self) -> None:
         """Take the adjoint of ``self`` in-place."""
         out = type(self)(self.modes)
-        for term in cast(Iterable[Term[CoeffT]], self):
-            out += term.daggered()
+        for term in self:
+            out += term.into(self.terms_type.term_type).daggered()
         terms.TermSum.__init__(self, out.to_terms())
 
     def daggered(self) -> Self:
@@ -637,7 +636,7 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
 
     def to_ladder_ops(self) -> list[tuple[list[LadderOp], float]]:
         """Return the terms as raw ladder-operator products and coefficients."""
-        return [(_string_to_ladder_ops(cast(RealTerm, term).string), term.coeff) for term in self]
+        return [(_string_to_ladder_ops(term.cmpnt.into(String)), term.coeff) for term in self]
 
     def apply(self, state: RealState) -> ComplexState:
         """Apply ``self`` to a state.
@@ -867,9 +866,7 @@ class ComplexTermSum(
 
     def to_ladder_ops(self) -> list[tuple[list[LadderOp], complex]]:
         """Return the terms as raw ladder-operator products and coefficients."""
-        return [
-            (_string_to_ladder_ops(cast(ComplexTerm, term).string), term.coeff) for term in self
-        ]
+        return [(_string_to_ladder_ops(term.cmpnt.into(String)), term.coeff) for term in self]
 
     def apply(self, state: ComplexState) -> ComplexState:
         """Apply ``self`` to a state.

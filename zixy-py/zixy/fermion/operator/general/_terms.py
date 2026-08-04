@@ -354,7 +354,7 @@ class TermSum(OperatorTermSum[ImplT, SpecT, CoeffT, ElemT], TermSet[CoeffT]):
         """Take the adjoint of ``self`` in-place."""
         out = type(self)(self.modes, max_len=self.max_len)
         for term in self:
-            out += cast(Term[CoeffT], term).daggered()
+            out += term.into(self.terms_type.term_type).daggered()
         terms.TermSum.__init__(self, out.to_terms())
 
     def daggered(self) -> Self:

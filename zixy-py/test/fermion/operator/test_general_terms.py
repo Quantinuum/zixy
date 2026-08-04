@@ -53,17 +53,39 @@ def test_complex_term():
     assert str(scaled) == "((2+4j), F1 F0^)"
 
 
-def test_complex_term_dagger():
-    term = ComplexTerm(3, ("F0^ F1 F2^", 1 + 2j))
+@pytest.mark.parametrize(
+    ("term", "expected"),
+    (
+        (RealTerm.from_str("(2, F0^ F1)", 2), "(2.0, F1^ F0)"),
+        (ComplexTerm.from_str("(1j, F0^ F1)", 2), "(-1j, F1^ F0)"),
+        (SymbolicTerm(2, ("F0^ F1", sympify("a"))), "(conjugate(a), F1^ F0)"),
+    ),
+)
+def test_term_dagger(term, expected):
+    out = term.dagger()
 
+    assert out is None
+    assert str(term) == expected
+
+
+@pytest.mark.parametrize(
+    ("term", "original", "expected"),
+    (
+        (RealTerm.from_str("(2, F0^ F1)", 2), "(2.0, F0^ F1)", "(2.0, F1^ F0)"),
+        (ComplexTerm.from_str("(1j, F0^ F1)", 2), "(1j, F0^ F1)", "(-1j, F1^ F0)"),
+        (
+            SymbolicTerm(2, ("F0^ F1", sympify("a"))),
+            "(a, F0^ F1)",
+            "(conjugate(a), F1^ F0)",
+        ),
+    ),
+)
+def test_term_daggered(term, original, expected):
     adjoint = term.daggered()
 
     assert adjoint is not term
-    assert str(term) == "((1+2j), F0^ F1 F2^)"
-    assert str(adjoint) == "((1-2j), F2 F1^ F0)"
-
-    term.dagger()
-    assert term == adjoint
+    assert str(adjoint) == expected
+    assert str(term) == original
 
 
 def test_real_terms():

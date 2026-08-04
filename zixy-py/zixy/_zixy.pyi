@@ -596,10 +596,7 @@ class PauliSprings(Springs):
 class BinarySprings(Springs):
     pass
 
-class JordanWignerMapper:
-    def __init__(
-        self, qubits: Qubits, mode_ordering: list[int] | None = ...
-    ) -> None: ...
+class Mapper:
     def op_load_product(self, ladder_operators: list[tuple[int, bool]]) -> None: ...
     def op_contribute_real(
         self,
@@ -615,12 +612,25 @@ class JordanWignerMapper:
         coeffs: ComplexVec,
         scalar: complex,
     ) -> None: ...
-    def op_encode_real(
-        self,
-        fermion_ops: UnorderedFermionOpReal | Sequence[tuple[Sequence[tuple[int, bool]], float]],
-        cmpnts: QubitPauliArray,
-        map: Map,
-        coeffs: RealVec,
+
+class JordanWignerMapper(Mapper):
+    def __init__(
+        self, qubits: Qubits, mode_ordering: list[int] | None = ...
+    ) -> None: ...
+
+class BravyiKitaevMapper(Mapper):
+    def __init__(
+        self, qubits: Qubits, mode_ordering: list[int] | None = ...
+    ) -> None: ...
+
+class ParityMapper(Mapper):
+    def __init__(
+        self, qubits: Qubits, mode_ordering: list[int] | None = ...
+    ) -> None: ...
+
+class ParapartiularMapper(Mapper):
+    def __init__(
+        self, qubits: Qubits, mode_ordering: list[int] | None = ...
     ) -> None: ...
 
 class CliffordGateList:

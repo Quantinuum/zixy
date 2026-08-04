@@ -14,7 +14,13 @@
 
 """Submodule for fermionic operators, states, and mappings."""
 
-from zixy.fermion.mappings import JordanWignerMapper
+from zixy.fermion.mappings import (
+    BravyiKitaevMapper,
+    JordanWignerMapper,
+    Mapper,
+    ParapartiularMapper,
+    ParityMapper,
+)
 from zixy.fermion.operator import (
     ComplexTerm,
     ComplexTerms,
@@ -61,6 +67,10 @@ from zixy.fermion.state import (
 
 __all__ = [
     "JordanWignerMapper",
+    "BravyiKitaevMapper",
+    "ParityMapper",
+    "ParapartiularMapper",
+    "Mapper",
     "StringSpec",
     "String",
     "Strings",

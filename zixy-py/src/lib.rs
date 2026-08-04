@@ -23,7 +23,11 @@ fn _zixy(_py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     m.add_class::<crate::qubit::pauli::Array>()?;
     m.add_class::<crate::qubit::state::Array>()?;
 
+    m.add_class::<crate::fermion::mappings::Mapper>()?;
     m.add_class::<crate::fermion::mappings::JordanWignerMapper>()?;
+    m.add_class::<crate::fermion::mappings::BravyiKitaevMapper>()?;
+    m.add_class::<crate::fermion::mappings::ParityMapper>()?;
+    m.add_class::<crate::fermion::mappings::ParapartiularMapper>()?;
     m.add_class::<crate::fermion::mode::Modes>()?;
     m.add_class::<crate::fermion::springs::FermionSprings>()?;
     m.add_class::<crate::fermion::state::Array>()?;

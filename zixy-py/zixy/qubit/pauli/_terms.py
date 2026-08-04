@@ -22,7 +22,7 @@ The structure of this module parallels that of :mod:`~zixy.container.terms` and
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, TypeAlias, cast, overload
+from typing import Any, TypeAlias, cast, overload
 
 import numpy as np
 from numpy.typing import NDArray
@@ -35,7 +35,6 @@ from zixy._zixy import (
     QubitPauliArray,
     Qubits,
     SymplecticPart,
-    UnorderedFermionOpReal,
 )
 from zixy.container.coeffs import (
     Coeff,
@@ -75,9 +74,6 @@ from zixy.qubit.state._terms import (
     RealTermSum as RealState,
 )
 from zixy.utils import DEFAULT_COMMUTES_ATOL
-
-if TYPE_CHECKING:
-    from zixy.fermion.mappings import Mapper
 
 TermSpec: TypeAlias = String | StringSpec | tuple[StringSpec | String, CoeffT | None]
 SignTermSpec = TermSpec[Sign]
@@ -862,39 +858,6 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
             self._impl._coeffs._impl,
             big_endian,
         )
-
-    @classmethod
-    def from_fermionic(
-        cls,
-        qubits: int | Qubits,
-        mapper: Mapper,
-        fermion_ops: Sequence[tuple[Sequence[tuple[int, bool]], float]],
-    ) -> Self:
-        """Create an instance of ``cls`` from a fermionic operator given a mapping.
-
-        Args:
-            qubits: The qubit register or qubit count.
-            mapper: The mapping.
-            fermion_ops: A sequence of tuples, where each tuple consists of an integer index
-                indicating the mode and a boolean indicating whether it's a creation (``True``) or
-                annihilation (``False``) operator.
-
-        Returns:
-            The constructed instance.
-        """
-        out = cls(qubits)
-        out_impl = out._impl._cmpnts._impl
-        out_map = out._cmpnt_set._map
-        out_real_coeffs = out._impl._coeffs
-        assert isinstance(out_real_coeffs, RealCoeffs)
-        out_coeffs = out_real_coeffs._impl
-        mapper._impl.op_encode_real(
-            UnorderedFermionOpReal([(list(ops), coeff) for ops, coeff in fermion_ops]),
-            out_impl,
-            out_map,
-            out_coeffs,
-        )
-        return out
 
     @overload  # type: ignore[override]
     def __mul__(self, other: Coeff | Coeffs[float]) -> Self: ...

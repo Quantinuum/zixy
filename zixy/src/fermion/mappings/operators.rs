@@ -92,7 +92,7 @@ impl Operators {
                 .get_coeffs_mut()
                 .imul_elem_unchecked(1, ComplexSign(if op.1 { 3 } else { 1 }));
         } else {
-            // no ops to work on.
+            self.work.resize(1);
             return;
         }
         for op in op_iter {
@@ -120,14 +120,6 @@ impl Operators {
             if let Ok(s) = f64::try_represent(term.get_coeff()) {
                 lincomb::scaled_iadd_elem(op, term.get_word_iter_ref(), s * scalar);
             }
-        }
-    }
-
-    /// Given a slice of ops and their coefficients, contribute each to `op`.
-    pub fn encode_real(&mut self, fops: &[(Vec<Op>, f64)], op: &mut term_set::ViewMut<f64>) {
-        for (ops, coeff) in fops.iter() {
-            self.load_product(ops);
-            self.contribute_real(op, *coeff);
         }
     }
 
@@ -185,6 +177,13 @@ mod tests {
             ops.work.to_string(),
             "(-i, Y4 X5), (+1, X4 X5), (+1, Y4 Y5), (+i, X4 Y5)"
         );
+    }
+
+    #[test]
+    fn test_empty_product_is_identity() {
+        let mut ops = Operators::new::<JordanWignerMapper>(Qubits::from_count(2), None);
+        ops.load_product(&[]);
+        assert_eq!(ops.work.to_string(), "(+1, )");
     }
 
     #[test]

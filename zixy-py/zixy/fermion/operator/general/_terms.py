@@ -21,12 +21,12 @@ that are raw fermionic strings, as defined in
 
 from __future__ import annotations
 
-from typing import Any, TypeAlias, cast, overload
+from typing import TYPE_CHECKING, Any, TypeAlias, cast, overload
 
 from sympy import Expr, Symbol
 from typing_extensions import Self
 
-from zixy._zixy import GeneralFermionOperatorArray, Modes
+from zixy._zixy import GeneralFermionOperatorArray, Modes, Qubits
 from zixy.container import terms
 from zixy.container.coeffs import (
     Coeff,
@@ -69,6 +69,10 @@ from zixy.fermion.operator.general._strings import (
     StringSpec,
     _default_modes,
 )
+from zixy.qubit.pauli._terms import ComplexTermSum as PauliComplexTermSum
+
+if TYPE_CHECKING:
+    from zixy.fermion.mappings import Mapper
 
 TermSpec: TypeAlias = String | tuple[StringSpec | String | None, CoeffT | None] | None
 ElemT = list[LadderOp]
@@ -460,6 +464,35 @@ class RealTermSum(NumericTermSum[GeneralFermionOperatorArray, StringSpec, float]
         data = TermData(Strings._create(impl), RealCoeffs._create(coeffs))
         return RealTermSum._create(data)
 
+    def to_qubit(
+        self,
+        mapper: type[Mapper] | None = None,
+        qubits: int | Qubits | None = None,
+    ) -> PauliComplexTermSum:
+        """Map this fermionic term sum to a qubit Pauli term sum.
+
+        Args:
+            mapper: The mapper class to use. If ``None``, use
+                :class:`~zixy.fermion.mappings.JordanWignerMapper`.
+            qubits: The qubit register or qubit count. If ``None``, infer from the number of
+                fermionic modes.
+
+        Returns:
+            The mapped Pauli term sum.
+        """
+        from zixy.fermion.mappings import JordanWignerMapper  # noqa: PLC0415
+
+        mapper = JordanWignerMapper if mapper is None else mapper
+        if qubits is None:
+            qubits = Qubits.from_count(len(self.modes))
+        elif isinstance(qubits, int):
+            qubits = Qubits.from_count(qubits)
+        mapper_ = mapper(qubits)
+        out = PauliComplexTermSum(qubits)
+        for term in self:
+            out += mapper_.encode(term.cmpnt.into(String), term.coeff)
+        return out
+
 
 class ComplexTerm(Term[complex]):
     """A term consisting of a raw fermionic string and a complex coefficient."""
@@ -561,6 +594,35 @@ class ComplexTermSum(
         impl, coeffs = lhs_impl.lincomb_mul_complex(lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs)
         data = TermData(Strings._create(impl), ComplexCoeffs._create(coeffs))
         return ComplexTermSum._create(data)
+
+    def to_qubit(
+        self,
+        mapper: type[Mapper] | None = None,
+        qubits: int | Qubits | None = None,
+    ) -> PauliComplexTermSum:
+        """Map this fermionic term sum to a qubit Pauli term sum.
+
+        Args:
+            mapper: The mapper class to use. If ``None``, use
+                :class:`~zixy.fermion.mappings.JordanWignerMapper`.
+            qubits: The qubit register or qubit count. If ``None``, infer from the number of
+                fermionic modes.
+
+        Returns:
+            The mapped Pauli term sum.
+        """
+        from zixy.fermion.mappings import JordanWignerMapper  # noqa: PLC0415
+
+        mapper = JordanWignerMapper if mapper is None else mapper
+        if qubits is None:
+            qubits = Qubits.from_count(len(self.modes))
+        elif isinstance(qubits, int):
+            qubits = Qubits.from_count(qubits)
+        mapper_ = mapper(qubits)
+        out = PauliComplexTermSum(qubits)
+        for term in self:
+            out += mapper_.encode(term.cmpnt.into(String), term.coeff)
+        return out
 
 
 class SymbolicTerm(Term[Expr]):

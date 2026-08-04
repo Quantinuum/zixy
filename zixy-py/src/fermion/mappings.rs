@@ -9,7 +9,6 @@ use zixy::qubit::traits::DifferentQubits;
 
 use crate::container::coeffs::{ComplexVec, RealVec};
 use crate::container::map::Map;
-use crate::fermion::unordered_fermion_operator::UnorderedFermionOpReal;
 use crate::qubit::mode::Qubits;
 use crate::qubit::pauli::Array;
 use crate::utils::ToPyResult;
@@ -70,27 +69,6 @@ impl JordanWignerMapper {
             coeffs: &mut coeffs.0,
         };
         self.0.contribute_complex(&mut op, scalar);
-        Ok(())
-    }
-
-    /// Using the mapping defined by `self`, contribute a list of scaled fermionic ladder operator products to the operator (cmpnt, map, coeffs)
-    pub fn op_encode_real(
-        &mut self,
-        fermion_ops: UnorderedFermionOpReal,
-        cmpnts: &mut Array,
-        map: &mut Map,
-        coeffs: &mut RealVec,
-    ) -> PyResult<()> {
-        DifferentQubits::check(&cmpnts.0, &self.0).to_py_result()?;
-        let mut mut_refs = pauli::term_set::ViewMut {
-            word_iters: &mut cmpnts.0,
-            map: &mut map.0,
-            coeffs: &mut coeffs.0,
-        };
-        for (ops, coeff) in fermion_ops.0.iter() {
-            self.0.load_product(ops.as_slice());
-            self.0.contribute_real(&mut mut_refs, *coeff);
-        }
         Ok(())
     }
 }

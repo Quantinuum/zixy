@@ -22,12 +22,12 @@ that are normal-ordered fermionic strings, as defined in
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Any, TypeAlias, cast, overload
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, overload
 
 from sympy import Expr, Symbol
 from typing_extensions import Self
 
-from zixy._zixy import Modes, NormalFermionOperatorArray
+from zixy._zixy import Modes, NormalFermionOperatorArray, Qubits
 from zixy.container import terms
 from zixy.container.coeffs import (
     Coeff,
@@ -79,6 +79,13 @@ from zixy.fermion.state._terms import (
     ComplexTermSum as ComplexState,
     RealTermSum as RealState,
 )
+from zixy.qubit.pauli._terms import (
+    ComplexTermSum as PauliComplexTermSum,
+    RealTermSum as PauliRealTermSum,
+)
+
+if TYPE_CHECKING:
+    from zixy.fermion.mappings import Mapper
 
 TermSpec: TypeAlias = String | tuple[StringSpec | String | None, CoeffT | None] | None
 ElemT = tuple[list[int], list[int]]
@@ -556,24 +563,77 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
         """Return the set of mode indices on which ``self`` acts."""
         return self.strings._impl.lincomb_active_modes_real(self.strings._impl, self.coeffs._impl)
 
-    def to_qubit(self, mapper: Any) -> Any:
+    def _to_qubit_real(
+        self,
+        mapper: type[Mapper],
+        qubits: Qubits,
+    ) -> PauliRealTermSum:
         """Map this fermionic term sum to a qubit Pauli term sum."""
-        from zixy.qubit.pauli import (  # noqa: PLC0415
-            ComplexTerm as PauliComplexTerm,
-            ComplexTermSum as PauliComplexTermSum,
-            String as PauliString,
-        )
-
-        out = PauliComplexTermSum(mapper.qubits)
+        mapper_ = mapper(qubits)
+        out = PauliRealTermSum(qubits)
         for term in self:
-            term = cast(RealTerm, term)
-            if term.string.get_sets() == ([], []):
-                out += PauliComplexTerm.from_cmpnt_coeff(
-                    PauliString(mapper.qubits), complex(term.coeff)
-                )
-            else:
-                out += mapper.encode(term.string) * term.coeff
+            out += mapper_.encode_real(term.cmpnt.into(String), term.coeff)
         return out
+
+    def _to_qubit_complex(
+        self,
+        mapper: type[Mapper],
+        qubits: Qubits,
+    ) -> PauliComplexTermSum:
+        """Map this fermionic term sum to a qubit Pauli term sum."""
+        mapper_ = mapper(qubits)
+        out = PauliComplexTermSum(qubits)
+        for term in self:
+            out += mapper_.encode_complex(term.cmpnt.into(String), term.coeff)
+        return out
+
+    @overload
+    def to_qubit(
+        self,
+        mapper: type[Mapper] | None = None,
+        qubits: int | Qubits | None = None,
+        real: Literal[True] = True,
+    ) -> PauliRealTermSum: ...
+
+    @overload
+    def to_qubit(
+        self,
+        mapper: type[Mapper] | None = None,
+        qubits: int | Qubits | None = None,
+        real: Literal[False] = False,
+    ) -> PauliComplexTermSum: ...
+
+    def to_qubit(
+        self,
+        mapper: type[Mapper] | None = None,
+        qubits: int | Qubits | None = None,
+        real: bool = False,
+    ) -> PauliRealTermSum | PauliComplexTermSum:
+        """Map this fermionic term sum to a qubit Pauli term sum.
+
+        Args:
+            mapper: The mapper class to use. If ``None``, use
+                :class:`~zixy.fermion.mappings.JordanWignerMapper`.
+            qubits: The qubit register or qubit count. If ``None``, infer from the number of
+                fermionic modes.
+            real: If ``True``, attempt to return a :class:`~zixy.qubit.pauli.RealTermSum`, which
+                requires Hermiticity.
+
+        Returns:
+            The mapped Pauli term sum.
+        """
+        from zixy.fermion.mappings import JordanWignerMapper  # noqa: PLC0415
+
+        mapper = JordanWignerMapper if mapper is None else mapper
+        if qubits is None:
+            qubits = Qubits.from_count(len(self.modes))
+        elif isinstance(qubits, int):
+            qubits = Qubits.from_count(qubits)
+        if real and not self.is_hermitian():
+            raise ValueError("Cannot return a RealTermSum for a non-Hermitian operator.")
+        if real:
+            return self._to_qubit_real(mapper, qubits)
+        return self._to_qubit_complex(mapper, qubits)
 
     def to_ladder_ops(self) -> list[tuple[list[LadderOp], float]]:
         """Return the terms as raw ladder-operator products and coefficients."""
@@ -775,6 +835,41 @@ class ComplexTermSum(
         return self.strings._impl.lincomb_active_modes_complex(
             self.strings._impl, self.coeffs._impl
         )
+
+    def to_qubit(
+        self,
+        mapper: type[Mapper] | None = None,
+        qubits: int | Qubits | None = None,
+    ) -> PauliComplexTermSum:
+        """Map this fermionic term sum to a qubit Pauli term sum.
+
+        Args:
+            mapper: The mapper class to use. If ``None``, use
+                :class:`~zixy.fermion.mappings.JordanWignerMapper`.
+            qubits: The qubit register or qubit count. If ``None``, infer from the number of
+                fermionic modes.
+
+        Returns:
+            The mapped Pauli term sum.
+        """
+        from zixy.fermion.mappings import JordanWignerMapper  # noqa: PLC0415
+
+        mapper = JordanWignerMapper if mapper is None else mapper
+        if qubits is None:
+            qubits = Qubits.from_count(len(self.modes))
+        elif isinstance(qubits, int):
+            qubits = Qubits.from_count(qubits)
+        mapper_ = mapper(qubits)
+        out = PauliComplexTermSum(qubits)
+        for term in self:
+            out += mapper_.encode_complex(term.cmpnt.into(String), term.coeff)
+        return out
+
+    def to_ladder_ops(self) -> list[tuple[list[LadderOp], complex]]:
+        """Return the terms as raw ladder-operator products and coefficients."""
+        return [
+            (_string_to_ladder_ops(cast(ComplexTerm, term).string), term.coeff) for term in self
+        ]
 
     def apply(self, state: ComplexState) -> ComplexState:
         """Apply ``self`` to a state.

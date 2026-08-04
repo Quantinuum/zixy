@@ -41,7 +41,7 @@ from zixy.fermion.operator._strings import (
 )
 
 if TYPE_CHECKING:
-    from zixy.fermion.operator.general._terms import Term, TermRegistry
+    from zixy.fermion.operator.general._terms import Term
 
 StringSpec: TypeAlias = None | str | Sequence[LadderOp]
 ElemT = list[LadderOp]
@@ -65,7 +65,6 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
     """
 
     impl_type = ImplT
-    _term_registry: TermRegistry
 
     @staticmethod
     def _get_default_modes(source: SpecT | None = None) -> Modes:
@@ -180,7 +179,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         out.dagger()
         return out
 
-    @overload  # type: ignore[override]
+    @overload
     def __mul__(self, rhs: String) -> Term[float]: ...
 
     @overload
@@ -192,16 +191,17 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         Multiplication by a scalar returns a term. Multiplication by another raw string returns a
         single real term whose string is the concatenated ladder-operator product.
         """
+        from zixy.fermion.operator.general._terms import RealTerm, get_term_type  # noqa: PLC0415
+
         if isinstance(rhs, Coeff):
-            scalar_term_type = self._term_registry[type(rhs)]
+            scalar_term_type = get_term_type(type(rhs))
             return scalar_term_type.from_cmpnt_coeff(self, rhs)
         if not isinstance(rhs, String):
             return NotImplemented
         if self.modes != rhs.modes:
             raise ValueError("Cannot multiply strings defined over different modes.")
-        real_term_type = self._term_registry.term_type_real
         string = String(self.modes, self.get_ops() + rhs.get_ops())
-        return real_term_type.from_cmpnt_coeff(string, 1.0)
+        return RealTerm.from_cmpnt_coeff(string, 1.0)
 
 
 class Strings(OperatorStrings[ImplT, SpecT, ElemT]):

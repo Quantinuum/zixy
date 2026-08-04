@@ -22,7 +22,7 @@ that are fermionic occupation-number state strings, as defined in
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, TypeAlias, cast
+from typing import Any, TypeAlias, cast, overload
 
 import numpy as np
 from numpy.typing import NDArray
@@ -30,14 +30,22 @@ from sympy import Expr, Symbol, sympify
 from typing_extensions import Self
 
 from zixy._zixy import BinarySprings, FermionStateArray, Modes
-from zixy.container import terms
 from zixy.container.coeffs import (
+    Coeff,
     CoeffT,
     ComplexCoeffs,
+    ComplexSign,
     Number,
+    OtherCoeffT,
     RealCoeffs,
     Sign,
     SymbolicCoeffs,
+    _is_complex,
+    _is_complex_sign,
+    _is_expr,
+    _is_float,
+    _is_int,
+    _is_sign,
     get_coeffs_type,
 )
 from zixy.container.data import TermData
@@ -94,6 +102,22 @@ def _modes_from_dense_len(n: int) -> Modes:
     if n & (n - 1):
         raise ValueError("Dense state vector length must be a power of two.")
     return Modes.from_count(n.bit_length() - 1)
+
+
+def _mul(lhs: Term[CoeffT], rhs: OtherCoeffT) -> Term[Any]:
+    """Driver for multiplication of a term with a coefficient."""
+    if not isinstance(rhs, Coeff):
+        return NotImplemented
+    scalar_product = lhs.coeff * rhs
+    term_type = get_term_type(type(scalar_product))
+    coeffs_type = get_coeffs_type(type(scalar_product))
+    data = TermData(lhs._impl._cmpnts, coeffs_type.from_scalar(scalar_product))
+    return term_type._create(data)
+
+
+def _rmul(rhs: Term[CoeffT], lhs: OtherCoeffT) -> Term[Any]:
+    """Driver for multiplication of a coefficient with a term."""
+    return _mul(rhs, lhs)
 
 
 class Term(FermionTerm[ImplT, SpecT, CoeffT, ElemT]):
@@ -173,6 +197,36 @@ class SignTerm(Term[Sign]):
 
     coeff_type = Sign
 
+    @overload
+    def __mul__(self, rhs: Sign) -> SignTerm: ...
+    @overload
+    def __mul__(self, rhs: ComplexSign) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, rhs: float) -> RealTerm: ...
+    @overload
+    def __mul__(self, rhs: complex) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, rhs: Expr) -> SymbolicTerm: ...
+
+    def __mul__(self, rhs: OtherCoeffT) -> Term[Any]:
+        """Multiplication of ``self`` by ``rhs``."""
+        return _mul(self, rhs)
+
+    @overload
+    def __rmul__(self, lhs: Sign) -> SignTerm: ...
+    @overload
+    def __rmul__(self, lhs: ComplexSign) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, lhs: float) -> RealTerm: ...
+    @overload
+    def __rmul__(self, lhs: complex) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, lhs: Expr) -> SymbolicTerm: ...
+
+    def __rmul__(self, lhs: OtherCoeffT) -> Term[Any]:
+        """Multiplication of ``lhs`` by ``self``."""
+        return _rmul(self, lhs)
+
 
 class SignTerms(Terms[Sign]):
     """A collection of terms consisting of state strings and sign coefficients."""
@@ -190,6 +244,36 @@ class RealTerm(Term[float]):
     """A term consisting of a fermionic state string and a real coefficient."""
 
     coeff_type = float
+
+    @overload
+    def __mul__(self, rhs: Sign) -> RealTerm: ...
+    @overload
+    def __mul__(self, rhs: ComplexSign) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, rhs: float) -> RealTerm: ...
+    @overload
+    def __mul__(self, rhs: complex) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, rhs: Expr) -> SymbolicTerm: ...
+
+    def __mul__(self, rhs: OtherCoeffT) -> Term[Any]:
+        """Multiplication of ``self`` by ``rhs``."""
+        return _mul(self, rhs)
+
+    @overload
+    def __rmul__(self, lhs: Sign) -> RealTerm: ...
+    @overload
+    def __rmul__(self, lhs: ComplexSign) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, lhs: float) -> RealTerm: ...
+    @overload
+    def __rmul__(self, lhs: complex) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, lhs: Expr) -> SymbolicTerm: ...
+
+    def __rmul__(self, lhs: OtherCoeffT) -> Term[Any]:
+        """Multiplication of ``lhs`` by ``self``."""
+        return _rmul(self, lhs)
 
 
 class RealTerms(NumericTerms[FermionStateArray, StringSpec, float], Terms[float]):
@@ -254,6 +338,36 @@ class ComplexTerm(Term[complex]):
     """A term consisting of a fermionic state string and a complex coefficient."""
 
     coeff_type = complex
+
+    @overload
+    def __mul__(self, rhs: Sign) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, rhs: ComplexSign) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, rhs: float) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, rhs: complex) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, rhs: Expr) -> SymbolicTerm: ...
+
+    def __mul__(self, rhs: OtherCoeffT) -> Term[Any]:
+        """Multiplication of ``self`` by ``rhs``."""
+        return _mul(self, rhs)
+
+    @overload
+    def __rmul__(self, lhs: Sign) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, lhs: ComplexSign) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, lhs: float) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, lhs: complex) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, lhs: Expr) -> SymbolicTerm: ...
+
+    def __rmul__(self, lhs: OtherCoeffT) -> Term[Any]:
+        """Multiplication of ``lhs`` by ``self``."""
+        return _rmul(self, lhs)
 
 
 class ComplexTerms(NumericTerms[FermionStateArray, StringSpec, complex], Terms[complex]):
@@ -332,6 +446,36 @@ class SymbolicTerm(Term[Expr]):
     """A term consisting of a fermionic state string and a symbolic coefficient."""
 
     coeff_type = Expr
+
+    @overload
+    def __mul__(self, rhs: Sign) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, rhs: ComplexSign) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, rhs: float) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, rhs: complex) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, rhs: Expr) -> SymbolicTerm: ...
+
+    def __mul__(self, rhs: OtherCoeffT) -> Term[Any]:
+        """Multiplication of ``self`` by ``rhs``."""
+        return _mul(self, rhs)
+
+    @overload
+    def __rmul__(self, lhs: Sign) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, lhs: ComplexSign) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, lhs: float) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, lhs: complex) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, lhs: Expr) -> SymbolicTerm: ...
+
+    def __rmul__(self, lhs: OtherCoeffT) -> Term[Any]:
+        """Multiplication of ``lhs`` by ``self``."""
+        return _rmul(self, lhs)
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
         """Substitute values into the symbolic coefficient in-place."""
@@ -423,38 +567,15 @@ class SymbolicTermSum(TermSum[Expr]):
         return out
 
 
-class TermRegistry(terms.TermRegistry[FermionStateArray, StringSpec]):
-    """Registry of term types for each different coefficient type."""
-
-    term_type_sign: type[SignTerm]
-    term_type_complex_sign: type[Any]
-    term_type_real: type[RealTerm]
-    term_type_complex: type[ComplexTerm]
-    term_type_symbolic: type[SymbolicTerm]
-
-    def __init__(
-        self,
-        term_type_sign: type[SignTerm],
-        term_type_complex_sign: type[Any],
-        term_type_real: type[RealTerm],
-        term_type_complex: type[ComplexTerm],
-        term_type_symbolic: type[SymbolicTerm],
-    ) -> None:
-        self.term_type_sign = term_type_sign
-        self.term_type_complex_sign = term_type_complex_sign
-        self.term_type_real = term_type_real
-        self.term_type_complex = term_type_complex
-        self.term_type_symbolic = term_type_symbolic
-
-    def __getitem__(self, coeff_type: type[CoeffT]) -> type[Term[CoeffT]]:
-        """Get the term type corresponding to ``coeff_type``."""
-        return cast(type[Term[CoeffT]], super().__getitem__(coeff_type))
-
-
-String._term_registry = TermRegistry(
-    term_type_sign=SignTerm,
-    term_type_complex_sign=ComplexTerm,
-    term_type_real=RealTerm,
-    term_type_complex=ComplexTerm,
-    term_type_symbolic=SymbolicTerm,
-)
+def get_term_type(coeff_type: type[CoeffT]) -> type[Term[CoeffT]]:
+    """Get the term type corresponding to ``coeff_type``."""
+    if _is_sign(coeff_type):
+        return cast(type[Term[CoeffT]], SignTerm)
+    elif _is_int(coeff_type) or _is_float(coeff_type):
+        return cast(type[Term[CoeffT]], RealTerm)
+    elif _is_complex(coeff_type) or _is_complex_sign(coeff_type):
+        return cast(type[Term[CoeffT]], ComplexTerm)
+    elif _is_expr(coeff_type):
+        return cast(type[Term[CoeffT]], SymbolicTerm)
+    else:
+        raise TypeError(f"Unsupported coefficient type {coeff_type} for term type lookup.")

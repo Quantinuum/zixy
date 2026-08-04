@@ -281,10 +281,10 @@ def test_real_term_product():
     creation = RealTermSum.from_str("F0^", 2)
     annihilation = RealTermSum.from_str("F0", 2)
 
-    assert str(creation * annihilation) == "((1+0j), F0^ F0)"
-    assert str(annihilation * creation) == "((1+0j), ), ((-1+0j), F0^ F0)"
-    assert str(annihilation.commutator(creation)) == "((1+0j), ), ((-2+0j), F0^ F0)"
-    assert str(annihilation.anticommutator(creation)) == "((1+0j), )"
+    assert str(creation * annihilation) == "(1.0, F0^ F0)"
+    assert str(annihilation * creation) == "(1.0, ), (-1.0, F0^ F0)"
+    assert str(annihilation.commutator(creation)) == "(1.0, ), (-2.0, F0^ F0)"
+    assert str(annihilation.anticommutator(creation)) == "(1.0, )"
 
 
 def test_complex_term_product():
@@ -321,7 +321,7 @@ def test_to_general():
 
     general_terms = terms.to_general()
 
-    assert str(general_terms) == "((1+0j), F2^ F0 F1)"
+    assert str(general_terms) == "(1.0, F2^ F0 F1)"
     assert general_terms.to_terms()[0].string.get_ops() == [(2, True), (0, False), (1, False)]
 
     complex_terms = ComplexTermSum.from_str("(1j, F0^ F1)", 2)

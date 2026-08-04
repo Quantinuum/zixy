@@ -99,7 +99,16 @@ fn normal_set_to_py_complex(
 ) -> (NormalArray, ComplexVec) {
     (
         NormalArray(term_set.terms.word_iters),
-        ComplexVec(term_set.terms.coeffs),
+        ComplexVec(clean_complex_coeffs(term_set.terms.coeffs)),
+    )
+}
+
+fn normal_set_to_py_real(
+    term_set: normal::cmpnt_major::term_set::TermSet<f64>,
+) -> (NormalArray, RealVec) {
+    (
+        NormalArray(term_set.terms.word_iters),
+        RealVec(term_set.terms.coeffs),
     )
 }
 
@@ -112,19 +121,22 @@ fn normal_terms_to_py_real(
 fn normal_terms_to_py_complex(
     terms: normal::cmpnt_major::terms::Terms<Complex64>,
 ) -> (NormalArray, ComplexVec) {
-    (NormalArray(terms.word_iters), ComplexVec(terms.coeffs))
+    (
+        NormalArray(terms.word_iters),
+        ComplexVec(clean_complex_coeffs(terms.coeffs)),
+    )
 }
 
 fn normal_order_product(
     modes: Modes_,
     ops: Vec<(usize, bool)>,
-) -> PyResult<(NormalArray, ComplexVec)> {
+) -> PyResult<(NormalArray, RealVec)> {
     let max_len = ops.len();
     let mut general_set = general::term_set::TermSet::<f64>::new(max_len, modes);
     let (mode_inds, adj): (Vec<_>, Vec<_>) = ops.into_iter().unzip();
     general_set.push_term(&mode_inds, &adj, 1.0);
     let out = zixy::fermion::operator::lincomb::to_normal_order(&general_set.as_terms());
-    Ok(normal_set_to_py_complex(out))
+    Ok(normal_set_to_py_real(out))
 }
 
 #[pymethods]
@@ -147,8 +159,7 @@ impl NormalArray {
                 .map(|(is_cre, mode)| (usize::from(mode), is_cre))
                 .collect();
             let (cmpnts, coeffs) = normal_order_product(modes.0.clone(), ops)?;
-            if cmpnts.0.len() != 1 || coeffs.0.len() != 1 || coeffs.0[0] != Complex64::new(1.0, 0.0)
-            {
+            if cmpnts.0.len() != 1 || coeffs.0.len() != 1 || coeffs.0[0] != 1.0 {
                 return Err(PyErr::new::<PyValueError, _>(
                     "Fermion string does not normal-order to exactly one positive component",
                 ));
@@ -160,7 +171,7 @@ impl NormalArray {
 
     /// Create from a single arbitrary ladder-operator product, returning normal-ordered terms.
     #[staticmethod]
-    fn from_ladder_product(modes: Modes, ops: Vec<(usize, bool)>) -> PyResult<(Self, ComplexVec)> {
+    fn from_ladder_product(modes: Modes, ops: Vec<(usize, bool)>) -> PyResult<(Self, RealVec)> {
         normal_order_product(modes.0, ops)
     }
 
@@ -429,13 +440,13 @@ impl NormalArray {
         lhs_coeffs: &RealVec,
         rhs_impl: &Self,
         rhs_coeffs: &RealVec,
-    ) -> PyResult<(Self, ComplexVec)> {
+    ) -> PyResult<(Self, RealVec)> {
         let out = normal::cmpnt_major::lincomb::mul(
             &normal_terms_real(lhs_impl, lhs_coeffs),
             &normal_terms_real(rhs_impl, rhs_coeffs),
         )
         .to_py_result()?;
-        Ok(normal_set_to_py_complex(out))
+        Ok(normal_set_to_py_real(out))
     }
 
     #[staticmethod]
@@ -459,13 +470,13 @@ impl NormalArray {
         lhs_coeffs: &RealVec,
         rhs_impl: &Self,
         rhs_coeffs: &RealVec,
-    ) -> PyResult<(Self, ComplexVec)> {
+    ) -> PyResult<(Self, RealVec)> {
         let out = normal::cmpnt_major::lincomb::commutator(
             &normal_terms_real(lhs_impl, lhs_coeffs),
             &normal_terms_real(rhs_impl, rhs_coeffs),
         )
         .to_py_result()?;
-        Ok(normal_set_to_py_complex(out))
+        Ok(normal_set_to_py_real(out))
     }
 
     #[staticmethod]
@@ -474,13 +485,13 @@ impl NormalArray {
         lhs_coeffs: &RealVec,
         rhs_impl: &Self,
         rhs_coeffs: &RealVec,
-    ) -> PyResult<(Self, ComplexVec)> {
+    ) -> PyResult<(Self, RealVec)> {
         let out = normal::cmpnt_major::lincomb::anticommutator(
             &normal_terms_real(lhs_impl, lhs_coeffs),
             &normal_terms_real(rhs_impl, rhs_coeffs),
         )
         .to_py_result()?;
-        Ok(normal_set_to_py_complex(out))
+        Ok(normal_set_to_py_real(out))
     }
 
     #[staticmethod]
@@ -582,10 +593,10 @@ impl NormalArray {
         cmpnts: &Self,
         map: &Map,
         coeffs: &RealVec,
-    ) -> (GeneralArray, ComplexVec) {
+    ) -> PyResult<(GeneralArray, RealVec)> {
         let out =
             zixy::fermion::operator::lincomb::to_general(&normal_set_real(cmpnts, map, coeffs));
-        general_set_to_py_complex(out)
+        Ok(general_set_to_py_real(out))
     }
 
     #[staticmethod]
@@ -763,8 +774,20 @@ fn general_set_to_py_complex(
 ) -> (GeneralArray, ComplexVec) {
     (
         GeneralArray(term_set.terms.word_iters),
-        ComplexVec(term_set.terms.coeffs),
+        ComplexVec(clean_complex_coeffs(term_set.terms.coeffs)),
     )
+}
+
+fn clean_complex_coeffs(mut coeffs: Vec<Complex64>) -> Vec<Complex64> {
+    for coeff in coeffs.iter_mut() {
+        if coeff.re == 0.0 {
+            coeff.re = 0.0;
+        }
+        if coeff.im == 0.0 {
+            coeff.im = 0.0;
+        }
+    }
+    coeffs
 }
 
 #[pymethods]
@@ -1030,10 +1053,15 @@ impl GeneralArray {
     }
 
     #[staticmethod]
-    fn lincomb_to_normal_order_real(cmpnts: &Self, coeffs: &RealVec) -> (NormalArray, ComplexVec) {
+    fn lincomb_to_normal_order_real(
+        cmpnts: &Self,
+        coeffs: &RealVec,
+    ) -> PyResult<(NormalArray, RealVec)> {
         let map = CoreMap::default();
-        normal_set_to_py_complex(zixy::fermion::operator::lincomb::to_normal_order(
-            &general_terms_real(cmpnts, &map, coeffs),
+        Ok(normal_set_to_py_real(
+            zixy::fermion::operator::lincomb::to_normal_order(&general_terms_real(
+                cmpnts, &map, coeffs,
+            )),
         ))
     }
 

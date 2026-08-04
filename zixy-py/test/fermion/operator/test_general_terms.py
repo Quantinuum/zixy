@@ -229,7 +229,7 @@ def test_symbolic_term_product():
 
 def test_normal_ordered():
     assert str(RealTermSum.from_str("F0 F0^", 2).normal_ordered()) == (
-        "((1+0j), ), ((-1+0j), F0^ F0)"
+        "(1.0, ), (-1.0, F0^ F0)"
     )
-    assert str(RealTermSum.from_str("F0 F0^, F0^ F0", 2).normal_ordered()) == ("((1+0j), )")
-    assert str(RealTermSum.from_str("F1 F0^", 2).normal_ordered()) == ("((-1+0j), F0^ F1)")
+    assert str(RealTermSum.from_str("F0 F0^, F0^ F0", 2).normal_ordered()) == ("(1.0, )")
+    assert str(RealTermSum.from_str("F1 F0^", 2).normal_ordered()) == ("(-1.0, F0^ F1)")

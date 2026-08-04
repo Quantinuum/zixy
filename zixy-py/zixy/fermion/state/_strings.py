@@ -28,6 +28,7 @@ from typing import TYPE_CHECKING, TypeAlias, overload
 from typing_extensions import Self
 
 from zixy._zixy import BinarySprings, FermionStateArray, Modes
+from zixy.container.coeffs import Coeff, CoeffT
 from zixy.fermion._strings import (
     String as FermionString,
     Strings as FermionStrings,
@@ -35,7 +36,7 @@ from zixy.fermion._strings import (
 )
 
 if TYPE_CHECKING:
-    from zixy.fermion.state._terms import TermRegistry
+    from zixy.fermion.state._terms import Term
 
 StringSpec: TypeAlias = None | Sequence[bool] | set[int] | str
 ElemT = bool
@@ -62,7 +63,6 @@ class String(FermionString[ImplT, SpecT, ElemT]):
     """
 
     impl_type = ImplT
-    _term_registry: TermRegistry
     _get_default_modes = staticmethod(_default_modes)
 
     @classmethod
@@ -153,6 +153,24 @@ class String(FermionString[ImplT, SpecT, ElemT]):
     def is_vacuum(self) -> bool:
         r"""Check whether the string is the vacuum state (:math:`\left[0, 0, \ldots, 0\right]`)."""
         return self.count(True) == 0
+
+    def __mul__(self, rhs: CoeffT) -> Term[CoeffT]:
+        """Return the product of ``self`` and ``rhs``."""
+        if not isinstance(rhs, Coeff):
+            return NotImplemented
+        from zixy.fermion.state._terms import get_term_type  # noqa: PLC0415
+
+        term_type = get_term_type(type(rhs))
+        return term_type.from_cmpnt_coeff(self, rhs)
+
+    def __rmul__(self, lhs: CoeffT) -> Term[CoeffT]:
+        """Return the product of ``lhs`` and ``self``."""
+        if not isinstance(lhs, Coeff):
+            return NotImplemented
+        from zixy.fermion.state._terms import get_term_type  # noqa: PLC0415
+
+        term_type = get_term_type(type(lhs))
+        return term_type.from_cmpnt_coeff(self, lhs)
 
     def vdot(self, other: String) -> int:
         """Compute the inner product of this string with another."""

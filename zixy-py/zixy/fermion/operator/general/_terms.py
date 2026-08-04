@@ -21,7 +21,7 @@ that are raw fermionic strings, as defined in
 
 from __future__ import annotations
 
-from typing import Any, TypeAlias, cast
+from typing import Any, TypeAlias, cast, overload
 
 from sympy import Expr, Symbol
 from typing_extensions import Self
@@ -33,11 +33,19 @@ from zixy.container.coeffs import (
     Coeffs,
     CoeffT,
     ComplexCoeffs,
+    ComplexSign,
     Number,
+    OtherCoeffT,
     RealCoeffs,
+    Sign,
     SymbolicCoeffs,
+    _is_complex,
+    _is_complex_sign,
+    _is_expr,
+    _is_float,
+    _is_int,
+    _is_sign,
     get_coeffs_type,
-    unit,
 )
 from zixy.container.data import TermData
 from zixy.container.terms import (
@@ -55,7 +63,6 @@ from zixy.fermion.operator._terms import (
     TermSum as OperatorTermSum,
     _parse_coeff,
 )
-from zixy.fermion.operator.general._mixins import TermMulMixin
 from zixy.fermion.operator.general._strings import (
     String,
     Strings,
@@ -88,7 +95,40 @@ def _max_len_from_term_source(source: TermSpec[Any]) -> int:
     return _max_len_from_string_source(source)
 
 
-class Term(TermMulMixin[CoeffT], OperatorTerm[ImplT, SpecT, CoeffT, ElemT]):
+def _mul(lhs: Term[CoeffT], rhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+    """Driver for multiplication of a term with another term, a string, or a coefficient."""
+    if isinstance(rhs, Coeff):
+        scalar_product = lhs.coeff * rhs
+        return get_term_type(type(scalar_product)).from_cmpnt_coeff(lhs.string, scalar_product)
+    if isinstance(rhs, String):
+        if lhs.modes != rhs.modes:
+            raise ValueError("Cannot multiply terms defined over different modes.")
+        string = String(lhs.modes, lhs.string.get_ops() + rhs.get_ops())
+        return get_term_type(type(lhs.coeff)).from_cmpnt_coeff(string, lhs.coeff)
+    if lhs.modes != rhs.modes:
+        raise ValueError("Cannot multiply terms defined over different modes.")
+    coeff = lhs.coeff * rhs.coeff
+    string = String(lhs.modes, lhs.string.get_ops() + rhs.string.get_ops())
+    return get_term_type(type(coeff)).from_cmpnt_coeff(string, coeff)
+
+
+def _rmul(rhs: Term[CoeffT], lhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+    """Driver for multiplication of another term, a string, or a coefficient with a term."""
+    if isinstance(lhs, Coeff):
+        return _mul(rhs, lhs)
+    if isinstance(lhs, String):
+        if lhs.modes != rhs.modes:
+            raise ValueError("Cannot multiply terms defined over different modes.")
+        string = String(rhs.modes, lhs.get_ops() + rhs.string.get_ops())
+        return get_term_type(type(rhs.coeff)).from_cmpnt_coeff(string, rhs.coeff)
+    if lhs.modes != rhs.modes:
+        raise ValueError("Cannot multiply terms defined over different modes.")
+    coeff = lhs.coeff * rhs.coeff
+    string = String(rhs.modes, lhs.string.get_ops() + rhs.string.get_ops())
+    return get_term_type(type(coeff)).from_cmpnt_coeff(string, coeff)
+
+
+class Term(OperatorTerm[ImplT, SpecT, CoeffT, ElemT]):
     """A term consisting of a raw fermionic string and a coefficient.
 
     A single mode-based term consisting of a raw fermionic string and a coefficient that may be an
@@ -158,23 +198,6 @@ class Term(TermMulMixin[CoeffT], OperatorTerm[ImplT, SpecT, CoeffT, ElemT]):
     def string(self) -> String:
         """Get the string component of the term."""
         return cast(String, self.cmpnt)
-
-    def __mul__(self, rhs: Any) -> Any:
-        """Multiplication of ``self`` by ``rhs``."""
-        if isinstance(rhs, Coeff):
-            coeff = self.coeff * rhs
-            term_type = cast(Any, self.string._term_registry)[type(coeff)]
-            return term_type.from_cmpnt_coeff(self.string, coeff)
-        if isinstance(rhs, String):
-            rhs = type(self).from_cmpnt_coeff(rhs, unit(self.coeff_type))
-        if not isinstance(rhs, Term):
-            return NotImplemented
-        if self.modes != rhs.modes:
-            raise ValueError("Cannot multiply terms defined over different modes.")
-        coeff = self.coeff * rhs.coeff
-        term_type = cast(Any, self.string._term_registry)[type(coeff)]
-        string = String(self.modes, self.string.get_ops() + rhs.string.get_ops())
-        return term_type.from_cmpnt_coeff(string, coeff)
 
     def dagger(self) -> None:
         """Take the adjoint of ``self`` in-place."""
@@ -295,45 +318,27 @@ class TermSum(OperatorTermSum[ImplT, SpecT, CoeffT, ElemT], TermSet[CoeffT]):
         out.add_iterable(source)
         return out
 
-    def __mul__(self, rhs: Any) -> Any:
-        """Multiplication of ``self`` by ``rhs``.
-
-        Term-sum multiplication in the general representation concatenates raw ladder-operator
-        products without applying normal-ordering identities.
-        """
-        if isinstance(rhs, Coeff | Coeffs):
-            return super().__mul__(rhs)
-        if isinstance(rhs, Term):
-            rhs = type(self).from_iterable((rhs,), self.modes, rhs.string.max_len)
-        if not isinstance(rhs, TermSum):
-            return NotImplemented
-        method = (
-            self.strings._impl.lincomb_mul_real
-            if self.terms_type.term_type.coeff_type is float
-            else self.strings._impl.lincomb_mul_complex
-        )
-        impl, coeffs = method(
-            self.strings._impl, self.coeffs._impl, rhs.strings._impl, rhs.coeffs._impl
-        )
-        if self.terms_type.term_type.coeff_type is float:
-            data: Any = TermData(Strings._create(impl), RealCoeffs._create(coeffs))
-            return type(self)._create(data)
-        data = TermData(Strings._create(impl), ComplexCoeffs._create(coeffs))
-        return type(self)._create(data)
-
     def normal_ordered(self) -> Any:
         """Return ``self`` converted to normal-ordered form."""
         from zixy.fermion.operator.normal import (  # noqa: PLC0415
             ComplexTermSum,
+            RealTermSum,
             Strings as NormalStrings,
         )
 
-        method = (
-            self.strings._impl.lincomb_to_normal_order_real
-            if self.terms_type.term_type.coeff_type is float
-            else self.strings._impl.lincomb_to_normal_order_complex
+        if self.terms_type.term_type.coeff_type is float:
+            impl, coeffs = self.strings._impl.lincomb_to_normal_order_real(
+                self.strings._impl, self.coeffs._impl
+            )
+            return RealTermSum._create(
+                TermData(
+                    NormalStrings._create(impl),
+                    RealCoeffs._create(coeffs),
+                )
+            )
+        impl, coeffs = self.strings._impl.lincomb_to_normal_order_complex(
+            self.strings._impl, self.coeffs._impl
         )
-        impl, coeffs = method(self.strings._impl, self.coeffs._impl)
         return ComplexTermSum._create(
             TermData(
                 NormalStrings._create(impl),
@@ -360,6 +365,56 @@ class RealTerm(Term[float]):
 
     coeff_type = float
 
+    @overload
+    def __mul__(self, rhs: Sign) -> RealTerm: ...
+    @overload
+    def __mul__(self, rhs: ComplexSign) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, rhs: float) -> RealTerm: ...
+    @overload
+    def __mul__(self, rhs: complex) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, rhs: Expr) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, rhs: String) -> RealTerm: ...
+    @overload
+    def __mul__(self, rhs: RealTerm) -> RealTerm: ...
+    @overload
+    def __mul__(self, rhs: ComplexTerm) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, rhs: SymbolicTerm) -> SymbolicTerm: ...
+
+    def __mul__(self, rhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+        """Multiplication of ``self`` by ``rhs``."""
+        if not isinstance(rhs, Coeff | String | Term):
+            return NotImplemented
+        return _mul(self, rhs)
+
+    @overload
+    def __rmul__(self, lhs: Sign) -> RealTerm: ...
+    @overload
+    def __rmul__(self, lhs: ComplexSign) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, lhs: float) -> RealTerm: ...
+    @overload
+    def __rmul__(self, lhs: complex) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, lhs: Expr) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, lhs: String) -> RealTerm: ...
+    @overload
+    def __rmul__(self, lhs: RealTerm) -> RealTerm: ...
+    @overload
+    def __rmul__(self, lhs: ComplexTerm) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, lhs: SymbolicTerm) -> SymbolicTerm: ...
+
+    def __rmul__(self, lhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+        """Multiplication of ``lhs`` by ``self``."""
+        if not isinstance(lhs, Coeff | String | Term):
+            return NotImplemented
+        return _rmul(self, lhs)
+
 
 class RealTerms(NumericTerms[GeneralFermionOperatorArray, StringSpec, float], Terms[float]):
     """A collection of terms consisting of raw fermionic strings and real coefficients."""
@@ -378,11 +433,88 @@ class RealTermSum(NumericTermSum[GeneralFermionOperatorArray, StringSpec, float]
 
     terms_type = RealTerms
 
+    @overload
+    def __mul__(self, rhs: Coeff | Coeffs[float]) -> Self: ...
+    @overload
+    def __mul__(self, rhs: Self) -> RealTermSum: ...
+
+    def __mul__(self, rhs: Coeff | Coeffs[float] | Self) -> Self | RealTermSum:
+        """Multiplication of ``self`` by ``rhs``.
+
+        Term-sum multiplication in the general representation concatenates raw ladder-operator
+        products without applying normal-ordering identities.
+        """
+        if isinstance(rhs, Coeff | Coeffs):
+            return super().__mul__(rhs)
+        elif not isinstance(rhs, RealTermSum):
+            return NotImplemented
+        assert isinstance(self._impl._coeffs, RealCoeffs)
+        assert isinstance(rhs._impl._coeffs, RealCoeffs)
+        lhs_impl = self._impl._cmpnts._impl
+        lhs_coeffs = self._impl._coeffs._impl
+        rhs_impl = rhs._impl._cmpnts._impl
+        rhs_coeffs = rhs._impl._coeffs._impl
+        # TODO: support output by reference
+        # TODO: shouldn't this be real?
+        impl, coeffs = lhs_impl.lincomb_mul_real(lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs)
+        data = TermData(Strings._create(impl), RealCoeffs._create(coeffs))
+        return RealTermSum._create(data)
+
 
 class ComplexTerm(Term[complex]):
     """A term consisting of a raw fermionic string and a complex coefficient."""
 
     coeff_type = complex
+
+    @overload
+    def __mul__(self, rhs: Sign) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, rhs: ComplexSign) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, rhs: float) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, rhs: complex) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, rhs: Expr) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, rhs: String) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, rhs: RealTerm) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, rhs: ComplexTerm) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, rhs: SymbolicTerm) -> SymbolicTerm: ...
+
+    def __mul__(self, rhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+        """Multiplication of ``self`` by ``rhs``."""
+        if not isinstance(rhs, Coeff | String | Term):
+            return NotImplemented
+        return _mul(self, rhs)
+
+    @overload
+    def __rmul__(self, lhs: Sign) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, lhs: ComplexSign) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, lhs: float) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, lhs: complex) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, lhs: Expr) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, lhs: String) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, lhs: RealTerm) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, lhs: ComplexTerm) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, lhs: SymbolicTerm) -> SymbolicTerm: ...
+
+    def __rmul__(self, lhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+        """Multiplication of ``lhs`` by ``self``."""
+        if not isinstance(lhs, Coeff | String | Term):
+            return NotImplemented
+        return _rmul(self, lhs)
 
 
 class ComplexTerms(NumericTerms[GeneralFermionOperatorArray, StringSpec, complex], Terms[complex]):
@@ -404,11 +536,87 @@ class ComplexTermSum(
 
     terms_type = ComplexTerms
 
+    @overload
+    def __mul__(self, rhs: Coeff | Coeffs[complex]) -> Self: ...
+    @overload
+    def __mul__(self, rhs: Self) -> ComplexTermSum: ...
+
+    def __mul__(self, rhs: Coeff | Coeffs[complex] | Self) -> Self | ComplexTermSum:
+        """Multiplication of ``self`` by ``rhs``.
+
+        Term-sum multiplication in the general representation concatenates raw ladder-operator
+        products without applying normal-ordering identities.
+        """
+        if isinstance(rhs, Coeff | Coeffs):
+            return super().__mul__(rhs)
+        elif not isinstance(rhs, ComplexTermSum):
+            return NotImplemented
+        assert isinstance(self._impl._coeffs, ComplexCoeffs)
+        assert isinstance(rhs._impl._coeffs, ComplexCoeffs)
+        lhs_impl = self._impl._cmpnts._impl
+        lhs_coeffs = self._impl._coeffs._impl
+        rhs_impl = rhs._impl._cmpnts._impl
+        rhs_coeffs = rhs._impl._coeffs._impl
+        # TODO: support output by reference
+        impl, coeffs = lhs_impl.lincomb_mul_complex(lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs)
+        data = TermData(Strings._create(impl), ComplexCoeffs._create(coeffs))
+        return ComplexTermSum._create(data)
+
 
 class SymbolicTerm(Term[Expr]):
     """A term consisting of a raw fermionic string and a symbolic coefficient."""
 
     coeff_type = Expr
+
+    @overload
+    def __mul__(self, rhs: Sign) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, rhs: ComplexSign) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, rhs: float) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, rhs: complex) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, rhs: Expr) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, rhs: String) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, rhs: RealTerm) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, rhs: ComplexTerm) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, rhs: SymbolicTerm) -> SymbolicTerm: ...
+
+    def __mul__(self, rhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+        """Multiplication of ``self`` by ``rhs``."""
+        if not isinstance(rhs, Coeff | String | Term):
+            return NotImplemented
+        return _mul(self, rhs)
+
+    @overload
+    def __rmul__(self, lhs: Sign) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, lhs: ComplexSign) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, lhs: float) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, lhs: complex) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, lhs: Expr) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, lhs: String) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, lhs: RealTerm) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, lhs: ComplexTerm) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, lhs: SymbolicTerm) -> SymbolicTerm: ...
+
+    def __rmul__(self, lhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+        """Multiplication of ``lhs`` by ``self``."""
+        if not isinstance(lhs, Coeff | String | Term):
+            return NotImplemented
+        return _rmul(self, lhs)
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
         """Substitute values into the symbolic coefficient in-place."""
@@ -472,38 +680,17 @@ class SymbolicTermSum(TermSum[Expr]):
         return out
 
 
-class TermRegistry(terms.TermRegistry[GeneralFermionOperatorArray, StringSpec]):
-    term_type_sign: type[Any]
-    term_type_complex_sign: type[Any]
-    term_type_real: type[RealTerm]
-    term_type_complex: type[ComplexTerm]
-    term_type_symbolic: type[SymbolicTerm]
+def get_term_type(coeff_type: type[CoeffT]) -> type[Term[CoeffT]]:
+    """Get the term type corresponding to ``coeff_type``."""
+    if _is_int(coeff_type) or _is_float(coeff_type) or _is_sign(coeff_type):
+        return cast(type[Term[CoeffT]], RealTerm)
+    elif _is_complex(coeff_type) or _is_complex_sign(coeff_type):
+        return cast(type[Term[CoeffT]], ComplexTerm)
+    elif _is_expr(coeff_type):
+        return cast(type[Term[CoeffT]], SymbolicTerm)
+    else:
+        raise TypeError(f"Unsupported coefficient type {coeff_type} for term type lookup.")
 
-    def __init__(
-        self,
-        term_type_sign: type[Any],
-        term_type_complex_sign: type[Any],
-        term_type_real: type[RealTerm],
-        term_type_complex: type[ComplexTerm],
-        term_type_symbolic: type[SymbolicTerm],
-    ) -> None:
-        self.term_type_sign = term_type_sign
-        self.term_type_complex_sign = term_type_complex_sign
-        self.term_type_real = term_type_real
-        self.term_type_complex = term_type_complex
-        self.term_type_symbolic = term_type_symbolic
-
-    def __getitem__(self, coeff_type: type[CoeffT]) -> type[Term[CoeffT]]:
-        return cast(type[Term[CoeffT]], super().__getitem__(coeff_type))
-
-
-String._term_registry = TermRegistry(
-    term_type_sign=RealTerm,
-    term_type_complex_sign=ComplexTerm,
-    term_type_real=RealTerm,
-    term_type_complex=ComplexTerm,
-    term_type_symbolic=SymbolicTerm,
-)
 
 for _term_type, _sum_type in (
     (RealTerm, RealTermSum),

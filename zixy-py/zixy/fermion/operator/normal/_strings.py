@@ -39,7 +39,7 @@ from zixy.fermion.operator._strings import (
 )
 
 if TYPE_CHECKING:
-    from zixy.fermion.operator.normal._terms import RealTermSum, Term, TermRegistry
+    from zixy.fermion.operator.normal._terms import RealTermSum, Term
 
 StringSpec: TypeAlias = (
     None | str | tuple[Sequence[int] | Sequence[bool], Sequence[int] | Sequence[bool]]
@@ -74,7 +74,6 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
     """
 
     impl_type = ImplT
-    _term_registry: TermRegistry
 
     @staticmethod
     def _get_default_modes(source: SpecT | None = None) -> Modes:
@@ -176,7 +175,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         out.dagger()
         return out
 
-    @overload  # type: ignore[override]
+    @overload
     def __mul__(self, rhs: String) -> RealTermSum: ...
 
     @overload
@@ -188,18 +187,17 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         Multiplication by a scalar returns a term. Multiplication by another normal-ordered string
         returns a term sum, since normal-ordering can produce zero, one, or multiple terms.
         """
+        from zixy.fermion.operator.normal._terms import RealTermSum, get_term_type  # noqa: PLC0415
+
         if isinstance(rhs, Coeff):
-            scalar_term_type = self._term_registry[type(rhs)]
+            scalar_term_type = get_term_type(type(rhs))
             return scalar_term_type.from_cmpnt_coeff(self, rhs)
         if not isinstance(rhs, String):
             return NotImplemented
         impl, signs = self._impl.cmpnt_mul(self.index, rhs._impl, rhs.index)
-        from zixy.fermion.operator.normal._terms import RealTermSum  # noqa: PLC0415
-
-        real_term_type = self._term_registry.term_type_real
         out = RealTermSum(self.modes)
         for i in range(len(impl)):
-            out += real_term_type.from_cmpnt_coeff(
+            out += RealTermSum.terms_type.term_type.from_cmpnt_coeff(
                 Strings._create(impl)[i], float(int(Sign(signs[i])))
             )
         return out

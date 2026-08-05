@@ -194,6 +194,14 @@ def test_real_term_add_iterable():
     assert str(term_sum.filter_nonzero()) == ""
 
 
+def test_term_sum_rejects_term_over_different_modes():
+    term_sum = RealTermSum(max_len=4)
+    term = RealTerm.from_cmpnt_coeff(String(4, "F0^ F0"), 1.0)
+
+    with pytest.raises(ValueError, match="different modes"):
+        term_sum += term
+
+
 def test_real_term_into_other_types():
     term_set = RealTermSet(4, max_len=2)
 

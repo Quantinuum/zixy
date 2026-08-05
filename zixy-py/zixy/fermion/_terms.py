@@ -115,6 +115,23 @@ class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], TermSetBase[ImplT, SpecT, Co
         """Get the modes corresponding to ``self``."""
         return self.strings.modes
 
+    def _check_modes(self, value: Term[ImplT, SpecT, CoeffT, ElemT]) -> None:
+        """Check whether a term is defined over the same modes as ``self``."""
+        if self.modes != value.modes:
+            raise ValueError("Cannot insert a term defined over different modes.")
+
+    def insert(self, key: Term[ImplT, SpecT, CoeffT, ElemT] | object) -> int:
+        """Try to insert the given term."""
+        term = self._get_working_term(key)
+        self._check_modes(term)
+        return super().insert(term)
+
+    def soft_insert(self, key: Term[ImplT, SpecT, CoeffT, ElemT] | object) -> tuple[int, bool]:
+        """Insertion method which does not overwrite coefficient values."""
+        term = self._get_working_term(key)
+        self._check_modes(term)
+        return super().soft_insert(term)
+
 
 class TermSum(TermSet[ImplT, SpecT, CoeffT, ElemT], TermSumBase[ImplT, SpecT, CoeffT]):
     """A sum of terms consisting of fermionic strings and coefficients."""

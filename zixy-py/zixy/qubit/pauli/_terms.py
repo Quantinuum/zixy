@@ -123,10 +123,11 @@ def _mul(
         product = lhs.string * rhs
         assert isinstance(product, ComplexSignTerm)
         return product * lhs.coeff
-    else:
+    elif isinstance(rhs, Term):
         product = lhs.string * rhs.string
         assert isinstance(product, ComplexSignTerm)
         return product * (lhs.coeff * rhs.coeff)
+    return NotImplemented
 
 
 def _rmul(
@@ -140,10 +141,11 @@ def _rmul(
         product = lhs * rhs.string
         assert isinstance(product, ComplexSignTerm)
         return product * rhs.coeff
-    else:
+    elif isinstance(lhs, Term):
         product = lhs.string * rhs.string
         assert isinstance(product, ComplexSignTerm)
         return product * (lhs.coeff * rhs.coeff)
+    return NotImplemented
 
 
 class Term(TermBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
@@ -887,9 +889,8 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         mapper._impl.op_encode_real(fermion_ops, out_impl, out_map, out_coeffs)
         return out
 
-    @overload
+    @overload  # type: ignore[override]
     def __mul__(self, other: Coeff | Coeffs[float]) -> Self: ...
-
     @overload
     def __mul__(self, other: Self) -> ComplexTermSum: ...
 
@@ -1191,6 +1192,11 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
             self._impl._coeffs._impl,
             big_endian,
         )
+
+    @overload  # type: ignore[override]
+    def __mul__(self, other: Coeff | Coeffs[complex]) -> Self: ...
+    @overload
+    def __mul__(self, other: Self) -> ComplexTermSum: ...
 
     def __mul__(self, other: Self | Coeff | Coeffs[complex]) -> Self | ComplexTermSum:
         """Multiplication of ``self`` by ``other``."""

@@ -1159,13 +1159,7 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
         out -= rhs
         return out
 
-    @overload
-    def __imul__(self, other: Coeff | Coeffs[CoeffT]) -> Self: ...
-
-    @overload
-    def __imul__(self, other: Self) -> Any: ...
-
-    def __imul__(self, other: Coeff | Coeffs[CoeffT] | Self) -> Self | Any:  # type: ignore[misc]
+    def __imul__(self, other: Coeff | Coeffs[CoeffT]) -> Self:
         """Multiply ``self`` in-place by a scalar or coefficient vector."""
         if not isinstance(other, Coeff | Coeffs):
             return NotImplemented
@@ -1180,13 +1174,7 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
             self *= 1 / scalar
         return self
 
-    @overload
-    def __mul__(self, other: Coeff | Coeffs[CoeffT]) -> Self: ...
-
-    @overload
-    def __mul__(self, other: Self) -> Any: ...
-
-    def __mul__(self, other: Coeff | Coeffs[CoeffT] | Self) -> Self | Any:
+    def __mul__(self, other: Coeff | Coeffs[CoeffT]) -> Self:
         """Return ``self`` multiplied by a scalar or coefficient vector."""
         if not isinstance(other, Coeff | Coeffs):
             return NotImplemented

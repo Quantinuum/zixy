@@ -1,0 +1,47 @@
+/* Make pandas DataFrame outputs match Furo's tables and remain usable on small screens. */
+.cell_output .output.text_html {
+    margin: 0.75rem 0 1rem;
+    overflow-x: auto;
+}
+
+.cell_output .output.text_html table.dataframe {
+    display: table;
+    width: max-content;
+    min-width: 100%;
+    max-width: none;
+    border: 1px solid var(--color-table-border);
+    border-collapse: collapse;
+    border-radius: 0.2rem;
+    background: var(--color-background-primary);
+    color: var(--color-foreground-primary);
+    font-size: var(--font-size--small);
+    font-variant-numeric: tabular-nums;
+}
+
+.cell_output .output.text_html table.dataframe th,
+.cell_output .output.text_html table.dataframe td {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--color-table-border);
+    white-space: nowrap;
+}
+
+.cell_output .output.text_html table.dataframe thead th,
+.cell_output .output.text_html table.dataframe tbody th {
+    background: var(--color-table-header-background);
+    font-weight: 600;
+}
+
+.cell_output .output.text_html table.dataframe thead th {
+    text-align: left;
+}
+
+.cell_output .output.text_html table.dataframe thead th:first-child,
+.cell_output .output.text_html table.dataframe thead th:last-child,
+.cell_output .output.text_html table.dataframe tbody th,
+.cell_output .output.text_html table.dataframe tbody td:last-child {
+    text-align: right;
+}
+
+.cell_output .output.text_html table.dataframe tbody tr:nth-child(even) td {
+    background: var(--color-background-secondary);
+}

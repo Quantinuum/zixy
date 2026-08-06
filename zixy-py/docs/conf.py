@@ -54,6 +54,13 @@ autosummary_ignore_module_all = False  # Respect __all__ if specified
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "furo"
+html_static_path = ["_static"]
+html_css_files = ["custom.css"]
+html_theme_options = {
+    "source_repository": "https://github.com/quantinuum/zixy",
+    "source_branch": "main",
+    "source_directory": "zixy/zixy-py/docs/",
+}
 
 # --- MyST-NB config ---
 # https://myst-nb.readthedocs.io/en/latest/configuration.html

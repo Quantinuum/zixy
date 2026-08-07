@@ -30,13 +30,7 @@ from __future__ import annotations
 import builtins
 from abc import abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Sequence
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Generic,
-    TypeVar,
-    overload,
-)
+from typing import TYPE_CHECKING, Any, Generic, TypeVar, overload
 
 from typing_extensions import Self
 
@@ -47,12 +41,7 @@ from zixy.container.base import (
     ViewableSequence,
     requires_ownership,
 )
-from zixy.container.coeffs import Coeff, CoeffT, OtherCoeffT
 from zixy.utils import slice_index_gen, slice_len, slice_of_slice, slice_to_tuple
-
-if TYPE_CHECKING:
-    from zixy.container.terms import Term, TermRegistry
-
 
 if TYPE_CHECKING:
     from zixy._zixy import ImplArray
@@ -72,7 +61,6 @@ class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT], StringRepresentable):
     """
 
     impl_type: type[ImplT]
-    _term_registry: TermRegistry[ImplT, SpecT]
 
     _impl: ImplT
     _index: int | None
@@ -176,29 +164,6 @@ class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT], StringRepresentable):
             raise IndexError(
                 f"Index {self.index} is out of bounds for an array of length {len(self._impl)}"
             )
-
-    @overload
-    def __mul__(self, rhs: Cmpnt[ImplT, SpecT]) -> Term[ImplT, SpecT, OtherCoeffT]: ...
-
-    @overload
-    def __mul__(self, rhs: CoeffT) -> Term[ImplT, SpecT, CoeffT]: ...
-
-    def __mul__(
-        self, rhs: CoeffT | Cmpnt[ImplT, SpecT]
-    ) -> Term[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, OtherCoeffT]:
-        """Return the product of ``self`` and ``rhs``."""
-        if not isinstance(rhs, Coeff):
-            # Cmpnt multiplication is not defined for base Cmpnt, but may be define by derived class
-            return NotImplemented
-        term_type = self._term_registry[type(rhs)]
-        return term_type.from_cmpnt_coeff(self, rhs)
-
-    def __rmul__(self, lhs: CoeffT) -> Term[ImplT, SpecT, CoeffT]:
-        """Return the product of ``lhs`` and ``self``."""
-        if not isinstance(lhs, Coeff):
-            return NotImplemented
-        term_type = self._term_registry[type(lhs)]
-        return term_type.from_cmpnt_coeff(self, lhs)
 
 
 class CmpntSet(Generic[ImplT, SpecT], StringRepresentable):

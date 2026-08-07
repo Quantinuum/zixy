@@ -34,7 +34,6 @@ from __future__ import annotations
 
 import builtins
 from collections.abc import Callable, Iterable, Iterator, Sequence
-from dataclasses import dataclass
 from typing import (
     Any,
     Generic,
@@ -45,7 +44,6 @@ from typing import (
 
 import numpy as np
 import pandas as pd
-from sympy import Expr
 from typing_extensions import Self
 
 from zixy.container.base import (
@@ -59,18 +57,10 @@ from zixy.container.coeffs import (
     Coeff,
     Coeffs,
     CoeffT,
-    ComplexSign,
     Number,
     NumberT,
     OtherCoeffT,
     RootOfUnity,
-    Sign,
-    _is_complex,
-    _is_complex_sign,
-    _is_expr,
-    _is_float,
-    _is_int,
-    _is_sign,
     convert,
     convert_vec,
     get_coeffs_type,
@@ -79,7 +69,6 @@ from zixy.container.coeffs import (
     zero,
 )
 from zixy.container.data import TermData
-from zixy.container.mixins import TermMulMixin
 from zixy.utils import DEFAULT_ATOL, DEFAULT_RTOL, slice_index_gen, slice_of_slice, split_top_level
 
 TermSpecT: TypeAlias = (
@@ -90,7 +79,6 @@ TermSpecT: TypeAlias = (
 class Term(
     ViewableItem[TermData[ImplT, SpecT, CoeffT]],
     Generic[ImplT, SpecT, CoeffT],
-    TermMulMixin[ImplT, SpecT, CoeffT],
     StringRepresentable,
 ):
     """A term consisting of a component and a coefficient.
@@ -1171,9 +1159,11 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
         out -= rhs
         return out
 
-    def __imul__(self, coeff: Coeff | Coeffs[CoeffT]) -> Self:
+    def __imul__(self, other: Coeff | Coeffs[CoeffT]) -> Self:
         """Multiply ``self`` in-place by a scalar or coefficient vector."""
-        self._impl._coeffs *= coeff
+        if not isinstance(other, Coeff | Coeffs):
+            return NotImplemented
+        self._impl._coeffs *= other
         return self
 
     def __itruediv__(self, scalar: Coeff) -> Self:
@@ -1184,10 +1174,12 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
             self *= 1 / scalar
         return self
 
-    def __mul__(self, coeff: Coeff | Coeffs[CoeffT]) -> Self:
+    def __mul__(self, other: Coeff | Coeffs[CoeffT]) -> Self:
         """Return ``self`` multiplied by a scalar or coefficient vector."""
+        if not isinstance(other, Coeff | Coeffs):
+            return NotImplemented
         out = self.clone()
-        out *= coeff
+        out *= other
         return out
 
     def __rmul__(self, coeff: Coeff | Coeffs[CoeffT]) -> Self:
@@ -1342,29 +1334,3 @@ class NumericTermSum(TermSum[ImplT, SpecT, NumberT]):
             New instance containing all terms that meet the criterion.
         """
         return self._from_generator(self.iter_filter_insignificant(atol))
-
-
-@dataclass
-class TermRegistry(Generic[ImplT, SpecT]):
-    """Registry of term types for each different coefficient type."""
-
-    term_type_sign: type[Term[ImplT, SpecT, Sign]]
-    term_type_complex_sign: type[Term[ImplT, SpecT, ComplexSign]]
-    term_type_real: type[Term[ImplT, SpecT, float]]
-    term_type_complex: type[Term[ImplT, SpecT, complex]]
-    term_type_symbolic: type[Term[ImplT, SpecT, Expr]]
-
-    def __getitem__(self, coeff_type: type[CoeffT]) -> type[Term[ImplT, SpecT, CoeffT]]:
-        """Get the term type corresponding to ``coeff_type``."""
-        if _is_int(coeff_type) or _is_float(coeff_type):
-            return self.term_type_real
-        elif _is_complex(coeff_type):
-            return self.term_type_complex
-        elif _is_sign(coeff_type):
-            return self.term_type_sign
-        elif _is_complex_sign(coeff_type):
-            return self.term_type_complex_sign
-        elif _is_expr(coeff_type):
-            return self.term_type_symbolic
-        else:
-            raise TypeError(f"Unsupported coefficient type {coeff_type} for term registry lookup.")

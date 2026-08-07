@@ -413,7 +413,7 @@ class RealTermSum(NumericTermSum[GeneralFermionOperatorArray, StringSpec, float]
 
     terms_type = RealTerms
 
-    @overload
+    @overload  # type: ignore[override]
     def __mul__(self, rhs: Coeff | Coeffs[float]) -> Self: ...
     @overload
     def __mul__(self, rhs: Self) -> RealTermSum: ...
@@ -561,7 +561,7 @@ class ComplexTermSum(
 
     terms_type = ComplexTerms
 
-    @overload
+    @overload  # type: ignore[override]
     def __mul__(self, rhs: Coeff | Coeffs[complex]) -> Self: ...
     @overload
     def __mul__(self, rhs: Self) -> ComplexTermSum: ...

@@ -166,6 +166,7 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
     contiguous Rust-bound data object, or a view on a slice of the elements in another collection.
     """
 
+    cmpnt_type: type[String[ImplT, SpecT, ElemT]]
     _springs_type: type[Springs]
 
     def __init__(self, qubits: int | Qubits = 0, n: int = 0):
@@ -311,6 +312,8 @@ class StringSet(Generic[ImplT, SpecT, ElemT], CmpntSet[ImplT, SpecT]):
     A set-like container of qubit-based strings that may be used to store unique components and
     perform set-like operations on them.
     """
+
+    cmpnts_type: type[Strings[ImplT, SpecT, ElemT]]
 
     def __init__(self, qubits: int | Qubits = 0):
         """Initialize the string set.

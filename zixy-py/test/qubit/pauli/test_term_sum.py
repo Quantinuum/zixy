@@ -7,6 +7,7 @@ from zixy.qubit.pauli import (
     RealTerm,
     RealTermSet,
     RealTermSum,
+    String,
     SymbolicTermSum,
     X,
     Y,
@@ -68,6 +69,14 @@ def test_real_term_add_iterable():
     )
     assert len(lc) == 4
     assert str(lc) == "(-0.5, X0 X1 X2), (3.1, X0 X1 Y2), (-1.0, X0 X1 Y2 Z3), (1.3, Z0 X1 X2)"
+
+
+def test_term_sum_rejects_term_over_different_qubits():
+    term_sum = RealTermSum(2)
+    term = RealTerm.from_cmpnt_coeff(String(3, (X, I, I)), 1.0)
+
+    with pytest.raises(ValueError, match="different qubits"):
+        term_sum += term
 
 
 def test_real_term_into_other_types():

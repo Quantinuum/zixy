@@ -19,7 +19,7 @@ from __future__ import annotations
 from typing import Generic, cast
 
 from zixy._zixy import Modes
-from zixy.container.cmpnts import SpecT
+from zixy.container.cmpnts import Cmpnt, SpecT
 from zixy.container.coeffs import CoeffT, get_coeffs_type
 from zixy.container.data import TermData
 from zixy.container.terms import (
@@ -115,22 +115,25 @@ class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], TermSetBase[ImplT, SpecT, Co
         """Get the modes corresponding to ``self``."""
         return self.strings.modes
 
-    def _check_modes(self, value: Term[ImplT, SpecT, CoeffT, ElemT]) -> None:
-        """Check whether a term is defined over the same modes as ``self``."""
+    def _check_term(self, value: TermBase[ImplT, SpecT, CoeffT]) -> None:
+        """Hook to check whether a term is valid for insertion into ``self``."""
+        if not isinstance(value, self.terms_type.term_type):
+            raise TypeError(
+                f"Expected a {self.terms_type.term_type.__name__} instance, got "
+                f"{type(value).__name__}."
+            )
         if self.modes != value.modes:
             raise ValueError("Cannot insert a term defined over different modes.")
 
-    def insert(self, key: Term[ImplT, SpecT, CoeffT, ElemT] | object) -> int:
-        """Try to insert the given term."""
-        term = self._get_working_term(key)
-        self._check_modes(term)
-        return super().insert(term)
-
-    def soft_insert(self, key: Term[ImplT, SpecT, CoeffT, ElemT] | object) -> tuple[int, bool]:
-        """Insertion method which does not overwrite coefficient values."""
-        term = self._get_working_term(key)
-        self._check_modes(term)
-        return super().soft_insert(term)
+    def _check_cmpnt(self, value: Cmpnt[ImplT, SpecT]) -> None:
+        """Hook to check whether a component is valid for insertion into ``self``."""
+        if not isinstance(value, self.terms_type.term_type.cmpnts_type.cmpnt_type):
+            raise TypeError(
+                f"Expected a {self.terms_type.term_type.cmpnts_type.cmpnt_type.__name__} instance, "
+                f"got {type(value).__name__}."
+            )
+        if self.modes != value.modes:
+            raise ValueError("Cannot insert a component defined over different modes.")
 
 
 class TermSum(TermSet[ImplT, SpecT, CoeffT, ElemT], TermSumBase[ImplT, SpecT, CoeffT]):

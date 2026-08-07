@@ -21,7 +21,7 @@ that are normal-ordered fermionic strings, as defined in
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, overload
+from typing import TYPE_CHECKING, Any, TypeAlias, cast, overload
 
 from sympy import Expr, Symbol
 from typing_extensions import Self
@@ -561,54 +561,6 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
         for term in self:
             out += mapper_.encode_complex(term.cmpnt.into(String), term.coeff)
         return out
-
-    @overload
-    def to_qubit(
-        self,
-        mapper: type[Mapper] | None = None,
-        qubits: int | Qubits | None = None,
-        real: Literal[True] = True,
-    ) -> PauliRealTermSum: ...
-
-    @overload
-    def to_qubit(
-        self,
-        mapper: type[Mapper] | None = None,
-        qubits: int | Qubits | None = None,
-        real: Literal[False] = False,
-    ) -> PauliComplexTermSum: ...
-
-    def to_qubit(
-        self,
-        mapper: type[Mapper] | None = None,
-        qubits: int | Qubits | None = None,
-        real: bool = False,
-    ) -> PauliRealTermSum | PauliComplexTermSum:
-        """Map this fermionic term sum to a qubit Pauli term sum.
-
-        Args:
-            mapper: The mapper class to use. If ``None``, use
-                :class:`~zixy.fermion.mappings.JordanWignerMapper`.
-            qubits: The qubit register or qubit count. If ``None``, infer from the number of
-                fermionic modes.
-            real: If ``True``, attempt to return a :class:`~zixy.qubit.pauli.RealTermSum`, which
-                requires Hermiticity.
-
-        Returns:
-            The mapped Pauli term sum.
-        """
-        from zixy.fermion.mappings import JordanWignerMapper  # noqa: PLC0415
-
-        mapper = JordanWignerMapper if mapper is None else mapper
-        if qubits is None:
-            qubits = Qubits.from_count(len(self.modes))
-        elif isinstance(qubits, int):
-            qubits = Qubits.from_count(qubits)
-        if real and not self.is_hermitian():
-            raise ValueError("Cannot return a RealTermSum for a non-Hermitian operator.")
-        if real:
-            return self._to_qubit_real(mapper, qubits)
-        return self._to_qubit_complex(mapper, qubits)
 
     def to_ladder_ops(self) -> list[tuple[list[LadderOp], float]]:
         """Return the terms as raw ladder-operator products and coefficients."""

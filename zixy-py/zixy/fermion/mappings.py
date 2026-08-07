@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TypeAlias
+from typing import Any, TypeAlias
 
 from zixy._zixy import (
     BravyiKitaevMapper as BravyiKitaevImpl,
@@ -28,11 +28,9 @@ from zixy._zixy import (
     Qubits,
 )
 from zixy.container.coeffs import ComplexCoeffs, RealCoeffs
-from zixy.fermion.operator.general._strings import String as GeneralString
-from zixy.fermion.operator.normal._strings import String as NormalString
+from zixy.fermion.operator._strings import String as FermionString
 from zixy.qubit.pauli import ComplexTermSum as PauliComplexTermSum, RealTermSum as PauliRealTermSum
 
-FermionString = NormalString | GeneralString
 ImplType: TypeAlias = (
     type[JordanWignerImpl] | type[BravyiKitaevImpl] | type[ParityImpl] | type[ParapartiularImpl]
 )
@@ -60,7 +58,9 @@ class Mapper:
             qubits, list(mode_ordering) if mode_ordering is not None else None
         )
 
-    def encode_real(self, fermion_string: FermionString, coeff: float = 1.0) -> PauliRealTermSum:
+    def encode_real(
+        self, fermion_string: FermionString[Any, Any, Any], coeff: float = 1.0
+    ) -> PauliRealTermSum:
         """Encode a fermionic string to real qubit operators.
 
         Args:
@@ -82,7 +82,7 @@ class Mapper:
         return out
 
     def encode_complex(
-        self, fermion_string: FermionString, coeff: complex = 1.0
+        self, fermion_string: FermionString[Any, Any, Any], coeff: complex = 1.0
     ) -> PauliComplexTermSum:
         """Encode a fermionic string to complex qubit operators.
 
@@ -104,7 +104,9 @@ class Mapper:
         )
         return out
 
-    def encode(self, fermion_string: FermionString, coeff: complex = 1.0) -> PauliComplexTermSum:
+    def encode(
+        self, fermion_string: FermionString[Any, Any, Any], coeff: complex = 1.0
+    ) -> PauliComplexTermSum:
         """Encode a fermionic string to qubit operators.
 
         Args:

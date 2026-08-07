@@ -439,35 +439,6 @@ class RealTermSum(NumericTermSum[GeneralFermionOperatorArray, StringSpec, float]
         data = TermData(Strings._create(impl), RealCoeffs._create(coeffs))
         return RealTermSum._create(data)
 
-    def to_qubit(
-        self,
-        mapper: type[Mapper] | None = None,
-        qubits: int | Qubits | None = None,
-    ) -> PauliComplexTermSum:
-        """Map this fermionic term sum to a qubit Pauli term sum.
-
-        Args:
-            mapper: The mapper class to use. If ``None``, use
-                :class:`~zixy.fermion.mappings.JordanWignerMapper`.
-            qubits: The qubit register or qubit count. If ``None``, infer from the number of
-                fermionic modes.
-
-        Returns:
-            The mapped Pauli term sum.
-        """
-        from zixy.fermion.mappings import JordanWignerMapper  # noqa: PLC0415
-
-        mapper = JordanWignerMapper if mapper is None else mapper
-        if qubits is None:
-            qubits = Qubits.from_count(len(self.modes))
-        elif isinstance(qubits, int):
-            qubits = Qubits.from_count(qubits)
-        mapper_ = mapper(qubits)
-        out = PauliComplexTermSum(qubits)
-        for term in self:
-            out += mapper_.encode(term.cmpnt.into(String), term.coeff)
-        return out
-
     def to_normal_ordered(self) -> NormalRealTermSum:
         """Convert this raw general term sum to the normal-ordered representation."""
         from zixy.fermion.operator.normal._strings import Strings as NormalStrings  # noqa: PLC0415

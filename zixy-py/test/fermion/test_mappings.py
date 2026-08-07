@@ -248,24 +248,18 @@ def test_to_qubit_complex_terms(term_sum_type, string_type, source, pieces):
 
 
 @pytest.mark.parametrize("mapper_type", MAPPER_TYPES)
-def test_to_qubit_real_output(mapper_type):
+def test_encode_real(mapper_type):
     mapper = mapper_type(2)
-    fermion_terms = NormalRealTermSum.from_str("(1, F0^ F1), (1, F1^ F0)", 2)
 
-    via_native = fermion_terms.to_qubit(mapper=mapper_type, real=True)
-    via_strings = PauliRealTermSum(mapper.qubits)
-    via_strings += mapper.encode_real(NormalString(2, "F0^ F1"), 1.0)
-    via_strings += mapper.encode_real(NormalString(2, "F1^ F0"), 1.0)
+    terms = PauliRealTermSum(mapper.qubits)
+    terms += mapper.encode_real(NormalString(2, "F0^ F1"), 1.0)
+    terms += mapper.encode_real(NormalString(2, "F1^ F0"), 1.0)
 
-    assert isinstance(via_native, PauliRealTermSum)
-    assert via_native == via_strings
-
-
-def test_to_qubit_real_output_rejects_nonhermitian():
-    fermion_terms = NormalRealTermSum.from_str("F0^", 2)
-
-    with pytest.raises(ValueError, match="non-Hermitian"):
-        fermion_terms.to_qubit(real=True)
+    assert isinstance(terms, PauliRealTermSum)
+    assert terms == (
+        mapper.encode_real(NormalString(2, "F0^ F1"))
+        + mapper.encode_real(NormalString(2, "F1^ F0"))
+    )
 
 
 @pytest.mark.parametrize(

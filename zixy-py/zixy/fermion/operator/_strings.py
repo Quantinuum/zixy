@@ -143,10 +143,10 @@ class String(Generic[ImplT, SpecT, ElemT], FermionString[ImplT, SpecT, ElemT]):
 class Strings(Generic[ImplT, SpecT, ElemT], FermionStrings[ImplT, SpecT, ElemT]):
     """A collection of fermionic ladder-operator strings."""
 
-    pass
+    cmpnt_type: type[String[ImplT, SpecT, ElemT]]
 
 
 class StringSet(Generic[ImplT, SpecT, ElemT], FermionStringSet[ImplT, SpecT, ElemT]):
     """A collection of unique fermionic ladder-operator strings."""
 
-    pass
+    cmpnts_type: type[Strings[ImplT, SpecT, ElemT]]

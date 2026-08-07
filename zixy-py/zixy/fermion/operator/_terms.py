@@ -17,13 +17,14 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any, Generic, cast
+from typing import TYPE_CHECKING, Any, Generic, cast
 
 from sympy import Expr, sympify
 from typing_extensions import Self
 
+from zixy._zixy import Qubits
 from zixy.container.cmpnts import SpecT
-from zixy.container.coeffs import CoeffT, Sign, typesafe_mul, unit
+from zixy.container.coeffs import CoeffT, Sign, convert, typesafe_mul, unit
 from zixy.fermion._strings import ImplT
 from zixy.fermion._terms import (
     Term as FermionTerm,
@@ -36,6 +37,10 @@ from zixy.fermion.operator._strings import (
     String as OperatorString,
     Strings as OperatorStrings,
 )
+from zixy.qubit.pauli._terms import ComplexTermSum as PauliComplexTermSum
+
+if TYPE_CHECKING:
+    from zixy.fermion.mappings import Mapper
 
 
 def _sign_value(sign: Any) -> Sign:
@@ -141,3 +146,38 @@ class TermSum(
     def daggered(self) -> Self:
         """Return the adjoint of ``self``."""
         pass
+
+    def to_qubit(
+        self,
+        mapper: type[Mapper] | None = None,
+        qubits: int | Qubits | None = None,
+    ) -> PauliComplexTermSum:
+        """Map the term sum to a qubit Pauli term sum.
+
+        Args:
+            mapper: The mapper class to use. If ``None``, use
+                :class:`~zixy.fermion.mappings.JordanWignerMapper`.
+            qubits: The qubit register or qubit count. If ``None``, infer from the number of
+                fermionic modes.
+
+        Returns:
+            The mapped Pauli term sum.
+
+        Note:
+            This function returns a term sum with complex coefficients. In cases where Hermitian
+            operators guarantee a real mapped representation, users may wish to directly use the
+            :class:`~zixy.fermion.mappings.Mapper` classes for finer control.
+        """
+        from zixy.fermion.mappings import JordanWignerMapper  # noqa: PLC0415
+
+        mapper = JordanWignerMapper if mapper is None else mapper
+        if qubits is None:
+            qubits = Qubits.from_count(len(self.modes))
+        elif isinstance(qubits, int):
+            qubits = Qubits.from_count(qubits)
+        mapper_ = mapper(qubits)
+        out = PauliComplexTermSum(qubits)
+        for term in self:
+            cmpnt_type = self.terms_type.term_type.cmpnts_type.cmpnt_type
+            out += mapper_.encode(term.cmpnt.into(cmpnt_type), convert(term.coeff, complex))
+        return out

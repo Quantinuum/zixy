@@ -135,8 +135,7 @@ MAPPER_TYPES = (
             None,
             GeneralString,
             "F0 F1^",
-            "(-0.25j, Y0 X1), ((-0.25+0j), X0 X1), "
-            "((-0.25+0j), Y0 Y1), (0.25j, X0 Y1)",
+            "(-0.25j, Y0 X1), ((-0.25+0j), X0 X1), " "((-0.25+0j), Y0 Y1), (0.25j, X0 Y1)",
         ),
     ),
 )
@@ -153,8 +152,7 @@ def test_encode_products():
     mapper = JordanWignerMapper(4)
 
     assert str(mapper.encode(GeneralString(4, "F2^ F1"))) == (
-        "(0.25j, Y1 X2), ((0.25+0j), Y1 Y2), "
-        "((0.25+0j), X1 X2), (-0.25j, X1 Y2)"
+        "(0.25j, Y1 X2), ((0.25+0j), Y1 Y2), " "((0.25+0j), X1 X2), (-0.25j, X1 Y2)"
     )
 
     product = mapper.encode(GeneralString(4, "F0^ F0 F1^ F1"))

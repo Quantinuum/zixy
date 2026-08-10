@@ -328,6 +328,35 @@ def test_real_term_product():
     assert str(annihilation.anticommutator(creation)) == "(1.0, )"
 
 
+@pytest.mark.parametrize(
+    ("product", "expected"),
+    (
+        (
+            RealTerm.from_str("F1", 3) * RealTerm.from_str("F0^", 3),
+            "(-1.0, F0^ F1)",
+        ),
+        (
+            RealTerm.from_str("F1 F2", 3) * RealTerm.from_str("F0^ F1^", 3),
+            "(-1.0, F0^ F2), (1.0, F0^ F1^ F1 F2)",
+        ),
+        (
+            RealTerm.from_str("F0 F1", 3) * String(3, "F1^ F2^"),
+            "(-1.0, F2^ F0), (1.0, F1^ F2^ F0 F1)",
+        ),
+        (
+            RealTermSum.from_str("F1 F2", 3) * RealTermSum.from_str("F0^ F1^", 3),
+            "(-1.0, F0^ F2), (1.0, F0^ F1^ F1 F2)",
+        ),
+    ),
+)
+def test_products_remain_normal_ordered(product, expected):
+    assert str(product) == expected
+    for term in product:
+        ops = term.string.get_ops()
+        first_annihilation = next((i for i, (_, is_creation) in enumerate(ops) if not is_creation), len(ops))
+        assert all(not is_creation for _, is_creation in ops[first_annihilation:])
+
+
 def test_complex_term_product():
     lhs = ComplexTermSum.from_str("(1j, F0)", 2)
     rhs = ComplexTermSum.from_str("(2, F0^)", 2)

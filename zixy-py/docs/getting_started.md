@@ -50,5 +50,5 @@ print(str(terms))  # (1, X0 Y1 Z3)
 
 - Work through the [example notebooks](examples/basics.ipynb) for a tour of the rest of the library,
   including chemistry Hamiltonians and fermionic mappings.
-- Browse the API reference below for details on the container types (`Coeff`, `Cmpnt`, `Term`) that
+- Browse the API reference for details on the container types (`Coeff`, `Cmpnt`, `Term`) that
   the rest of the library builds on.

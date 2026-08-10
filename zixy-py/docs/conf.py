@@ -59,7 +59,7 @@ html_css_files = ["custom.css"]
 html_theme_options = {
     "source_repository": "https://github.com/quantinuum/zixy",
     "source_branch": "main",
-    "source_directory": "zixy/zixy-py/docs/",
+    "source_directory": "zixy-py/docs/",
 }
 
 # --- MyST-NB config ---

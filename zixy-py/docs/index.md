@@ -17,6 +17,7 @@ and a minimal example.
     :toctree: generated
     :recursive:
     :nosignatures:
+    :caption: API Reference
     
     zixy.container
     zixy.qubit

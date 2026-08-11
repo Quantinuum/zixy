@@ -5,7 +5,7 @@ use pyo3::{pyclass, pymethods, PyClassInitializer, PyResult};
 use zixy::fermion::mappings::bk::BravyiKitaevMapper as BravyiKitaevMapper_;
 use zixy::fermion::mappings::jw::JordanWignerMapper as JordanWignerMapper_;
 use zixy::fermion::mappings::operators::Operators;
-use zixy::fermion::mappings::paraparticular::ParapartiularMapper as ParapartiularMapper_;
+use zixy::fermion::mappings::paraparticular::ParaparticularMapper as ParaparticularMapper_;
 use zixy::fermion::mappings::parity::ParityMapper as ParityMapper_;
 use zixy::qubit::pauli::cmpnt_major as pauli;
 use zixy::qubit::traits::DifferentQubits;
@@ -127,14 +127,14 @@ impl ParityMapper {
     }
 }
 
-/// A parapartiular transformation mapper.
+/// A paraparticular transformation mapper.
 #[pyclass(extends=Mapper, subclass)]
-#[pyo3(name = "ParapartiularMapper")]
+#[pyo3(name = "ParaparticularMapper")]
 #[derive(Clone, Copy)]
-pub struct ParapartiularMapper;
+pub struct ParaparticularMapper;
 
 #[pymethods]
-impl ParapartiularMapper {
+impl ParaparticularMapper {
     /// Constructor.
     #[new]
     #[pyo3(signature = (qubits, mode_ordering=None))]
@@ -142,7 +142,7 @@ impl ParapartiularMapper {
         qubits: Qubits,
         mode_ordering: Option<Vec<usize>>,
     ) -> PyResult<PyClassInitializer<Self>> {
-        let ops = Operators::new::<ParapartiularMapper_>(qubits.0, mode_ordering);
+        let ops = Operators::new::<ParaparticularMapper_>(qubits.0, mode_ordering);
         Ok(PyClassInitializer::from(Mapper(ops)).add_subclass(Self))
     }
 }

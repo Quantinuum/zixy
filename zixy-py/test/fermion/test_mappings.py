@@ -4,7 +4,7 @@ from zixy._zixy import Qubits
 from zixy.fermion.mappings import (
     BravyiKitaevMapper,
     JordanWignerMapper,
-    ParapartiularMapper,
+    ParaparticularMapper,
     ParityMapper,
 )
 from zixy.fermion.operator.general import (
@@ -26,7 +26,7 @@ MAPPER_TYPES = (
     JordanWignerMapper,
     BravyiKitaevMapper,
     ParityMapper,
-    ParapartiularMapper,
+    ParaparticularMapper,
 )
 
 
@@ -58,7 +58,7 @@ MAPPER_TYPES = (
             "((0.5+0j), X0 X1), (-0.5j, Y0 X1)",
         ),
         (
-            ParapartiularMapper,
+            ParaparticularMapper,
             2,
             None,
             NormalString,
@@ -90,7 +90,7 @@ MAPPER_TYPES = (
             "((0.5+0j), Z0 X1 X2 X3), (-0.5j, Y1 X2 X3)",
         ),
         (
-            ParapartiularMapper,
+            ParaparticularMapper,
             4,
             None,
             NormalString,
@@ -122,7 +122,7 @@ MAPPER_TYPES = (
             "((0.5+0j), X0 X1), (-0.5j, X0 Y1)",
         ),
         (
-            ParapartiularMapper,
+            ParaparticularMapper,
             2,
             [1, 0],
             NormalString,

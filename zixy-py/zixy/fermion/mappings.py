@@ -23,7 +23,7 @@ from zixy._zixy import (
     BravyiKitaevMapper as BravyiKitaevImpl,
     JordanWignerMapper as JordanWignerImpl,
     Mapper as Impl,
-    ParapartiularMapper as ParapartiularImpl,
+    ParaparticularMapper as ParaparticularImpl,
     ParityMapper as ParityImpl,
     Qubits,
 )
@@ -32,7 +32,7 @@ from zixy.fermion.operator._strings import String as FermionString
 from zixy.qubit.pauli import ComplexTermSum as PauliComplexTermSum, RealTermSum as PauliRealTermSum
 
 ImplType: TypeAlias = (
-    type[JordanWignerImpl] | type[BravyiKitaevImpl] | type[ParityImpl] | type[ParapartiularImpl]
+    type[JordanWignerImpl] | type[BravyiKitaevImpl] | type[ParityImpl] | type[ParaparticularImpl]
 )
 
 
@@ -137,7 +137,7 @@ class ParityMapper(Mapper):
     impl_type = ParityImpl
 
 
-class ParapartiularMapper(Mapper):
-    """Parapartiular fermion to qubit mapper."""
+class ParaparticularMapper(Mapper):
+    """Paraparticular fermion to qubit mapper."""
 
-    impl_type = ParapartiularImpl
+    impl_type = ParaparticularImpl

@@ -18,7 +18,7 @@ from zixy.fermion.mappings import (
     BravyiKitaevMapper,
     JordanWignerMapper,
     Mapper,
-    ParapartiularMapper,
+    ParaparticularMapper,
     ParityMapper,
 )
 from zixy.fermion.operator import (
@@ -69,7 +69,7 @@ __all__ = [
     "JordanWignerMapper",
     "BravyiKitaevMapper",
     "ParityMapper",
-    "ParapartiularMapper",
+    "ParaparticularMapper",
     "Mapper",
     "StringSpec",
     "String",

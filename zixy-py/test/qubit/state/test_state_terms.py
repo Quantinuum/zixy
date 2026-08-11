@@ -1,7 +1,8 @@
 import pytest
 
 from zixy.container.coeffs import Sign
-from zixy.qubit.state import ComplexTermSum, RealTerm, RealTermSet, RealTermSum, SignTerm
+from zixy.qubit.pauli import I, RealTerm as PauliRealTerm, String as PauliString, X
+from zixy.qubit.state import ComplexTermSum, RealTerm, RealTermSet, RealTermSum, SignTerm, String
 
 
 def test_term():
@@ -37,6 +38,33 @@ def test_term_real_sum():
         str(RealTermSet.from_terms(lc.to_terms()))
     ) == RealTermSet.from_terms(lc.to_terms())
     assert RealTermSum.from_str(str(lc)) == lc
+
+
+def test_term_set_check_term():
+    term_set = RealTermSet(3)
+    term = RealTerm(3, ((1, 0, 0), 1.0))
+
+    assert term_set.insert(term) == 0
+    term_set._check_term(term)
+
+    with pytest.raises(ValueError, match="different qubits"):
+        term_set._check_term(RealTerm(4, ((1, 0, 0, 0), 1.0)))
+
+    with pytest.raises(TypeError, match="Expected a RealTerm instance"):
+        term_set._check_term(PauliRealTerm.from_cmpnt_coeff(PauliString(3, (X, I, I)), 1.0))
+
+
+def test_term_set_check_cmpnt():
+    term_set = RealTermSet(3)
+    string = String(3, (1, 0, 0))
+
+    term_set._check_cmpnt(string)
+
+    with pytest.raises(ValueError, match="different qubits"):
+        term_set._check_cmpnt(String(4, (1, 0, 0, 0)))
+
+    with pytest.raises(TypeError, match="Expected a String instance"):
+        term_set._check_cmpnt(PauliString(3, (X, I, I)))
 
 
 def test_real_term_sum_to_dense_matrix_index_error():

@@ -1,8 +1,11 @@
 import numpy as np
+import pytest
 
 from zixy.fermion.operator.normal import (
     ComplexTermSum as ComplexOperator,
+    RealTerm as RealOperatorTerm,
     RealTermSum as RealOperator,
+    String as OperatorString,
 )
 from zixy.fermion.state import (
     ComplexTerm,
@@ -10,6 +13,7 @@ from zixy.fermion.state import (
     ComplexTermSum,
     RealTerm,
     RealTerms,
+    RealTermSet,
     RealTermSum,
     String,
 )
@@ -35,6 +39,33 @@ def test_term_sum_from_str():
 
     assert len(terms) == 2
     assert terms.strings.get_sets() == ({0}, {1})
+
+
+def test_term_set_check_term():
+    term_set = RealTermSet(3)
+    term = RealTerm.from_str("[1, 0, 0]", 3)
+
+    assert term_set.insert(term) == 0
+    term_set._check_term(term)
+
+    with pytest.raises(ValueError, match="different modes"):
+        term_set._check_term(RealTerm.from_str("[1, 0, 0, 0]", 4))
+
+    with pytest.raises(TypeError, match="Expected a RealTerm instance"):
+        term_set._check_term(RealOperatorTerm.from_str("F0^ F1", 3))
+
+
+def test_term_set_check_cmpnt():
+    term_set = RealTermSet(3)
+    string = String(3, {0})
+
+    term_set._check_cmpnt(string)
+
+    with pytest.raises(ValueError, match="different modes"):
+        term_set._check_cmpnt(String(4, {0}))
+
+    with pytest.raises(TypeError, match="Expected a String instance"):
+        term_set._check_cmpnt(OperatorString(3, "F0^ F1"))
 
 
 def test_real_dense_round_trip():

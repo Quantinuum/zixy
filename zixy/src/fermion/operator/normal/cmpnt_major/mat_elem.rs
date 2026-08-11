@@ -1,6 +1,5 @@
 //! Implements the evaluation of matrix elements of fermion operators with respect to Slater-determinant states.
 
-use ndarray::Array2 as Matrix;
 use crate::container::coeffs::traits::FieldElem;
 use crate::container::traits::Elements;
 use crate::container::traits::RefElements;
@@ -18,6 +17,7 @@ use crate::fermion::state::cmpnt_list::AssignResult;
 use crate::fermion::state::cmpnt_list::CmpntList as StateList;
 use crate::fermion::state::cmpnt_list::CmpntRef as StateRef;
 use crate::fermion::traits::ModesBased;
+use ndarray::Array2 as Matrix;
 
 /// Error returned when a state subspace basis contains repeated Slater determinants, or in general when any
 /// subspace has a non-unit metric.
@@ -243,7 +243,6 @@ mod tests {
     use crate::fermion::operator::normal::cmpnt_major::term_set::TermSet as OpTermSet;
     use crate::fermion::state::term_set::TermSet as StateTermSet;
     use crate::fermion::state::terms::AsViewMut;
-    use num_complex::Complex64;
     use std::collections::HashSet;
 
     /// Build a hopping-term operator `c_1^+ c_0 + c_0^+ c_1` on the given mode space.
@@ -292,7 +291,7 @@ mod tests {
         let op = build_hopping_op(modes.clone());
         let ket = build_basis_state(modes.clone(), HashSet::from([0]));
 
-        let mut out = StateTermSet::<Complex64>::new(modes);
+        let mut out = StateTermSet::<f64>::new(modes);
         apply(
             &op.borrow().as_terms(),
             &ket.borrow().as_terms(),
@@ -302,7 +301,7 @@ mod tests {
         assert_eq!(out.view().get_coeffs().len(), 1);
         let expected = build_basis_state(out.view().to_modes(), HashSet::from([1]));
         let overlap = state::lincomb::vdot(&out, &expected.borrow().as_terms());
-        assert_eq!(overlap, Complex64::new(1.0, 0.0));
+        assert_eq!(overlap, 1.0);
     }
 
     #[test]

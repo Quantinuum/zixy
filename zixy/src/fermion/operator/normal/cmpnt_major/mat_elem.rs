@@ -1,10 +1,7 @@
 //! Implements the evaluation of matrix elements of fermion operators with respect to Slater-determinant states.
 
 use ndarray::Array2 as Matrix;
-use num_complex::Complex64;
-
 use crate::container::coeffs::traits::FieldElem;
-use crate::container::coeffs::traits::NumRepr;
 use crate::container::traits::Elements;
 use crate::container::traits::RefElements;
 use crate::container::word_iters;
@@ -211,7 +208,7 @@ pub fn expval_eigenfunction<C: FieldElem>(
 pub fn apply<C: FieldElem>(
     op: &fermion_op::terms::View<C>,
     state: &state::terms::View<C>,
-    out: &mut state::term_set::ViewMut<Complex64>,
+    out: &mut state::term_set::ViewMut<C>,
 ) {
     let mut tmp = word_iters::Elem::<StateList>::new(state.word_iters.to_modes());
     for (op_cmpnt, op_coeff) in op.word_iters.iter().zip(op.coeffs.iter()) {
@@ -223,10 +220,11 @@ pub fn apply<C: FieldElem>(
                 AssignResult::Applied(sign) => sign,
                 AssignResult::Zero => continue,
             };
-            let mut c = sign.to_complex();
-            c *= op_coeff.to_complex();
-            c *= state_coeff.to_complex();
-            word_iters::lincomb::scaled_iadd_elem(out, tmp.borrow(), c);
+            if let Ok(mut coeff) = C::try_represent(sign) {
+                coeff *= *op_coeff;
+                coeff *= *state_coeff;
+                word_iters::lincomb::scaled_iadd_elem(out, tmp.borrow(), coeff);
+            }
         }
     }
 }
@@ -245,6 +243,7 @@ mod tests {
     use crate::fermion::operator::normal::cmpnt_major::term_set::TermSet as OpTermSet;
     use crate::fermion::state::term_set::TermSet as StateTermSet;
     use crate::fermion::state::terms::AsViewMut;
+    use num_complex::Complex64;
     use std::collections::HashSet;
 
     /// Build a hopping-term operator `c_1^+ c_0 + c_0^+ c_1` on the given mode space.

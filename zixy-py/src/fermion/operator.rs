@@ -618,7 +618,7 @@ impl NormalArray {
         state_coeffs: &RealVec,
         out_cmpnts: &mut StateArray,
         out_map: &mut Map,
-        out_coeffs: &mut ComplexVec,
+        out_coeffs: &mut RealVec,
     ) {
         use zixy::fermion::operator::normal::cmpnt_major::mat_elem::apply;
         use zixy::fermion::state;

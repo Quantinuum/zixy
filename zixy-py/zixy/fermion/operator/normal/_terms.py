@@ -585,7 +585,7 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
             )
         )
 
-    def apply(self, state: RealState) -> ComplexState:
+    def apply(self, state: RealState) -> RealState:
         """Apply ``self`` to a state.
 
         Args:
@@ -594,10 +594,10 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
         Returns:
             The resulting state.
         """
-        out = ComplexState(self.modes)
+        out = RealState(self.modes)
         assert isinstance(self._impl._coeffs, RealCoeffs)
         assert isinstance(state._impl._coeffs, RealCoeffs)
-        assert isinstance(out._impl._coeffs, ComplexCoeffs)
+        assert isinstance(out._impl._coeffs, RealCoeffs)
         self._impl._cmpnts._impl.apply_to_state_real(
             self._impl._coeffs._impl,
             state._impl._cmpnts._impl,

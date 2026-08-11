@@ -353,7 +353,9 @@ def test_products_remain_normal_ordered(product, expected):
     assert str(product) == expected
     for term in product:
         ops = term.string.get_ops()
-        first_annihilation = next((i for i, (_, is_creation) in enumerate(ops) if not is_creation), len(ops))
+        first_annihilation = next(
+            (i for i, (_, is_creation) in enumerate(ops) if not is_creation), len(ops)
+        )
         assert all(not is_creation for _, is_creation in ops[first_annihilation:])
 
 

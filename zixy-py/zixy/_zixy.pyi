@@ -148,14 +148,14 @@ class NormalFermionOperatorArray(FermionArray):
     @staticmethod
     def from_ladder_product(
         modes: Modes, ops: Sequence[tuple[int, bool]]
-    ) -> tuple[NormalFermionOperatorArray, ComplexVec]: ...
+    ) -> tuple[NormalFermionOperatorArray, RealVec | ComplexVec]: ...
     @staticmethod
     def lincomb_mul_real(
         lhs_impl: NormalFermionOperatorArray,
         lhs_coeffs: RealVec,
         rhs_impl: NormalFermionOperatorArray,
         rhs_coeffs: RealVec,
-    ) -> tuple[NormalFermionOperatorArray, ComplexVec]: ...
+    ) -> tuple[NormalFermionOperatorArray, RealVec]: ...
     @staticmethod
     def lincomb_mul_complex(
         lhs_impl: NormalFermionOperatorArray,
@@ -169,14 +169,14 @@ class NormalFermionOperatorArray(FermionArray):
         lhs_coeffs: RealVec,
         rhs_impl: NormalFermionOperatorArray,
         rhs_coeffs: RealVec,
-    ) -> tuple[NormalFermionOperatorArray, ComplexVec]: ...
+    ) -> tuple[NormalFermionOperatorArray, RealVec]: ...
     @staticmethod
     def lincomb_anticommutator_real(
         lhs_impl: NormalFermionOperatorArray,
         lhs_coeffs: RealVec,
         rhs_impl: NormalFermionOperatorArray,
         rhs_coeffs: RealVec,
-    ) -> tuple[NormalFermionOperatorArray, ComplexVec]: ...
+    ) -> tuple[NormalFermionOperatorArray, RealVec]: ...
     @staticmethod
     def lincomb_commutator_complex(
         lhs_impl: NormalFermionOperatorArray,
@@ -224,7 +224,7 @@ class NormalFermionOperatorArray(FermionArray):
     @staticmethod
     def lincomb_to_general_real(
         cmpnts: NormalFermionOperatorArray, map: Map, coeffs: RealVec
-    ) -> tuple[GeneralFermionOperatorArray, ComplexVec]: ...
+    ) -> tuple[GeneralFermionOperatorArray, RealVec]: ...
     @staticmethod
     def lincomb_to_general_complex(
         cmpnts: NormalFermionOperatorArray, map: Map, coeffs: ComplexVec
@@ -236,7 +236,7 @@ class NormalFermionOperatorArray(FermionArray):
         state_coeffs: RealVec,
         out_impl: FermionStateArray,
         out_map: Map,
-        out_coeffs: ComplexVec,
+        out_coeffs: RealVec,
     ) -> None: ...
     def apply_to_state_complex(
         self,

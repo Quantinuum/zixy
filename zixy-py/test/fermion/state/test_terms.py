@@ -80,8 +80,8 @@ def test_real_operator_apply():
 
     out = op.apply(state)
 
-    assert isinstance(out, ComplexTermSum)
-    assert str(out) == "((1+0j), [0, 1])"
+    assert isinstance(out, RealTermSum)
+    assert str(out) == "(1.0, [0, 1])"
 
 
 def test_real_operator_mat_elem():

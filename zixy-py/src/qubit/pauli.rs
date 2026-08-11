@@ -291,8 +291,11 @@ impl Array {
     }
 
     /// Return whether the two referenced cmpnts are equal.
-    pub fn cmpnt_equal(&self, i_lhs: usize, rhs: &Self, i_rhs: usize) -> bool {
-        self.0.compatible_with(&rhs.0) && self.0.get_elem_ref(i_lhs) == rhs.0.get_elem_ref(i_rhs)
+    pub fn cmpnt_equal(&self, i_lhs: isize, rhs: &Self, i_rhs: isize) -> PyResult<bool> {
+        let i_lhs = try_py_index(i_lhs, self.len())?;
+        let i_rhs = try_py_index(i_rhs, rhs.len())?;
+        Ok(self.0.compatible_with(&rhs.0)
+            && self.0.get_elem_ref(i_lhs) == rhs.0.get_elem_ref(i_rhs))
     }
 
     /// Multiply the `i_lhs` cmpnt of `self` by the `i_rhs` cmpnt of `rhs` and return the resulting cmpnt as

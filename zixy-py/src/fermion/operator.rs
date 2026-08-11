@@ -315,8 +315,11 @@ impl NormalArray {
         Ok(())
     }
 
-    fn cmpnt_equal(&self, i_lhs: usize, rhs: &Self, i_rhs: usize) -> bool {
-        self.0.compatible_with(&rhs.0) && self.0.get_elem_ref(i_lhs) == rhs.0.get_elem_ref(i_rhs)
+    fn cmpnt_equal(&self, i_lhs: isize, rhs: &Self, i_rhs: isize) -> PyResult<bool> {
+        let i_lhs = try_py_index(i_lhs, self.len())?;
+        let i_rhs = try_py_index(i_rhs, rhs.len())?;
+        Ok(self.0.compatible_with(&rhs.0)
+            && self.0.get_elem_ref(i_lhs) == rhs.0.get_elem_ref(i_rhs))
     }
 
     fn cmpnt_mul(&self, i_lhs: isize, rhs: &Self, i_rhs: isize) -> PyResult<(Self, SignVec)> {
@@ -887,8 +890,10 @@ impl GeneralArray {
         self.cmpnt_set_from_ops(i_dst as isize, modes, adj)
     }
 
-    fn cmpnt_equal(&self, i_lhs: usize, rhs: &Self, i_rhs: usize) -> bool {
-        self.0.compatible_with(&rhs.0) && self.0.get(i_lhs) == rhs.0.get(i_rhs)
+    fn cmpnt_equal(&self, i_lhs: isize, rhs: &Self, i_rhs: isize) -> PyResult<bool> {
+        let i_lhs = try_py_index(i_lhs, self.len())?;
+        let i_rhs = try_py_index(i_rhs, rhs.len())?;
+        Ok(self.0.compatible_with(&rhs.0) && self.0.get(i_lhs) == rhs.0.get(i_rhs))
     }
 
     fn cmpnts_clone(&self, indices: Option<Vec<isize>>) -> PyResult<Self> {

@@ -4,7 +4,9 @@ from sympy import sympify
 from zixy.container.coeffs import ComplexSign, Sign
 from zixy.fermion.operator.general import (
     ComplexTermSum as GeneralComplexTermSum,
+    RealTerm as GeneralRealTerm,
     RealTermSum as GeneralRealTermSum,
+    String as GeneralString,
 )
 from zixy.fermion.operator.normal import (
     ComplexTerm,
@@ -334,6 +336,33 @@ def test_real_term_into_other_types():
     assert not term_set.contains("F0^ F1")
     with pytest.raises(KeyError):
         term_set.remove("F0^ F1")
+
+
+def test_term_set_check_term():
+    term_set = RealTermSet(3)
+    term = RealTerm.from_str("F0^ F1", 3)
+
+    assert term_set.insert(term) == 0
+    term_set._check_term(term)
+
+    with pytest.raises(ValueError, match="different modes"):
+        term_set._check_term(RealTerm.from_str("F0^ F1", 4))
+
+    with pytest.raises(TypeError, match="Expected a RealTerm instance"):
+        term_set._check_term(GeneralRealTerm.from_str("F0^ F1", 3))
+
+
+def test_term_set_check_cmpnt():
+    term_set = RealTermSet(3)
+    string = String(3, "F0^ F1")
+
+    term_set._check_cmpnt(string)
+
+    with pytest.raises(ValueError, match="different modes"):
+        term_set._check_cmpnt(String(4, "F0^ F1"))
+
+    with pytest.raises(TypeError, match="Expected a String instance"):
+        term_set._check_cmpnt(GeneralString(3, "F0^ F1"))
 
 
 def test_real_term_product():

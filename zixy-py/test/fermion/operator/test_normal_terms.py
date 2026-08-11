@@ -72,9 +72,14 @@ def test_complex_term():
     ("term", "expected"),
     (
         (SignTerm.from_str("F0^ F1", 2), "(+1, F1^ F0)"),
+        (SignTerm.from_str("F0^ F1^ F2", 3), "(-1, F2^ F0 F1)"),
         (RealTerm.from_str("(2, F0^ F1)", 2), "(2.0, F1^ F0)"),
+        (RealTerm.from_str("F0^ F1^ F2", 3), "(-1.0, F2^ F0 F1)"),
+        (RealTerm.from_str("(2, F0^ F1^ F2 F3)", 4), "(2.0, F2^ F3^ F0 F1)"),
         (ComplexTerm.from_str("(1j, F0^ F1)", 2), "(-1j, F1^ F0)"),
+        (ComplexTerm.from_str("(1j, F0^ F1^ F2)", 3), "(1j, F2^ F0 F1)"),
         (SymbolicTerm(2, ("F0^ F1", sympify("a"))), "(conjugate(a), F1^ F0)"),
+        (SymbolicTerm(3, ("F0^ F1^ F2", sympify("a"))), "(-conjugate(a), F2^ F0 F1)"),
     ),
 )
 def test_term_dagger(term, expected):
@@ -88,12 +93,25 @@ def test_term_dagger(term, expected):
     ("term", "original", "expected"),
     (
         (SignTerm.from_str("F0^ F1", 2), "(+1, F0^ F1)", "(+1, F1^ F0)"),
+        (SignTerm.from_str("F0^ F1^ F2", 3), "(+1, F0^ F1^ F2)", "(-1, F2^ F0 F1)"),
         (RealTerm.from_str("(2, F0^ F1)", 2), "(2.0, F0^ F1)", "(2.0, F1^ F0)"),
+        (RealTerm.from_str("F0^ F1^ F2", 3), "(1.0, F0^ F1^ F2)", "(-1.0, F2^ F0 F1)"),
+        (
+            RealTerm.from_str("(2, F0^ F1^ F2 F3)", 4),
+            "(2.0, F0^ F1^ F2 F3)",
+            "(2.0, F2^ F3^ F0 F1)",
+        ),
         (ComplexTerm.from_str("(1j, F0^ F1)", 2), "(1j, F0^ F1)", "(-1j, F1^ F0)"),
+        (ComplexTerm.from_str("(1j, F0^ F1^ F2)", 3), "(1j, F0^ F1^ F2)", "(1j, F2^ F0 F1)"),
         (
             SymbolicTerm(2, ("F0^ F1", sympify("a"))),
             "(a, F0^ F1)",
             "(conjugate(a), F1^ F0)",
+        ),
+        (
+            SymbolicTerm(3, ("F0^ F1^ F2", sympify("a"))),
+            "(a, F0^ F1^ F2)",
+            "(-conjugate(a), F2^ F0 F1)",
         ),
     ),
 )

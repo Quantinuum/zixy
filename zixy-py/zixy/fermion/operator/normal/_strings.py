@@ -142,11 +142,11 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
                 creation operator and ``False`` for an annihilation operator.
         """
         mode, is_creation = item
-        if is_creation is True:
+        if not isinstance(is_creation, bool):
+            raise KeyError(is_creation)
+        if is_creation:
             return self._impl.cmpnt_get_cre(self.index, mode)
-        if is_creation is False:
-            return self._impl.cmpnt_get_ann(self.index, mode)
-        raise KeyError(is_creation)
+        return self._impl.cmpnt_get_ann(self.index, mode)
 
     def __setitem__(self, item: LadderOp, value: bool) -> None:
         """Set whether an operator is present on a mode.
@@ -157,12 +157,11 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
             value: Whether the operator is present.
         """
         mode, is_creation = item
-        if is_creation is True:
-            self._impl.cmpnt_set_cre(self.index, mode, value)
-        elif is_creation is False:
-            self._impl.cmpnt_set_ann(self.index, mode, value)
-        else:
+        if not isinstance(is_creation, bool):
             raise KeyError(is_creation)
+        if is_creation:
+            self._impl.cmpnt_set_cre(self.index, mode, value)
+        self._impl.cmpnt_set_ann(self.index, mode, value)
 
     def dagger(self) -> None:
         """Take the adjoint of ``self`` in-place, ignoring the scalar sign."""

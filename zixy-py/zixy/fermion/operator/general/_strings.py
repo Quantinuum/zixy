@@ -159,7 +159,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
             length and only reports whether the requested operator appears at least once.
         """
         mode, is_creation = item
-        if is_creation is not True and is_creation is not False:
+        if not isinstance(is_creation, bool):
             raise KeyError(is_creation)
         return any(
             op_mode == mode and op_is_creation is is_creation

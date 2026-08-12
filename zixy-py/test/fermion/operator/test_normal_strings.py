@@ -1,6 +1,14 @@
 import pytest
 
-from zixy.fermion.operator.normal import RealTerm, RealTermSum, String, Strings, StringSet
+from zixy.fermion.operator.normal import (
+    Modes,
+    NormalFermionOperatorArray,
+    RealTerm,
+    RealTermSum,
+    String,
+    Strings,
+    StringSet,
+)
 
 
 def test_array_sizing():
@@ -78,11 +86,29 @@ def test_string_from_bool_list_spec():
     assert str(string) == "F0^ F2^ F1 F3"
 
 
+def test_string_set_validates_mode_bounds():
+    with pytest.raises(IndexError, match="out-of-bounds"):
+        String(2, ([2], []))
+
+    with pytest.raises(IndexError, match="out-of-bounds"):
+        String(2, ([True, False, True], []))
+
+
 def test_string_from_str():
     string = String.from_str("F0^ F1", 4)
 
     assert str(string) == "F0^ F1"
     assert String.from_str(str(string), 4) == string
+
+    with pytest.raises(ValueError, match="mode index out of bounds"):
+        String.from_str("F2", 2)
+
+
+def test_from_ladder_product_validates_mode_bounds():
+    modes = Modes.from_count(2)
+
+    with pytest.raises(ValueError, match="mode index out of bounds"):
+        NormalFermionOperatorArray.from_ladder_product(modes, [(2, True)])
 
 
 def test_string_scalar_mul():

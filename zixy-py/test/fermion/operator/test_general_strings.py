@@ -1,6 +1,13 @@
 import pytest
 
-from zixy.fermion.operator.general import RealTerm, String, Strings, StringSet
+from zixy.fermion.operator.general import (
+    GeneralFermionOperatorArray,
+    Modes,
+    RealTerm,
+    String,
+    Strings,
+    StringSet,
+)
 
 
 def test_string_access():
@@ -93,6 +100,12 @@ def test_string_from_str_errors():
 
     with pytest.raises(ValueError, match="longer than max_len"):
         string.set("F0 F1")
+
+    with pytest.raises(ValueError, match="mode index out of bounds"):
+        String.from_str("F2", 2)
+
+    with pytest.raises(ValueError, match="mode index out of bounds"):
+        GeneralFermionOperatorArray.from_ladder_product(Modes.from_count(2), [(2, True)])
 
 
 def test_string_array_from_str():

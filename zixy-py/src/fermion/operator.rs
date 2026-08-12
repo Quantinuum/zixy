@@ -132,11 +132,34 @@ fn normal_order_product(
     ops: Vec<(usize, bool)>,
 ) -> PyResult<(NormalArray, RealVec)> {
     let max_len = ops.len();
-    let mut general_set = general::term_set::TermSet::<f64>::new(max_len, modes);
     let (mode_inds, adj): (Vec<_>, Vec<_>) = ops.into_iter().unzip();
+    check_general_ops(&modes, &mode_inds, &adj, max_len)?;
+    let mut general_set = general::term_set::TermSet::<f64>::new(max_len, modes);
     general_set.push_term(&mode_inds, &adj, 1.0);
     let out = zixy::fermion::operator::lincomb::to_normal_order(&general_set.as_terms());
     Ok(normal_set_to_py_real(out))
+}
+
+fn check_general_ops(
+    modes: &Modes_,
+    mode_inds: &[usize],
+    adj: &[bool],
+    max_len: usize,
+) -> PyResult<()> {
+    if mode_inds.len() != adj.len() {
+        return Err(PyErr::new::<PyValueError, _>(
+            "modes and adj must have the same length",
+        ));
+    }
+    if mode_inds.len() > max_len {
+        return Err(PyErr::new::<PyValueError, _>(
+            "operator product is longer than max_len",
+        ));
+    }
+    if mode_inds.iter().any(|mode| *mode >= modes.len()) {
+        return Err(PyErr::new::<PyValueError, _>("mode index out of bounds"));
+    }
+    Ok(())
 }
 
 #[pymethods]
@@ -838,19 +861,7 @@ impl GeneralArray {
     }
 
     fn cmpnt_set_from_ops(&mut self, i: isize, modes: Vec<usize>, adj: Vec<bool>) -> PyResult<()> {
-        if modes.len() != adj.len() {
-            return Err(PyErr::new::<PyValueError, _>(
-                "modes and adj must have the same length",
-            ));
-        }
-        if modes.len() > self.0.max_len {
-            return Err(PyErr::new::<PyValueError, _>(
-                "operator product is longer than max_len",
-            ));
-        }
-        if modes.iter().any(|mode| *mode >= self.0.modes().len()) {
-            return Err(PyErr::new::<PyValueError, _>("mode index out of bounds"));
-        }
+        check_general_ops(self.0.modes(), &modes, &adj, self.0.max_len)?;
         let i = try_py_index(i, self.len())?;
         let mut out = self.0.empty_clone();
         for j in 0..self.len() {
@@ -1017,8 +1028,9 @@ impl GeneralArray {
 
     #[staticmethod]
     fn from_ladder_product(modes: Modes, ops: Vec<(usize, bool)>) -> PyResult<Self> {
-        let mut out = general::cmpnt_list::CmpntList::new(ops.len(), modes.0);
         let (mode_inds, adj): (Vec<_>, Vec<_>) = ops.into_iter().unzip();
+        check_general_ops(&modes.0, &mode_inds, &adj, mode_inds.len())?;
+        let mut out = general::cmpnt_list::CmpntList::new(mode_inds.len(), modes.0);
         out.push(&mode_inds, &adj);
         Ok(Self(out))
     }

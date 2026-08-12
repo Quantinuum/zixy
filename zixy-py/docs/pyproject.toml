@@ -11,7 +11,7 @@ dependencies = [
     "pandas>=3.0.3",
     "scipy",
     "zixy",
-    "sphinx-autodoc-typehints>=3.11.0",
+    "sphinx-autodoc-typehints>=3.13.2",
     "jupyterlab",
     "ipykernel>=7.3.0",
 ]

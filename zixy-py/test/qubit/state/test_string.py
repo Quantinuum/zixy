@@ -87,3 +87,11 @@ def test_strings_from_iterable():
     assert Strings.from_str(str(s), 10) == s
     string_set = StringSet.from_iterable(({1, 3, 4, 9}, {1, 2, 6}, {1, 3, 4, 9}), 10)
     assert StringSet.from_str(str(string_set)) == string_set
+
+    wrong_qubits = String(11, {1, 3, 4, 9})
+    with pytest.raises(ValueError, match="different qubit spaces"):
+        string_set.insert(wrong_qubits)
+    with pytest.raises(ValueError, match="different qubit spaces"):
+        string_set.lookup(wrong_qubits)
+    with pytest.raises(ValueError, match="different qubit spaces"):
+        string_set.remove(wrong_qubits)

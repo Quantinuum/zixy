@@ -402,6 +402,7 @@ impl NormalArray {
     }
 
     fn mapped_insert(&mut self, map: &mut Map, other: &Self, index: isize) -> PyResult<usize> {
+        DifferentSpaces::check(&self.0, &other.0).to_py_result()?;
         let index = try_py_index(index, other.len())?;
         let mut tmp = word_iters::set::ViewMut {
             word_iters: &mut self.0,
@@ -411,6 +412,7 @@ impl NormalArray {
     }
 
     fn mapped_lookup(&self, map: &Map, other: &Self, index: isize) -> PyResult<Option<usize>> {
+        DifferentSpaces::check(&self.0, &other.0).to_py_result()?;
         let index = try_py_index(index, other.len())?;
         let tmp = word_iters::set::View {
             word_iters: &self.0,
@@ -425,6 +427,7 @@ impl NormalArray {
         other: &Self,
         index: isize,
     ) -> PyResult<Option<usize>> {
+        DifferentSpaces::check(&self.0, &other.0).to_py_result()?;
         let index = try_py_index(index, other.len())?;
         let out = word_iters::set::View {
             word_iters: &self.0,
@@ -960,6 +963,7 @@ impl GeneralArray {
     }
 
     fn mapped_insert(&mut self, map: &mut Map, other: &Self, index: isize) -> PyResult<usize> {
+        DifferentSpaces::check(&self.0, &other.0).to_py_result()?;
         let index = try_py_index(index, other.len())?;
         if let Some(found) = (word_iters::set::View {
             word_iters: &self.0,
@@ -977,6 +981,7 @@ impl GeneralArray {
     }
 
     fn mapped_lookup(&self, map: &Map, other: &Self, index: isize) -> PyResult<Option<usize>> {
+        DifferentSpaces::check(&self.0, &other.0).to_py_result()?;
         let index = try_py_index(index, other.len())?;
         let tmp = word_iters::set::View {
             word_iters: &self.0,
@@ -991,6 +996,7 @@ impl GeneralArray {
         other: &Self,
         index: isize,
     ) -> PyResult<Option<usize>> {
+        DifferentSpaces::check(&self.0, &other.0).to_py_result()?;
         let index = try_py_index(index, other.len())?;
         let out = word_iters::set::View {
             word_iters: &self.0,

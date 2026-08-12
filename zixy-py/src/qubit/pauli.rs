@@ -532,6 +532,7 @@ impl Array {
 
     /// Insert into `self` using the map to ensure uniqueness.
     pub fn mapped_insert(&mut self, map: &mut Map, other: &Self, index: isize) -> PyResult<usize> {
+        DifferentQubits::check(&self.0, &other.0).to_py_result()?;
         let index = try_py_index(index, other.len())?;
         let mut tmp = word_iters::set::ViewMut {
             word_iters: &mut self.0,
@@ -542,6 +543,7 @@ impl Array {
 
     /// Find the index in `self` corresponding to the cmpnt indexed in `other` if it exists, else return None.
     pub fn mapped_lookup(&self, map: &Map, other: &Self, index: isize) -> PyResult<Option<usize>> {
+        DifferentQubits::check(&self.0, &other.0).to_py_result()?;
         let index = try_py_index(index, other.len())?;
         let tmp = word_iters::set::View {
             word_iters: &self.0,
@@ -557,6 +559,7 @@ impl Array {
         other: &Self,
         index: isize,
     ) -> PyResult<Option<usize>> {
+        DifferentQubits::check(&self.0, &other.0).to_py_result()?;
         let index = try_py_index(index, other.len())?;
         let out = word_iters::set::View {
             word_iters: &self.0,

@@ -274,6 +274,14 @@ def test_mapped_insert():
         assert a.insert(string) == i
         assert a.lookup(string) == i
 
+    wrong_qubits = String(n_qubit + 1, (X, I, I, I, I, I, I))
+    with pytest.raises(ValueError, match="different qubit spaces"):
+        a.insert(wrong_qubits)
+    with pytest.raises(ValueError, match="different qubit spaces"):
+        a.lookup(wrong_qubits)
+    with pytest.raises(ValueError, match="different qubit spaces"):
+        a.remove(wrong_qubits)
+
 
 def test_mapped_equal():
     n_qubit = 6

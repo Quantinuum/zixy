@@ -244,6 +244,14 @@ def test_mapped_insert():
     assert string_set.insert(specs[1]) == 1
     assert len(string_set) == len(specs)
 
+    wrong_modes = String(5, ([0], [1]))
+    with pytest.raises(ValueError, match="different .*spaces"):
+        string_set.insert(wrong_modes)
+    with pytest.raises(ValueError, match="different .*spaces"):
+        string_set.lookup(wrong_modes)
+    with pytest.raises(ValueError, match="different .*spaces"):
+        string_set.remove(wrong_modes)
+
 
 def test_mapped_equal():
     specs = (

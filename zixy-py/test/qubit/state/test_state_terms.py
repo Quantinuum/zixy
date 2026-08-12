@@ -2,7 +2,15 @@ import pytest
 
 from zixy.container.coeffs import Sign
 from zixy.qubit.pauli import I, RealTerm as PauliRealTerm, String as PauliString, X
-from zixy.qubit.state import ComplexTermSum, RealTerm, RealTermSet, RealTermSum, SignTerm, String
+from zixy.qubit.state import (
+    ComplexTermSum,
+    RealTerm,
+    RealTerms,
+    RealTermSet,
+    RealTermSum,
+    SignTerm,
+    String,
+)
 
 
 def test_term():
@@ -38,6 +46,24 @@ def test_term_real_sum():
         str(RealTermSet.from_terms(lc.to_terms()))
     ) == RealTermSet.from_terms(lc.to_terms())
     assert RealTermSum.from_str(str(lc)) == lc
+
+
+def test_term_scalar_mul_preserves_viewed_string():
+    terms = RealTerms.from_str("(1.0, [0, 0]), (2.0, [1, 1])", 2)
+
+    right_scaled = terms[1] * 3.0
+    left_scaled = 3.0 * terms[1]
+
+    assert right_scaled.string == terms[1].string
+    assert right_scaled.string != terms[0].string
+    assert right_scaled.coeff == 6.0
+    assert not right_scaled.string.aliases(terms[1].string)
+    assert not right_scaled.string.aliases(terms[0].string)
+    assert left_scaled.string == terms[1].string
+    assert left_scaled.string != terms[0].string
+    assert left_scaled.coeff == 6.0
+    assert not left_scaled.string.aliases(terms[1].string)
+    assert not left_scaled.string.aliases(terms[0].string)
 
 
 def test_term_set_check_term():

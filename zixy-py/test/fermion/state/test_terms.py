@@ -41,6 +41,24 @@ def test_term_sum_from_str():
     assert terms.strings.get_sets() == ({0}, {1})
 
 
+def test_term_scalar_mul_preserves_viewed_string():
+    terms = RealTerms.from_str("(1.0, [0, 0]), (2.0, [1, 1])", 2)
+
+    right_scaled = terms[1] * 3.0
+    left_scaled = 3.0 * terms[1]
+
+    assert right_scaled.string == terms[1].string
+    assert right_scaled.string != terms[0].string
+    assert right_scaled.coeff == 6.0
+    assert not right_scaled.string.aliases(terms[1].string)
+    assert not right_scaled.string.aliases(terms[0].string)
+    assert left_scaled.string == terms[1].string
+    assert left_scaled.string != terms[0].string
+    assert left_scaled.coeff == 6.0
+    assert not left_scaled.string.aliases(terms[1].string)
+    assert not left_scaled.string.aliases(terms[0].string)
+
+
 def test_term_set_check_term():
     term_set = RealTermSet(3)
     term = RealTerm.from_str("[1, 0, 0]", 3)

@@ -126,9 +126,7 @@ def _mul(
     """Driver for multiplication of a term with another term, a string, or a coefficient."""
     if isinstance(rhs, Coeff):
         scalar_product = lhs.coeff * rhs
-        coeffs_type = get_coeffs_type(type(scalar_product))
-        data = TermData(lhs._impl._cmpnts, coeffs_type.from_scalar(scalar_product))
-        return get_term_type(type(scalar_product))._create(data)
+        return get_term_type(type(scalar_product)).from_cmpnt_coeff(lhs.cmpnt, scalar_product)
     if isinstance(rhs, String):
         return _term_sum_from_product(
             get_term_type(type(lhs.coeff)), lhs.modes, lhs.string, rhs, lhs.coeff

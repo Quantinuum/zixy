@@ -109,10 +109,7 @@ def _mul(lhs: Term[CoeffT], rhs: OtherCoeffT) -> Term[Any]:
     if not isinstance(rhs, Coeff):
         return NotImplemented
     scalar_product = lhs.coeff * rhs
-    term_type = get_term_type(type(scalar_product))
-    coeffs_type = get_coeffs_type(type(scalar_product))
-    data = TermData(lhs._impl._cmpnts, coeffs_type.from_scalar(scalar_product))
-    return term_type._create(data)
+    return get_term_type(type(scalar_product)).from_cmpnt_coeff(lhs.string, scalar_product)
 
 
 def _rmul(rhs: Term[CoeffT], lhs: OtherCoeffT) -> Term[Any]:

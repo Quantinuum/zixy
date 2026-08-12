@@ -70,6 +70,24 @@ def test_complex_term():
     assert str(adjoint) == "(-1j, F1^ F0)"
 
 
+def test_term_scalar_mul_preserves_viewed_string():
+    terms = RealTerms.from_str("F0^ F0, (2.0, F1^ F1)", 2)
+
+    right_scaled = terms[1] * 3.0
+    left_scaled = 3.0 * terms[1]
+
+    assert right_scaled.string == terms[1].string
+    assert right_scaled.string != terms[0].string
+    assert right_scaled.coeff == 6.0
+    assert not right_scaled.string.aliases(terms[1].string)
+    assert not right_scaled.string.aliases(terms[0].string)
+    assert left_scaled.string == terms[1].string
+    assert left_scaled.string != terms[0].string
+    assert left_scaled.coeff == 6.0
+    assert not left_scaled.string.aliases(terms[1].string)
+    assert not left_scaled.string.aliases(terms[0].string)
+
+
 @pytest.mark.parametrize(
     ("term", "expected"),
     (

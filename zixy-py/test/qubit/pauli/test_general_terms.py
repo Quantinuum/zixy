@@ -103,6 +103,24 @@ def test_real_term():
     assert term.coeff == 1.0
 
 
+def test_term_scalar_mul_preserves_viewed_string():
+    terms = RealTerms.from_str("X0, Z1", 2)
+
+    right_scaled = terms[1] * 3.0
+    left_scaled = 3.0 * terms[1]
+
+    assert right_scaled.string == terms[1].string
+    assert right_scaled.string != terms[0].string
+    assert right_scaled.coeff == 3.0
+    assert not right_scaled.string.aliases(terms[1].string)
+    assert not right_scaled.string.aliases(terms[0].string)
+    assert left_scaled.string == terms[1].string
+    assert left_scaled.string != terms[0].string
+    assert left_scaled.coeff == 3.0
+    assert not left_scaled.string.aliases(terms[1].string)
+    assert not left_scaled.string.aliases(terms[0].string)
+
+
 def test_complex_term():
     with pytest.raises(IndexError):
         ComplexTerm(5, ((X, Y, Z, X, Y, Z), 2.0j))

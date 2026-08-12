@@ -596,10 +596,10 @@ impl NormalArray {
         cmpnts: &Self,
         map: &Map,
         coeffs: &RealVec,
-    ) -> PyResult<(GeneralArray, RealVec)> {
+    ) -> (GeneralArray, RealVec) {
         let out =
             zixy::fermion::operator::lincomb::to_general(&normal_set_real(cmpnts, map, coeffs));
-        Ok(general_set_to_py_real(out))
+        general_set_to_py_real(out)
     }
 
     #[staticmethod]
@@ -1058,15 +1058,10 @@ impl GeneralArray {
     }
 
     #[staticmethod]
-    fn lincomb_to_normal_order_real(
-        cmpnts: &Self,
-        coeffs: &RealVec,
-    ) -> PyResult<(NormalArray, RealVec)> {
+    fn lincomb_to_normal_order_real(cmpnts: &Self, coeffs: &RealVec) -> (NormalArray, RealVec) {
         let map = CoreMap::default();
-        Ok(normal_set_to_py_real(
-            zixy::fermion::operator::lincomb::to_normal_order(&general_terms_real(
-                cmpnts, &map, coeffs,
-            )),
+        normal_set_to_py_real(zixy::fermion::operator::lincomb::to_normal_order(
+            &general_terms_real(cmpnts, &map, coeffs),
         ))
     }
 

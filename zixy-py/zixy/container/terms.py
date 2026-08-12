@@ -38,6 +38,7 @@ from typing import (
     Any,
     Generic,
     TypeAlias,
+    TypeVar,
     cast,
     overload,
 )
@@ -48,6 +49,7 @@ from typing_extensions import Self
 
 from zixy.container.base import (
     StringRepresentable,
+    ViewableBase,
     ViewableItem,
     ViewableSequence,
     requires_ownership,
@@ -74,6 +76,7 @@ from zixy.utils import DEFAULT_ATOL, DEFAULT_RTOL, slice_index_gen, slice_of_sli
 TermSpecT: TypeAlias = (
     Cmpnt[ImplT, SpecT] | SpecT | tuple[SpecT | Cmpnt[ImplT, SpecT] | None, CoeffT | None] | None
 )
+OutT = TypeVar("OutT", bound="ViewableBase[Any, Any]")
 
 
 class Term(
@@ -781,9 +784,16 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         terms = cls.terms_type.from_str(source)
         return cls.from_terms(terms)
 
+    @overload
+    def into(self, t: type[OutT]) -> OutT: ...
+    @overload
     def into(
         self, t: type[TermSet[ImplT, SpecT, OtherCoeffT]]
-    ) -> TermSet[ImplT, SpecT, OtherCoeffT]:
+    ) -> TermSet[ImplT, SpecT, OtherCoeffT]: ...
+
+    def into(
+        self, t: type[OutT] | type[TermSet[ImplT, SpecT, OtherCoeffT]]
+    ) -> OutT | TermSet[ImplT, SpecT, OtherCoeffT]:
         """Clone ``self`` into a new related container of type ``t``.
 
         Args:

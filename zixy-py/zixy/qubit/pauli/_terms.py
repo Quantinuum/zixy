@@ -144,6 +144,11 @@ def _rmul(
     return NotImplemented
 
 
+def _check_qubits_compatibility(op: TermSum[Any], state: RealState | ComplexState) -> None:
+    if op.qubits != state.qubits:
+        raise ValueError("Operator and state are defined over different qubits.")
+
+
 class Term(TermBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
     """A term consisting of a Pauli string and a coefficient.
 
@@ -946,6 +951,7 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         Returns:
             The resulting state.
         """
+        _check_qubits_compatibility(self, state)
         out = ComplexState(self.qubits)
         assert isinstance(self._impl._coeffs, RealCoeffs)
         assert isinstance(state._impl._coeffs, RealCoeffs)
@@ -970,6 +976,8 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         Returns:
             The resulting matrix element.
         """
+        _check_qubits_compatibility(self, bra)
+        _check_qubits_compatibility(self, ket)
         assert isinstance(self._impl._coeffs, RealCoeffs)
         assert isinstance(bra._impl._coeffs, RealCoeffs)
         assert isinstance(ket._impl._coeffs, RealCoeffs)
@@ -1211,6 +1219,7 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         Returns:
             The resulting state.
         """
+        _check_qubits_compatibility(self, state)
         out = ComplexState(self.qubits)
         assert isinstance(self._impl._coeffs, ComplexCoeffs)
         assert isinstance(state._impl._coeffs, ComplexCoeffs)
@@ -1235,6 +1244,8 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         Returns:
             The resulting matrix element.
         """
+        _check_qubits_compatibility(self, bra)
+        _check_qubits_compatibility(self, ket)
         assert isinstance(self._impl._coeffs, ComplexCoeffs)
         assert isinstance(bra._impl._coeffs, ComplexCoeffs)
         assert isinstance(ket._impl._coeffs, ComplexCoeffs)

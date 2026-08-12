@@ -142,6 +142,23 @@ def test_real_operator_mat_elem():
     assert op.exp_val(ket) == 0.0
 
 
+def test_real_operator_apply_rejects_different_modes():
+    op = RealOperator.from_str("F1^ F0", 2)
+    state = RealTermSum.from_str("[1, 0, 0]", 3)
+
+    with pytest.raises(ValueError, match="different modes"):
+        op.apply(state)
+
+
+def test_real_operator_mat_elem_rejects_different_modes():
+    op = RealOperator.from_str("F1^ F0", 2)
+    bra = RealTermSum.from_str("[0, 1]", 2)
+    ket = RealTermSum.from_str("[1, 0, 0]", 3)
+
+    with pytest.raises(ValueError, match="different modes"):
+        op.mat_elem(bra, ket)
+
+
 def test_complex_operator_apply():
     op = ComplexOperator.from_str("(1j, F1^ F0)", 2)
     state = ComplexTermSum.from_str("[1, 0]", 2)
@@ -159,6 +176,23 @@ def test_complex_operator_mat_elem():
 
     assert op.mat_elem(bra, ket) == 1.0j
     assert op.exp_val(ket) == 0.0j
+
+
+def test_complex_operator_apply_rejects_different_modes():
+    op = ComplexOperator.from_str("(1j, F1^ F0)", 2)
+    state = ComplexTermSum.from_str("[1, 0, 0]", 3)
+
+    with pytest.raises(ValueError, match="different modes"):
+        op.apply(state)
+
+
+def test_complex_operator_mat_elem_rejects_different_modes():
+    op = ComplexOperator.from_str("(1j, F1^ F0)", 2)
+    bra = ComplexTermSum.from_str("[0, 1]", 2)
+    ket = ComplexTermSum.from_str("[1, 0, 0]", 3)
+
+    with pytest.raises(ValueError, match="different modes"):
+        op.mat_elem(bra, ket)
 
 
 def test_string_scalar_mul_promotes_to_term():

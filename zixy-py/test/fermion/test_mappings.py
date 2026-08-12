@@ -148,22 +148,45 @@ def test_encode_strings(mapper_type, qubits, mode_ordering, string_type, source,
     assert str(terms) == expected
 
 
-def test_encode_products():
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    (
+        (
+            "F2^ F1",
+            "(0.25j, Y1 X2), ((0.25+0j), Y1 Y2), " "((0.25+0j), X1 X2), (-0.25j, X1 Y2)",
+        ),
+        (
+            "F0^ F0 F1^ F1",
+            "((0.25+0j), ), ((-0.25+0j), Z0), " "((-0.25+0j), Z1), ((0.25+0j), Z0 Z1)",
+        ),
+        (
+            "F0^ F1 F2^ F3",
+            "((-0.0625+0j), Y0 X1 Y2 X3), (-0.0625j, X0 X1 Y2 X3), "
+            "(-0.0625j, Y0 Y1 Y2 X3), ((0.0625+0j), X0 Y1 Y2 X3), "
+            "(-0.0625j, Y0 X1 X2 X3), ((0.0625+0j), X0 X1 X2 X3), "
+            "((0.0625+0j), Y0 Y1 X2 X3), (0.0625j, X0 Y1 X2 X3), "
+            "(-0.0625j, Y0 X1 Y2 Y3), ((0.0625+0j), X0 X1 Y2 Y3), "
+            "((0.0625+0j), Y0 Y1 Y2 Y3), (0.0625j, X0 Y1 Y2 Y3), "
+            "((0.0625+0j), Y0 X1 X2 Y3), (0.0625j, X0 X1 X2 Y3), "
+            "(0.0625j, Y0 Y1 X2 Y3), ((-0.0625+0j), X0 Y1 X2 Y3)",
+        ),
+    ),
+)
+def test_encode_products(source, expected):
     mapper = JordanWignerMapper(4)
 
-    assert str(mapper.encode(GeneralString(4, "F2^ F1"))) == (
-        "(0.25j, Y1 X2), ((0.25+0j), Y1 Y2), " "((0.25+0j), X1 X2), (-0.25j, X1 Y2)"
-    )
+    terms = mapper.encode(GeneralString(4, source))
 
-    product = mapper.encode(GeneralString(4, "F0^ F0 F1^ F1"))
-    assert product == mapper.encode(GeneralString(4, "F0^ F0 F1^ F1"))
+    assert isinstance(terms, PauliComplexTermSum)
+    assert str(terms) == expected
 
+
+def test_encode_products_anticommute():
+    mapper = JordanWignerMapper(4)
     caca = mapper.encode(GeneralString(4, "F0^ F1 F2^ F3"))
     ccaa = mapper.encode(GeneralString(4, "F0^ F2^ F1 F3"))
-    assert isinstance(caca, PauliComplexTermSum)
-    assert isinstance(ccaa, PauliComplexTermSum)
-    assert len(caca) == 16
-    assert len(ccaa) == 16
+
+    assert caca == -ccaa
 
 
 def test_encode_scaled_sums():

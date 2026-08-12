@@ -33,6 +33,7 @@ from zixy.fermion._strings import (
     String as FermionString,
     Strings as FermionStrings,
     StringSet as FermionStringSet,
+    _check_modes_compatibility,
 )
 
 if TYPE_CHECKING:
@@ -175,6 +176,7 @@ class String(FermionString[ImplT, SpecT, ElemT]):
 
     def vdot(self, other: String) -> int:
         """Compute the inner product of this string with another."""
+        _check_modes_compatibility(self.modes, other.modes)
         return int(self == other)
 
 

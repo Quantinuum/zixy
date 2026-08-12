@@ -116,11 +116,27 @@ def test_vdot():
     assert lhs.vdot(rhs) == 10.0
 
 
+def test_vdot_rejects_different_modes():
+    lhs = RealTermSum.from_str("[1, 0]", 2)
+    rhs = RealTermSum.from_str("[1, 0, 0]", 3)
+
+    with pytest.raises(ValueError, match="different modes"):
+        lhs.vdot(rhs)
+
+
 def test_complex_vdot():
     lhs = ComplexTermSum.from_str("((1+1j), [1, 0]), (2j, [0, 1])", 2)
     rhs = ComplexTermSum.from_str("(3j, [1, 0]), (1, [0, 1])", 2)
 
     assert lhs.vdot(rhs) == 3.0 + 1.0j
+
+
+def test_complex_vdot_rejects_different_modes():
+    lhs = ComplexTermSum.from_str("[1, 0]", 2)
+    rhs = ComplexTermSum.from_str("[1, 0, 0]", 3)
+
+    with pytest.raises(ValueError, match="different modes"):
+        lhs.vdot(rhs)
 
 
 def test_real_operator_apply():

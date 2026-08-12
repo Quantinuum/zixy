@@ -51,6 +51,7 @@ from zixy.container.coeffs import (
 )
 from zixy.container.data import TermData
 from zixy.container.terms import NumericTerms, NumericTermSum
+from zixy.qubit._strings import _check_qubits_compatibility
 from zixy.qubit._terms import (
     Term as TermBase,
     Terms as TermsBase,
@@ -512,6 +513,7 @@ class RealTermSum(NumericTermSum[QubitStateArray, StringSpec, float], TermSum[fl
 
     def vdot(self, rhs: RealTermSum) -> float:
         """Compute the inner product of ``self`` with ``rhs``."""
+        _check_qubits_compatibility(self.qubits, rhs.qubits)
         assert isinstance(self._impl._coeffs, RealCoeffs)  # TODO: resolve
         assert isinstance(rhs._impl._coeffs, RealCoeffs)  # TODO: resolve
         return float(
@@ -668,6 +670,7 @@ class ComplexTermSum(NumericTermSum[QubitStateArray, StringSpec, complex], TermS
 
     def vdot(self, rhs: ComplexTermSum) -> complex:
         """Compute the inner product of ``self`` with ``rhs``."""
+        _check_qubits_compatibility(self.qubits, rhs.qubits)
         assert isinstance(self._impl._coeffs, ComplexCoeffs)  # TODO: resolve
         assert isinstance(rhs._impl._coeffs, ComplexCoeffs)  # TODO: resolve
         return complex(

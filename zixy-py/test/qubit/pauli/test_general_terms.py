@@ -4,12 +4,12 @@ from sympy import Expr, Symbol, sympify
 from zixy.container.coeffs import ComplexSign, Sign
 from zixy.qubit.pauli import (
     ComplexTerm,
-    ComplexTermSum as PauliComplexTermSum,
     ComplexTerms,
+    ComplexTermSum as PauliComplexTermSum,
     I,
     RealTerm,
-    RealTermSum as PauliRealTermSum,
     RealTerms,
+    RealTermSum as PauliRealTermSum,
     SignTerms,
     String,
     SymbolicTerm,
@@ -18,8 +18,7 @@ from zixy.qubit.pauli import (
     Y,
     Z,
 )
-from zixy.qubit.state import ComplexTermSum as ComplexState
-from zixy.qubit.state import RealTermSum as RealState
+from zixy.qubit.state import ComplexTermSum as ComplexState, RealTermSum as RealState
 
 
 def test_real_term():

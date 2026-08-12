@@ -39,6 +39,14 @@ def test_from_tuple():
     assert not String(6, (1,)).is_vacuum()
 
 
+def test_string_vdot_rejects_different_qubits():
+    lhs = String(2, (1, 0))
+    rhs = String(3, (1, 0, 0))
+
+    with pytest.raises(ValueError, match="different qubits"):
+        lhs.vdot(rhs)
+
+
 def test_str():
     vacuum = String(6)
     assert vacuum.to_str() == "[0, 0, 0, 0, 0, 0]"

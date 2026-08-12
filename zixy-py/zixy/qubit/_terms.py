@@ -29,7 +29,7 @@ from zixy.container.terms import (
     TermSpecT,
     TermSum as TermSumBase,
 )
-from zixy.qubit._strings import ElemT, ImplT, String, Strings
+from zixy.qubit._strings import ElemT, ImplT, String, Strings, _check_qubits_compatibility
 
 
 class Term(Generic[ImplT, SpecT, CoeffT, ElemT], TermBase[ImplT, SpecT, CoeffT]):
@@ -152,8 +152,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], TermSetBase[ImplT, SpecT, Co
                 f"Expected a {self.terms_type.term_type.__name__} instance, got "
                 f"{type(value).__name__}."
             )
-        if self.qubits != value.qubits:
-            raise ValueError("Cannot insert a term defined over different qubits.")
+        _check_qubits_compatibility(self.qubits, value.qubits)
 
     def _check_cmpnt(self, value: Cmpnt[ImplT, SpecT]) -> None:
         """Check whether a component is defined over the same qubits as ``self``."""
@@ -162,8 +161,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], TermSetBase[ImplT, SpecT, Co
                 f"Expected a {self.terms_type.term_type.cmpnts_type.cmpnt_type.__name__} instance, "
                 f"got {type(value).__name__}."
             )
-        if self.qubits != value.qubits:
-            raise ValueError("Cannot use a string defined over different qubits.")
+        _check_qubits_compatibility(self.qubits, value.qubits)
 
 
 class TermSum(TermSet[ImplT, SpecT, CoeffT, ElemT], TermSumBase[ImplT, SpecT, CoeffT]):

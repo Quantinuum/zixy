@@ -30,7 +30,7 @@ from typing_extensions import Self
 from zixy._zixy import GeneralFermionOperatorArray, Modes
 from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet
 from zixy.container.coeffs import Coeff, CoeffT
-from zixy.fermion._strings import _as_modes
+from zixy.fermion._strings import _as_modes, _check_modes_compatibility
 from zixy.fermion.operator._strings import (
     LadderOp,
     String as OperatorString,
@@ -199,8 +199,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
             return scalar_term_type.from_cmpnt_coeff(self, rhs)
         if not isinstance(rhs, String):
             return NotImplemented
-        if self.modes != rhs.modes:
-            raise ValueError("Cannot multiply strings defined over different modes.")
+        _check_modes_compatibility(self.modes, rhs.modes)
         string = String(self.modes, self.get_ops() + rhs.get_ops())
         return RealTerm.from_cmpnt_coeff(string, 1.0)
 

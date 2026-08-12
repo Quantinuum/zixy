@@ -48,6 +48,22 @@ def test_term_real_sum():
     assert RealTermSum.from_str(str(lc)) == lc
 
 
+def test_vdot_rejects_different_qubits():
+    lhs = RealTermSum.from_str("[1, 0]", 2)
+    rhs = RealTermSum.from_str("[1, 0, 0]", 3)
+
+    with pytest.raises(ValueError, match="different qubits"):
+        lhs.vdot(rhs)
+
+
+def test_complex_vdot_rejects_different_qubits():
+    lhs = ComplexTermSum.from_str("[1, 0]", 2)
+    rhs = ComplexTermSum.from_str("[1, 0, 0]", 3)
+
+    with pytest.raises(ValueError, match="different qubits"):
+        lhs.vdot(rhs)
+
+
 def test_term_scalar_mul_preserves_viewed_string():
     terms = RealTerms.from_str("(1.0, [0, 0]), (2.0, [1, 1])", 2)
 

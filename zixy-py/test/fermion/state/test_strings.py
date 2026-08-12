@@ -61,6 +61,14 @@ def test_string_vdot():
     assert lhs.vdot(rhs) == 0
 
 
+def test_string_vdot_rejects_different_modes():
+    lhs = String(2, {0})
+    rhs = String(3, {0})
+
+    with pytest.raises(ValueError, match="different modes"):
+        lhs.vdot(rhs)
+
+
 def test_array_sizing():
     strings = Strings(4)
     assert len(strings) == 0

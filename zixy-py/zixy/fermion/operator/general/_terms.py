@@ -55,6 +55,7 @@ from zixy.container.terms import (
     Terms as TermsBase,
     TermSet as TermSetBase,
 )
+from zixy.fermion._strings import _check_modes_compatibility
 from zixy.fermion.operator._strings import LadderOp, parse_ladder_product, parse_term_source
 from zixy.fermion.operator._terms import (
     Term as OperatorTerm,
@@ -109,12 +110,10 @@ def _mul(lhs: Term[CoeffT], rhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Te
         scalar_product = lhs.coeff * rhs
         return get_term_type(type(scalar_product)).from_cmpnt_coeff(lhs.string, scalar_product)
     if isinstance(rhs, String):
-        if lhs.modes != rhs.modes:
-            raise ValueError("Cannot multiply terms defined over different modes.")
+        _check_modes_compatibility(lhs.modes, rhs.modes)
         string = String(lhs.modes, lhs.string.get_ops() + rhs.get_ops())
         return get_term_type(type(lhs.coeff)).from_cmpnt_coeff(string, lhs.coeff)
-    if lhs.modes != rhs.modes:
-        raise ValueError("Cannot multiply terms defined over different modes.")
+    _check_modes_compatibility(lhs.modes, rhs.modes)
     coeff = lhs.coeff * rhs.coeff
     string = String(lhs.modes, lhs.string.get_ops() + rhs.string.get_ops())
     return get_term_type(type(coeff)).from_cmpnt_coeff(string, coeff)
@@ -125,12 +124,10 @@ def _rmul(rhs: Term[CoeffT], lhs: OtherCoeffT | String | Term[OtherCoeffT]) -> T
     if isinstance(lhs, Coeff):
         return _mul(rhs, lhs)
     if isinstance(lhs, String):
-        if lhs.modes != rhs.modes:
-            raise ValueError("Cannot multiply terms defined over different modes.")
+        _check_modes_compatibility(lhs.modes, rhs.modes)
         string = String(rhs.modes, lhs.get_ops() + rhs.string.get_ops())
         return get_term_type(type(rhs.coeff)).from_cmpnt_coeff(string, rhs.coeff)
-    if lhs.modes != rhs.modes:
-        raise ValueError("Cannot multiply terms defined over different modes.")
+    _check_modes_compatibility(lhs.modes, rhs.modes)
     coeff = lhs.coeff * rhs.coeff
     string = String(rhs.modes, lhs.string.get_ops() + rhs.string.get_ops())
     return get_term_type(type(coeff)).from_cmpnt_coeff(string, coeff)

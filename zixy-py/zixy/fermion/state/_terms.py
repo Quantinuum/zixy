@@ -53,6 +53,7 @@ from zixy.container.terms import (
     NumericTerms,
     NumericTermSum,
 )
+from zixy.fermion._strings import _check_modes_compatibility
 from zixy.fermion._terms import (
     Term as FermionTerm,
     Terms as FermionTerms,
@@ -348,6 +349,7 @@ class RealTermSum(NumericTermSum[FermionStateArray, StringSpec, float], TermSum[
 
     def vdot(self, rhs: RealTermSum) -> float:
         """Compute the inner product of ``self`` with ``rhs``."""
+        _check_modes_compatibility(self.modes, rhs.modes)
         assert isinstance(self._impl._coeffs, RealCoeffs)
         assert isinstance(rhs._impl._coeffs, RealCoeffs)
         return float(
@@ -466,6 +468,7 @@ class ComplexTermSum(NumericTermSum[FermionStateArray, StringSpec, complex], Ter
 
     def vdot(self, rhs: ComplexTermSum) -> complex:
         """Compute the inner product of ``self`` with ``rhs``."""
+        _check_modes_compatibility(self.modes, rhs.modes)
         assert isinstance(self._impl._coeffs, ComplexCoeffs)
         assert isinstance(rhs._impl._coeffs, ComplexCoeffs)
         return complex(

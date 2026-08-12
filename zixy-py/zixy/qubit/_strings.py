@@ -40,6 +40,12 @@ def _default_qubits(source: SpecT) -> Qubits:
         raise TypeError("Source object is of an unsupported type.")
 
 
+def _check_qubits_compatibility(*qubits: Qubits) -> None:
+    """Check that all qubit registers are compatible."""
+    if len(qubits) > 1 and any(qubits[0] != other for other in qubits[1:]):
+        raise ValueError("Objects are defined over different qubits.")
+
+
 class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
     """A string.
 

@@ -60,6 +60,7 @@ from zixy.container.coeffs import (
 )
 from zixy.container.data import TermData
 from zixy.container.terms import NumericTerms, NumericTermSum
+from zixy.qubit._strings import _check_qubits_compatibility
 from zixy.qubit._terms import (
     Term as TermBase,
     Terms as TermsBase,
@@ -142,11 +143,6 @@ def _rmul(
         assert isinstance(product, ComplexSignTerm)
         return product * (lhs.coeff * rhs.coeff)
     return NotImplemented
-
-
-def _check_qubits_compatibility(op: TermSum[Any], state: RealState | ComplexState) -> None:
-    if op.qubits != state.qubits:
-        raise ValueError("Operator and state are defined over different qubits.")
 
 
 class Term(TermBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
@@ -951,7 +947,7 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         Returns:
             The resulting state.
         """
-        _check_qubits_compatibility(self, state)
+        _check_qubits_compatibility(self.qubits, state.qubits)
         out = ComplexState(self.qubits)
         assert isinstance(self._impl._coeffs, RealCoeffs)
         assert isinstance(state._impl._coeffs, RealCoeffs)
@@ -976,8 +972,7 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         Returns:
             The resulting matrix element.
         """
-        _check_qubits_compatibility(self, bra)
-        _check_qubits_compatibility(self, ket)
+        _check_qubits_compatibility(self.qubits, bra.qubits, ket.qubits)
         assert isinstance(self._impl._coeffs, RealCoeffs)
         assert isinstance(bra._impl._coeffs, RealCoeffs)
         assert isinstance(ket._impl._coeffs, RealCoeffs)
@@ -1219,7 +1214,7 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         Returns:
             The resulting state.
         """
-        _check_qubits_compatibility(self, state)
+        _check_qubits_compatibility(self.qubits, state.qubits)
         out = ComplexState(self.qubits)
         assert isinstance(self._impl._coeffs, ComplexCoeffs)
         assert isinstance(state._impl._coeffs, ComplexCoeffs)
@@ -1244,8 +1239,7 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         Returns:
             The resulting matrix element.
         """
-        _check_qubits_compatibility(self, bra)
-        _check_qubits_compatibility(self, ket)
+        _check_qubits_compatibility(self.qubits, bra.qubits, ket.qubits)
         assert isinstance(self._impl._coeffs, ComplexCoeffs)
         assert isinstance(bra._impl._coeffs, ComplexCoeffs)
         assert isinstance(ket._impl._coeffs, ComplexCoeffs)

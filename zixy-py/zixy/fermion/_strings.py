@@ -36,6 +36,12 @@ def _as_modes(modes: int | Modes) -> Modes:
     return Modes.from_count(modes) if isinstance(modes, int) else modes
 
 
+def _check_modes_compatibility(*modes: Modes) -> None:
+    """Check that all mode spaces are compatible."""
+    if len(modes) > 1 and any(modes[0] != other for other in modes[1:]):
+        raise ValueError("Objects are defined over different modes.")
+
+
 class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
     """A fermionic string.
 

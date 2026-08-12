@@ -28,7 +28,7 @@ from zixy.container.terms import (
     TermSet as TermSetBase,
     TermSum as TermSumBase,
 )
-from zixy.fermion._strings import ElemT, ImplT, String, Strings
+from zixy.fermion._strings import ElemT, ImplT, String, Strings, _check_modes_compatibility
 
 
 class Term(Generic[ImplT, SpecT, CoeffT, ElemT], TermBase[ImplT, SpecT, CoeffT]):
@@ -122,8 +122,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], TermSetBase[ImplT, SpecT, Co
                 f"Expected a {self.terms_type.term_type.__name__} instance, got "
                 f"{type(value).__name__}."
             )
-        if self.modes != value.modes:
-            raise ValueError("Cannot insert a term defined over different modes.")
+        _check_modes_compatibility(self.modes, value.modes)
 
     def _check_cmpnt(self, value: Cmpnt[ImplT, SpecT]) -> None:
         """Hook to check whether a component is valid for insertion into ``self``."""
@@ -132,8 +131,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], TermSetBase[ImplT, SpecT, Co
                 f"Expected a {self.terms_type.term_type.cmpnts_type.cmpnt_type.__name__} instance, "
                 f"got {type(value).__name__}."
             )
-        if self.modes != value.modes:
-            raise ValueError("Cannot insert a component defined over different modes.")
+        _check_modes_compatibility(self.modes, value.modes)
 
 
 class TermSum(TermSet[ImplT, SpecT, CoeffT, ElemT], TermSumBase[ImplT, SpecT, CoeffT]):

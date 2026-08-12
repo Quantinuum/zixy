@@ -53,6 +53,7 @@ from zixy.container.terms import (
     NumericTerms,
     NumericTermSum,
 )
+from zixy.fermion._strings import _check_modes_compatibility
 from zixy.fermion.operator._strings import (
     LadderOp,
     parse_ladder_product,
@@ -151,11 +152,6 @@ def _rmul(
     return _term_sum_from_product(
         get_term_type(type(base_coeff)), rhs.modes, lhs.string, rhs.string, base_coeff
     )
-
-
-def _check_modes_compatibility(op: TermSum[Any], state: RealState | ComplexState) -> None:
-    if op.modes != state.modes:
-        raise ValueError("Operator and state are defined over different modes.")
 
 
 class Term(OperatorTerm[ImplT, SpecT, CoeffT, ElemT]):
@@ -597,7 +593,7 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
         Returns:
             The resulting state.
         """
-        _check_modes_compatibility(self, state)
+        _check_modes_compatibility(self.modes, state.modes)
         out = RealState(self.modes)
         assert isinstance(self._impl._coeffs, RealCoeffs)
         assert isinstance(state._impl._coeffs, RealCoeffs)
@@ -622,8 +618,7 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
         Returns:
             The resulting matrix element.
         """
-        _check_modes_compatibility(self, bra)
-        _check_modes_compatibility(self, ket)
+        _check_modes_compatibility(self.modes, bra.modes, ket.modes)
         assert isinstance(self._impl._coeffs, RealCoeffs)
         assert isinstance(bra._impl._coeffs, RealCoeffs)
         assert isinstance(ket._impl._coeffs, RealCoeffs)
@@ -849,7 +844,7 @@ class ComplexTermSum(
         Returns:
             The resulting state.
         """
-        _check_modes_compatibility(self, state)
+        _check_modes_compatibility(self.modes, state.modes)
         out = ComplexState(self.modes)
         assert isinstance(self._impl._coeffs, ComplexCoeffs)
         assert isinstance(state._impl._coeffs, ComplexCoeffs)
@@ -874,8 +869,7 @@ class ComplexTermSum(
         Returns:
             The resulting matrix element.
         """
-        _check_modes_compatibility(self, bra)
-        _check_modes_compatibility(self, ket)
+        _check_modes_compatibility(self.modes, bra.modes, ket.modes)
         assert isinstance(self._impl._coeffs, ComplexCoeffs)
         assert isinstance(bra._impl._coeffs, ComplexCoeffs)
         assert isinstance(ket._impl._coeffs, ComplexCoeffs)

@@ -157,8 +157,8 @@ class TermSum(
         Args:
             mapper: The mapper class to use. If ``None``, use
                 :class:`~zixy.fermion.mappings.JordanWignerMapper`.
-            qubits: The qubit register or qubit count. If ``None``, infer from the number of
-                fermionic modes.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the number of fermionic modes.
 
         Returns:
             The mapped Pauli term sum.

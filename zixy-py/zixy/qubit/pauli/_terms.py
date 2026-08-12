@@ -90,8 +90,8 @@ def _data_from_str(
 
     Args:
         source: Input string to parse.
-        qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
-            index in the input string.
+        qubits: The qubit register or qubit count. If ``None``, the qubit register is inferred
+            from the string specifier.
         coeff_type: The coefficient type.
 
     Returns:
@@ -163,8 +163,8 @@ class Term(TermBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
 
         Args:
             source: Input string to parse.
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
-                index in the input string.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
 
         Returns:
             A new instance containing the Pauli string and coefficient in the ``source``.
@@ -250,8 +250,8 @@ class Terms(TermsBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
 
         Args:
             source: Input string to parse.
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
-                index in the input string.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
 
         Returns:
             A new instance containing the Pauli strings and coefficients in the ``source``.
@@ -455,8 +455,8 @@ class TermSum(TermSumBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix], Ter
 
         Args:
             source: Input string to parse.
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
-                index in the input string.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
 
         Returns:
             A new instance containing the Pauli strings and coefficients in the ``source``.

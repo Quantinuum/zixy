@@ -75,7 +75,8 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         """Initialize the string.
 
         Args:
-            modes: The mode space or number of modes.
+            modes: The mode space or mode count. If ``None``, the mode space is inferred from
+                the string specifier.
             source: The string specifier to use for default modes and initial value.
         """
         if modes is None:
@@ -99,8 +100,8 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
 
         Args:
             source: String to parse.
-            modes: Space of modes or a number of modes. If ``None``, infer from the max mode
-                index in the input string.
+            modes: The mode space or mode count. If ``None``, the mode space is inferred from
+                the string specifier.
 
         Returns:
             An instance of ``cls`` parsed from ``source``.
@@ -231,8 +232,8 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
 
         Args:
             source: String to parse.
-            modes: Space of modes or a number of modes. If ``None``, infer from the max mode
-                index in the input string.
+            modes: The mode space or mode count. If ``None``, the mode space is inferred from
+                the string specifier.
 
         Returns:
             An instance of ``cls`` parsed from ``source``.

@@ -175,8 +175,8 @@ class Term(OperatorTerm[ImplT, SpecT, CoeffT, ElemT]):
 
         Args:
             source: Input string to parse.
-            modes: Space of modes or a number of modes. If ``None``, infer from the max mode
-                index in the input string.
+            modes: The mode space or mode count. If ``None``, the mode space is inferred from
+                the string specifier.
 
         Returns:
             A new instance containing the normal-ordered fermionic strings and coefficients in the
@@ -205,8 +205,8 @@ class Term(OperatorTerm[ImplT, SpecT, CoeffT, ElemT]):
 
         Args:
             source: Input string to parse.
-            modes: Space of modes or a number of modes. If ``None``, infer from the max mode
-                index in the input string.
+            modes: The mode space or mode count. If ``None``, the mode space is inferred from
+                the string specifier.
 
         Returns:
             A new instance containing the normal-ordered fermionic string and coefficient in the
@@ -255,8 +255,8 @@ class Terms(OperatorTerms[ImplT, SpecT, CoeffT, ElemT]):
 
         Args:
             source: Input string to parse.
-            modes: Space of modes or a number of modes. If ``None``, infer from the max mode
-                index in the input string.
+            modes: The mode space or mode count. If ``None``, the mode space is inferred from
+                the string specifier.
 
         Returns:
             A new instance containing the normal-ordered fermionic strings and coefficients in the
@@ -301,8 +301,8 @@ class TermSum(OperatorTermSum[ImplT, SpecT, CoeffT, ElemT], TermSet[CoeffT]):
 
         Args:
             source: Input string to parse.
-            modes: Space of modes or a number of modes. If ``None``, infer from the max mode
-                index in the input string.
+            modes: The mode space or mode count. If ``None``, the mode space is inferred from
+                the string specifier.
 
         Returns:
             A new instance containing the normal-ordered fermionic strings and coefficients in the
@@ -792,8 +792,8 @@ class ComplexTermSum(
         Args:
             mapper: The mapper class to use. If ``None``, use
                 :class:`~zixy.fermion.mappings.JordanWignerMapper`.
-            qubits: The qubit register or qubit count. If ``None``, infer from the number of
-                fermionic modes.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the number of fermionic modes.
 
         Returns:
             The mapped Pauli term sum.

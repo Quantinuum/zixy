@@ -101,8 +101,8 @@ class Term(TermBase[QubitStateArray, StringSpec, CoeffT, bool]):
 
         Args:
             source: Input string to parse.
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the input
-                string.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
 
         Returns:
             A new instance containing the state string and coefficient in ``source``.
@@ -184,8 +184,8 @@ class Terms(TermsBase[QubitStateArray, StringSpec, CoeffT, bool]):
 
         Args:
             source: Input string to parse.
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the input
-                string.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
 
         Returns:
             A new instance containing the state strings and coefficients in ``source``.
@@ -238,8 +238,8 @@ class TermSum(TermSumBase[QubitStateArray, StringSpec, CoeffT, bool], TermSet[Co
 
         Args:
             source: Input string to parse.
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the input
-                string.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
 
         Returns:
             A new instance containing the state strings and coefficients in ``source``.
@@ -476,7 +476,8 @@ class RealTermSum(NumericTermSum[QubitStateArray, StringSpec, float], TermSum[fl
         """Create an instance of ``cls`` from a dense vector.
 
         Args:
-            qubits: The qubit register or qubit count.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the dense vector length.
             source: The vector to read from.
             big_endian: Whether to use big endian ordering for the resulting matrix. If ``False``,
                 little endian ordering is used. In big (little) endian ordering, the least
@@ -617,7 +618,8 @@ class ComplexTermSum(NumericTermSum[QubitStateArray, StringSpec, complex], TermS
         """Create an instance of ``cls`` from a dense vector.
 
         Args:
-            qubits: The qubit register or qubit count.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the dense vector length.
             source: The vector to read from.
             big_endian: Whether to use big endian ordering for the resulting matrix. If ``False``,
                 little endian ordering is used. In big (little) endian ordering, the least

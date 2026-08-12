@@ -137,7 +137,8 @@ class Term(FermionTerm[ImplT, SpecT, CoeffT, ElemT]):
 
         Args:
             source: Input string to parse.
-            modes: Space of modes or a number of modes. If ``None``, infer from the input string.
+            modes: The mode space or mode count. If ``None``, the mode space is inferred from
+                the string specifier.
 
         Returns:
             A new instance containing the state string and coefficient in ``source``.
@@ -165,7 +166,16 @@ class Terms(FermionTerms[ImplT, SpecT, CoeffT, ElemT]):
 
     @classmethod
     def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
-        """Create a new instance of ``cls`` by parsing an input string."""
+        """Create a new instance of ``cls`` by parsing an input string.
+
+        Args:
+            source: Input string to parse.
+            modes: The mode space or mode count. If ``None``, the mode space is inferred from
+                the string specifier.
+
+        Returns:
+            A new instance containing the state strings and coefficients in ``source``.
+        """
         if isinstance(modes, int):
             modes = Modes.from_count(modes)
         term_strs = split_top_level(source)
@@ -187,7 +197,16 @@ class TermSum(FermionTermSum[ImplT, SpecT, CoeffT, ElemT], TermSet[CoeffT]):
 
     @classmethod
     def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
-        """Create a new instance of ``cls`` by parsing an input string."""
+        """Create a new instance of ``cls`` by parsing an input string.
+
+        Args:
+            source: Input string to parse.
+            modes: The mode space or mode count. If ``None``, the mode space is inferred from
+                the string specifier.
+
+        Returns:
+            A new instance containing the state strings and coefficients in ``source``.
+        """
         terms_ = cls.terms_type.from_str(source, modes)
         return cls.from_iterable(terms_, terms_.modes)
 
@@ -300,7 +319,17 @@ class RealTermSum(NumericTermSum[FermionStateArray, StringSpec, float], TermSum[
         source: Sequence[float] = tuple(),
         big_endian: bool = False,
     ) -> Self:
-        """Create an instance of ``cls`` from a dense vector."""
+        """Create an instance of ``cls`` from a dense vector.
+
+        Args:
+            modes: The mode space or mode count. If ``None``, the mode space is inferred from
+                the dense vector length.
+            source: The vector to read from.
+            big_endian: Whether to use big endian ordering for the resulting vector.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
         if modes is None:
             modes = _modes_from_dense_len(len(source))
         if isinstance(modes, int):
@@ -394,7 +423,17 @@ class ComplexTermSum(NumericTermSum[FermionStateArray, StringSpec, complex], Ter
         source: Sequence[complex] = tuple(),
         big_endian: bool = False,
     ) -> Self:
-        """Create an instance of ``cls`` from a dense vector."""
+        """Create an instance of ``cls`` from a dense vector.
+
+        Args:
+            modes: The mode space or mode count. If ``None``, the mode space is inferred from
+                the dense vector length.
+            source: The vector to read from.
+            big_endian: Whether to use big endian ordering for the resulting vector.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
         if modes is None:
             modes = _modes_from_dense_len(len(source))
         if isinstance(modes, int):

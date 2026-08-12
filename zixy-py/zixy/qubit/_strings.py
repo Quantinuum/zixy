@@ -62,7 +62,8 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
         """Initialize the string.
 
         Args:
-            qubits: The qubit register or qubit count.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
             source: The string specifier to use for default qubits and initial value.
         """
         if qubits is None:
@@ -189,8 +190,8 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
 
         Args:
             source: String to parse.
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
-                index in the input string.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
 
         Returns:
             An instance of ``cls`` parsed from ``source``.

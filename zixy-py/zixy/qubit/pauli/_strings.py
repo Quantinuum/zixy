@@ -98,8 +98,8 @@ class String(StringBase[ImplT, SpecT, ElemT]):
 
         Args:
             source: String to parse.
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
-                index in the input string.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
 
         Returns:
             An instance of ``cls`` parsed from ``source``.

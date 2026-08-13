@@ -55,7 +55,6 @@ from zixy.container.terms import (
 )
 from zixy.fermion._strings import _check_modes_compatibility
 from zixy.fermion.operator._strings import (
-    LadderOp,
     parse_ladder_product,
     parse_term_source,
 )
@@ -561,10 +560,6 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
             out += mapper_.encode_complex(term.cmpnt.into(String), term.coeff)
         return out
 
-    def to_ladder_ops(self) -> list[tuple[list[LadderOp], float]]:
-        """Return the terms as raw ladder-operator products and coefficients."""
-        return [(_string_to_ladder_ops(term.cmpnt.into(String)), term.coeff) for term in self]
-
     def to_general(self) -> GeneralRealTermSum:
         """Convert this normal-ordered term sum to the raw general representation."""
         from zixy.fermion.operator.general._strings import (  # noqa: PLC0415
@@ -812,10 +807,6 @@ class ComplexTermSum(
             out += mapper_.encode_complex(term.cmpnt.into(String), term.coeff)
         return out
 
-    def to_ladder_ops(self) -> list[tuple[list[LadderOp], complex]]:
-        """Return the terms as raw ladder-operator products and coefficients."""
-        return [(_string_to_ladder_ops(term.cmpnt.into(String)), term.coeff) for term in self]
-
     def to_general(self) -> GeneralComplexTermSum:
         """Convert this normal-ordered term sum to the raw general representation."""
         from zixy.fermion.operator.general._strings import (  # noqa: PLC0415
@@ -1014,11 +1005,6 @@ class SymbolicTermSum(TermSum[Expr]):
         out = self.clone()
         out.isubs(values)
         return out
-
-
-def _string_to_ladder_ops(string: String) -> list[LadderOp]:
-    cre, ann = string.get_sets()
-    return [(i, True) for i in cre] + [(i, False) for i in ann]
 
 
 def get_term_type(coeff_type: type[CoeffT]) -> type[Term[CoeffT]]:

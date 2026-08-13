@@ -40,13 +40,13 @@ if TYPE_CHECKING:
     from zixy.container.coeffs import CoeffT
     from zixy.qubit.state._terms import Term
 
-StringSpec = None | Sequence[bool] | set[int] | str
+StringSpec = Sequence[bool] | set[int] | str
 ElemT = bool
 SpecT = StringSpec
 ImplT = QubitStateArray
 
 
-def _default_qubits(source: StringSpec = None) -> Qubits:
+def _default_qubits(source: StringSpec) -> Qubits:
     """Construct the default qubits for a string specifier."""
     if isinstance(source, set):
         return Qubits.from_count(max(source) + 1)
@@ -65,10 +65,11 @@ class String(StringBase[ImplT, SpecT, ElemT]):
 
     impl_type = ImplT
 
+    _clear_spec = ""
     _springs_type = BinarySprings
 
     @staticmethod
-    def _get_default_qubits(source: SpecT | None = None) -> Qubits:
+    def _get_default_qubits(source: SpecT) -> Qubits:
         """Get the default qubit space for ``source``."""
         return _default_qubits(source)
 
@@ -84,6 +85,8 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         Returns:
             An instance of ``cls`` parsed from ``source``.
         """
+        if not source.strip():
+            return cls(qubits, "")
         n = len(BinarySprings(source))
         if n != 1:
             raise ValueError(f"Source string should contain one state string, got {n}.")
@@ -107,7 +110,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         """Get the string as a set of the indices of bits with value 1."""
         return self._impl.cmpnt_get_set(self.index)
 
-    def set(self, source: SpecT | StringBase[ImplT, SpecT, ElemT] | None) -> None:
+    def set(self, source: SpecT | StringBase[ImplT, SpecT, ElemT]) -> None:
         """Set the value of the string.
 
         Args:

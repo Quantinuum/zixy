@@ -13,13 +13,13 @@ def test_array_sizing():
     # empty array
     assert len(a) == 0
     # append a trivial string
-    a.append()
+    a.append("")
     assert len(a) == 1
     # and another
-    a.append()
+    a.append("")
     assert len(a) == 2
     # append 8 trivial strings at once
-    a.append_n(8)
+    a.append_n(8, "")
     assert len(a) == 10
     a.resize(5)
     assert len(a) == 5
@@ -92,6 +92,11 @@ def test_str():
     empty = String(4)
     assert empty.to_str() == ""
     assert String.from_str(empty.to_str(), 4) == empty
+    assert String(4, "") == empty
+    with pytest.raises(TypeError):
+        String(4, None)
+    with pytest.raises(TypeError):
+        empty.set(None)
 
     single = String.from_str("X0", 1)
     assert single.to_str() == "X0"

@@ -26,6 +26,7 @@ from zixy.container.terms import (
     Term as TermBase,
     Terms as TermsBase,
     TermSet as TermSetBase,
+    TermSpecT,
     TermSum as TermSumBase,
 )
 from zixy.qubit._strings import ElemT, ImplT, String, Strings
@@ -41,7 +42,11 @@ class Term(Generic[ImplT, SpecT, CoeffT, ElemT], TermBase[ImplT, SpecT, CoeffT])
 
     cmpnts_type: type[Strings[ImplT, SpecT, ElemT]]
 
-    def __init__(self, qubits: int | Qubits = 0, source: SpecT | None = None):
+    def __init__(
+        self,
+        qubits: int | Qubits = 0,
+        source: TermSpecT[ImplT, SpecT, CoeffT] = "",  # type: ignore[assignment]
+    ):
         """Initialize the term.
 
         Args:

@@ -61,6 +61,7 @@ class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT], StringRepresentable):
     """
 
     impl_type: type[ImplT]
+    _clear_spec: SpecT
 
     _impl: ImplT
     _index: int | None
@@ -117,7 +118,7 @@ class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT], StringRepresentable):
         return self._impl.cmpnt_to_string(self.index)
 
     @abstractmethod
-    def set(self, source: SpecT | Self | None) -> None:
+    def set(self, source: SpecT | Self) -> None:
         """Set the value of the component.
 
         Args:
@@ -134,7 +135,7 @@ class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT], StringRepresentable):
         Note:
             This method operates in-place.
         """
-        self.set(None)
+        self.set(self._clear_spec)
 
     @classmethod
     def raise_spec_type_error(cls, source: Any) -> None:
@@ -261,9 +262,7 @@ class CmpntSet(Generic[ImplT, SpecT], StringRepresentable):
         """Get the number of elements in ``self``."""
         return len(self._impl)
 
-    def _get_working_cmpnt(
-        self, value: SpecT | Cmpnt[ImplT, SpecT] | None = None
-    ) -> Cmpnt[ImplT, SpecT]:
+    def _get_working_cmpnt(self, value: SpecT | Cmpnt[ImplT, SpecT]) -> Cmpnt[ImplT, SpecT]:
         """Get a :class:`Cmpnt` instance that contains the component specified by ``value``.
 
         Args:
@@ -361,7 +360,7 @@ class CmpntSet(Generic[ImplT, SpecT], StringRepresentable):
         """Iterate over the elements of ``self``."""
         if not len(self):
             return
-        tmp = self._get_working_cmpnt()
+        tmp = self._get_working_cmpnt(self.cmpnts_type.cmpnt_type._clear_spec)
         for i in range(len(self)):
             tmp._impl.cmpnt_copy_external(0, self._impl, i)
             yield tmp
@@ -540,7 +539,7 @@ class Cmpnts(
     def __setitem__(
         self,
         indexer: int | builtins.slice,
-        source: SpecT | Cmpnt[ImplT, SpecT] | Cmpnts[ImplT, SpecT] | None,
+        source: SpecT | Cmpnt[ImplT, SpecT] | Cmpnts[ImplT, SpecT],
     ) -> None:
         """Set the component at ``indexer`` in ``self`` to ``source``.
 
@@ -659,7 +658,7 @@ class Cmpnts(
         return out
 
     @requires_ownership
-    def append_n(self, n: int, source: SpecT | Cmpnt[ImplT, SpecT] | None = None) -> Self:
+    def append_n(self, n: int, source: SpecT | Cmpnt[ImplT, SpecT]) -> Self:
         """Append ``source`` to the end of ``self`` ``n`` times.
 
         Args:
@@ -669,6 +668,8 @@ class Cmpnts(
         Note:
             This method operates in-place.
         """
+        if source is None:
+            source = self.cmpnt_type._clear_spec
         n_old = len(self)
         self.resize(len(self) + n)
         for i in range(n_old, len(self)):
@@ -676,7 +677,7 @@ class Cmpnts(
         return self
 
     @requires_ownership
-    def append(self, source: SpecT | Cmpnt[ImplT, SpecT] | None = None) -> Self:
+    def append(self, source: SpecT | Cmpnt[ImplT, SpecT]) -> Self:
         """Append ``source`` to the end of ``self``.
 
         Args:
@@ -687,9 +688,7 @@ class Cmpnts(
         """
         return self.append_n(1, source)
 
-    def append_iterable(
-        self, source: Iterable[SpecT | Cmpnt[ImplT, SpecT] | None] = tuple()
-    ) -> Self:
+    def append_iterable(self, source: Iterable[SpecT | Cmpnt[ImplT, SpecT]] = tuple()) -> Self:
         """Append many values from an iterable source.
 
         Args:

@@ -5,8 +5,10 @@ from zixy.qubit.state import ComplexTermSum, RealTerm, RealTermSet, RealTermSum,
 
 
 def test_term():
-    term = SignTerm(6, None)
+    term = SignTerm(6, "")
     assert term.coeff == Sign(False)
+    with pytest.raises(TypeError):
+        SignTerm(6, None)
     term.string.set((1, 0) * 3)
     assert str(term) == "(+1, [1, 0, 1, 0, 1, 0])"
     term *= -1

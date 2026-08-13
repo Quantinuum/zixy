@@ -76,7 +76,7 @@ from zixy.qubit.state._terms import (
 )
 from zixy.utils import DEFAULT_COMMUTES_ATOL
 
-TermSpec: TypeAlias = String | tuple[StringSpec | String | None, CoeffT | None] | None
+TermSpec: TypeAlias = String | StringSpec | tuple[StringSpec | String, CoeffT | None]
 SignTermSpec = TermSpec[Sign]
 ComplexSignTermSpec = TermSpec[ComplexSign]
 RealTermSpec = TermSpec[float]

@@ -56,18 +56,13 @@ from zixy.utils import slice_equal
 if TYPE_CHECKING:
     from zixy.qubit.pauli._terms import ComplexSignTerm, Term
 
-StringSpec: TypeAlias = (
-    None  # signifies the clear string
-    | Sequence[PauliMatrix]
-    | dict[int, PauliMatrix]
-    | str
-)
+StringSpec: TypeAlias = Sequence[PauliMatrix] | dict[int, PauliMatrix] | str
 ElemT = PauliMatrix
 SpecT = StringSpec
 ImplT = QubitPauliArray
 
 
-def _default_qubits(source: StringSpec = None) -> Qubits:
+def _default_qubits(source: StringSpec) -> Qubits:
     """Construct the default qubits for a string specifier."""
     if isinstance(source, dict):
         if len(source) == 0:
@@ -89,10 +84,11 @@ class String(StringBase[ImplT, SpecT, ElemT]):
 
     impl_type = ImplT
 
+    _clear_spec = ""
     _springs_type = PauliSprings
 
     @staticmethod
-    def _get_default_qubits(source: SpecT | None = None) -> Qubits:
+    def _get_default_qubits(source: SpecT) -> Qubits:
         """Get the default qubit space for ``source``."""
         return _default_qubits(source)
 
@@ -109,7 +105,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
             An instance of ``cls`` parsed from ``source``.
         """
         if not source.strip():
-            return cls(qubits)
+            return cls(qubits, "")
         n = len(PauliSprings(source))
         if n != 1:
             raise ValueError(f"Source string should contain one Pauli string, got {n}.")
@@ -138,7 +134,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         """Get the string as a dictionary of its elements."""
         return self._impl.cmpnt_get_dict(self.index)
 
-    def set(self, source: SpecT | StringBase[ImplT, SpecT, ElemT] | None) -> None:
+    def set(self, source: SpecT | StringBase[ImplT, SpecT, ElemT]) -> None:
         """Set the value of the string.
 
         Args:

@@ -13,8 +13,10 @@ def test_cmpnt():
     s.set(String("hello"))
     assert str(s) == "hello"
     assert str(s.copy()) == "hello"
-    s.set(None)
+    s.set("")
     assert str(s) == ""
+    with pytest.raises(TypeError):
+        s.set(None)
     with pytest.raises(TypeError):
         s.set(1)
 

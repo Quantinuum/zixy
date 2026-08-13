@@ -32,11 +32,9 @@ ElemT = TypeVar("ElemT")
 ImplT = TypeVar("ImplT", bound="QubitArray[Any, Any]")
 
 
-def _default_qubits(source: SpecT | None = None) -> Qubits:
+def _default_qubits(source: SpecT) -> Qubits:
     """Construct the default qubits for a string specifier."""
-    if source is None:
-        return Qubits.from_count(0)
-    elif isinstance(source, tuple | list):
+    if isinstance(source, tuple | list):
         return Qubits.from_count(len(source))
     else:
         raise TypeError("Source object is of an unsupported type.")
@@ -52,26 +50,27 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
     _springs_type: type[Springs]
 
     @staticmethod
-    def _get_default_qubits(source: SpecT | None = None) -> Qubits:
+    def _get_default_qubits(source: SpecT) -> Qubits:
         """Get the default qubits for this string type based on a string specifier."""
         return _default_qubits(source)
 
-    def __init__(self, qubits: int | Qubits | None = None, source: SpecT | None = None):
+    def __init__(
+        self,
+        qubits: int | Qubits | None = None,
+        source: SpecT = "",  # type: ignore[assignment]
+    ):
         """Initialize the string.
 
         Args:
             qubits: The qubit register or qubit count.
             source: The string specifier to use for default qubits and initial value.
         """
-        if qubits is None and source is not None:
+        if qubits is None:
             qubits = self._get_default_qubits(source)
-        elif qubits is None:
-            raise ValueError("At least one of qubits and source must be specified.")
         impl = self.impl_type(qubits if isinstance(qubits, Qubits) else Qubits.from_count(qubits))
         impl.resize(1)
         super().__init__(impl)
-        if source is not None:
-            self.set(source)
+        self.set(source)
         assert len(self._impl) == 1
 
     @property
@@ -106,7 +105,7 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
         else:
             self._impl.cmpnt_copy_external(self.index, source._impl, source.index)
 
-    def set(self, source: SpecT | String[ImplT, SpecT, ElemT] | None) -> None:
+    def set(self, source: SpecT | String[ImplT, SpecT, ElemT]) -> None:
         """Set the value of the string.
 
         Args:
@@ -115,8 +114,6 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
         Note:
             This method operates in-place.
         """
-        if source is None:
-            source = tuple()  # type: ignore[assignment]
         if isinstance(source, String):
             self._set_copy(source)
         elif isinstance(source, tuple | list):
@@ -126,9 +123,12 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
                 for i, c in enumerate(source):
                     self[i] = c
         elif isinstance(source, str):
+            if not source.strip():
+                self._impl.cmpnt_set_from_list(self.index, [])
+                return
             springs = self._springs_type(source)
             if len(springs) == 0:
-                self.clear()
+                self._impl.cmpnt_set_from_list(self.index, [])
             elif len(springs) == 1:
                 self._impl.cmpnt_set_from_spring(self.index, springs, 0)
             else:

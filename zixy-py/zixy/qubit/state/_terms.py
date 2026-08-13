@@ -60,7 +60,7 @@ from zixy.qubit._terms import (
 from zixy.qubit.state._strings import String, Strings, StringSpec
 from zixy.utils import split_top_level
 
-TermSpec: TypeAlias = String | tuple[StringSpec | String | None, CoeffT | None] | None
+TermSpec: TypeAlias = String | StringSpec | tuple[StringSpec | String, CoeffT | None]
 SignTermSpec = TermSpec[Sign]
 ComplexSignTermSpec = TermSpec[ComplexSign]
 RealTermSpec = TermSpec[float]

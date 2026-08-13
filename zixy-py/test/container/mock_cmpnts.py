@@ -109,6 +109,8 @@ CmpntSpecT = str
 class String(Cmpnt[StringsImplArray, CmpntSpecT]):
     impl_type = StringsImplArray
 
+    _clear_spec = ""
+
     def __init__(self, source: CmpntSpecT):
         impl = self.impl_type()
         impl.resize(1)
@@ -133,9 +135,7 @@ class String(Cmpnt[StringsImplArray, CmpntSpecT]):
     def copy(self) -> String:
         return String(self)
 
-    def set(self, source: str | String | None):
-        if source is None:
-            source = ""
+    def set(self, source: str | String):
         if isinstance(source, str):
             self._impl._list[self.index] = source
         elif isinstance(source, String):

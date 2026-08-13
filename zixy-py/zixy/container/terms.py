@@ -74,7 +74,7 @@ from zixy.container.data import TermData
 from zixy.utils import DEFAULT_ATOL, DEFAULT_RTOL, slice_index_gen, slice_of_slice, split_top_level
 
 TermSpecT: TypeAlias = (
-    Cmpnt[ImplT, SpecT] | SpecT | tuple[SpecT | Cmpnt[ImplT, SpecT] | None, CoeffT | None] | None
+    Cmpnt[ImplT, SpecT] | SpecT | tuple[SpecT | Cmpnt[ImplT, SpecT], CoeffT | None]
 )
 OutT = TypeVar("OutT", bound="ViewableBase[Any, Any]")
 
@@ -219,7 +219,7 @@ class Term(
         """
         try:
             # first, attempt to set just the cmpnt
-            self.cmpnt.set(cast(SpecT | Cmpnt[ImplT, SpecT] | None, source))
+            self.cmpnt.set(cast(SpecT | Cmpnt[ImplT, SpecT], source))
             self.coeff = unit(self.coeff_type)
             return
         except (TypeError, ValueError):
@@ -241,7 +241,7 @@ class Term(
         Note:
             This method operates in-place.
         """
-        self.set(None)
+        self.set("")  # type: ignore[arg-type]
 
     def __repr__(self) -> str:
         """Return a string representation of ``self``."""
@@ -383,8 +383,7 @@ class Terms(
         indexer: int | builtins.slice,
         source: TermSpecT[ImplT, SpecT, CoeffT]
         | Term[ImplT, SpecT, CoeffT]
-        | Terms[ImplT, SpecT, CoeffT]
-        | None,
+        | Terms[ImplT, SpecT, CoeffT],
     ) -> None:
         """Set the term at ``indexer`` in ``self`` to ``source``.
 
@@ -542,7 +541,7 @@ class Terms(
     def append_n(
         self,
         n: int,
-        source: TermSpecT[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, CoeffT] | None = None,
+        source: TermSpecT[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, CoeffT] = "",  # type: ignore[assignment]
     ) -> Self:
         """Append ``source`` to the end of ``self`` ``n`` times.
 
@@ -563,7 +562,7 @@ class Terms(
     @requires_ownership
     def append(
         self,
-        source: TermSpecT[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, CoeffT] | None = None,
+        source: TermSpecT[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, CoeffT] = "",  # type: ignore[assignment]
     ) -> Self:
         """Append ``source`` to the end of ``self``.
 
@@ -577,9 +576,7 @@ class Terms(
 
     def append_iterable(
         self,
-        source: Iterable[
-            TermSpecT[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, CoeffT] | None
-        ] = tuple(),
+        source: Iterable[TermSpecT[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, CoeffT]] = tuple(),
     ) -> Self:
         """Append the elements of ``source`` to the end of ``self``.
 
@@ -826,7 +823,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         return len(self._impl)
 
     def _get_working_term(
-        self, value: Term[ImplT, SpecT, CoeffT] | TermSpecT[ImplT, SpecT, CoeffT] = None
+        self, value: Term[ImplT, SpecT, CoeffT] | TermSpecT[ImplT, SpecT, CoeffT]
     ) -> Term[ImplT, SpecT, CoeffT]:
         """Get a term that contains the data specified by ``value``.
 
@@ -844,7 +841,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
             self._working_term.set(value)
             return self._working_term
 
-    def _get_working_cmpnt(self, value: Cmpnt[ImplT, SpecT] | SpecT | None) -> Cmpnt[ImplT, SpecT]:
+    def _get_working_cmpnt(self, value: Cmpnt[ImplT, SpecT] | SpecT) -> Cmpnt[ImplT, SpecT]:
         """Get a component that contains the data specified by ``value``.
 
         Args:
@@ -1037,7 +1034,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         """Iterate over the elements of ``self``."""
         if not len(self):
             return
-        tmp = self._get_working_term().clone()
+        tmp = self._get_working_term("").clone()  # type: ignore[arg-type]
         for i in range(len(self)):
             tmp.coeff = self._impl._coeffs[i]
             tmp._impl._cmpnts._impl.cmpnt_copy_external(0, self._impl._cmpnts._impl, i)

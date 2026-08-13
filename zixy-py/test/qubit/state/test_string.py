@@ -43,6 +43,11 @@ def test_str():
     vacuum = String(6)
     assert vacuum.to_str() == "[0, 0, 0, 0, 0, 0]"
     assert String.from_str(vacuum.to_str(), 6) == vacuum
+    assert String(6, "") == vacuum
+    with pytest.raises(TypeError):
+        String(6, None)
+    with pytest.raises(TypeError):
+        vacuum.set(None)
 
     single = String(1, (1,))
     assert single.to_str() == "[1]"

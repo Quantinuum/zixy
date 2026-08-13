@@ -176,8 +176,10 @@ def test_sign_terms():
     terms[1] = "Fermi"
     assert str(terms) == "(+1, ), (+1, Fermi), (-1, hello), (+1, world!), (-1, ), (+1, )"
 
-    terms[1] = None, Sign(True)
+    terms[1] = "", Sign(True)
     assert str(terms) == "(+1, ), (-1, ), (-1, hello), (+1, world!), (-1, ), (+1, )"
+    with pytest.raises(TypeError):
+        terms[1] = None, Sign(True)
 
     terms[1] = terms[3].cmpnt, Sign(False)
     assert str(terms) == "(+1, ), (+1, world!), (-1, hello), (+1, world!), (-1, ), (+1, )"
@@ -202,8 +204,10 @@ def test_sign_terms():
     assert str(terms) == "(+1, ), (-1, Fermi), (-1, hello)"
     terms.resize(5)
     assert str(terms) == "(+1, ), (-1, Fermi), (-1, hello), (+1, ), (+1, )"
-    terms.append(None)
+    terms.append()
     assert str(terms) == "(+1, ), (-1, Fermi), (-1, hello), (+1, ), (+1, ), (+1, )"
+    with pytest.raises(TypeError):
+        terms.append(None)
     assert str(terms.cmpnts[2::-1]) == "hello, Fermi, "
 
     owning = terms.clone()
@@ -292,8 +296,10 @@ def test_real_terms():
     terms[1] = "Fermi"
     assert str(terms) == "(1.0, ), (1.0, Fermi), (-1.0, hello), (1.0, world!), (-1.0, ), (1.0, )"
 
-    terms[1] = None, ComplexSign(2)
+    terms[1] = "", ComplexSign(2)
     assert str(terms) == "(1.0, ), (-1.0, ), (-1.0, hello), (1.0, world!), (-1.0, ), (1.0, )"
+    with pytest.raises(TypeError):
+        terms[1] = None, ComplexSign(2)
 
     terms[1] = terms[3].cmpnt, 9
     assert str(terms) == "(1.0, ), (9.0, world!), (-1.0, hello), (1.0, world!), (-1.0, ), (1.0, )"

@@ -26,7 +26,7 @@ from typing import Any, TypeAlias, cast, overload
 
 import numpy as np
 from numpy.typing import NDArray
-from sympy import Expr, Symbol, sympify
+from sympy import Expr, Symbol
 from typing_extensions import Self
 
 from zixy._zixy import BinarySprings, FermionStateArray, Modes
@@ -61,7 +61,6 @@ from zixy.fermion._terms import (
     TermSum as FermionTermSum,
 )
 from zixy.fermion.state._strings import String, Strings, StringSpec
-from zixy.utils import split_top_level
 
 TermSpec: TypeAlias = String | StringSpec | tuple[StringSpec | String, CoeffT | None]
 ElemT = bool
@@ -73,28 +72,27 @@ ComplexTermSpec = TermSpec[complex]
 SymbolicTermSpec = TermSpec[Expr]
 
 
-def _parse_term_source(source: str) -> tuple[str, str | None]:
-    source = source.strip()
-    if source.startswith("(") and source.endswith(")"):
-        parts = split_top_level(source[1:-1])
-        if len(parts) == 2:
-            return parts[1], parts[0]
-    return source, None
+def _data_from_str(
+    source: str, modes: int | Modes | None, coeff_type: type[CoeffT]
+) -> TermData[FermionStateArray, StringSpec, CoeffT]:
+    """Create a new instance of :class:`~zixy.container.data.TermData` by parsing an input string.
 
+    Args:
+        source: Input string to parse.
+        modes: The mode space or mode count. If ``None``, the mode space is inferred from the
+            string specifier.
+        coeff_type: The coefficient type.
 
-def _parse_coeff(text: str | None, coeff_type: type[CoeffT]) -> Any:
-    if text is None:
-        return get_coeffs_type(coeff_type).from_size(1)[0]
-    if coeff_type is Sign:
-        return Sign.from_int(int(text))
-    if coeff_type is float:
-        return float(text)
-    if coeff_type is complex:
-        return complex(text.replace("i", "j"))
-    if issubclass(coeff_type, Expr):
-        return sympify(text)
-    parser: Any = coeff_type
-    return parser(text)
+    Returns:
+        A new instance containing the state strings and coefficients in the ``source``.
+    """
+    if isinstance(modes, int):
+        modes = Modes.from_count(modes)
+    impl = FermionStateArray(modes, BinarySprings(source))
+    cmpnts = Strings._create(impl)
+    coeffs_type = get_coeffs_type(coeff_type)
+    coeffs = coeffs_type.from_str(source) if "(" in source else coeffs_type.from_size(len(cmpnts))
+    return TermData(cmpnts, coeffs)
 
 
 def _mul(lhs: Term[CoeffT], rhs: OtherCoeffT) -> Term[Any]:
@@ -133,15 +131,7 @@ class Term(FermionTerm[ImplT, SpecT, CoeffT, ElemT]):
         Returns:
             A new instance containing the state string and coefficient in ``source``.
         """
-        string_text, coeff_text = _parse_term_source(source)
-        if isinstance(modes, int):
-            modes = Modes.from_count(modes)
-        impl = FermionStateArray(modes, BinarySprings(string_text))
-        cmpnts = cls.cmpnts_type._create(impl)
-        coeffs_type = get_coeffs_type(cls.coeff_type)
-        coeffs = coeffs_type()
-        coeffs.append(_parse_coeff(coeff_text, cls.coeff_type))
-        data = TermData(cmpnts, coeffs)
+        data = _data_from_str(source, modes, cls.coeff_type)
         if len(data) != 1:
             raise ValueError(
                 f"There should be exactly one Term string in the input, not {len(data)}."
@@ -166,14 +156,8 @@ class Terms(FermionTerms[ImplT, SpecT, CoeffT, ElemT]):
         Returns:
             A new instance containing the state strings and coefficients in ``source``.
         """
-        if isinstance(modes, int):
-            modes = Modes.from_count(modes)
-        term_strs = split_top_level(source)
-        parsed_terms = [cls.term_type.from_str(term_str, modes) for term_str in term_strs]
-        out_modes = modes
-        if out_modes is None:
-            out_modes = parsed_terms[0].modes if parsed_terms else Modes.from_count(0)
-        return cls.from_iterable(parsed_terms, out_modes)
+        data = _data_from_str(source, modes, cls.term_type.coeff_type)
+        return cls._create(data)
 
 
 class TermSet(FermionTermSet[ImplT, SpecT, CoeffT, ElemT]):

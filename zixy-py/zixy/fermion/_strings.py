@@ -31,11 +31,6 @@ ElemT = TypeVar("ElemT")
 ImplT = TypeVar("ImplT", bound="FermionArray")
 
 
-def _as_modes(modes: int | Modes) -> Modes:
-    """Convert a mode count or mode space to a mode space."""
-    return Modes.from_count(modes) if isinstance(modes, int) else modes
-
-
 def _check_modes_compatibility(*modes: Modes) -> None:
     """Check that all mode spaces are compatible."""
     if len(modes) > 1 and any(modes[0] != other for other in modes[1:]):
@@ -69,7 +64,7 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
         """
         if modes is None:
             modes = self._get_default_modes(source)
-        impl = self.impl_type(_as_modes(modes))
+        impl = self.impl_type(Modes.from_count(modes) if isinstance(modes, int) else modes)
         impl.resize(1)
         super().__init__(impl)
         self.set(source)
@@ -109,7 +104,9 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
             modes: The mode space or number of modes.
             n: Number of default elements with which to create the instance.
         """
-        super().__init__(self.cmpnt_type.impl_type(_as_modes(modes)))
+        super().__init__(
+            self.cmpnt_type.impl_type(Modes.from_count(modes) if isinstance(modes, int) else modes)
+        )
         self.resize(n)
 
     @property
@@ -137,4 +134,7 @@ class StringSet(Generic[ImplT, SpecT, ElemT], CmpntSet[ImplT, SpecT]):
 
     def __init__(self, modes: int | Modes = 0):
         """Initialize the string set."""
-        CmpntSet.__init__(self, self.cmpnts_type(_as_modes(modes))._impl)
+        CmpntSet.__init__(
+            self,
+            self.cmpnts_type(Modes.from_count(modes) if isinstance(modes, int) else modes)._impl,
+        )

@@ -19,12 +19,11 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Generic, cast
 
-from sympy import Expr, sympify
 from typing_extensions import Self
 
 from zixy._zixy import Qubits
 from zixy.container.cmpnts import SpecT
-from zixy.container.coeffs import CoeffT, Sign, convert, typesafe_mul, unit
+from zixy.container.coeffs import CoeffT, Sign, convert
 from zixy.fermion._strings import ImplT
 from zixy.fermion._terms import (
     Term as FermionTerm,
@@ -41,39 +40,6 @@ from zixy.qubit.pauli._terms import ComplexTermSum as PauliComplexTermSum
 
 if TYPE_CHECKING:
     from zixy.fermion.mappings import Mapper
-
-
-def _sign_value(sign: Any) -> Sign:
-    return Sign(sign)
-
-
-def _signed_coeff(coeff: CoeffT, sign: Any) -> Any:
-    return typesafe_mul(coeff, _sign_value(sign))
-
-
-def _factor_coeff(coeff: CoeffT, factor: complex) -> Any:
-    if abs(factor.imag) < 1e-14:
-        factor = factor.real
-    return typesafe_mul(coeff, factor)
-
-
-def _parse_coeff(text: str | None, coeff_type: type[CoeffT]) -> Any:
-    if text is None:
-        return unit(coeff_type)
-    if coeff_type is Sign:
-        value: Any = Sign.from_int(int(text))
-        return value
-    if coeff_type is float:
-        value = float(text)
-        return value
-    if coeff_type is complex:
-        value = complex(text.replace("i", "j"))
-        return value
-    if issubclass(coeff_type, Expr):
-        value = sympify(text)
-        return value
-    parser: Any = coeff_type
-    return parser(text)
 
 
 def _product_sign(cre: list[int], ann: list[int]) -> Sign:

@@ -21,7 +21,6 @@ from zixy.fermion.operator.normal import (
     SignTermSum,
     String,
     SymbolicTerm,
-    SymbolicTerms,
     SymbolicTermSum,
 )
 
@@ -66,12 +65,12 @@ def test_complex_term():
     assert type(scaled) is ComplexTerm
     assert str(scaled) == "((2+4j), F0^ F1)"
 
-    adjoint = ComplexTerm.from_str("(1j, F0^ F1)", 2).daggered()
+    adjoint = ComplexTerm.from_str("((1j), F0^ F1)", 2).daggered()
     assert str(adjoint) == "(-1j, F1^ F0)"
 
 
 def test_term_scalar_mul_preserves_viewed_string():
-    terms = RealTerms.from_str("F0^ F0, (2.0, F1^ F1)", 2)
+    terms = RealTerms.from_str("(1.0, F0^ F0), (2.0, F1^ F1)", 2)
 
     right_scaled = terms[1] * 3.0
     left_scaled = 3.0 * terms[1]
@@ -96,8 +95,8 @@ def test_term_scalar_mul_preserves_viewed_string():
         (RealTerm.from_str("(2, F0^ F1)", 2), "(2.0, F1^ F0)"),
         (RealTerm.from_str("F0^ F1^ F2", 3), "(-1.0, F2^ F0 F1)"),
         (RealTerm.from_str("(2, F0^ F1^ F2 F3)", 4), "(2.0, F2^ F3^ F0 F1)"),
-        (ComplexTerm.from_str("(1j, F0^ F1)", 2), "(-1j, F1^ F0)"),
-        (ComplexTerm.from_str("(1j, F0^ F1^ F2)", 3), "(1j, F2^ F0 F1)"),
+        (ComplexTerm.from_str("((1j), F0^ F1)", 2), "(-1j, F1^ F0)"),
+        (ComplexTerm.from_str("((1j), F0^ F1^ F2)", 3), "(1j, F2^ F0 F1)"),
         (SymbolicTerm(2, ("F0^ F1", sympify("a"))), "(conjugate(a), F1^ F0)"),
         (SymbolicTerm(3, ("F0^ F1^ F2", sympify("a"))), "(-conjugate(a), F2^ F0 F1)"),
     ),
@@ -121,8 +120,12 @@ def test_term_dagger(term, expected):
             "(2.0, F0^ F1^ F2 F3)",
             "(2.0, F2^ F3^ F0 F1)",
         ),
-        (ComplexTerm.from_str("(1j, F0^ F1)", 2), "(1j, F0^ F1)", "(-1j, F1^ F0)"),
-        (ComplexTerm.from_str("(1j, F0^ F1^ F2)", 3), "(1j, F0^ F1^ F2)", "(1j, F2^ F0 F1)"),
+        (ComplexTerm.from_str("((1j), F0^ F1)", 2), "(1j, F0^ F1)", "(-1j, F1^ F0)"),
+        (
+            ComplexTerm.from_str("((1j), F0^ F1^ F2)", 3),
+            "(1j, F0^ F1^ F2)",
+            "(1j, F2^ F0 F1)",
+        ),
         (
             SymbolicTerm(2, ("F0^ F1", sympify("a"))),
             "(a, F0^ F1)",
@@ -271,21 +274,6 @@ def test_complex_terms():
         terms.into(RealTerms)
 
 
-def test_symbolic_terms():
-    a = sympify("a")
-    terms = SymbolicTerms(3)
-    terms.resize(3)
-    terms[1] = ("F0^ F1", a)
-    terms[2] = SymbolicTerm(3, ("F2", 2 * a))
-
-    assert str(terms) == "(1, ), (a, F0^ F1), (2*a, F2)"
-    assert str(terms[1].subs({a: 3})) == "(3, F0^ F1)"
-    assert str(terms.subs({a: 3})) == "(1, ), (3, F0^ F1), (6, F2)"
-
-    term_sum = SymbolicTermSum.from_str("(a, F0^ F1)", 2)
-    assert str(term_sum.subs({a: 2})) == "(2, F0^ F1)"
-
-
 def test_append_iterable():
     terms = RealTerms(4)
     terms.append_iterable(
@@ -425,17 +413,10 @@ def test_products_remain_normal_ordered(product, expected):
 
 
 def test_complex_term_product():
-    lhs = ComplexTermSum.from_str("(1j, F0)", 2)
-    rhs = ComplexTermSum.from_str("(2, F0^)", 2)
+    lhs = ComplexTermSum.from_str("((1j), F0)", 2)
+    rhs = ComplexTermSum.from_str("((2), F0^)", 2)
 
     assert str(lhs * rhs) == "(2j, ), (-2j, F0^ F0)"
-
-
-def test_symbolic_term_product():
-    lhs = SymbolicTerm.from_str("(a, F0)", 2)
-    rhs = SymbolicTerm.from_str("(b, F0^)", 2)
-
-    assert str(lhs * rhs) == "(a*b, ), (-a*b, F0^ F0)"
 
 
 def test_operator_properties():
@@ -466,7 +447,7 @@ def test_operator_properties():
         (
             ComplexTermSum,
             GeneralComplexTermSum,
-            "(1j, F0^ F1)",
+            "((1j), F0^ F1)",
             "(1j, F0^ F1)",
             [(0, True), (1, False)],
         ),

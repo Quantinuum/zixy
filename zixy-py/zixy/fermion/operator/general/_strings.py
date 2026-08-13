@@ -30,7 +30,7 @@ from typing_extensions import Self
 from zixy._zixy import GeneralFermionOperatorArray, Modes
 from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet
 from zixy.container.coeffs import Coeff, CoeffT
-from zixy.fermion._strings import _as_modes, _check_modes_compatibility
+from zixy.fermion._strings import _check_modes_compatibility
 from zixy.fermion.operator._strings import (
     LadderOp,
     String as OperatorString,
@@ -84,7 +84,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         """
         if modes is None:
             modes = self._get_default_modes(source)
-        modes = _as_modes(modes)
+        modes = Modes.from_count(modes) if isinstance(modes, int) else modes
         ops = parse_ladder_product(source) if isinstance(source, str) else list(source)
         impl = self.impl_type(modes, len(ops))
         impl.resize(1)
@@ -216,7 +216,7 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
     _set_type: type[StringSet]
 
     def __init__(self, modes: int | Modes = 0, n: int = 0, max_len: int = 0):
-        modes = _as_modes(modes)
+        modes = Modes.from_count(modes) if isinstance(modes, int) else modes
         Cmpnts.__init__(self, self.cmpnt_type.impl_type(modes, max_len))
         self.resize(n)
 

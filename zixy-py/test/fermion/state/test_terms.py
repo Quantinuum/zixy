@@ -133,8 +133,8 @@ def test_vdot_rejects_different_modes():
 
 
 def test_complex_vdot():
-    lhs = ComplexTermSum.from_str("((1+1j), [1, 0]), (2j, [0, 1])", 2)
-    rhs = ComplexTermSum.from_str("(3j, [1, 0]), (1, [0, 1])", 2)
+    lhs = ComplexTermSum.from_str("((1+1j), [1, 0]), ((2j), [0, 1])", 2)
+    rhs = ComplexTermSum.from_str("((3j), [1, 0]), ((1), [0, 1])", 2)
 
     assert lhs.vdot(rhs) == 3.0 + 1.0j
 
@@ -184,7 +184,7 @@ def test_real_operator_mat_elem_rejects_different_modes():
 
 
 def test_complex_operator_apply():
-    op = ComplexOperator.from_str("(1j, F1^ F0)", 2)
+    op = ComplexOperator.from_str("((1j), F1^ F0)", 2)
     state = ComplexTermSum.from_str("[1, 0]", 2)
 
     out = op.apply(state)
@@ -194,7 +194,7 @@ def test_complex_operator_apply():
 
 
 def test_complex_operator_mat_elem():
-    op = ComplexOperator.from_str("(1j, F1^ F0)", 2)
+    op = ComplexOperator.from_str("((1j), F1^ F0)", 2)
     bra = ComplexTermSum.from_str("[0, 1]", 2)
     ket = ComplexTermSum.from_str("[1, 0]", 2)
 
@@ -203,7 +203,7 @@ def test_complex_operator_mat_elem():
 
 
 def test_complex_operator_apply_rejects_different_modes():
-    op = ComplexOperator.from_str("(1j, F1^ F0)", 2)
+    op = ComplexOperator.from_str("((1j), F1^ F0)", 2)
     state = ComplexTermSum.from_str("[1, 0, 0]", 3)
 
     with pytest.raises(ValueError, match="different modes"):
@@ -211,7 +211,7 @@ def test_complex_operator_apply_rejects_different_modes():
 
 
 def test_complex_operator_mat_elem_rejects_different_modes():
-    op = ComplexOperator.from_str("(1j, F1^ F0)", 2)
+    op = ComplexOperator.from_str("((1j), F1^ F0)", 2)
     bra = ComplexTermSum.from_str("[0, 1]", 2)
     ket = ComplexTermSum.from_str("[1, 0, 0]", 3)
 
@@ -228,7 +228,7 @@ def test_string_scalar_mul_promotes_to_term():
 
 
 def test_complex_term_scalar_mul():
-    term = ComplexTerm.from_str("(1j, [1, 0])", 2)
+    term = ComplexTerm.from_str("((1j), [1, 0])", 2)
 
     out = term * 2.0
 
@@ -237,7 +237,7 @@ def test_complex_term_scalar_mul():
 
 
 def test_terms_slice():
-    terms = ComplexTerms.from_str("(1j, [1, 0]), (2j, [0, 1])", 2)
+    terms = ComplexTerms.from_str("((1j), [1, 0]), ((2j), [0, 1])", 2)
 
     assert len(terms[1:]) == 1
     assert terms[1].coeff == 2.0j

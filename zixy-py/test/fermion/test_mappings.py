@@ -246,13 +246,13 @@ def test_to_qubit_real_terms(mapper_type, term_sum_type, string_type, source, pi
         (
             NormalComplexTermSum,
             NormalString,
-            "(2j, F0^), (3, F1^ F1)",
+            "((2j), F0^), ((3), F1^ F1)",
             (("F0^", 2j), ("F1^ F1", 3.0)),
         ),
         (
             GeneralComplexTermSum,
             GeneralString,
-            "(2j, F0 F1^), (3, F1 F0^)",
+            "((2j), F0 F1^), ((3), F1 F0^)",
             (("F0 F1^", 2j), ("F1 F0^", 3.0)),
         ),
     ),

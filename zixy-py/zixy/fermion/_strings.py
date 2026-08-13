@@ -51,11 +51,15 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
 
     @staticmethod
     @abstractmethod
-    def _get_default_modes(source: SpecT | None = None) -> Modes:
+    def _get_default_modes(source: SpecT) -> Modes:
         """Get the default modes for this string type based on a string specifier."""
         pass
 
-    def __init__(self, modes: int | Modes | None = None, source: SpecT | None = None):
+    def __init__(
+        self,
+        modes: int | Modes | None = None,
+        source: SpecT = "",  # type: ignore[assignment]
+    ):
         """Initialize the string.
 
         Args:
@@ -68,8 +72,7 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
         impl = self.impl_type(_as_modes(modes))
         impl.resize(1)
         super().__init__(impl)
-        if source is not None:
-            self.set(source)
+        self.set(source)
 
     @property
     def modes(self) -> Modes:
@@ -84,7 +87,7 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
             self._impl.cmpnt_copy_external(self.index, source._impl, source.index)
 
     @abstractmethod
-    def set(self, source: SpecT | Self | None) -> None:
+    def set(self, source: SpecT | Self) -> None:
         """Set the value of the string."""
         pass
 

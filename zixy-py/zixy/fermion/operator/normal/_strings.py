@@ -41,18 +41,14 @@ from zixy.fermion.operator._strings import (
 if TYPE_CHECKING:
     from zixy.fermion.operator.normal._terms import RealTermSum, Term
 
-StringSpec: TypeAlias = (
-    None | str | tuple[Sequence[int] | Sequence[bool], Sequence[int] | Sequence[bool]]
-)
+StringSpec: TypeAlias = str | tuple[Sequence[int] | Sequence[bool], Sequence[int] | Sequence[bool]]
 ElemT = tuple[list[int], list[int]]
 SpecT = StringSpec
 ImplT = NormalFermionOperatorArray
 
 
-def _default_modes(source: SpecT = None) -> Modes:
+def _default_modes(source: SpecT) -> Modes:
     """Construct the default modes for a string specifier."""
-    if source is None:
-        return Modes.from_count(0)
     if isinstance(source, str):
         max_mode = -1
         for mode, _ in parse_ladder_product(source):
@@ -74,9 +70,10 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
     """
 
     impl_type = ImplT
+    _clear_spec = ""
 
     @staticmethod
-    def _get_default_modes(source: SpecT | None = None) -> Modes:
+    def _get_default_modes(source: SpecT) -> Modes:
         """Get the default modes for this string type based on a string specifier."""
         return _default_modes(source)
 
@@ -94,7 +91,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         """
         return cls(modes, source)
 
-    def set(self, source: SpecT | String | None) -> None:
+    def set(self, source: SpecT | String) -> None:
         """Set the value of the string.
 
         Args:
@@ -103,11 +100,12 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         Note:
             This method operates in-place.
         """
-        if source is None:
-            self._impl.cmpnt_clear(self.index)
-        elif isinstance(source, String):
+        if isinstance(source, String):
             self._set_copy(source)
         elif isinstance(source, str):
+            if not source.strip():
+                self._impl.cmpnt_clear(self.index)
+                return
             cmpnts, signs = self._impl.from_ladder_product(self.modes, parse_ladder_product(source))
             if len(cmpnts) != 1 or signs[0] != 1:
                 raise ValueError(

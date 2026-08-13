@@ -39,20 +39,18 @@ from zixy.fermion._strings import (
 if TYPE_CHECKING:
     from zixy.fermion.state._terms import Term
 
-StringSpec: TypeAlias = None | Sequence[bool] | set[int] | str
+StringSpec: TypeAlias = Sequence[bool] | set[int] | str
 ElemT = bool
 SpecT = StringSpec
 ImplT = FermionStateArray
 
 
-def _default_modes(source: SpecT = None) -> Modes:
+def _default_modes(source: SpecT) -> Modes:
     """Construct the default modes for a string specifier."""
     if isinstance(source, set):
         return Modes.from_count(max(source, default=-1) + 1)
     if isinstance(source, str):
         return Modes.from_count(BinarySprings(source).default_n_qubit())
-    if source is None:
-        return Modes.from_count(0)
     return Modes.from_count(len(source))
 
 
@@ -64,6 +62,7 @@ class String(FermionString[ImplT, SpecT, ElemT]):
     """
 
     impl_type = ImplT
+    _clear_spec = ""
     _get_default_modes = staticmethod(_default_modes)
 
     @classmethod
@@ -78,6 +77,8 @@ class String(FermionString[ImplT, SpecT, ElemT]):
         Returns:
             An instance of ``cls`` parsed from ``source``.
         """
+        if not source.strip():
+            return cls(modes, "")
         n = len(BinarySprings(source))
         if n != 1:
             raise ValueError(f"Source string should contain one state string, got {n}.")
@@ -109,7 +110,7 @@ class String(FermionString[ImplT, SpecT, ElemT]):
         """Get the string as a set of occupied mode indices."""
         return self._impl.cmpnt_get_set(self.index)
 
-    def set(self, source: SpecT | String | None) -> None:
+    def set(self, source: SpecT | String) -> None:
         """Set the value of the string.
 
         Args:
@@ -118,18 +119,19 @@ class String(FermionString[ImplT, SpecT, ElemT]):
         Note:
             This method operates in-place.
         """
-        if source is None:
-            self._impl.cmpnt_clear(self.index)
-        elif isinstance(source, String):
+        if isinstance(source, String):
             self._set_copy(source)
         elif isinstance(source, set):
             self._impl.cmpnt_set_from_set(self.index, source)
         elif isinstance(source, tuple | list):
             self._impl.cmpnt_set_from_list(self.index, list(source))
         elif isinstance(source, str):
+            if not source.strip():
+                self._impl.cmpnt_clear(self.index)
+                return
             springs = BinarySprings(source)
             if len(springs) == 0:
-                self.clear()
+                self._impl.cmpnt_clear(self.index)
             elif len(springs) == 1:
                 self._impl.cmpnt_set_from_spring(self.index, springs, 0)
             else:

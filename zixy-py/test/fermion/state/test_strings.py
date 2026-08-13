@@ -73,7 +73,7 @@ def test_array_sizing():
     strings = Strings(4)
     assert len(strings) == 0
 
-    strings.append()
+    strings.append("")
     strings.append({0, 2})
     strings.append_n(2, [False, True, False, True])
 

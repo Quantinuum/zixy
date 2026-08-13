@@ -91,7 +91,7 @@ if TYPE_CHECKING:
         RealTermSum as GeneralRealTermSum,
     )
 
-TermSpec: TypeAlias = String | tuple[StringSpec | String | None, CoeffT | None] | None
+TermSpec: TypeAlias = String | StringSpec | tuple[StringSpec | String, CoeffT | None]
 ElemT = tuple[list[int], list[int]]
 SpecT = StringSpec
 ImplT = NormalFermionOperatorArray

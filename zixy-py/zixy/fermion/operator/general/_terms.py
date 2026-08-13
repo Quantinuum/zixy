@@ -21,6 +21,7 @@ that are raw fermionic strings, as defined in
 
 from __future__ import annotations
 
+from collections.abc import Sized
 from typing import TYPE_CHECKING, Any, TypeAlias, cast, overload
 
 from sympy import Expr, Symbol
@@ -79,7 +80,7 @@ if TYPE_CHECKING:
         RealTermSum as NormalRealTermSum,
     )
 
-TermSpec: TypeAlias = String | tuple[StringSpec | String | None, CoeffT | None] | None
+TermSpec: TypeAlias = String | StringSpec | tuple[StringSpec | String, CoeffT | None]
 ElemT = list[LadderOp]
 SpecT = StringSpec
 ImplT = GeneralFermionOperatorArray
@@ -88,18 +89,27 @@ ComplexTermSpec = TermSpec[complex]
 SymbolicTermSpec = TermSpec[Expr]
 
 
-def _max_len_from_string_source(source: StringSpec | String | None) -> int:
+def _is_ladder_op(source: object) -> bool:
+    return (
+        isinstance(source, tuple)
+        and len(source) == 2
+        and isinstance(source[0], int)
+        and isinstance(source[1], bool)
+    )
+
+
+def _max_len_from_string_source(source: object) -> int:
     if isinstance(source, String):
         return len(source.get_ops())
     if isinstance(source, str):
         return len(parse_ladder_product(source))
-    if source is None:
-        return 0
-    return len(source)
+    if isinstance(source, Sized):
+        return len(source)
+    raise TypeError("Source object is of an unsupported type.")
 
 
-def _max_len_from_term_source(source: TermSpec[Any]) -> int:
-    if isinstance(source, tuple) and len(source) == 2:
+def _max_len_from_term_source(source: object) -> int:
+    if isinstance(source, tuple) and len(source) == 2 and not _is_ladder_op(source):
         return _max_len_from_string_source(source[0])
     return _max_len_from_string_source(source)
 
@@ -144,7 +154,12 @@ class Term(OperatorTerm[ImplT, SpecT, CoeffT, ElemT]):
     cmpnts_type = Strings
     coeff_type: type[CoeffT]
 
-    def __init__(self, modes: int | Modes = 0, source: TermSpec[CoeffT] = None, max_len: int = 0):
+    def __init__(
+        self,
+        modes: int | Modes = 0,
+        source: TermSpec[CoeffT] = "",
+        max_len: int = 0,
+    ):
         if max_len == 0:
             max_len = _max_len_from_term_source(source)
         cmpnts = self.cmpnts_type(modes, 1, max_len)

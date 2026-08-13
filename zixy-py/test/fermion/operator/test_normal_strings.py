@@ -16,7 +16,7 @@ def test_array_sizing():
     assert len(strings.modes) == 4
     assert len(strings) == 0
 
-    strings.append()
+    strings.append("")
     strings.append("F0^ F1")
     strings.append_n(3, ([2], [3]))
 
@@ -189,7 +189,7 @@ def test_array_modification():
 def test_append_n():
     strings = Strings(4)
     strings.append_n(3, ([0], [1]))
-    strings.append()
+    strings.append("")
 
     assert str(strings) == "F0^ F1, F0^ F1, F0^ F1, "
     assert str(strings.filter_unique()) == "F0^ F1, "

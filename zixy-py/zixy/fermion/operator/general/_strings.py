@@ -43,16 +43,14 @@ from zixy.fermion.operator._strings import (
 if TYPE_CHECKING:
     from zixy.fermion.operator.general._terms import Term
 
-StringSpec: TypeAlias = None | str | Sequence[LadderOp]
+StringSpec: TypeAlias = str | Sequence[LadderOp]
 ElemT = list[LadderOp]
 SpecT = StringSpec
 ImplT = GeneralFermionOperatorArray
 
 
-def _default_modes(source: SpecT = None) -> Modes:
+def _default_modes(source: SpecT) -> Modes:
     """Construct the default modes for a string specifier."""
-    if source is None:
-        return Modes.from_count(0)
     ops = parse_ladder_product(source) if isinstance(source, str) else list(source)
     return Modes.from_count(max((i for i, _ in ops), default=-1) + 1)
 
@@ -65,13 +63,18 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
     """
 
     impl_type = ImplT
+    _clear_spec = ""
 
     @staticmethod
-    def _get_default_modes(source: SpecT | None = None) -> Modes:
+    def _get_default_modes(source: SpecT) -> Modes:
         """Get the default modes for this string type based on a string specifier."""
         return _default_modes(source)
 
-    def __init__(self, modes: int | Modes | None = None, source: SpecT = None):
+    def __init__(
+        self,
+        modes: int | Modes | None = None,
+        source: SpecT = "",
+    ):
         """Initialize the string.
 
         Args:
@@ -82,12 +85,11 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         if modes is None:
             modes = self._get_default_modes(source)
         modes = _as_modes(modes)
-        ops = parse_ladder_product(source) if isinstance(source, str) else list(source or ())
+        ops = parse_ladder_product(source) if isinstance(source, str) else list(source)
         impl = self.impl_type(modes, len(ops))
         impl.resize(1)
         Cmpnt.__init__(self, impl)
-        if source is not None:
-            self.set(ops)
+        self.set(ops)
 
     @property
     def max_len(self) -> int:
@@ -108,7 +110,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         """
         return cls(modes, source)
 
-    def set(self, source: SpecT | String | None) -> None:
+    def set(self, source: SpecT | String) -> None:
         """Set the value of the string.
 
         Args:
@@ -117,9 +119,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         Note:
             This method operates in-place and preserves the input operator order.
         """
-        if source is None:
-            self._impl.cmpnt_clear(self.index)
-        elif isinstance(source, String):
+        if isinstance(source, String):
             self._set_copy(source)
         else:
             ops = parse_ladder_product(source) if isinstance(source, str) else list(source)

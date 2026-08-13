@@ -93,6 +93,14 @@ def test_real_dense_round_trip():
     np.testing.assert_allclose(state.to_dense(), np.array([0.0, 1.0, 2.0, 0.0]))
 
 
+def test_real_dense_infers_modes_from_fock_space_dim():
+    state = RealTermSum.from_dense(source=[0.0, 1.0, 2.0])
+
+    assert len(state.modes) == 2
+    assert state.strings.get_sets() == ({0}, {1})
+    np.testing.assert_allclose(state.to_dense(), np.array([0.0, 1.0, 2.0, 0.0]))
+
+
 def test_real_dense_big_endian():
     state = RealTermSum.from_dense(2, [0.0, 1.0, 0.0, 0.0], big_endian=True)
 

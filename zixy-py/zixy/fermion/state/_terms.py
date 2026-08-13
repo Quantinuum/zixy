@@ -97,14 +97,6 @@ def _parse_coeff(text: str | None, coeff_type: type[CoeffT]) -> Any:
     return parser(text)
 
 
-def _modes_from_dense_len(n: int) -> Modes:
-    if n <= 1:
-        return Modes.from_count(0)
-    if n & (n - 1):
-        raise ValueError("Dense state vector length must be a power of two.")
-    return Modes.from_count(n.bit_length() - 1)
-
-
 def _mul(lhs: Term[CoeffT], rhs: OtherCoeffT) -> Term[Any]:
     """Driver for multiplication of a term with a coefficient."""
     if not isinstance(rhs, Coeff):
@@ -329,7 +321,7 @@ class RealTermSum(NumericTermSum[FermionStateArray, StringSpec, float], TermSum[
             An instance of ``cls`` parsed from ``source``.
         """
         if modes is None:
-            modes = _modes_from_dense_len(len(source))
+            modes = Modes.from_fock_space_dim(len(source))
         if isinstance(modes, int):
             modes = Modes.from_count(modes)
         out = cls(modes)
@@ -434,7 +426,7 @@ class ComplexTermSum(NumericTermSum[FermionStateArray, StringSpec, complex], Ter
             An instance of ``cls`` parsed from ``source``.
         """
         if modes is None:
-            modes = _modes_from_dense_len(len(source))
+            modes = Modes.from_fock_space_dim(len(source))
         if isinstance(modes, int):
             modes = Modes.from_count(modes)
         out = cls(modes)

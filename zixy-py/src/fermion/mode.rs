@@ -1,5 +1,6 @@
 //! Fermionic modes.
 
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use zixy::container::traits::Elements;
 use zixy::fermion::mode::Modes as Modes_;
@@ -27,6 +28,18 @@ impl Modes {
     #[staticmethod]
     pub fn from_pair_count_spin_minor(n: usize) -> PyResult<Self> {
         Ok(Self(Modes_::from_pair_count_spin_minor(n)))
+    }
+
+    /// Create by taking the ceiling of the log2 of the size of the Fock space.
+    #[staticmethod]
+    pub fn from_fock_space_dim(n: usize) -> PyResult<Self> {
+        if n == 0 {
+            Err(PyErr::new::<PyValueError, _>(
+                "Fock space dimension must be non-zero",
+            ))
+        } else {
+            Ok(Self(Modes_::from_fock_space_dim(n)))
+        }
     }
 
     /// Return number of modes.

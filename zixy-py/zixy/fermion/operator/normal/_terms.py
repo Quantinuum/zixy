@@ -327,7 +327,13 @@ class TermSum(OperatorTermSum[ImplT, SpecT, CoeffT, ElemT], TermSet[CoeffT]):
 
 
 class SignTerm(Term[Sign]):
-    """A term consisting of a normal-ordered fermionic string and a sign coefficient."""
+    """A term consisting of a normal-ordered fermionic string and a sign coefficient.
+
+    A single mode-based term consisting of a normal-ordered fermionic string and a
+    :class:`~zixy.container.coeffs.Sign` that may be an owning instance referencing a single
+    element in a :class:`~zixy.container.data.TermData` instance, or a view on an element in
+    another collection.
+    """
 
     coeff_type = Sign
 
@@ -387,13 +393,27 @@ class SignTerm(Term[Sign]):
 
 
 class SignTerms(Terms[Sign]):
-    """A collection of terms with normal-ordered fermionic strings and sign coefficients."""
+    """A collection of terms with normal-ordered fermionic strings and sign coefficients.
+
+    An array-like container of mode-based terms consisting of normal-ordered fermionic strings
+    and :class:`~zixy.container.coeffs.Sign` coefficients that may be an owning instance
+    referencing a :class:`~zixy.container.data.TermData` instance, or a view on a slice of the
+    elements in another collection.
+    """
 
     term_type = SignTerm
 
 
 class SignTermSet(TermSet[Sign]):
-    """A collection of unique terms with normal-ordered fermionic strings and sign coefficients."""
+    """A collection of unique terms with normal-ordered fermionic strings and sign coefficients.
+
+    A set-like container of mode-based terms with :class:`~zixy.container.coeffs.Sign`
+    coefficients that may be used to store unique terms and perform set-like operations on them.
+
+    Note:
+        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        are not.
+    """
 
     terms_type = SignTerms
 
@@ -405,7 +425,13 @@ class SignTermSum(TermSum[Sign]):
 
 
 class RealTerm(Term[float]):
-    """A term consisting of a normal-ordered fermionic string and a real coefficient."""
+    """A term consisting of a normal-ordered fermionic string and a real coefficient.
+
+    A single mode-based term consisting of a normal-ordered fermionic string and a ``float``
+    coefficient that may be an owning instance referencing a single element in a
+    :class:`~zixy.container.data.TermData` instance, or a view on an element in another
+    collection.
+    """
 
     coeff_type = float
 
@@ -465,19 +491,41 @@ class RealTerm(Term[float]):
 
 
 class RealTerms(NumericTerms[NormalFermionOperatorArray, StringSpec, float], Terms[float]):
-    """A collection of terms with normal-ordered fermionic strings and real coefficients."""
+    """A collection of terms with normal-ordered fermionic strings and real coefficients.
+
+    An array-like container of mode-based terms consisting of normal-ordered fermionic strings
+    and ``float`` coefficients that may be an owning instance referencing a
+    :class:`~zixy.container.data.TermData` instance, or a view on a slice of the elements in
+    another collection.
+    """
 
     term_type = RealTerm
 
 
 class RealTermSet(TermSet[float]):
-    """A collection of unique terms with normal-ordered fermionic strings and real coefficients."""
+    """A collection of unique terms with normal-ordered fermionic strings and real coefficients.
+
+    A set-like container of mode-based terms with ``float`` coefficients that may be used to
+    store unique terms and perform set-like operations on them.
+
+    Note:
+        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        are not.
+    """
 
     terms_type = RealTerms
 
 
 class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float], TermSum[float]):
-    """A sum of terms consisting of normal-ordered fermionic strings and real coefficients."""
+    """A sum of terms consisting of normal-ordered fermionic strings and real coefficients.
+
+    A set-like container of mode-based terms with ``float`` coefficients that may be used to
+    store unique terms and perform algebraic operations on them.
+
+    Note:
+        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        are not.
+    """
 
     terms_type = RealTerms
 
@@ -643,7 +691,13 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
 
 
 class ComplexTerm(Term[complex]):
-    """A term consisting of a normal-ordered fermionic string and a complex coefficient."""
+    """A term consisting of a normal-ordered fermionic string and a complex coefficient.
+
+    A single mode-based term consisting of a normal-ordered fermionic string and a ``complex``
+    coefficient that may be an owning instance referencing a single element in a
+    :class:`~zixy.container.data.TermData` instance, or a view on an element in another
+    collection.
+    """
 
     coeff_type = complex
 
@@ -703,13 +757,27 @@ class ComplexTerm(Term[complex]):
 
 
 class ComplexTerms(NumericTerms[NormalFermionOperatorArray, StringSpec, complex], Terms[complex]):
-    """A collection of terms with normal-ordered fermionic strings and complex coefficients."""
+    """A collection of terms with normal-ordered fermionic strings and complex coefficients.
+
+    An array-like container of mode-based terms consisting of normal-ordered fermionic strings
+    and ``complex`` coefficients that may be an owning instance referencing a
+    :class:`~zixy.container.data.TermData` instance, or a view on a slice of the elements in
+    another collection.
+    """
 
     term_type = ComplexTerm
 
 
 class ComplexTermSet(TermSet[complex]):
-    """A collection of unique terms with normal-ordered strings and complex coefficients."""
+    """A collection of unique terms with normal-ordered strings and complex coefficients.
+
+    A set-like container of mode-based terms with ``complex`` coefficients that may be used to
+    store unique terms and perform set-like operations on them.
+
+    Note:
+        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        are not.
+    """
 
     terms_type = ComplexTerms
 
@@ -717,7 +785,15 @@ class ComplexTermSet(TermSet[complex]):
 class ComplexTermSum(
     NumericTermSum[NormalFermionOperatorArray, StringSpec, complex], TermSum[complex]
 ):
-    """A sum of terms consisting of normal-ordered fermionic strings and complex coefficients."""
+    """A sum of terms consisting of normal-ordered fermionic strings and complex coefficients.
+
+    A set-like container of mode-based terms with ``complex`` coefficients that may be used to
+    store unique terms and perform algebraic operations on them.
+
+    Note:
+        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        are not.
+    """
 
     terms_type = ComplexTerms
 
@@ -890,7 +966,13 @@ class ComplexTermSum(
 
 
 class SymbolicTerm(Term[Expr]):
-    """A term consisting of a normal-ordered fermionic string and a symbolic coefficient."""
+    """A term consisting of a normal-ordered fermionic string and a symbolic coefficient.
+
+    A single mode-based term consisting of a normal-ordered fermionic string and a
+    :class:`~sympy.Expr` coefficient that may be an owning instance referencing a single element
+    in a :class:`~zixy.container.data.TermData` instance, or a view on an element in another
+    collection.
+    """
 
     coeff_type = Expr
 
@@ -949,18 +1031,41 @@ class SymbolicTerm(Term[Expr]):
         return _rmul(self, lhs)
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
-        """Substitute values into the symbolic coefficient in-place."""
+        """Apply a partial substitution of the symbols in-place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Note:
+            This method operates in-place.
+
+        See Also:
+            :meth:`~zixy.container.coeffs.SymbolicCoeffs.isubs`
+        """
         self.coeff = self.coeff.subs(values)
 
     def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTerm:
-        """Return a copy with values substituted into the symbolic coefficient."""
+        """Apply a partial substitution of the symbols out of place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Returns:
+            A new contiguously stored instance with the substitution applied.
+        """
         out = self.clone()
         out.isubs(values)
         return out
 
 
 class SymbolicTerms(Terms[Expr]):
-    """A collection of terms with normal-ordered fermionic strings and symbolic coefficients."""
+    """A collection of terms with normal-ordered fermionic strings and symbolic coefficients.
+
+    An array-like container of mode-based terms consisting of normal-ordered fermionic strings
+    and :class:`~sympy.Expr` coefficients that may be an owning instance referencing a
+    :class:`~zixy.container.data.TermData` instance, or a view on a slice of the elements in
+    another collection.
+    """
 
     term_type = SymbolicTerm
 
@@ -970,41 +1075,99 @@ class SymbolicTerms(Terms[Expr]):
         return cast(SymbolicCoeffs, self._data.coeffs[self.slice])
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
-        """Substitute values into the symbolic coefficients in-place."""
+        """Apply a partial substitution of the symbols in-place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Note:
+            This method operates in-place.
+        """
         self.coeffs.isubs(values)
 
     def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTerms:
-        """Return a copy with values substituted into the symbolic coefficients."""
+        """Apply a partial substitution of the symbols out of place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Returns:
+            A new contiguously stored instance with the substitution applied.
+        """
         return SymbolicTerms._create(TermData(self.strings.clone(), self.coeffs.subs(values)))
 
 
 class SymbolicTermSet(TermSet[Expr]):
-    """A collection of unique terms with normal-ordered strings and symbolic coefficients."""
+    """A collection of unique terms with normal-ordered strings and symbolic coefficients.
+
+    A set-like container of mode-based terms that may be used to store unique terms and perform
+    set-like operations on them.
+
+    Note:
+        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        are not.
+    """
 
     terms_type = SymbolicTerms
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
-        """Substitute values into the symbolic coefficients in-place."""
+        """Apply a partial substitution of the symbols in-place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Note:
+            This method operates in-place.
+        """
         self.coeffs.isubs(values)
 
     def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTermSet:
-        """Return a copy with values substituted into the symbolic coefficients."""
+        """Apply a partial substitution of the symbols out of place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Returns:
+            A new contiguously stored instance with the substitution applied.
+        """
         out = self.clone()
         out.isubs(values)
         return out
 
 
 class SymbolicTermSum(TermSum[Expr]):
-    """A sum of terms consisting of normal-ordered fermionic strings and symbolic coefficients."""
+    """A sum of terms consisting of normal-ordered fermionic strings and symbolic coefficients.
+
+    A set-like container of mode-based terms that may be used to store unique terms and perform
+    algebraic operations on them.
+
+    Note:
+        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        are not.
+    """
 
     terms_type = SymbolicTerms
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
-        """Substitute values into the symbolic coefficients in-place."""
+        """Apply a partial substitution of the symbols in-place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Note:
+            This method operates in-place.
+        """
         self.coeffs.isubs(values)
 
     def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTermSum:
-        """Return a copy with values substituted into the symbolic coefficients."""
+        """Apply a partial substitution of the symbols out of place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Returns:
+            A new contiguously stored instance with the substitution applied.
+        """
         out = self.clone()
         out.isubs(values)
         return out

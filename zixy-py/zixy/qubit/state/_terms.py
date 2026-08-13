@@ -752,14 +752,14 @@ class SymbolicTerm(Term[Expr]):
         return out
 
     def try_to_real(self) -> RealTerm:
-        """Try to evaluate ``self`` as a term containing a vector of real coefficients.
+        """Try to evaluate ``self`` as a term containing a real coefficient.
 
         Returns:
             An instance of :class:`~zixy.qubit.state._terms.RealTerm` with the evaluated
-            coefficients.
+            coefficient.
 
         Raises:
-            TypeError: A coefficient is not representable as real or there are free symbols.
+            TypeError: If ``self`` cannot be evaluated with a real coefficient.
 
         See Also:
             :meth:`~zixy.container.coeffs.SymbolicCoeffs.try_to_real`
@@ -769,14 +769,14 @@ class SymbolicTerm(Term[Expr]):
         return RealTerm._create(TermData(cmpnts, coeffs))
 
     def try_to_complex(self) -> ComplexTerm:
-        """Try to evaluate ``self`` as a term containing a vector of complex coefficients.
+        """Try to evaluate ``self`` as a term containing a complex coefficient.
 
         Returns:
             An instance of :class:`~zixy.qubit.state._terms.ComplexTerm` with the evaluated
-            coefficients.
+            coefficient.
 
         Raises:
-            TypeError: A coefficient is not representable as complex or there are free symbols.
+            TypeError: If ``self`` cannot be evaluated with a complex coefficient.
 
         See Also:
             :meth:`~zixy.container.coeffs.SymbolicCoeffs.try_to_complex`

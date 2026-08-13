@@ -140,7 +140,12 @@ class Term(FermionTerm[ImplT, SpecT, CoeffT, ElemT]):
 
 
 class Terms(FermionTerms[ImplT, SpecT, CoeffT, ElemT]):
-    """A collection of terms consisting of fermionic state strings and coefficients."""
+    """A collection of terms consisting of fermionic state strings and coefficients.
+
+    An array-like container of mode-based terms consisting of state strings and coefficients that
+    may be an owning instance referencing a :class:`~zixy.container.data.TermData` instance, or
+    a view on a slice of the elements in another collection.
+    """
 
     term_type: type[Term[CoeffT]]
 
@@ -161,13 +166,29 @@ class Terms(FermionTerms[ImplT, SpecT, CoeffT, ElemT]):
 
 
 class TermSet(FermionTermSet[ImplT, SpecT, CoeffT, ElemT]):
-    """A collection of unique terms consisting of fermionic state strings and coefficients."""
+    """A collection of unique terms consisting of fermionic state strings and coefficients.
+
+    A set-like container of mode-based terms that may be used to store unique terms and perform
+    set-like operations on them.
+
+    Note:
+        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        are not.
+    """
 
     terms_type: type[Terms[CoeffT]]
 
 
 class TermSum(FermionTermSum[ImplT, SpecT, CoeffT, ElemT], TermSet[CoeffT]):
-    """A sum of terms consisting of fermionic state strings and coefficients."""
+    """A sum of terms consisting of fermionic state strings and coefficients.
+
+    A set-like container of mode-based terms that may be used to store unique terms and perform
+    algebraic operations on them.
+
+    Note:
+        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        are not.
+    """
 
     @classmethod
     def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
@@ -186,7 +207,13 @@ class TermSum(FermionTermSum[ImplT, SpecT, CoeffT, ElemT], TermSet[CoeffT]):
 
 
 class SignTerm(Term[Sign]):
-    """A term consisting of a fermionic state string and a sign coefficient."""
+    """A term consisting of a fermionic state string and a sign coefficient.
+
+    A single mode-based term consisting of a state string and a
+    :class:`~zixy.container.coeffs.Sign` that may be an owning instance referencing a single
+    element in a :class:`~zixy.container.data.TermData` instance, or a view on an element in
+    another collection.
+    """
 
     coeff_type = Sign
 
@@ -222,19 +249,39 @@ class SignTerm(Term[Sign]):
 
 
 class SignTerms(Terms[Sign]):
-    """A collection of terms consisting of state strings and sign coefficients."""
+    """A collection of terms consisting of state strings and sign coefficients.
+
+    An array-like container of mode-based terms consisting of state strings and
+    :class:`~zixy.container.coeffs.Sign` coefficients that may be an owning instance
+    referencing a :class:`~zixy.container.data.TermData` instance, or a view on a slice of the
+    elements in another collection.
+    """
 
     term_type = SignTerm
 
 
 class SignTermSet(TermSet[Sign]):
-    """A collection of unique terms consisting of state strings and sign coefficients."""
+    """A collection of unique terms consisting of state strings and sign coefficients.
+
+    A set-like container of mode-based terms with :class:`~zixy.container.coeffs.Sign`
+    coefficients that may be used to store unique terms and perform set-like operations on them.
+
+    Note:
+        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        are not.
+    """
 
     terms_type = SignTerms
 
 
 class RealTerm(Term[float]):
-    """A term consisting of a fermionic state string and a real coefficient."""
+    """A term consisting of a fermionic state string and a real coefficient.
+
+    A single mode-based term consisting of a state string and a ``float`` coefficient that may be
+    an owning instance referencing a single element in a
+    :class:`~zixy.container.data.TermData` instance, or a view on an element in another
+    collection.
+    """
 
     coeff_type = float
 
@@ -270,19 +317,41 @@ class RealTerm(Term[float]):
 
 
 class RealTerms(NumericTerms[FermionStateArray, StringSpec, float], Terms[float]):
-    """A collection of terms consisting of state strings and real coefficients."""
+    """A collection of terms consisting of state strings and real coefficients.
+
+    An array-like container of mode-based terms consisting of state strings and ``float``
+    coefficients that may be an owning instance referencing a
+    :class:`~zixy.container.data.TermData` instance, or a view on a slice of the elements in
+    another collection.
+    """
 
     term_type = RealTerm
 
 
 class RealTermSet(TermSet[float]):
-    """A collection of unique terms consisting of state strings and real coefficients."""
+    """A collection of unique terms consisting of state strings and real coefficients.
+
+    A set-like container of mode-based terms with ``float`` coefficients that may be used to
+    store unique terms and perform set-like operations on them.
+
+    Note:
+        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        are not.
+    """
 
     terms_type = RealTerms
 
 
 class RealTermSum(NumericTermSum[FermionStateArray, StringSpec, float], TermSum[float]):
-    """A sum of terms consisting of state strings and real coefficients."""
+    """A sum of terms consisting of state strings and real coefficients.
+
+    A set-like container of mode-based terms with ``float`` coefficients that may be used to
+    store unique terms and perform algebraic operations on them.
+
+    Note:
+        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        are not.
+    """
 
     terms_type = RealTerms
 
@@ -299,10 +368,13 @@ class RealTermSum(NumericTermSum[FermionStateArray, StringSpec, float], TermSum[
             modes: The mode space or mode count. If ``None``, the mode space is inferred from
                 the dense vector length.
             source: The vector to read from.
-            big_endian: Whether to use big endian ordering for the resulting vector.
+            big_endian: Whether to use big endian ordering for the resulting vector. If
+                ``False``, little endian ordering is used. In big (little) endian ordering, the
+                least significant bit in the basis index integer is determined by the last (first)
+                mode in the register.
 
         Returns:
-            An instance of ``cls`` parsed from ``source``.
+            The constructed instance.
         """
         if modes is None:
             modes = Modes.from_fock_space_dim(len(source))
@@ -316,7 +388,17 @@ class RealTermSum(NumericTermSum[FermionStateArray, StringSpec, float], TermSum[
         return out
 
     def to_dense(self, big_endian: bool = False) -> NDArray[np.float64]:
-        """Convert ``self`` to a dense vector."""
+        """Convert ``self`` to a dense vector.
+
+        Args:
+            big_endian: Whether to use big endian ordering for the resulting vector. If
+                ``False``, little endian ordering is used. In big (little) endian ordering, the
+                least significant bit in the basis index integer is determined by the last (first)
+                mode in the register.
+
+        Returns:
+            The dense vector.
+        """
         assert isinstance(self._impl._coeffs, RealCoeffs)
         return np.asarray(
             self._impl._cmpnts._impl.to_dense_real(self._impl._coeffs._impl, big_endian),
@@ -339,7 +421,13 @@ class RealTermSum(NumericTermSum[FermionStateArray, StringSpec, float], TermSum[
 
 
 class ComplexTerm(Term[complex]):
-    """A term consisting of a fermionic state string and a complex coefficient."""
+    """A term consisting of a fermionic state string and a complex coefficient.
+
+    A single mode-based term consisting of a state string and a ``complex`` coefficient that may
+    be an owning instance referencing a single element in a
+    :class:`~zixy.container.data.TermData` instance, or a view on an element in another
+    collection.
+    """
 
     coeff_type = complex
 
@@ -375,19 +463,41 @@ class ComplexTerm(Term[complex]):
 
 
 class ComplexTerms(NumericTerms[FermionStateArray, StringSpec, complex], Terms[complex]):
-    """A collection of terms consisting of state strings and complex coefficients."""
+    """A collection of terms consisting of state strings and complex coefficients.
+
+    An array-like container of mode-based terms consisting of state strings and ``complex``
+    coefficients that may be an owning instance referencing a
+    :class:`~zixy.container.data.TermData` instance, or a view on a slice of the elements in
+    another collection.
+    """
 
     term_type = ComplexTerm
 
 
 class ComplexTermSet(TermSet[complex]):
-    """A collection of unique terms consisting of state strings and complex coefficients."""
+    """A collection of unique terms consisting of state strings and complex coefficients.
+
+    A set-like container of mode-based terms with ``complex`` coefficients that may be used to
+    store unique terms and perform set-like operations on them.
+
+    Note:
+        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        are not.
+    """
 
     terms_type = ComplexTerms
 
 
 class ComplexTermSum(NumericTermSum[FermionStateArray, StringSpec, complex], TermSum[complex]):
-    """A sum of terms consisting of state strings and complex coefficients."""
+    """A sum of terms consisting of state strings and complex coefficients.
+
+    A set-like container of mode-based terms with ``complex`` coefficients that may be used to
+    store unique terms and perform algebraic operations on them.
+
+    Note:
+        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        are not.
+    """
 
     terms_type = ComplexTerms
 
@@ -404,10 +514,13 @@ class ComplexTermSum(NumericTermSum[FermionStateArray, StringSpec, complex], Ter
             modes: The mode space or mode count. If ``None``, the mode space is inferred from
                 the dense vector length.
             source: The vector to read from.
-            big_endian: Whether to use big endian ordering for the resulting vector.
+            big_endian: Whether to use big endian ordering for the resulting vector. If
+                ``False``, little endian ordering is used. In big (little) endian ordering, the
+                least significant bit in the basis index integer is determined by the last (first)
+                mode in the register.
 
         Returns:
-            An instance of ``cls`` parsed from ``source``.
+            The constructed instance.
         """
         if modes is None:
             modes = Modes.from_fock_space_dim(len(source))
@@ -435,7 +548,17 @@ class ComplexTermSum(NumericTermSum[FermionStateArray, StringSpec, complex], Ter
         return RealTermSum._create(data)
 
     def to_dense(self, big_endian: bool = False) -> NDArray[np.complex128]:
-        """Convert ``self`` to a dense vector."""
+        """Convert ``self`` to a dense vector.
+
+        Args:
+            big_endian: Whether to use big endian ordering for the resulting vector. If
+                ``False``, little endian ordering is used. In big (little) endian ordering, the
+                least significant bit in the basis index integer is determined by the last (first)
+                mode in the register.
+
+        Returns:
+            The dense vector.
+        """
         assert isinstance(self._impl._coeffs, ComplexCoeffs)
         return np.asarray(
             self._impl._cmpnts._impl.to_dense_complex(self._impl._coeffs._impl, big_endian),
@@ -458,7 +581,13 @@ class ComplexTermSum(NumericTermSum[FermionStateArray, StringSpec, complex], Ter
 
 
 class SymbolicTerm(Term[Expr]):
-    """A term consisting of a fermionic state string and a symbolic coefficient."""
+    """A term consisting of a fermionic state string and a symbolic coefficient.
+
+    A single mode-based term consisting of a state string and a :class:`~sympy.Expr` coefficient
+    that may be an owning instance referencing a single element in a
+    :class:`~zixy.container.data.TermData` instance, or a view on an element in another
+    collection.
+    """
 
     coeff_type = Expr
 
@@ -493,30 +622,75 @@ class SymbolicTerm(Term[Expr]):
         return _rmul(self, lhs)
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
-        """Substitute values into the symbolic coefficient in-place."""
+        """Apply a partial substitution of the symbols in-place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Note:
+            This method operates in-place.
+
+        See Also:
+            :meth:`~zixy.container.coeffs.SymbolicCoeffs.isubs`
+        """
         self.coeff = self.coeff.subs(values)
 
     def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTerm:
-        """Return a copy with values substituted into the symbolic coefficient."""
+        """Apply a partial substitution of the symbols out of place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Returns:
+            A new contiguously stored instance with the substitution applied.
+        """
         out = self.clone()
         out.isubs(values)
         return out
 
     def try_to_real(self) -> RealTerm:
-        """Try to evaluate ``self`` as a term with a real coefficient."""
+        """Try to evaluate ``self`` as a term containing a real coefficient.
+
+        Returns:
+            An instance of :class:`~zixy.fermion.state._terms.RealTerm` with the evaluated
+            coefficient.
+
+        Raises:
+            TypeError: If ``self`` cannot be evaluated with a real coefficient.
+
+        See Also:
+            :meth:`~zixy.container.coeffs.SymbolicCoeffs.try_to_real`
+        """
         cmpnts = RealTerm.cmpnts_type.from_cmpnt(self.string.clone())
         coeffs = get_coeffs_type(RealTerm.coeff_type).from_scalar(float(self.coeff.evalf()))
         return RealTerm._create(TermData(cmpnts, coeffs))
 
     def try_to_complex(self) -> ComplexTerm:
-        """Try to evaluate ``self`` as a term with a complex coefficient."""
+        """Try to evaluate ``self`` as a term containing a complex coefficient.
+
+        Returns:
+            An instance of :class:`~zixy.fermion.state._terms.ComplexTerm` with the evaluated
+            coefficient.
+
+        Raises:
+            TypeError: If ``self`` cannot be evaluated with a complex coefficient.
+
+        See Also:
+            :meth:`~zixy.container.coeffs.SymbolicCoeffs.try_to_complex`
+        """
         cmpnts = ComplexTerm.cmpnts_type.from_cmpnt(self.string.clone())
         coeffs = get_coeffs_type(ComplexTerm.coeff_type).from_scalar(complex(self.coeff.evalf()))
         return ComplexTerm._create(TermData(cmpnts, coeffs))
 
 
 class SymbolicTerms(Terms[Expr]):
-    """A collection of terms consisting of state strings and symbolic coefficients."""
+    """A collection of terms consisting of state strings and symbolic coefficients.
+
+    An array-like container of mode-based terms consisting of state strings and
+    :class:`~sympy.Expr` coefficients that may be an owning instance referencing a
+    :class:`~zixy.container.data.TermData` instance, or a view on a slice of the elements in
+    another collection.
+    """
 
     term_type = SymbolicTerm
 
@@ -527,42 +701,108 @@ class SymbolicTerms(Terms[Expr]):
 
     @property
     def free_symbols(self) -> set[Symbol]:
-        """Get the set of free symbols in ``self``."""
+        """Get the set of free (unsubstituted) symbols in ``self``.
+
+        Returns:
+            Union of the sets of free symbols across all coefficients in ``self``.
+        """
         return self.coeffs.free_symbols
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
-        """Substitute values into the symbolic coefficients in-place."""
+        """Apply a partial substitution of the symbols in-place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Note:
+            This method operates in-place.
+        """
         self.coeffs.isubs(values)
 
     def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTerms:
-        """Return a copy with values substituted into the symbolic coefficients."""
+        """Apply a partial substitution of the symbols out of place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Returns:
+            A new contiguously stored instance with the substitution applied.
+        """
         return SymbolicTerms._create(TermData(self.strings.clone(), self.coeffs.subs(values)))
 
     def idiff(self, variable: Symbol | str) -> None:
-        """Differentiate partially with respect to ``variable`` in-place."""
+        """Differentiate partially with respect to ``variable`` in-place.
+
+        Args:
+            variable: Symbol or name of symbol by which to differentiate the viewed symbolic
+                expressions.
+
+        Note:
+            This method operates in-place.
+        """
         self.coeffs.idiff(variable)
 
     def diff(self, variable: Symbol | str) -> SymbolicTerms:
-        """Differentiate partially with respect to ``variable`` out of place."""
+        """Differentiate partially with respect to ``variable`` out of place.
+
+        Args:
+            variable: Symbol or name of symbol by which to differentiate the viewed symbolic
+                expressions.
+
+        Returns:
+            A new contiguously stored instance with the differentiation applied.
+        """
         return SymbolicTerms._create(TermData(self.strings.clone(), self.coeffs.diff(variable)))
 
     def try_to_real(self) -> RealTerms:
-        """Try to evaluate ``self`` as terms with real coefficients."""
+        """Try to evaluate ``self`` as terms containing real coefficients.
+
+        Returns:
+            An instance of :class:`~zixy.fermion.state._terms.RealTerms` with the evaluated
+            coefficients.
+
+        Raises:
+            TypeError: If ``self`` cannot be evaluated with real coefficients.
+        """
         return RealTerms._create(TermData(self.strings.clone(), self.coeffs.try_to_real()))
 
     def try_to_complex(self) -> ComplexTerms:
-        """Try to evaluate ``self`` as terms with complex coefficients."""
+        """Try to evaluate ``self`` as terms containing complex coefficients.
+
+        Returns:
+            An instance of :class:`~zixy.fermion.state._terms.ComplexTerms` with the evaluated
+            coefficients.
+
+        Raises:
+            TypeError: If ``self`` cannot be evaluated with complex coefficients.
+        """
         return ComplexTerms._create(TermData(self.strings.clone(), self.coeffs.try_to_complex()))
 
 
 class SymbolicTermSet(TermSet[Expr]):
-    """A collection of unique terms consisting of state strings and symbolic coefficients."""
+    """A collection of unique terms consisting of state strings and symbolic coefficients.
+
+    A set-like container of mode-based terms that may be used to store unique terms and perform
+    set-like operations on them.
+
+    Note:
+        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        are not.
+    """
 
     terms_type = SymbolicTerms
 
 
 class SymbolicTermSum(TermSum[Expr]):
-    """A sum of terms consisting of state strings and symbolic coefficients."""
+    """A sum of terms consisting of state strings and symbolic coefficients.
+
+    A set-like container of mode-based terms that may be used to store unique terms and perform
+    algebraic operations on them.
+
+    Note:
+        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        are not.
+    """
 
     terms_type = SymbolicTerms
 
@@ -572,11 +812,25 @@ class SymbolicTermSum(TermSum[Expr]):
         return cast(SymbolicCoeffs, self._data.coeffs)
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
-        """Substitute values into the symbolic coefficients in-place."""
+        """Apply a partial substitution of the symbols in-place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Note:
+            This method operates in-place.
+        """
         self.coeffs.isubs(values)
 
     def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTermSum:
-        """Return a copy with values substituted into the symbolic coefficients."""
+        """Apply a partial substitution of the symbols out of place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Returns:
+            A new contiguously stored instance with the substitution applied.
+        """
         out = self.clone()
         out.isubs(values)
         return out

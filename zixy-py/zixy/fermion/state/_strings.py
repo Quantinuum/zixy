@@ -195,7 +195,12 @@ class Strings(FermionStrings[ImplT, SpecT, ElemT]):
 
     @classmethod
     def new(cls, modes: int | Modes = 0, n: int = 0) -> Self:
-        """Create a new instance with a given mode count and number of vacuum strings."""
+        """Create a new instance with a given mode count and number of vacuum strings.
+
+        Args:
+            modes: Space of modes or a number of modes.
+            n: Number of default elements with which to create the instance.
+        """
         return cls(modes, n)
 
     @classmethod
@@ -223,7 +228,14 @@ class Strings(FermionStrings[ImplT, SpecT, ElemT]):
     @overload
     def __getitem__(self, indexer: slice) -> Self: ...
     def __getitem__(self, indexer: int | slice) -> String | Self:
-        """Get the element or elements selected by ``indexer``."""
+        """Get the element or elements selected by ``indexer``.
+
+        Args:
+            indexer: Index or slice selecting the element(s) to return.
+
+        Returns:
+            Element or slice selected by ``indexer``.
+        """
         return super().__getitem__(indexer)  # type: ignore[return-value]
 
     def get_sets(self) -> tuple[set[int], ...]:

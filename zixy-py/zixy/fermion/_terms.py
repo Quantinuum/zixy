@@ -71,7 +71,12 @@ class Term(Generic[ImplT, SpecT, CoeffT, ElemT], TermBase[ImplT, SpecT, CoeffT])
 
 
 class Terms(Generic[ImplT, SpecT, CoeffT, ElemT], TermsBase[ImplT, SpecT, CoeffT]):
-    """A collection of terms consisting of fermionic strings and coefficients."""
+    """A collection of terms consisting of fermionic strings and coefficients.
+
+    An array-like container of mode-based terms consisting of strings and coefficients that may
+    be an owning instance referencing a :class:`~zixy.container.data.TermData` instance, or a
+    view on a slice of the elements in another collection.
+    """
 
     term_type: type[Term[ImplT, SpecT, CoeffT, ElemT]]
 
@@ -98,7 +103,15 @@ class Terms(Generic[ImplT, SpecT, CoeffT, ElemT], TermsBase[ImplT, SpecT, CoeffT
 
 
 class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], TermSetBase[ImplT, SpecT, CoeffT]):
-    """A collection of unique terms consisting of fermionic strings and coefficients."""
+    """A collection of unique terms consisting of fermionic strings and coefficients.
+
+    A set-like container of mode-based terms that may be used to store unique terms and perform
+    set-like operations on them.
+
+    Note:
+        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        are not.
+    """
 
     terms_type: type[Terms[ImplT, SpecT, CoeffT, ElemT]]
 
@@ -121,7 +134,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], TermSetBase[ImplT, SpecT, Co
         return self.strings.modes
 
     def _check_term(self, value: TermBase[ImplT, SpecT, CoeffT]) -> None:
-        """Hook to check whether a term is valid for insertion into ``self``."""
+        """Hook to check whether a term is defined over the same modes as ``self``."""
         if not isinstance(value, self.terms_type.term_type):
             raise TypeError(
                 f"Expected a {self.terms_type.term_type.__name__} instance, got "
@@ -140,7 +153,15 @@ class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], TermSetBase[ImplT, SpecT, Co
 
 
 class TermSum(TermSet[ImplT, SpecT, CoeffT, ElemT], TermSumBase[ImplT, SpecT, CoeffT]):
-    """A sum of terms consisting of fermionic strings and coefficients."""
+    """A sum of terms consisting of fermionic strings and coefficients.
+
+    A set-like container of mode-based terms that may be used to store unique terms and perform
+    linear combination operations on them.
+
+    Note:
+        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        are not.
+    """
 
     def __init__(self, modes: int | Modes = 0):
         """Initialize the term set.

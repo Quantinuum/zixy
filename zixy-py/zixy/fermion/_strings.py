@@ -83,7 +83,14 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
 
     @abstractmethod
     def set(self, source: SpecT | Self) -> None:
-        """Set the value of the string."""
+        """Set the value of the string.
+
+        Args:
+            source: Specification for the new value.
+
+        Note:
+            This method operates in-place.
+        """
         pass
 
 
@@ -119,7 +126,14 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
     @overload
     def __getitem__(self, indexer: slice) -> Self: ...
     def __getitem__(self, indexer: int | slice) -> String[ImplT, SpecT, ElemT] | Self:
-        """Get the element or elements selected by ``indexer``."""
+        """Get the element or elements selected by ``indexer``.
+
+        Args:
+            indexer: Index or slice selecting the element(s) to return.
+
+        Returns:
+            Element or slice selected by ``indexer``.
+        """
         return super().__getitem__(indexer)  # type: ignore[return-value]
 
     def filter_unique(self) -> Cmpnts[ImplT, SpecT]:
@@ -128,12 +142,20 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
 
 
 class StringSet(Generic[ImplT, SpecT, ElemT], CmpntSet[ImplT, SpecT]):
-    """A collection of unique fermionic strings."""
+    """A collection of unique fermionic strings.
+
+    A set-like container of mode-based strings that may be used to store unique components and
+    perform set-like operations on them.
+    """
 
     cmpnts_type: type[Strings[ImplT, SpecT, ElemT]]
 
     def __init__(self, modes: int | Modes = 0):
-        """Initialize the string set."""
+        """Initialize the string set.
+
+        Args:
+            modes: The mode space or number of modes.
+        """
         CmpntSet.__init__(
             self,
             self.cmpnts_type(Modes.from_count(modes) if isinstance(modes, int) else modes)._impl,

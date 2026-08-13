@@ -235,6 +235,14 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
     @overload
     def __getitem__(self, indexer: slice) -> Self: ...
     def __getitem__(self, indexer: int | slice) -> String | Self:
+        """Get the element or elements selected by ``indexer``.
+
+        Args:
+            indexer: Index or slice selecting the element(s) to return.
+
+        Returns:
+            Element or slice selected by ``indexer``.
+        """
         return super().__getitem__(indexer)  # type: ignore[return-value]
 
 

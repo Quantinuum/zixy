@@ -42,9 +42,16 @@ if TYPE_CHECKING:
     from zixy.fermion.mappings import Mapper
 
 
-def _product_sign(cre: list[int], ann: list[int]) -> Sign:
-    n_cre = len(cre)
-    n_ann = len(ann)
+def _product_sign(n_cre: int, n_ann: int) -> Sign:
+    r"""Compute the sign of a product of fermionic ladder operators.
+
+    Args:
+        n_cre: The number of creation operators in the product.
+        n_ann: The number of annihilation operators in the product.
+
+    Returns:
+        The sign of the product of ladder operators.
+    """
     return Sign(((n_cre * (n_cre - 1) // 2) + (n_ann * (n_ann - 1) // 2)) & 1)
 
 

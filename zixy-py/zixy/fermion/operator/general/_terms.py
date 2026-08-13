@@ -88,6 +88,7 @@ SymbolicTermSpec = TermSpec[Expr]
 
 
 def _max_len_from_source(source: TermSpec[CoeffT]) -> int:
+    """Get the maximum operator-product length from a term source."""
     if (
         isinstance(source, tuple)
         and len(source) == 2
@@ -175,6 +176,13 @@ class Term(OperatorTerm[ImplT, SpecT, CoeffT, ElemT]):
         source: TermSpec[CoeffT] = "",
         max_len: int = 0,
     ):
+        """Initialize the term.
+
+        Args:
+            modes: The mode space or number of modes.
+            source: The term specifier to use for initial value.
+            max_len: Maximum operator-product length supported by the backing array.
+        """
         if max_len == 0:
             max_len = _max_len_from_source(source)
         cmpnts = self.cmpnts_type(modes, 1, max_len)
@@ -231,6 +239,13 @@ class Terms(OperatorTerms[ImplT, SpecT, CoeffT, ElemT]):
     term_type: type[Term[CoeffT]]
 
     def __init__(self, modes: int | Modes = 0, n: int = 0, max_len: int = 0):
+        """Initialize the term array.
+
+        Args:
+            modes: The mode space or number of modes.
+            n: The number of items to initialize the array with.
+            max_len: Maximum operator-product length supported by the backing array.
+        """
         cmpnts = self.term_type.cmpnts_type(modes, n, max_len)
         coeffs = get_coeffs_type(self.term_type.coeff_type).from_size(n)
         TermsBase.__init__(self, TermData(cmpnts, coeffs))
@@ -270,6 +285,12 @@ class TermSet(OperatorTermSet[ImplT, SpecT, CoeffT, ElemT]):
     terms_type: type[Terms[CoeffT]]
 
     def __init__(self, modes: int | Modes = 0, max_len: int = 0):
+        """Initialize the term set.
+
+        Args:
+            modes: The mode space or number of modes.
+            max_len: Maximum operator-product length supported by the backing array.
+        """
         TermSetBase.__init__(self, self.terms_type(modes, max_len=max_len))
 
     @property
@@ -300,6 +321,12 @@ class TermSum(OperatorTermSum[ImplT, SpecT, CoeffT, ElemT], TermSet[CoeffT]):
     """
 
     def __init__(self, modes: int | Modes = 0, max_len: int = 0):
+        """Initialize the term sum.
+
+        Args:
+            modes: The mode space or number of modes.
+            max_len: Maximum operator-product length supported by the backing array.
+        """
         TermSet.__init__(self, modes, max_len=max_len)
 
     @classmethod

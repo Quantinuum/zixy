@@ -216,6 +216,13 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
     _set_type: type[StringSet]
 
     def __init__(self, modes: int | Modes = 0, n: int = 0, max_len: int = 0):
+        """Initialize the string array.
+
+        Args:
+            modes: The mode space or number of modes.
+            n: Number of default elements with which to create the instance.
+            max_len: Maximum operator-product length supported by the backing array.
+        """
         modes = Modes.from_count(modes) if isinstance(modes, int) else modes
         Cmpnts.__init__(self, self.cmpnt_type.impl_type(modes, max_len))
         self.resize(n)
@@ -250,6 +257,14 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
     @overload
     def __getitem__(self, indexer: slice) -> Self: ...
     def __getitem__(self, indexer: int | slice) -> String | Self:
+        """Get the element or elements selected by ``indexer``.
+
+        Args:
+            indexer: Index or slice selecting the element(s) to return.
+
+        Returns:
+            Element or slice selected by ``indexer``.
+        """
         return super().__getitem__(indexer)  # type: ignore[return-value]
 
 
@@ -263,6 +278,12 @@ class StringSet(OperatorStringSet[ImplT, SpecT, ElemT]):
     cmpnts_type = Strings
 
     def __init__(self, modes: int | Modes = 0, max_len: int = 0):
+        """Initialize the string set.
+
+        Args:
+            modes: The mode space or number of modes.
+            max_len: Maximum operator-product length supported by the backing array.
+        """
         CmpntSet.__init__(self, self.cmpnts_type(modes, max_len=max_len)._impl)
 
 

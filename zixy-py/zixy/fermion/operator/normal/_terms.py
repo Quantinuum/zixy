@@ -105,6 +105,7 @@ def _term_sum_from_product(
     rhs: String,
     base_coeff: Any,
 ) -> TermSum[Any]:
+    """Compute the product of two normal-ordered strings."""
     out = term_type._term_sum_type(modes)
     impl, signs = lhs._impl.cmpnt_mul(lhs.index, rhs._impl, rhs.index)
     cmpnts = term_type.cmpnts_type._create(impl)
@@ -229,7 +230,7 @@ class Term(OperatorTerm[ImplT, SpecT, CoeffT, ElemT]):
         cre, ann = self.string.get_sets()
         self.string.set((ann, cre))
         coeff = self.coeff.conjugate() if hasattr(self.coeff, "conjugate") else self.coeff
-        self.coeff = typesafe_mul(coeff, _product_sign(cre, ann))
+        self.coeff = typesafe_mul(coeff, _product_sign(len(cre), len(ann)))
 
     def daggered(self) -> Self:
         """Return the adjoint of ``self``."""

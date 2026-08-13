@@ -32,13 +32,22 @@ from zixy.fermion._strings import (
     Strings as FermionStrings,
     StringSet as FermionStringSet,
 )
+from zixy.utils import split_top_level
 
 LadderOp: TypeAlias = tuple[int, bool]
 ElemT = TypeVar("ElemT")
 
 
 def parse_ladder_product(source: str) -> list[LadderOp]:
-    """Parse a single fermionic ladder-operator product."""
+    """Parse a single fermionic ladder-operator product.
+
+    Args:
+        source: A sparse-string representation of a ladder-operator product.
+
+    Returns:
+        A list of ``(mode, is_creation)`` pairs, where ``is_creation`` is ``True`` for a creation
+        operator and ``False`` for an annihilation operator.
+    """
     source = source.strip()
     if not source:
         return []
@@ -54,32 +63,19 @@ def parse_ladder_product(source: str) -> list[LadderOp]:
     return out
 
 
-def _split_top_level_commas(source: str) -> list[str]:
-    parts: list[str] = []
-    start = 0
-    depth = 0
-    for i, char in enumerate(source):
-        if char in "([{":
-            depth += 1
-        elif char in ")]}":
-            depth -= 1
-            if depth < 0:
-                raise ValueError("Mismatched brackets.")
-        elif char == "," and depth == 0:
-            parts.append(source[start:i].strip())
-            start = i + 1
-    if depth:
-        raise ValueError("Mismatched brackets.")
-    tail = source[start:].strip()
-    if tail:
-        parts.append(tail)
-    return parts
-
-
 def parse_term_source(source: str) -> list[tuple[str, str | None]]:
-    """Parse comma-delimited term strings into component and optional coefficient text."""
+    """Parse comma-delimited term strings into component and optional coefficient text.
+
+    Args:
+        source: A comma-delimited string of terms, where each term is either a component string
+            or a parenthesized pair of coefficient and component strings.
+
+    Returns:
+        A list of ``(component, coefficient)`` pairs, where the coefficient is ``None`` if not
+        specified.
+    """
     out: list[tuple[str, str | None]] = []
-    for part in _split_top_level_commas(source):
+    for part in split_top_level(source, ","):
         if part.startswith("(") and ")" in part:
             close = part.rfind(")")
             inner = part[1:close]

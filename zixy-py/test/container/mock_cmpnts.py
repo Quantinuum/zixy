@@ -150,6 +150,18 @@ class Strings(Cmpnts[StringsImplArray, CmpntSpecT]):
     def __init__(self, n: int = 0):
         super().__init__(StringsImplArray.from_len(n))
 
+    @classmethod
+    def from_str(cls, source: str) -> Strings:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        return cls.from_iterable(source.split(", "))
+
 
 class StringSet(CmpntSet[StringsImplArray, CmpntSpecT]):
     cmpnts_type = Strings

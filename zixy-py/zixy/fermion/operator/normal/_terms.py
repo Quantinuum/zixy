@@ -46,7 +46,6 @@ from zixy.container.coeffs import (
     _is_float,
     _is_int,
     _is_sign,
-    get_coeffs_type,
     typesafe_mul,
 )
 from zixy.container.data import TermData
@@ -55,10 +54,6 @@ from zixy.container.terms import (
     NumericTermSum,
 )
 from zixy.fermion._strings import _check_modes_compatibility
-from zixy.fermion.operator._strings import (
-    parse_ladder_product,
-    parse_term_source,
-)
 from zixy.fermion.operator._terms import (
     Term as OperatorTerm,
     Terms as OperatorTerms,
@@ -70,7 +65,6 @@ from zixy.fermion.operator.normal._strings import (
     String,
     Strings,
     StringSpec,
-    _default_modes,
 )
 from zixy.fermion.state._terms import (
     ComplexTermSum as ComplexState,
@@ -119,42 +113,6 @@ def _term_sum_from_product(
     return out
 
 
-def _data_from_str(
-    source: str, modes: int | Modes | None, coeff_type: type[CoeffT]
-) -> TermData[NormalFermionOperatorArray, StringSpec, CoeffT]:
-    """Create a new instance of :class:`~zixy.container.data.TermData` by parsing an input string.
-
-    Args:
-        source: Input string to parse.
-        modes: The mode space or mode count. If ``None``, the mode space is inferred from
-            the string specifier.
-        coeff_type: The coefficient type.
-
-    Returns:
-        A new instance containing the normal-ordered fermionic strings and coefficients in the
-        ``source``.
-    """
-    parsed = parse_term_source(source)
-    if modes is None:
-        modes = _default_modes(" ".join(cmpnt for cmpnt, _ in parsed))
-    elif isinstance(modes, int):
-        modes = Modes.from_count(modes)
-    cmpnts = Strings(modes)
-    coeffs_type = get_coeffs_type(coeff_type)
-    base_coeffs = (
-        coeffs_type.from_str(source) if "(" in source else coeffs_type.from_size(len(parsed))
-    )
-    coeffs = coeffs_type()
-    for (cmpnt_text, _), base_coeff in zip(parsed, base_coeffs, strict=True):
-        impl, coeffs_ = NormalFermionOperatorArray.from_ladder_product(
-            modes, parse_ladder_product(cmpnt_text)
-        )
-        for i in range(len(impl)):
-            cmpnts.append(Strings._create(impl)[i])
-            coeffs.append(typesafe_mul(base_coeff, coeffs_[i]))
-    return TermData(cmpnts, coeffs)
-
-
 def _mul(
     lhs: Term[CoeffT], rhs: OtherCoeffT | String | Term[OtherCoeffT]
 ) -> Term[Any] | TermSum[Any]:
@@ -200,26 +158,6 @@ class Term(OperatorTerm[ImplT, SpecT, CoeffT, ElemT]):
     coeff_type: type[CoeffT]
     _term_sum_type: type[TermSum[CoeffT]]
 
-    @classmethod
-    def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
-        """Create a new instance of ``cls`` by parsing an input string.
-
-        Args:
-            source: Input string to parse.
-            modes: The mode space or mode count. If ``None``, the mode space is inferred from
-                the string specifier.
-
-        Returns:
-            A new instance containing the normal-ordered fermionic string and coefficient in the
-            ``source``.
-        """
-        data = _data_from_str(source, modes, cls.coeff_type)
-        if len(data) != 1:
-            raise ValueError(
-                f"There should be exactly one Term string in the input, not {len(data)}."
-            )
-        return cls._create(data)
-
     @property
     def string(self) -> String:
         """Get the string component of the term."""
@@ -249,21 +187,6 @@ class Terms(OperatorTerms[ImplT, SpecT, CoeffT, ElemT]):
     """
 
     term_type: type[Term[CoeffT]]
-
-    @classmethod
-    def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
-        """Create a new instance of ``cls`` by parsing an input string.
-
-        Args:
-            source: Input string to parse.
-            modes: The mode space or mode count. If ``None``, the mode space is inferred from
-                the string specifier.
-
-        Returns:
-            A new instance containing the normal-ordered fermionic strings and coefficients in the
-            ``source``.
-        """
-        return cls._create(_data_from_str(source, modes, cls.term_type.coeff_type))
 
 
 class TermSet(OperatorTermSet[ImplT, SpecT, CoeffT, ElemT]):
@@ -295,22 +218,6 @@ class TermSum(OperatorTermSum[ImplT, SpecT, CoeffT, ElemT], TermSet[CoeffT]):
         Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
         are not.
     """
-
-    @classmethod
-    def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
-        """Create a new instance of ``cls`` by parsing an input string.
-
-        Args:
-            source: Input string to parse.
-            modes: The mode space or mode count. If ``None``, the mode space is inferred from
-                the string specifier.
-
-        Returns:
-            A new instance containing the normal-ordered fermionic strings and coefficients in the
-            ``source``.
-        """
-        terms_ = cls.terms_type.from_str(source, modes)
-        return cls.from_iterable(terms_, terms_.modes)
 
     def dagger(self) -> None:
         """Take the adjoint of ``self`` in-place."""

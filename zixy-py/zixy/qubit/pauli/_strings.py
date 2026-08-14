@@ -259,6 +259,26 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
     _set_type: type[StringSet]
     _springs_type = PauliSprings
 
+    @classmethod
+    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Self:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        if isinstance(qubits, int):
+            qubits = Qubits.from_count(qubits)
+        if not source.strip():
+            out = cls._create(cls.cmpnt_type.impl_type(qubits))
+            out.resize(0)
+            return out
+        return cls._create(cls.cmpnt_type.impl_type(qubits, PauliSprings(source)))
+
     @overload
     def __getitem__(self, indexer: int) -> String: ...
 

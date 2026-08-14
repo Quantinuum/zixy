@@ -149,15 +149,16 @@ def slice_of_slice(s1: slice, s2: slice, length: int) -> slice:
     return slice(start, None, step) if start > stop and stop < 0 else slice(start, stop, step)
 
 
-def split_top_level(s: str, sep: str = ",") -> list[str]:
+def split_top_level(s: str, sep: str = ",", keep_empty: bool = False) -> list[str]:
     """Split ``s`` on unnested occurrences of ``sep``.
 
-    Commas inside matched pairs of ``()``, ``[]`` or ``{}`` are ignored. Empty items are dropped
-    and surrounding whitespace is stripped from the returned items.
+    Commas inside matched pairs of ``()``, ``[]`` or ``{}`` are ignored. Surrounding whitespace is
+    stripped from the returned items.
 
     Args:
         s: String to split.
         sep: Single-character separator.
+        keep_empty: Whether to keep empty items. If ``False``, empty items are dropped.
 
     Returns:
         Top-level items extracted from ``s``.
@@ -193,13 +194,13 @@ def split_top_level(s: str, sep: str = ",") -> list[str]:
             brace_depth -= 1
         elif c == sep and paren_depth == 0 and bracket_depth == 0 and brace_depth == 0:
             item = s[start:i].strip()
-            if item:
+            if item or keep_empty:
                 items.append(item)
             start = i + 1
     if paren_depth or bracket_depth or brace_depth:
         raise ValueError("Unmatched opening delimiter in input string.")
     item = s[start:].strip()
-    if item:
+    if item or keep_empty:
         items.append(item)
     return items
 

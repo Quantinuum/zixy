@@ -333,11 +333,13 @@ class StringRepresentable(ABC):
 
     @classmethod
     @abstractmethod
-    def from_str(cls, source: str) -> Self:
+    def from_str(cls, source: str, *args: Any, **kwargs: Any) -> Self:
         """Create an instance of ``cls`` from a string.
 
         Args:
             source: String to parse.
+            *args: Positional arguments to forward to a subsequent constructor.
+            **kwargs: Keyword arguments to forward to a subsequent constructor.
 
         Returns:
             An instance of ``cls`` parsed from ``source``.

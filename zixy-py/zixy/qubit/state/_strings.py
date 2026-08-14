@@ -181,6 +181,26 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
     _springs_type = BinarySprings
 
     @classmethod
+    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Strings:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        if isinstance(qubits, int):
+            qubits = Qubits.from_count(qubits)
+        if not source.strip():
+            out = cls._create(cls.cmpnt_type.impl_type(qubits))
+            out.resize(0)
+            return out
+        return cls._create(cls.cmpnt_type.impl_type(qubits, BinarySprings(source)))
+
+    @classmethod
     def new(cls, qubits: int | Qubits = 0, n: int = 0) -> Strings:
         """Create a new instance with a given qubit count and number of 00...0 strings.
 

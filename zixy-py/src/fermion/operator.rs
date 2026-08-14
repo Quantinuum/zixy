@@ -250,6 +250,31 @@ impl NormalArray {
         elem.get_ann_part().assign_vec(ann).to_py_result()
     }
 
+    fn cmpnt_set_from_spring(
+        &mut self,
+        i_cmpnt: isize,
+        src: &FermionSprings,
+        i_src: isize,
+    ) -> PyResult<()> {
+        let i_src = try_py_index(i_src, src.0.len())?;
+        let ops = src
+            .0
+            .get_ladder_op_iter(i_src)
+            .map(|(is_cre, mode)| (usize::from(mode), is_cre))
+            .collect();
+        let (cmpnts, coeffs) = normal_order_product(self.0.modes().clone(), ops)?;
+        if cmpnts.0.len() != 1 || coeffs.0.len() != 1 || coeffs.0[0] != 1.0 {
+            return Err(PyErr::new::<PyValueError, _>(
+                "Fermion string does not normal-order to exactly one positive component",
+            ));
+        }
+        let i_cmpnt = try_py_index(i_cmpnt, self.len())?;
+        self.0
+            .get_elem_mut_ref(i_cmpnt)
+            .assign(cmpnts.0.get_elem_ref(0));
+        Ok(())
+    }
+
     fn cmpnt_get_sets(&self, i: isize) -> PyResult<(Vec<usize>, Vec<usize>)> {
         let i = try_py_index(i, self.len())?;
         let elem = self.0.get_elem_ref(i);
@@ -822,9 +847,34 @@ fn clean_complex_coeffs(mut coeffs: Vec<Complex64>) -> Vec<Complex64> {
 #[pymethods]
 impl GeneralArray {
     #[new]
-    #[pyo3(signature = (modes, max_len=0))]
-    fn __init__(modes: Modes, max_len: usize) -> PyResult<Self> {
-        Ok(Self(general::cmpnt_list::CmpntList::new(max_len, modes.0)))
+    #[pyo3(signature = (modes=None, max_len=None, springs=None))]
+    fn __init__(
+        modes: Option<Modes>,
+        max_len: Option<usize>,
+        springs: Option<FermionSprings>,
+    ) -> PyResult<Self> {
+        let springs = springs.unwrap_or_default();
+        let modes = modes.unwrap_or_else(|| {
+            Modes(Modes_::from_count(
+                springs.0.get_mode_inds().default_n_mode() as usize,
+            ))
+        });
+        let inferred_max_len = (0..springs.0.len())
+            .map(|i| springs.0.get_ladder_op_iter(i).count())
+            .max()
+            .unwrap_or(0);
+        let max_len = max_len.unwrap_or(inferred_max_len);
+        let mut out = Self(general::cmpnt_list::CmpntList::new(max_len, modes.0));
+        for i in 0..springs.0.len() {
+            let (mode_inds, adj): (Vec<_>, Vec<_>) = springs
+                .0
+                .get_ladder_op_iter(i)
+                .map(|(is_cre, mode)| (usize::from(mode), is_cre))
+                .unzip();
+            check_general_ops(out.0.modes(), &mode_inds, &adj, max_len)?;
+            out.0.push(&mode_inds, &adj);
+        }
+        Ok(out)
     }
 
     fn __len__(&self) -> usize {
@@ -863,13 +913,27 @@ impl GeneralArray {
         self.cmpnt_set_from_ops(i, Vec::new(), Vec::new())
     }
 
-    fn cmpnt_set_from_ops(&mut self, i: isize, modes: Vec<usize>, adj: Vec<bool>) -> PyResult<()> {
-        check_general_ops(self.0.modes(), &modes, &adj, self.0.max_len)?;
+    fn cmpnt_set_from_ops(
+        &mut self,
+        i: isize,
+        mode_inds: Vec<usize>,
+        adj: Vec<bool>,
+    ) -> PyResult<()> {
+        let max_len = if self.0.max_len == 0 {
+            mode_inds.len()
+        } else {
+            self.0.max_len
+        };
+        check_general_ops(self.0.modes(), &mode_inds, &adj, max_len)?;
         let i = try_py_index(i, self.len())?;
-        let mut out = self.0.empty_clone();
+        let mut out = if max_len == self.0.max_len {
+            self.0.empty_clone()
+        } else {
+            general::cmpnt_list::CmpntList::new(max_len, self.0.modes().clone())
+        };
         for j in 0..self.len() {
             if i == j {
-                out.push(&modes, &adj);
+                out.push(&mode_inds, &adj);
             } else {
                 let (row_modes, row_adj) = self.0.get(j);
                 out.push(&row_modes, &row_adj);
@@ -877,6 +941,21 @@ impl GeneralArray {
         }
         self.0 = out;
         Ok(())
+    }
+
+    fn cmpnt_set_from_spring(
+        &mut self,
+        i_cmpnt: isize,
+        src: &FermionSprings,
+        i_src: isize,
+    ) -> PyResult<()> {
+        let i_src = try_py_index(i_src, src.0.len())?;
+        let (mode_inds, adj): (Vec<_>, Vec<_>) = src
+            .0
+            .get_ladder_op_iter(i_src)
+            .map(|(is_cre, mode)| (usize::from(mode), is_cre))
+            .unzip();
+        self.cmpnt_set_from_ops(i_cmpnt, mode_inds, adj)
     }
 
     fn cmpnt_get_ops(&self, i: isize) -> PyResult<(Vec<usize>, Vec<bool>)> {

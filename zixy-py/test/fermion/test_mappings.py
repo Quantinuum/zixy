@@ -199,14 +199,14 @@ def test_encode_scaled_sums():
     assert str(terms) == "((0.5+0j), ), ((-1+0j), Z0), ((0.5+0j), Z1)"
 
 
-def test_to_qubit_identity_contraction():
+def test_to_qubit_number_operator():
     mapper = JordanWignerMapper(2)
-    fermion_terms = NormalRealTermSum.from_str("F0 F0^", 2)
+    fermion_terms = NormalRealTermSum.from_str("F0^ F0", 2)
 
     qubit_terms = fermion_terms.to_qubit()
 
-    assert str(qubit_terms) == "((0.5+0j), ), ((0.5+0j), Z0)"
-    assert qubit_terms == mapper.encode(GeneralString(2, "F0 F0^"))
+    assert str(qubit_terms) == "((0.5+0j), ), ((-0.5+0j), Z0)"
+    assert qubit_terms == mapper.encode(GeneralString(2, "F0^ F0"))
 
 
 @pytest.mark.parametrize(

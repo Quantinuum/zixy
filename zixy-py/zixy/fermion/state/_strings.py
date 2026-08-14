@@ -215,10 +215,12 @@ class Strings(FermionStrings[ImplT, SpecT, ElemT]):
         Returns:
             An instance of ``cls`` parsed from ``source``.
         """
-        if isinstance(modes, int):
+        if modes is None:
+            modes = Modes.from_count(0)
+        elif isinstance(modes, int):
             modes = Modes.from_count(modes)
         if not source.strip():
-            out = cls(modes if modes is not None else 0)
+            out = cls(modes)
             out.resize(0)
             return out
         return cls._create(cls.cmpnt_type.impl_type(modes, BinarySprings(source)))

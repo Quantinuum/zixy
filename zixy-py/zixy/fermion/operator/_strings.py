@@ -32,60 +32,9 @@ from zixy.fermion._strings import (
     Strings as FermionStrings,
     StringSet as FermionStringSet,
 )
-from zixy.utils import split_top_level
 
 LadderOp: TypeAlias = tuple[int, bool]
 ElemT = TypeVar("ElemT")
-
-
-def parse_ladder_product(source: str) -> list[LadderOp]:
-    """Parse a single fermionic ladder-operator product.
-
-    Args:
-        source: A sparse-string representation of a ladder-operator product.
-
-    Returns:
-        A list of ``(mode, is_creation)`` pairs, where ``is_creation`` is ``True`` for a creation
-        operator and ``False`` for an annihilation operator.
-    """
-    source = source.strip()
-    if not source:
-        return []
-    out: list[LadderOp] = []
-    for token in source.split():
-        is_creation = token.endswith("^")
-        digits = token[1:-1] if is_creation else token[1:]
-        if not token.startswith("F") or not digits or not digits.isdecimal():
-            raise ValueError(
-                f'"{token}" is not a valid fermionic ladder operator in a sparse string.'
-            )
-        out.append((int(digits), is_creation))
-    return out
-
-
-def parse_term_source(source: str) -> list[tuple[str, str | None]]:
-    """Parse comma-delimited term strings into component and optional coefficient text.
-
-    Args:
-        source: A comma-delimited string of terms, where each term is either a component string
-            or a parenthesized pair of coefficient and component strings.
-
-    Returns:
-        A list of ``(component, coefficient)`` pairs, where the coefficient is ``None`` if not
-        specified.
-    """
-    out: list[tuple[str, str | None]] = []
-    for part in split_top_level(source, ","):
-        if part.startswith("(") and ")" in part:
-            close = part.rfind(")")
-            inner = part[1:close]
-            if "," not in inner:
-                raise ValueError(f'"{part}" is ill-formed')
-            coeff, cmpnt = inner.split(",", 1)
-            out.append((cmpnt.strip(), coeff.strip()))
-        else:
-            out.append((part, None))
-    return out
 
 
 class String(Generic[ImplT, SpecT, ElemT], FermionString[ImplT, SpecT, ElemT]):

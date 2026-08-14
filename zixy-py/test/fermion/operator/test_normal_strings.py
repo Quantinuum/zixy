@@ -58,6 +58,18 @@ def test_string_access():
     assert strings[1:4].clone() == Strings.from_iterable(specs[1:4], 6)
 
 
+@pytest.mark.parametrize(
+    ("constructor", "args"),
+    (
+        (String, (2, "F1 F0^")),
+        (Strings.from_str, ("F1 F0^", 2)),
+    ),
+)
+def test_rejects_non_normal_ordered_inputs(constructor, args):
+    with pytest.raises(ValueError, match="normal-order"):
+        constructor(*args)
+
+
 def test_string_modification():
     string = String(4, ([0, 2], [1, 3]))
 

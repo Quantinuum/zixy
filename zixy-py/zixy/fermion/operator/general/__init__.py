@@ -14,7 +14,7 @@
 
 """Raw, non-normal-ordered fermionic ladder-operator strings and terms."""
 
-from zixy._zixy import GeneralFermionOperatorArray, Modes
+from zixy._zixy import FermionSprings, GeneralFermionOperatorArray, Modes
 from zixy.fermion.operator.general._strings import String, Strings, StringSet, StringSpec
 from zixy.fermion.operator.general._terms import (
     ComplexTerm,
@@ -33,6 +33,7 @@ from zixy.fermion.operator.general._terms import (
 
 __all__ = [
     "Modes",
+    "FermionSprings",
     "GeneralFermionOperatorArray",
     "StringSpec",
     "String",

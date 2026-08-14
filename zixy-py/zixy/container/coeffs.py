@@ -52,6 +52,7 @@ from zixy.utils import (
     slice_index_gen,
     slice_len,
     slice_of_slice,
+    split_top_level,
 )
 
 Number: TypeAlias = int | float | complex
@@ -1087,17 +1088,33 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
 
         Returns:
             An instance of ``cls`` parsed from ``source``.
+
+        Note:
+            The string is expected to be a comma-separated list of coefficients, optionally enclosed
+            in brackets. Coefficients may be enclosed in parentheses.
         """
-        source = source.strip().removeprefix("[").removesuffix("]")
-        if _is_complex(cls.coeff_type):
-            # normalise e.g. (1 + 2j) -> 1 + 2j
-            items = [item.strip().removeprefix("(").removesuffix(")") for item in source.split(",")]
-            source = ", ".join(item for item in items if item)
+        # Remove any brackets and whitespace
+        string = source.strip()
+        if string.startswith("[") != string.endswith("]"):
+            raise ValueError(f"Mismatched brackets in string '{source}'.")
+        string = string.removeprefix("[").removesuffix("]").strip()
+
+        # Remove any parentheses and whitespace from each element
+        items = [
+            item.strip().removeprefix("(").removesuffix(")").strip()
+            for item in split_top_level(string, ",", keep_empty=True)
+        ]
+        string = ", ".join(item for item in items if item)
+        if any(not item for item in items) and string:
+            raise ValueError(f"Invalid comma separator in string '{string}'.")
+
+        # Parse the string
         out = cls()
-        if not source:
+        if not string:
             out._impl = cls.coeffs_type(0)
-            return out
-        out._impl = cls.coeffs_type.parse(source)
+        else:
+            out._impl = cls.coeffs_type.parse(string)
+
         return out
 
     @property
@@ -1379,7 +1396,10 @@ class ExprListWrapper(BaseVec):
             An instance of ``cls`` parsed from ``source``.
         """
         out = cls()
-        out._list = [sympify(s) for s in source.split(",")]
+        out._list = [
+            sympify(s)
+            for s in split_top_level(source.strip().removeprefix("[").removesuffix("]"), ",")
+        ]
         return out
 
     def __getitem__(self, index: int) -> Expr:

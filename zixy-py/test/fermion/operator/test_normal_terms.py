@@ -51,9 +51,9 @@ def test_real_term():
     assert type(complex_sign_scaled) is ComplexTerm
     assert str(complex_sign_scaled) == "(2j, F0^ F1)"
 
-    out_of_order = RealTerm.from_str("F1 F0^", 4)
-    assert str(out_of_order) == "(-1.0, F0^ F1)"
-    assert str(out_of_order.daggered()) == "(-1.0, F1^ F0)"
+    ordered = RealTerm.from_str("F0^ F1", 4)
+    assert str(ordered) == "(1.0, F0^ F1)"
+    assert str(ordered.daggered()) == "(1.0, F1^ F0)"
 
 
 def test_complex_term():
@@ -85,6 +85,18 @@ def test_term_scalar_mul_preserves_viewed_string():
     assert left_scaled.coeff == 6.0
     assert not left_scaled.string.aliases(terms[1].string)
     assert not left_scaled.string.aliases(terms[0].string)
+
+
+@pytest.mark.parametrize(
+    ("constructor", "source"),
+    (
+        (RealTerm.from_str, "F1 F0^"),
+        (RealTerms.from_str, "(1.0, F1 F0^)"),
+    ),
+)
+def test_rejects_non_normal_ordered_inputs(constructor, source):
+    with pytest.raises(ValueError, match="normal-order"):
+        constructor(source, 2)
 
 
 @pytest.mark.parametrize(
@@ -302,8 +314,8 @@ def test_real_term_sum():
     assert term_sum.l2_norm == pytest.approx((1.5**2 + 1.0**2) ** 0.5)
     assert str(term_sum.filter_significant(atol=1.1)) == "(1.5, F0^ F1)"
 
-    contraction = RealTermSum.from_str("F0 F0^", 2)
-    assert str(contraction) == "(1.0, ), (-1.0, F0^ F0)"
+    number = RealTermSum.from_str("F0^ F0", 2)
+    assert str(number) == "(1.0, F0^ F0)"
 
 
 def test_real_term_add_iterable():

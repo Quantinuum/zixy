@@ -16,170 +16,32 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, TypeAlias
 
-from typing_extensions import Self
+from zixy._zixy import (
+    BravyiKitaevMapper as BravyiKitaevImpl,
+    JordanWignerMapper as JordanWignerImpl,
+    Mapper as Impl,
+    ParaparticularMapper as ParaparticularImpl,
+    ParityMapper as ParityImpl,
+    Qubits,
+)
+from zixy.container.coeffs import ComplexCoeffs, RealCoeffs
+from zixy.fermion.operator._strings import String as FermionString
+from zixy.qubit.pauli import ComplexTermSum as PauliComplexTermSum, RealTermSum as PauliRealTermSum
 
-from zixy._zixy import JordanWignerMapper as Impl, Qubits
-from zixy.container.coeffs import Coeff, CoeffT, OtherCoeffT
-from zixy.container.mixins import CoeffDivMixin, CoeffMulMixin
+ImplType: TypeAlias = (
+    type[JordanWignerImpl] | type[BravyiKitaevImpl] | type[ParityImpl] | type[ParaparticularImpl]
+)
 
 
-class Mapper(ABC):
+class Mapper:
     """Base class for fermion to qubit mappers."""
 
+    impl_type: ImplType
     _impl: Impl
-
-    @abstractmethod
-    def encode(self, fermion_ops: Sequence[tuple[int, bool]]) -> Contribution[float]:
-        """Encode a sequence of fermionic creation and annihilation operators to qubit operators.
-
-        Args:
-            fermion_ops: A sequence of tuples, where each tuple consists of an integer index
-                indicating the mode and a boolean indicating whether it's a creation (``True``) or
-                annihilation (``False``) operator.
-
-        Returns:
-            The encoded contribution to a linear combination of qubit Pauli strings.
-        """
-        pass
-
-    def encode_ca(self, c: int, a: int) -> Contribution[float]:
-        r"""Encode the product of a creation operator and an annihilation operator.
-
-        The operator is defined as
-
-        .. math:: a^\dagger_c a_a.
-
-        Args:
-            c: The fermionic mode of the creation operator.
-            a: The fermionic mode of the annihilation operator.
-
-        Returns:
-            The encoded contribution.
-        """
-        return self.encode(((c, True), (a, False)))
-
-    def encode_n(self, i: int) -> Contribution[float]:
-        r"""Encode the local number operator for a given mode.
-
-        The operator is defined as
-
-        .. math:: n_i = a^\dagger_i a_i.
-
-        Args:
-            i: The fermionic mode to encode.
-
-        Returns:
-            The encoded contribution.
-        """
-        return self.encode_ca(i, i)
-
-    def encode_caca(self, c1: int, a1: int, c2: int, a2: int) -> Contribution[float]:
-        r"""Encode the product of two creation-annihilation operator products.
-
-        The operator is defined as
-
-        .. math:: a^\dagger_{c1} a_{a1} a^\dagger_{c2} a_{a2}.
-
-        Args:
-            c1: The fermionic mode of the first creation operator.
-            a1: The fermionic mode of the first annihilation operator.
-            c2: The fermionic mode of the second creation operator.
-            a2: The fermionic mode of the second annihilation operator.
-
-        Returns:
-            The encoded contribution.
-        """
-        return self.encode(((c1, True), (a1, False), (c2, True), (a2, False)))
-
-    def encode_nn(self, i: int, j: int) -> Contribution[float]:
-        r"""Encode the product of two local number operators.
-
-        The operator is defined as
-
-        .. math:: n_i n_j = a^\dagger_i a_i a^\dagger_j a_j.
-
-        Args:
-            i: The fermionic mode of the first number operator.
-            j: The fermionic mode of the second number operator.
-
-        Returns:
-            The encoded contribution.
-        """
-        return self.encode_caca(i, i, j, j)
-
-    def encode_ccaa(self, c1: int, c2: int, a1: int, a2: int) -> Contribution[float]:
-        r"""Encode the product of two creation operators and two annihilation operators.
-
-        The operator is defined as
-
-        .. math:: a^\dagger_{c1} a^\dagger_{c2} a_{a1} a_{a2}.
-
-        Args:
-            c1: The fermionic mode of the first creation operator.
-            c2: The fermionic mode of the second creation operator.
-            a1: The fermionic mode of the first annihilation operator.
-            a2: The fermionic mode of the second annihilation operator.
-
-        Returns:
-            The encoded contribution.
-        """
-        return self.encode(((c1, True), (c2, True), (a1, False), (a2, False)))
-
-
-class Contribution(CoeffMulMixin[CoeffT], CoeffDivMixin[CoeffT]):
-    """A weighted contribution to a linear combination of qubit operators."""
-
-    _c: CoeffT
-    _mapper: Mapper
-
-    def __init__(self, mapper: Mapper, c: CoeffT):
-        """Initialize the contribution.
-
-        Args:
-            mapper: The mapper object.
-            c: The coefficient.
-        """
-        self._mapper = mapper
-        self._c = c
-
-    @property
-    def coeff(self) -> CoeffT:
-        """Get the coefficient of the contribution."""
-        return self._c
-
-    def __pos__(self) -> Self:
-        """Return ``self``."""
-        return self
-
-    def __neg__(self) -> Contribution[CoeffT]:
-        """Return the negation of ``self``."""
-        return Contribution(self._mapper, -self.coeff)
-
-    def __mul__(self, scalar: OtherCoeffT) -> Contribution[Any]:
-        """Multiply ``self`` by the scalar value ``scalar``."""
-        if not isinstance(scalar, Coeff):
-            return NotImplemented
-        return Contribution(self._mapper, self.coeff * scalar)
-
-    def __truediv__(self, scalar: OtherCoeffT) -> Contribution[Any]:
-        """Divide ``self`` by the scalar value ``scalar``."""
-        if not isinstance(scalar, Coeff):
-            return NotImplemented
-        return Contribution(self._mapper, self.coeff / scalar)
-
-    def __rtruediv__(self, scalar: OtherCoeffT) -> Contribution[Any]:
-        """Divide the scalar value ``scalar`` by ``self``."""
-        if not isinstance(scalar, Coeff):
-            return NotImplemented
-        return Contribution(self._mapper, scalar / self.coeff)
-
-
-class JordanWignerMapper(Mapper):
-    """Jordan--Wigner fermion to qubit mapper."""
+    qubits: Qubits
 
     def __init__(self, qubits: int | Qubits, mode_ordering: Sequence[int] | None = None):
         """Initialize the mapper.
@@ -191,19 +53,91 @@ class JordanWignerMapper(Mapper):
         """
         if isinstance(qubits, int):
             qubits = Qubits.from_count(qubits)
-        self._impl = Impl(qubits, list(mode_ordering) if mode_ordering is not None else None)
+        self.qubits = qubits
+        self._impl = self.impl_type(
+            qubits, list(mode_ordering) if mode_ordering is not None else None
+        )
 
-    def encode(self, fermion_ops: Sequence[tuple[int, bool]]) -> Contribution[float]:
-        """Encode a sequence of fermionic operators.
+    def encode_real(
+        self, fermion_string: FermionString[Any, Any, Any], coeff: float = 1.0
+    ) -> PauliRealTermSum:
+        """Encode a fermionic string to real qubit operators.
 
         Args:
-            fermion_ops: A sequence of tuples, where each tuple consists of an integer index
-                indicating the mode and a boolean indicating whether it's a creation (``True``) or
-                annihilation (``False``) operator.
+            fermion_string: The fermionic string to encode.
+            coeff: A real factor to multiply the encoded string by.
 
         Returns:
-            The encoded contribution.
+            The encoded linear combination of real qubit Pauli strings.
         """
-        fermion_ops = [(int(i), bool(b)) for i, b in fermion_ops]
-        self._impl.op_load_product(fermion_ops)
-        return Contribution(self, 1)
+        self._impl.op_load_product(fermion_string.get_ops())
+        out = PauliRealTermSum(self.qubits)
+        assert isinstance(out._impl._coeffs, RealCoeffs)  # for mypy
+        self._impl.op_contribute_real(
+            out._impl._cmpnts._impl,
+            out._cmpnt_set._map,
+            out._impl._coeffs._impl,
+            coeff,
+        )
+        return out
+
+    def encode_complex(
+        self, fermion_string: FermionString[Any, Any, Any], coeff: complex = 1.0
+    ) -> PauliComplexTermSum:
+        """Encode a fermionic string to complex qubit operators.
+
+        Args:
+            fermion_string: The fermionic string to encode.
+            coeff: A complex factor to multiply the encoded string by.
+
+        Returns:
+            The encoded linear combination of complex qubit Pauli strings.
+        """
+        self._impl.op_load_product(fermion_string.get_ops())
+        out = PauliComplexTermSum(self.qubits)
+        assert isinstance(out._impl._coeffs, ComplexCoeffs)  # for mypy
+        self._impl.op_contribute_complex(
+            out._impl._cmpnts._impl,
+            out._cmpnt_set._map,
+            out._impl._coeffs._impl,
+            coeff,
+        )
+        return out
+
+    def encode(
+        self, fermion_string: FermionString[Any, Any, Any], coeff: complex = 1.0
+    ) -> PauliComplexTermSum:
+        """Encode a fermionic string to qubit operators.
+
+        Args:
+            fermion_string: The fermionic string to encode.
+            coeff: A factor to multiply the encoded string by.
+
+        Returns:
+            The encoded linear combination of qubit Pauli strings.
+        """
+        return self.encode_complex(fermion_string, coeff)
+
+
+class JordanWignerMapper(Mapper):
+    """Jordan--Wigner fermion to qubit mapper."""
+
+    impl_type = JordanWignerImpl
+
+
+class BravyiKitaevMapper(Mapper):
+    """Bravyi--Kitaev fermion to qubit mapper."""
+
+    impl_type = BravyiKitaevImpl
+
+
+class ParityMapper(Mapper):
+    """Parity fermion to qubit mapper."""
+
+    impl_type = ParityImpl
+
+
+class ParaparticularMapper(Mapper):
+    """Paraparticular fermion to qubit mapper."""
+
+    impl_type = ParaparticularImpl

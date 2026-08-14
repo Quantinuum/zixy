@@ -5,9 +5,11 @@ from zixy.container.coeffs import ComplexSign, Sign
 from zixy.qubit.pauli import (
     ComplexTerm,
     ComplexTerms,
+    ComplexTermSum as PauliComplexTermSum,
     I,
     RealTerm,
     RealTerms,
+    RealTermSum as PauliRealTermSum,
     SignTerms,
     String,
     SymbolicTerm,
@@ -16,6 +18,7 @@ from zixy.qubit.pauli import (
     Y,
     Z,
 )
+from zixy.qubit.state import ComplexTermSum as ComplexState, RealTermSum as RealState
 
 
 def test_real_term():
@@ -103,6 +106,24 @@ def test_real_term():
     assert term.coeff == 1.0
 
 
+def test_term_scalar_mul_preserves_viewed_string():
+    terms = RealTerms.from_str("X0, Z1", 2)
+
+    right_scaled = terms[1] * 3.0
+    left_scaled = 3.0 * terms[1]
+
+    assert right_scaled.string == terms[1].string
+    assert right_scaled.string != terms[0].string
+    assert right_scaled.coeff == 3.0
+    assert not right_scaled.string.aliases(terms[1].string)
+    assert not right_scaled.string.aliases(terms[0].string)
+    assert left_scaled.string == terms[1].string
+    assert left_scaled.string != terms[0].string
+    assert left_scaled.coeff == 3.0
+    assert not left_scaled.string.aliases(terms[1].string)
+    assert not left_scaled.string.aliases(terms[0].string)
+
+
 def test_complex_term():
     with pytest.raises(IndexError):
         ComplexTerm(5, ((X, Y, Z, X, Y, Z), 2.0j))
@@ -119,6 +140,40 @@ def test_complex_term():
     lhs *= lhs.string
     assert lhs.coeff == complex(0, 2)
     assert lhs.string.is_identity()
+
+
+def test_real_apply_rejects_different_qubits():
+    op = PauliRealTermSum.from_str("X0", 2)
+    state = RealState.from_str("[1, 0, 0]", 3)
+
+    with pytest.raises(ValueError, match="different qubits"):
+        op.apply(state)
+
+
+def test_real_mat_elem_rejects_different_qubits():
+    op = PauliRealTermSum.from_str("X0", 2)
+    bra = RealState.from_str("[1, 0]", 2)
+    ket = RealState.from_str("[1, 0, 0]", 3)
+
+    with pytest.raises(ValueError, match="different qubits"):
+        op.mat_elem(bra, ket)
+
+
+def test_complex_apply_rejects_different_qubits():
+    op = PauliComplexTermSum.from_str("X0", 2)
+    state = ComplexState.from_str("[1, 0, 0]", 3)
+
+    with pytest.raises(ValueError, match="different qubits"):
+        op.apply(state)
+
+
+def test_complex_mat_elem_rejects_different_qubits():
+    op = PauliComplexTermSum.from_str("X0", 2)
+    bra = ComplexState.from_str("[1, 0]", 2)
+    ket = ComplexState.from_str("[1, 0, 0]", 3)
+
+    with pytest.raises(ValueError, match="different qubits"):
+        op.mat_elem(bra, ket)
 
 
 def test_real_terms():

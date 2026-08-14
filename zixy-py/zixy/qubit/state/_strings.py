@@ -32,6 +32,7 @@ from zixy.qubit._strings import (
     String as StringBase,
     Strings as StringsBase,
     StringSet as StringSetBase,
+    _check_qubits_compatibility,
     _default_qubits as _default_qubits_base,
 )
 from zixy.qubit.pauli import String as PauliString
@@ -79,8 +80,8 @@ class String(StringBase[ImplT, SpecT, ElemT]):
 
         Args:
             source: String to parse.
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
-                index in the input string.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
 
         Returns:
             An instance of ``cls`` parsed from ``source``.
@@ -159,6 +160,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
 
     def vdot(self, other: String) -> int:
         """Compute the inner product of this string with another."""
+        _check_qubits_compatibility(self.qubits, other.qubits)
         return int(self == other)
 
     def imul_get_phase(self, op: PauliString) -> ComplexSign:

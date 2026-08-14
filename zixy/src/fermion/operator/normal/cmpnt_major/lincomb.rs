@@ -1,7 +1,7 @@
 //! Fermion operator in linear combination utilities.
 
 use crate::container::bit_matrix::AsRowRef;
-use crate::container::coeffs::traits::{FieldElem, FieldElemVec, HasCoeffs, NumRepr};
+use crate::container::coeffs::traits::{FieldElem, FieldElemVec, HasCoeffs};
 use crate::container::traits::proj::{Borrow, BorrowMut, ToOwned};
 use crate::container::traits::Elements;
 use crate::container::traits::RefElements;
@@ -43,7 +43,7 @@ pub fn scaled_add<C: FieldElem>(
 
 /// Assign lhs * rhs to out, normal-ordering each component product.
 pub fn assign_from_mul<C: FieldElem>(
-    out: &mut term_set::ViewMut<Complex64>,
+    out: &mut term_set::ViewMut<C>,
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
 ) -> Result<(), DifferentSpaces> {
@@ -58,9 +58,8 @@ pub fn assign_from_mul<C: FieldElem>(
             let (result_cmpnts, result_signs) = mul_cmpnts(&lhs_cmpnt, &rhs_cmpnt);
             for (i_res, sign) in result_signs.iter().enumerate() {
                 let result_cmpnt = result_cmpnts.get_elem_ref(i_res);
-                let c = sign.to_complex();
-                let c = lhs_coeff.scaled_complex(c);
-                let c = rhs_coeff.scaled_complex(c);
+                let c = *lhs_coeff * *rhs_coeff;
+                let c = if sign.0 { -c } else { c };
                 scaled_iadd_elem(out, result_cmpnt, c);
             }
         }
@@ -71,15 +70,15 @@ pub fn assign_from_mul<C: FieldElem>(
 pub fn mul<C: FieldElem>(
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
-) -> Result<TermSet<Complex64>, DifferentSpaces> {
-    let mut out = TermSet::<Complex64>::new(lhs.to_modes());
+) -> Result<TermSet<C>, DifferentSpaces> {
+    let mut out = TermSet::<C>::new(lhs.to_modes());
     assign_from_mul(&mut out.borrow_mut(), lhs, rhs)?;
     Ok(out)
 }
 
 /// Assign the commutator [lhs, rhs] = lhs * rhs - rhs * lhs to out.
 pub fn assign_from_commutator<C: FieldElem>(
-    out: &mut term_set::ViewMut<Complex64>,
+    out: &mut term_set::ViewMut<C>,
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
 ) -> Result<(), DifferentSpaces> {
@@ -91,7 +90,7 @@ pub fn assign_from_commutator<C: FieldElem>(
 
 /// Assign the anticommutator {lhs, rhs} = lhs * rhs + rhs * lhs to out.
 pub fn assign_from_anticommutator<C: FieldElem>(
-    out: &mut term_set::ViewMut<Complex64>,
+    out: &mut term_set::ViewMut<C>,
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
 ) -> Result<(), DifferentSpaces> {
@@ -104,8 +103,8 @@ pub fn assign_from_anticommutator<C: FieldElem>(
 pub fn commutator<C: FieldElem>(
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
-) -> Result<TermSet<Complex64>, DifferentSpaces> {
-    let mut out = TermSet::<Complex64>::new(lhs.to_modes());
+) -> Result<TermSet<C>, DifferentSpaces> {
+    let mut out = TermSet::<C>::new(lhs.to_modes());
     assign_from_commutator(&mut out.borrow_mut(), lhs, rhs)?;
     Ok(out)
 }
@@ -113,8 +112,8 @@ pub fn commutator<C: FieldElem>(
 pub fn anticommutator<C: FieldElem>(
     lhs: &terms::View<C>,
     rhs: &terms::View<C>,
-) -> Result<TermSet<Complex64>, DifferentSpaces> {
-    let mut out = TermSet::<Complex64>::new(lhs.to_modes());
+) -> Result<TermSet<C>, DifferentSpaces> {
+    let mut out = TermSet::<C>::new(lhs.to_modes());
     assign_from_anticommutator(&mut out.borrow_mut(), lhs, rhs)?;
     Ok(out)
 }
@@ -346,10 +345,10 @@ mod tests {
         scaled_iadd_elem(&mut rhs.borrow_mut(), a0_dag.borrow(), 3.0);
 
         let result = mul(&lhs.borrow().as_terms(), &rhs.borrow().as_terms()).unwrap();
-        let coeffs: Vec<Complex64> = result.get_coeffs().to_vec();
+        let coeffs: Vec<f64> = result.get_coeffs().to_vec();
         assert_eq!(coeffs.len(), 2);
-        assert!(coeffs.contains(&Complex64::new(6.0, 0.0)));
-        assert!(coeffs.contains(&Complex64::new(-6.0, 0.0)));
+        assert!(coeffs.contains(&6.0));
+        assert!(coeffs.contains(&-6.0));
     }
     #[rstest]
     #[case(vec![(HashSet::new(), HashSet::from([0]))], vec![(HashSet::from([0]), HashSet::new())])]

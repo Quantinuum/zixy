@@ -60,7 +60,7 @@ from zixy.container.coeffs import (
 )
 from zixy.container.data import TermData
 from zixy.container.terms import NumericTerms, NumericTermSum
-from zixy.fermion import mappings
+from zixy.qubit._strings import _check_qubits_compatibility
 from zixy.qubit._terms import (
     Term as TermBase,
     Terms as TermsBase,
@@ -91,8 +91,8 @@ def _data_from_str(
 
     Args:
         source: Input string to parse.
-        qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
-            index in the input string.
+        qubits: The qubit register or qubit count. If ``None``, the qubit register is inferred
+            from the string specifier.
         coeff_type: The coefficient type.
 
     Returns:
@@ -115,10 +115,7 @@ def _mul(
     """Driver for multiplication of a term with another term, a string, or a coefficient."""
     if isinstance(rhs, Coeff):
         scalar_product = lhs.coeff * rhs
-        term_type = get_term_type(type(scalar_product))
-        coeffs_type = get_coeffs_type(type(scalar_product))
-        data = TermData(lhs._impl._cmpnts, coeffs_type.from_scalar(scalar_product))
-        return term_type._create(data)
+        return get_term_type(type(scalar_product)).from_cmpnt_coeff(lhs.string, scalar_product)
     elif isinstance(rhs, String):
         product = lhs.string * rhs
         assert isinstance(product, ComplexSignTerm)
@@ -165,8 +162,8 @@ class Term(TermBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
 
         Args:
             source: Input string to parse.
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
-                index in the input string.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
 
         Returns:
             A new instance containing the Pauli string and coefficient in the ``source``.
@@ -252,8 +249,8 @@ class Terms(TermsBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
 
         Args:
             source: Input string to parse.
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
-                index in the input string.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
 
         Returns:
             A new instance containing the Pauli strings and coefficients in the ``source``.
@@ -457,8 +454,8 @@ class TermSum(TermSumBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix], Ter
 
         Args:
             source: Input string to parse.
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
-                index in the input string.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
 
         Returns:
             A new instance containing the Pauli strings and coefficients in the ``source``.
@@ -861,34 +858,6 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
             big_endian,
         )
 
-    @classmethod
-    def from_fermionic(
-        cls,
-        qubits: int | Qubits,
-        mapper: mappings.Mapper,
-        fermion_ops: Sequence[tuple[Sequence[tuple[int, bool]], float]],
-    ) -> Self:
-        """Create an instance of ``cls`` from a fermionic operator given a mapping.
-
-        Args:
-            qubits: The qubit register or qubit count.
-            mapper: The mapping.
-            fermion_ops: A sequence of tuples, where each tuple consists of an integer index
-                indicating the mode and a boolean indicating whether it's a creation (``True``) or
-                annihilation (``False``) operator.
-
-        Returns:
-            The constructed instance.
-        """
-        out = cls(qubits)
-        out_impl = out._impl._cmpnts._impl
-        out_map = out._cmpnt_set._map
-        out_real_coeffs = out._impl._coeffs
-        assert isinstance(out_real_coeffs, RealCoeffs)
-        out_coeffs = out_real_coeffs._impl
-        mapper._impl.op_encode_real(fermion_ops, out_impl, out_map, out_coeffs)
-        return out
-
     @overload  # type: ignore[override]
     def __mul__(self, other: Coeff | Coeffs[float]) -> Self: ...
     @overload
@@ -959,26 +928,14 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
             tuple(coeffs),
         )
 
-    def __iadd__(self, rhs: RealTerm | Self | mappings.Contribution[float]) -> Self:  # type: ignore[override,misc]
+    def __iadd__(self, rhs: RealTerm | Self) -> Self:  # type: ignore[override,misc]
         """In-place addition of ``self`` by ``rhs``."""
-        if isinstance(rhs, mappings.Contribution):
-            assert isinstance(self._impl._coeffs, RealCoeffs)  # TODO: resolve
-            rhs._mapper._impl.op_contribute_real(
-                self._impl._cmpnts._impl,
-                self._cmpnt_set._map,
-                self._impl._coeffs._impl,
-                rhs._c,
-            )
-        else:
-            super().__iadd__(rhs)
+        super().__iadd__(rhs)
         return self
 
-    def __isub__(self, rhs: RealTerm | Self | mappings.Contribution[float]) -> Self:  # type: ignore[override,misc]
+    def __isub__(self, rhs: RealTerm | Self) -> Self:  # type: ignore[override,misc]
         """In-place subtraction of ``self`` by ``rhs``."""
-        if isinstance(rhs, mappings.Contribution):
-            self.__iadd__(-rhs)
-        else:
-            super().__isub__(rhs)
+        super().__isub__(rhs)
         return self
 
     def apply(self, state: RealState) -> ComplexState:
@@ -990,6 +947,7 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         Returns:
             The resulting state.
         """
+        _check_qubits_compatibility(self.qubits, state.qubits)
         out = ComplexState(self.qubits)
         assert isinstance(self._impl._coeffs, RealCoeffs)
         assert isinstance(state._impl._coeffs, RealCoeffs)
@@ -1014,6 +972,7 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         Returns:
             The resulting matrix element.
         """
+        _check_qubits_compatibility(self.qubits, bra.qubits, ket.qubits)
         assert isinstance(self._impl._coeffs, RealCoeffs)
         assert isinstance(bra._impl._coeffs, RealCoeffs)
         assert isinstance(ket._impl._coeffs, RealCoeffs)
@@ -1236,26 +1195,14 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
             subspace._impl,
         )
 
-    def __iadd__(self, rhs: ComplexTerm | Self | mappings.Contribution[complex]) -> Self:  # type: ignore[override,misc]
+    def __iadd__(self, rhs: ComplexTerm | Self) -> Self:  # type: ignore[override,misc]
         """In-place addition of ``self`` by ``rhs``."""
-        if isinstance(rhs, mappings.Contribution):
-            assert isinstance(self._impl._coeffs, ComplexCoeffs)  # TODO: resolve
-            rhs._mapper._impl.op_contribute_complex(
-                self._impl._cmpnts._impl,
-                self._cmpnt_set._map,
-                self._impl._coeffs._impl,
-                rhs._c,
-            )
-        else:
-            super().__iadd__(rhs)
+        super().__iadd__(rhs)
         return self
 
-    def __isub__(self, rhs: ComplexTerm | Self | mappings.Contribution[complex]) -> Self:  # type: ignore[override,misc]
+    def __isub__(self, rhs: ComplexTerm | Self) -> Self:  # type: ignore[override,misc]
         """In-place subtraction of ``self`` by ``rhs``."""
-        if isinstance(rhs, mappings.Contribution):
-            self.__iadd__(-rhs)
-        else:
-            super().__isub__(rhs)
+        super().__isub__(rhs)
         return self
 
     def apply(self, state: ComplexState) -> ComplexState:
@@ -1267,6 +1214,7 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         Returns:
             The resulting state.
         """
+        _check_qubits_compatibility(self.qubits, state.qubits)
         out = ComplexState(self.qubits)
         assert isinstance(self._impl._coeffs, ComplexCoeffs)
         assert isinstance(state._impl._coeffs, ComplexCoeffs)
@@ -1291,6 +1239,7 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         Returns:
             The resulting matrix element.
         """
+        _check_qubits_compatibility(self.qubits, bra.qubits, ket.qubits)
         assert isinstance(self._impl._coeffs, ComplexCoeffs)
         assert isinstance(bra._impl._coeffs, ComplexCoeffs)
         assert isinstance(ket._impl._coeffs, ComplexCoeffs)

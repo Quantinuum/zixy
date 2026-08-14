@@ -39,6 +39,14 @@ def test_from_tuple():
     assert not String(6, (1,)).is_vacuum()
 
 
+def test_string_vdot_rejects_different_qubits():
+    lhs = String(2, (1, 0))
+    rhs = String(3, (1, 0, 0))
+
+    with pytest.raises(ValueError, match="different qubits"):
+        lhs.vdot(rhs)
+
+
 def test_str():
     vacuum = String(6)
     assert vacuum.to_str() == "[0, 0, 0, 0, 0, 0]"
@@ -87,3 +95,11 @@ def test_strings_from_iterable():
     assert Strings.from_str(str(s), 10) == s
     string_set = StringSet.from_iterable(({1, 3, 4, 9}, {1, 2, 6}, {1, 3, 4, 9}), 10)
     assert StringSet.from_str(str(string_set)) == string_set
+
+    wrong_qubits = String(11, {1, 3, 4, 9})
+    with pytest.raises(ValueError, match="different qubit spaces"):
+        string_set.insert(wrong_qubits)
+    with pytest.raises(ValueError, match="different qubit spaces"):
+        string_set.lookup(wrong_qubits)
+    with pytest.raises(ValueError, match="different qubit spaces"):
+        string_set.remove(wrong_qubits)

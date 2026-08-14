@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pytest
-from mock_cmpnts import String, Strings, StringSet, StringsImplArray
 from sympy import Expr, sympify
 from typing_extensions import Self
 
@@ -15,6 +14,8 @@ from zixy.container.coeffs import (
 )
 from zixy.container.data import TermData
 from zixy.container.terms import NumericTerms, NumericTermSum, Term, Terms, TermSet, TermSum
+
+from .mock_cmpnts import String, Strings, StringSet, StringsImplArray
 
 
 def _mock_term_from_str(cls: type[Term[StringsImplArray, str, object]], source: str) -> object:
@@ -355,6 +356,24 @@ def test_termsum_vectorised_coeff_multiplication():
     term_sum *= term_sum.to_terms().coeffs[::-1]
     # (4.0, -2.0).(-2.0, 4.0) = (-8.0, -8.0)
     assert tuple(term_sum.to_terms().coeffs) == (-8.0, -8.0)
+
+
+def test_unary_term_algebra():
+    term = RealMockTerm.from_cmpnt_coeff(String.from_str("alpha"), 2.0)
+    assert +term is term
+    assert str(-term) == "(-2.0, alpha)"
+    assert str(term) == "(2.0, alpha)"
+
+    terms = RealMockTerms.from_iterable((("alpha", 1.0), ("beta", -2.0)))
+    assert +terms is terms
+    assert str(-terms) == "(-1.0, alpha), (2.0, beta)"
+    assert str(terms) == "(1.0, alpha), (-2.0, beta)"
+    assert str(-terms[1]) == "(2.0, beta)"
+
+    term_sum = RealMockTermSum.from_iterable((("alpha", 1.0), ("beta", -2.0)))
+    assert +term_sum is term_sum
+    assert str(-term_sum) == "(-1.0, alpha), (2.0, beta)"
+    assert str(term_sum) == "(1.0, alpha), (-2.0, beta)"
 
 
 def test_terms_vectorised_coeff_multiplication():

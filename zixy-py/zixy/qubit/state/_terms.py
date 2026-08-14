@@ -51,6 +51,7 @@ from zixy.container.coeffs import (
 )
 from zixy.container.data import TermData
 from zixy.container.terms import NumericTerms, NumericTermSum
+from zixy.qubit._strings import _check_qubits_compatibility
 from zixy.qubit._terms import (
     Term as TermBase,
     Terms as TermsBase,
@@ -73,10 +74,7 @@ def _mul(lhs: Term[CoeffT], rhs: OtherCoeffT) -> Term[Any]:
     if not isinstance(rhs, Coeff):
         return NotImplemented
     scalar_product = lhs.coeff * rhs
-    term_type = get_term_type(type(scalar_product))
-    coeffs_type = get_coeffs_type(type(scalar_product))
-    data = TermData(lhs._impl._cmpnts, coeffs_type.from_scalar(scalar_product))
-    return term_type._create(data)
+    return get_term_type(type(scalar_product)).from_cmpnt_coeff(lhs.string, scalar_product)
 
 
 def _rmul(rhs: Term[CoeffT], lhs: OtherCoeffT) -> Term[Any]:
@@ -101,8 +99,8 @@ class Term(TermBase[QubitStateArray, StringSpec, CoeffT, bool]):
 
         Args:
             source: Input string to parse.
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the input
-                string.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
 
         Returns:
             A new instance containing the state string and coefficient in ``source``.
@@ -184,8 +182,8 @@ class Terms(TermsBase[QubitStateArray, StringSpec, CoeffT, bool]):
 
         Args:
             source: Input string to parse.
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the input
-                string.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
 
         Returns:
             A new instance containing the state strings and coefficients in ``source``.
@@ -238,8 +236,8 @@ class TermSum(TermSumBase[QubitStateArray, StringSpec, CoeffT, bool], TermSet[Co
 
         Args:
             source: Input string to parse.
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the input
-                string.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
 
         Returns:
             A new instance containing the state strings and coefficients in ``source``.
@@ -476,7 +474,8 @@ class RealTermSum(NumericTermSum[QubitStateArray, StringSpec, float], TermSum[fl
         """Create an instance of ``cls`` from a dense vector.
 
         Args:
-            qubits: The qubit register or qubit count.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the dense vector length.
             source: The vector to read from.
             big_endian: Whether to use big endian ordering for the resulting matrix. If ``False``,
                 little endian ordering is used. In big (little) endian ordering, the least
@@ -514,6 +513,7 @@ class RealTermSum(NumericTermSum[QubitStateArray, StringSpec, float], TermSum[fl
 
     def vdot(self, rhs: RealTermSum) -> float:
         """Compute the inner product of ``self`` with ``rhs``."""
+        _check_qubits_compatibility(self.qubits, rhs.qubits)
         assert isinstance(self._impl._coeffs, RealCoeffs)  # TODO: resolve
         assert isinstance(rhs._impl._coeffs, RealCoeffs)  # TODO: resolve
         return float(
@@ -617,7 +617,8 @@ class ComplexTermSum(NumericTermSum[QubitStateArray, StringSpec, complex], TermS
         """Create an instance of ``cls`` from a dense vector.
 
         Args:
-            qubits: The qubit register or qubit count.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the dense vector length.
             source: The vector to read from.
             big_endian: Whether to use big endian ordering for the resulting matrix. If ``False``,
                 little endian ordering is used. In big (little) endian ordering, the least
@@ -669,6 +670,7 @@ class ComplexTermSum(NumericTermSum[QubitStateArray, StringSpec, complex], TermS
 
     def vdot(self, rhs: ComplexTermSum) -> complex:
         """Compute the inner product of ``self`` with ``rhs``."""
+        _check_qubits_compatibility(self.qubits, rhs.qubits)
         assert isinstance(self._impl._coeffs, ComplexCoeffs)  # TODO: resolve
         assert isinstance(rhs._impl._coeffs, ComplexCoeffs)  # TODO: resolve
         return complex(
@@ -750,14 +752,14 @@ class SymbolicTerm(Term[Expr]):
         return out
 
     def try_to_real(self) -> RealTerm:
-        """Try to evaluate ``self`` as a term containing a vector of real coefficients.
+        """Try to evaluate ``self`` as a term containing a real coefficient.
 
         Returns:
             An instance of :class:`~zixy.qubit.state._terms.RealTerm` with the evaluated
-            coefficients.
+            coefficient.
 
         Raises:
-            TypeError: A coefficient is not representable as real or there are free symbols.
+            TypeError: If ``self`` cannot be evaluated with a real coefficient.
 
         See Also:
             :meth:`~zixy.container.coeffs.SymbolicCoeffs.try_to_real`
@@ -767,14 +769,14 @@ class SymbolicTerm(Term[Expr]):
         return RealTerm._create(TermData(cmpnts, coeffs))
 
     def try_to_complex(self) -> ComplexTerm:
-        """Try to evaluate ``self`` as a term containing a vector of complex coefficients.
+        """Try to evaluate ``self`` as a term containing a complex coefficient.
 
         Returns:
             An instance of :class:`~zixy.qubit.state._terms.ComplexTerm` with the evaluated
-            coefficients.
+            coefficient.
 
         Raises:
-            TypeError: A coefficient is not representable as complex or there are free symbols.
+            TypeError: If ``self`` cannot be evaluated with a complex coefficient.
 
         See Also:
             :meth:`~zixy.container.coeffs.SymbolicCoeffs.try_to_complex`

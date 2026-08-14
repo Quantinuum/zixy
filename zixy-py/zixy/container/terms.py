@@ -249,6 +249,16 @@ class Term(
         coeff = coeff.replace("-0j", "+0j")
         return f"({coeff}, {self.cmpnt})"
 
+    def __pos__(self) -> Self:
+        """Return ``self``."""
+        return self
+
+    def __neg__(self) -> Self:
+        """Return the negation of ``self``."""
+        out = self.clone()
+        out.coeff = typesafe_mul(out.coeff, -1)
+        return out
+
 
 class Terms(
     Generic[ImplT, SpecT, CoeffT],
@@ -460,6 +470,16 @@ class Terms(
         """Return ``self`` multiplied by a scalar or coefficient vector."""
         out = self.clone()
         out *= coeff
+        return out
+
+    def __pos__(self) -> Self:
+        """Return ``self``."""
+        return self
+
+    def __neg__(self) -> Self:
+        """Return the negation of ``self``."""
+        out = self.clone()
+        out *= cast(CoeffT, -1)
         return out
 
     def _empty_clone(self) -> Self:
@@ -822,6 +842,14 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         """Get the number of elements in ``self``."""
         return len(self._impl)
 
+    def _check_term(self, value: Term[ImplT, SpecT, CoeffT]) -> None:
+        """Hook to check whether a term is valid for insertion into ``self``."""
+        pass
+
+    def _check_cmpnt(self, value: Cmpnt[ImplT, SpecT]) -> None:
+        """Hook to check whether a component is valid for insertion into ``self``."""
+        pass
+
     def _get_working_term(
         self, value: Term[ImplT, SpecT, CoeffT] | TermSpecT[ImplT, SpecT, CoeffT]
     ) -> Term[ImplT, SpecT, CoeffT]:
@@ -836,10 +864,12 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
             that working term.
         """
         if isinstance(value, Term):
-            return value
+            term = value
         else:
             self._working_term.set(value)
-            return self._working_term
+            term = self._working_term
+        self._check_term(term)
+        return term
 
     def _get_working_cmpnt(self, value: Cmpnt[ImplT, SpecT] | SpecT) -> Cmpnt[ImplT, SpecT]:
         """Get a component that contains the data specified by ``value``.
@@ -855,10 +885,12 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         cmpnt_type = self._impl.cmpnt_type
         assert issubclass(cmpnt_type, Cmpnt)
         if isinstance(value, cmpnt_type):
-            return value
+            cmpnt = value
         else:
             self._working_term.cmpnt.set(value)
-            return self._working_term.cmpnt
+            cmpnt = self._working_term.cmpnt
+        self._check_cmpnt(cmpnt)
+        return cmpnt
 
     def insert(self, key: Term[ImplT, SpecT, CoeffT] | TermSpecT[ImplT, SpecT, CoeffT]) -> int:
         """Try to insert the given term.
@@ -1165,6 +1197,14 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
         out = self.clone()
         out -= rhs
         return out
+
+    def __pos__(self) -> Self:
+        """Return ``self``."""
+        return self
+
+    def __neg__(self) -> Self:
+        """Return the negation of ``self``."""
+        return self * -1
 
     def __imul__(self, other: Coeff | Coeffs[CoeffT]) -> Self:
         """Multiply ``self`` in-place by a scalar or coefficient vector."""

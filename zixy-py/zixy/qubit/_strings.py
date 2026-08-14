@@ -40,6 +40,12 @@ def _default_qubits(source: SpecT) -> Qubits:
         raise TypeError("Source object is of an unsupported type.")
 
 
+def _check_qubits_compatibility(*qubits: Qubits) -> None:
+    """Check that all qubit registers are compatible."""
+    if len(qubits) > 1 and any(qubits[0] != other for other in qubits[1:]):
+        raise ValueError("Objects are defined over different qubits.")
+
+
 class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
     """A string.
 
@@ -62,7 +68,8 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
         """Initialize the string.
 
         Args:
-            qubits: The qubit register or qubit count.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
             source: The string specifier to use for default qubits and initial value.
         """
         if qubits is None:
@@ -166,6 +173,7 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
     contiguous Rust-bound data object, or a view on a slice of the elements in another collection.
     """
 
+    cmpnt_type: type[String[ImplT, SpecT, ElemT]]
     _springs_type: type[Springs]
 
     def __init__(self, qubits: int | Qubits = 0, n: int = 0):
@@ -188,8 +196,8 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
 
         Args:
             source: String to parse.
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
-                index in the input string.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
 
         Returns:
             An instance of ``cls`` parsed from ``source``.
@@ -311,6 +319,8 @@ class StringSet(Generic[ImplT, SpecT, ElemT], CmpntSet[ImplT, SpecT]):
     A set-like container of qubit-based strings that may be used to store unique components and
     perform set-like operations on them.
     """
+
+    cmpnts_type: type[Strings[ImplT, SpecT, ElemT]]
 
     def __init__(self, qubits: int | Qubits = 0):
         """Initialize the string set.

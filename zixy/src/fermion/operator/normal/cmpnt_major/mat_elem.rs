@@ -1,10 +1,6 @@
 //! Implements the evaluation of matrix elements of fermion operators with respect to Slater-determinant states.
 
-use ndarray::Array2 as Matrix;
-use num_complex::Complex64;
-
 use crate::container::coeffs::traits::FieldElem;
-use crate::container::coeffs::traits::NumRepr;
 use crate::container::traits::Elements;
 use crate::container::traits::RefElements;
 use crate::container::word_iters;
@@ -21,6 +17,7 @@ use crate::fermion::state::cmpnt_list::AssignResult;
 use crate::fermion::state::cmpnt_list::CmpntList as StateList;
 use crate::fermion::state::cmpnt_list::CmpntRef as StateRef;
 use crate::fermion::traits::ModesBased;
+use ndarray::Array2 as Matrix;
 
 /// Error returned when a state subspace basis contains repeated Slater determinants, or in general when any
 /// subspace has a non-unit metric.
@@ -211,7 +208,7 @@ pub fn expval_eigenfunction<C: FieldElem>(
 pub fn apply<C: FieldElem>(
     op: &fermion_op::terms::View<C>,
     state: &state::terms::View<C>,
-    out: &mut state::term_set::ViewMut<Complex64>,
+    out: &mut state::term_set::ViewMut<C>,
 ) {
     let mut tmp = word_iters::Elem::<StateList>::new(state.word_iters.to_modes());
     for (op_cmpnt, op_coeff) in op.word_iters.iter().zip(op.coeffs.iter()) {
@@ -223,10 +220,11 @@ pub fn apply<C: FieldElem>(
                 AssignResult::Applied(sign) => sign,
                 AssignResult::Zero => continue,
             };
-            let mut c = sign.to_complex();
-            c *= op_coeff.to_complex();
-            c *= state_coeff.to_complex();
-            word_iters::lincomb::scaled_iadd_elem(out, tmp.borrow(), c);
+            if let Ok(mut coeff) = C::try_represent(sign) {
+                coeff *= *op_coeff;
+                coeff *= *state_coeff;
+                word_iters::lincomb::scaled_iadd_elem(out, tmp.borrow(), coeff);
+            }
         }
     }
 }
@@ -293,7 +291,7 @@ mod tests {
         let op = build_hopping_op(modes.clone());
         let ket = build_basis_state(modes.clone(), HashSet::from([0]));
 
-        let mut out = StateTermSet::<Complex64>::new(modes);
+        let mut out = StateTermSet::<f64>::new(modes);
         apply(
             &op.borrow().as_terms(),
             &ket.borrow().as_terms(),
@@ -303,7 +301,7 @@ mod tests {
         assert_eq!(out.view().get_coeffs().len(), 1);
         let expected = build_basis_state(out.view().to_modes(), HashSet::from([1]));
         let overlap = state::lincomb::vdot(&out, &expected.borrow().as_terms());
-        assert_eq!(overlap, Complex64::new(1.0, 0.0));
+        assert_eq!(overlap, 1.0);
     }
 
     #[test]

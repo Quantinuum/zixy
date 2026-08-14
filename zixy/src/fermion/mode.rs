@@ -2,7 +2,7 @@
 
 use crate::container::table::Table;
 use crate::container::traits::Elements;
-use crate::utils::arith::divceil;
+use crate::utils::arith::{ceil_log2, divceil};
 use serde::{Deserialize, Serialize};
 
 /// The valid representations of the qubits field of objects acting on qubit spaces
@@ -34,6 +34,11 @@ impl Modes {
     /// Create an instance from the number of spin orbital pairs, assuming spin minor ordering.
     pub fn from_pair_count_spin_minor(n_pair: usize) -> Modes {
         Modes(Kind::SpinMinorPairs(n_pair))
+    }
+
+    /// Create an instance from Fock-space dimension.
+    pub fn from_fock_space_dim(n: usize) -> Modes {
+        Self::from_count(ceil_log2(n).unwrap_or_default())
     }
 
     /// Return the index of the `i`-th mode.

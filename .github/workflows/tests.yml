@@ -20,17 +20,13 @@ env:
   SCCACHE_GHA_ENABLED: "true"
   RUSTC_WRAPPER: "sccache"
 
-  # The highest and lowest supported Python versions, used for testing
-  PYTHON_HIGHEST: "3.13"
-  PYTHON_LOWEST: "3.10"
-
   LLVM_VERSION: "14.0"
   LLVM_FEATURE_NAME: "14-0"
 
 jobs:
 
   check-rs:
-    name: Check Rust code 🦀
+    name: Checks (Rust)
     runs-on: ubuntu-latest
     env:
       # Fail on rust compiler warnings.
@@ -78,7 +74,10 @@ jobs:
 
   check-py:
     runs-on: ubuntu-latest
-    name: Check Python code
+    name: Checks (Python ${{ matrix.python-version }})
+    strategy:
+      matrix:
+        python-version: ["3.11"]
     steps:
       - uses: actions/checkout@v7
       - uses: mozilla-actions/sccache-action@v0.0.11
@@ -89,10 +88,10 @@ jobs:
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
-      - name: Install Python ${{ env.PYTHON_LOWEST }}
-        run: uv python install ${{ env.PYTHON_LOWEST }}
+      - name: Install Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
       - name: Setup dependencies
-        run: uv sync --python ${{ env.PYTHON_LOWEST }}
+        run: uv sync --python ${{ matrix.python-version }}
       - name: Build Python extension
         run: uv run maturin develop -m zixy-py/Cargo.toml
       - name: Ruff
@@ -107,7 +106,11 @@ jobs:
 
   tests-py:
     runs-on: ubuntu-latest
-    name: Tests (Python, coverage)
+    name: Tests (Python ${{ matrix.python-version }})
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v7
       - uses: mozilla-actions/sccache-action@v0.0.11
@@ -118,27 +121,16 @@ jobs:
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
-      - name: Install Python ${{ env.PYTHON_LOWEST }}
-        run: uv python install ${{ env.PYTHON_LOWEST }}
+      - name: Install Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
       - name: Setup dependencies
-        run: uv sync --python ${{ env.PYTHON_LOWEST }}
+        run: uv sync --python ${{ matrix.python-version }}
       - name: Build Python extension
         run: uv run maturin develop -m zixy-py/Cargo.toml
-      - name: Run python tests with coverage instrumentation
+      - name: Run python tests
         run: uv run pytest --cov=./ --cov-report=xml
       - name: Upload coverage report artifact
         uses: actions/upload-artifact@v7
         with:
-          name: coverage
-          path: ./coverage.txt
-      # - name: Upload python coverage to codecov.io
-      #   if: github.event_name != 'merge_group'
-      #   uses: codecov/codecov-action@v5
-      #   with:
-      #     files: ./coverage.xml
-      #     # Ensures we only upload this file
-      #     disable_search: true
-      #     name: python
-      #     flags: python
-      #     fail_ci_if_error: true
-      #     token: ${{ secrets.CODECOV_TOKEN }}
+          name: coverage-python-${{ matrix.python-version }}
+          path: ./coverage.xml

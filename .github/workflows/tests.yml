@@ -11,9 +11,6 @@ on:
 env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: 0
-  # Pinned version for the uv package manager
-  UV_VERSION: "0.4.20"
-  UV_FROZEN: 1
 
   RUSTFLAGS: "--cfg=ci_run"
   CI: true # insta snapshots behave differently on ci
@@ -86,7 +83,6 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
         with:
-          version: ${{ env.UV_VERSION }}
           enable-cache: true
       - name: Install Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
@@ -119,7 +115,6 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
         with:
-          version: ${{ env.UV_VERSION }}
           enable-cache: true
       - name: Install Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}

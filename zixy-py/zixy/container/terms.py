@@ -107,12 +107,12 @@ def _parse_term_str(source: str) -> tuple[str | None, str]:
             items_coeff.append(subitems[0])
             items_cmpnt.append(subitems[1])
         else:
-            raise ValueError(f"Invalid item '{item}' in string '{string}'.")
+            raise ValueError(f"Invalid item '{item}' in string '{source}'.")
 
     # Join the coefficient and component parts into independently parsable strings
     source_cmpnt = ", ".join(items_cmpnt)
     if len(items_coeff) != 0 and len(items_coeff) != len(items_cmpnt):
-        raise ValueError(f"Inconsistent coefficient and component counts in string '{string}'.")
+        raise ValueError(f"Inconsistent coefficient and component counts in string '{source}'.")
     source_coeff = ", ".join(items_coeff) if items_coeff else None
 
     return source_coeff, source_cmpnt

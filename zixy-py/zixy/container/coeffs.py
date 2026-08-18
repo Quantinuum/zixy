@@ -1106,7 +1106,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
         ]
         string = ", ".join(item for item in items if item)
         if any(not item for item in items) and string:
-            raise ValueError(f"Invalid comma separator in string '{string}'.")
+            raise ValueError(f"Invalid comma separator in string '{source}'.")
 
         # Parse the string
         out = cls()

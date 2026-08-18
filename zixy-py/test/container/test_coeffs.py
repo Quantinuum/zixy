@@ -176,6 +176,8 @@ def test_from_str(coeffs_type, source, expected):
         (ComplexSignCoeffs, "1, 0"),
         (ComplexSignCoeffs, "1+1j"),
         (ComplexSignCoeffs, "x"),
+        (RealCoeffs, "[[1], [2]]"),
+        (ComplexCoeffs, "[[1], [2]]"),
     ),
 )
 def test_from_str_errors(coeffs_type, source):

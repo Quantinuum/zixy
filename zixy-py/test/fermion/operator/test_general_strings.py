@@ -35,6 +35,42 @@ def test_string_modification():
     assert str(string) == "F3 F1^"
 
 
+@pytest.mark.parametrize(
+    ("cmpnt_type", "source", "modes", "expected"),
+    (
+        (String, "F0^ F1", None, "F0^ F1"),
+        (String, "  F0^   F1  ", None, "F0^ F1"),
+        (String, "F0^ F1", 3, "F0^ F1"),
+        (String, "", 3, ""),
+        (Strings, "F0^ F1, F1 F0^, F0^ F1", None, "F0^ F1, F1 F0^, F0^ F1"),
+        (
+            Strings,
+            " F0^ F1 ,   F1 F0^ , F0^ F1 ",
+            None,
+            "F0^ F1, F1 F0^, F0^ F1",
+        ),
+        (Strings, "F0^ F1, F1 F0^, F0^ F1", 3, "F0^ F1, F1 F0^, F0^ F1"),
+        (Strings, "", 3, ""),
+        (StringSet, "F0^ F1, F1 F0^, F0^ F1", None, "F0^ F1, F1 F0^"),
+        (
+            StringSet,
+            " F0^ F1 ,   F1 F0^ , F0^ F1 ",
+            None,
+            "F0^ F1, F1 F0^",
+        ),
+        (StringSet, "F0^ F1, F1 F0^, F0^ F1", 3, "F0^ F1, F1 F0^"),
+        (StringSet, "", 3, ""),
+    ),
+)
+def test_from_str(cmpnt_type, source, modes, expected):
+    args = () if modes is None else (modes,)
+    parsed = cmpnt_type.from_str(source, *args)
+    assert str(parsed) == expected
+
+    if cmpnt_type is StringSet:
+        assert parsed == StringSet.from_cmpnts(Strings.from_str(source, *args))
+
+
 def test_string_dagger():
     string = String(4, "F0^ F1 F2^")
 

@@ -10,13 +10,151 @@ from zixy.fermion.operator.normal import (
 from zixy.fermion.state import (
     ComplexTerm,
     ComplexTerms,
+    ComplexTermSet,
     ComplexTermSum,
     RealTerm,
     RealTerms,
     RealTermSet,
     RealTermSum,
+    SignTerm,
+    SignTerms,
+    SignTermSet,
     String,
+    SymbolicTerm,
+    SymbolicTerms,
+    SymbolicTermSet,
+    SymbolicTermSum,
 )
+
+
+@pytest.mark.parametrize(
+    ("term_type", "source", "modes", "expected", "terms_type"),
+    (
+        (SignTerm, "(1, [1, 0])", 2, "(+1, [1, 0])", None),
+        (
+            SignTerms,
+            "(1, [1, 0]), (-1, [0, 1]), (1, [1, 0])",
+            2,
+            "(+1, [1, 0]), (-1, [0, 1]), (+1, [1, 0])",
+            None,
+        ),
+        (
+            SignTermSet,
+            "(1, [1, 0]), (-1, [0, 1]), (1, [1, 0])",
+            2,
+            "(+1, [1, 0]), (-1, [0, 1])",
+            SignTerms,
+        ),
+        (RealTerm, " ( 2.5 , [1, 0] ) ", 2, "(2.5, [1, 0])", None),
+        (
+            RealTerms,
+            " (2.0, [1, 0]) , (-0.5, [0, 1]) , (3.0, [1, 0]) ",
+            2,
+            "(2.0, [1, 0]), (-0.5, [0, 1]), (3.0, [1, 0])",
+            None,
+        ),
+        (
+            RealTermSet,
+            "(2.0, [1, 0]), (-0.5, [0, 1]), (3.0, [1, 0])",
+            2,
+            "(3.0, [1, 0]), (-0.5, [0, 1])",
+            RealTerms,
+        ),
+        (
+            RealTermSum,
+            "(2.0, [1, 0]), (-0.5, [0, 1]), (3.0, [1, 0])",
+            2,
+            "(5.0, [1, 0]), (-0.5, [0, 1])",
+            None,
+        ),
+        (ComplexTerm, "(1j, [1, 0])", 2, "(1j, [1, 0])", None),
+        (
+            ComplexTerms,
+            "((1j), [1, 0]), ((2), [0, 1]), ((3), [1, 0])",
+            2,
+            "(1j, [1, 0]), ((2+0j), [0, 1]), ((3+0j), [1, 0])",
+            None,
+        ),
+        (
+            ComplexTermSet,
+            "((1j), [1, 0]), ((2), [0, 1]), ((3), [1, 0])",
+            2,
+            "((3+0j), [1, 0]), ((2+0j), [0, 1])",
+            ComplexTerms,
+        ),
+        (
+            ComplexTermSum,
+            "((1j), [1, 0]), ((2), [0, 1]), ((3), [1, 0])",
+            2,
+            "((3+1j), [1, 0]), ((2+0j), [0, 1])",
+            None,
+        ),
+        (RealTerm, "(2, [1, 0, 1, 0])", 4, "(2.0, [1, 0, 1, 0])", None),
+        (RealTermSum, "(2, [1, 0]), (-2, [1, 0])", 2, "(0.0, [1, 0])", None),
+    ),
+)
+def test_from_str(term_type, source, modes, expected, terms_type):
+    parsed = term_type.from_str(source, modes)
+    assert str(parsed) == expected
+
+    if terms_type is not None:
+        assert parsed == term_type.from_terms(terms_type.from_str(source, modes))
+
+
+@pytest.mark.parametrize(
+    "term_type",
+    (
+        SignTerms,
+        SignTermSet,
+        RealTerms,
+        RealTermSet,
+        RealTermSum,
+        ComplexTerms,
+        ComplexTermSet,
+        ComplexTermSum,
+    ),
+)
+def test_from_str_empty_containers(term_type):
+    assert str(term_type.from_str("", 2)) == ""
+
+
+@pytest.mark.parametrize(
+    ("term_type", "source"),
+    (
+        (RealTerm, "(2.5, [1, 0])"),
+        (RealTerms, "(2.0, [1, 0]), (-0.5, [0, 1])"),
+        (RealTermSet, "(2.0, [1, 0]), (-0.5, [0, 1])"),
+        (RealTermSum, "(2.0, [1, 0]), (-0.5, [0, 1])"),
+    ),
+)
+def test_from_str_round_trip(term_type, source):
+    parsed = term_type.from_str(source, 2)
+    assert term_type.from_str(str(parsed), 2) == parsed
+
+
+@pytest.mark.parametrize(
+    "term_type", (SymbolicTerm, SymbolicTerms, SymbolicTermSet, SymbolicTermSum)
+)
+def test_from_str_symbolic_not_implemented(term_type):
+    with pytest.raises(NotImplementedError):
+        term_type.from_str("(a, [1, 0])", 2)
+
+
+@pytest.mark.parametrize(
+    "source", ("1, [1, 0]", "(1 [1, 0])", "(1, [1, 0], extra)", "(, [1, 0])", "(1, )")
+)
+def test_from_str_errors(source):
+    with pytest.raises(ValueError):
+        RealTerm.from_str(source, 2)
+
+    with pytest.raises(IndexError):
+        RealTerm.from_str("(1, [1, 0, 1])", 2)
+
+    with pytest.raises(ValueError):
+        SignTerm.from_str("(2, [1, 0])", 2)
+
+    with pytest.raises(ValueError):
+        RealTerm.from_str("(1j, [1, 0])", 2)
 
 
 def test_term_from_str():

@@ -79,7 +79,31 @@ def test_string_modification():
     assert tuple(a[i] for i in range(n_qubit)) == (X, Y, I, Z, I, Y)
 
 
-def test_string_from_str():
+@pytest.mark.parametrize(
+    ("cmpnt_type", "source", "qubits", "expected"),
+    (
+        (String, "X0 Y2", None, "X0 Y2"),
+        (String, "  X0   Y2  ", None, "X0 Y2"),
+        (String, "X0 Y2", 3, "X0 Y2"),
+        (String, "", 3, ""),
+        (Strings, "X0, Y1, X0", None, "X0, Y1, X0"),
+        (Strings, " X0 ,   Y1 , X0 ", None, "X0, Y1, X0"),
+        (Strings, "X0, Y1, X0", 3, "X0, Y1, X0"),
+        (Strings, "", 3, ""),
+        (StringSet, "X0, Y1, X0", None, "X0, Y1"),
+        (StringSet, " X0 ,   Y1 , X0 ", None, "X0, Y1"),
+        (StringSet, "X0, Y1, X0", 3, "X0, Y1"),
+        (StringSet, "", 3, ""),
+    ),
+)
+def test_from_str(cmpnt_type, source, qubits, expected):
+    args = () if qubits is None else (qubits,)
+    parsed = cmpnt_type.from_str(source, *args)
+    assert str(parsed) == expected
+
+    if cmpnt_type is StringSet:
+        assert parsed == StringSet.from_cmpnts(Strings.from_str(source, *args))
+
     with pytest.raises(ValueError) as err:
         String.from_str("X0 Y2, Y3, X2 Y3, X3, Z0 Z1 Z2 Z3", 4)
     assert str(err.value) == "Source string should contain one Pauli string, got 5."
@@ -129,9 +153,7 @@ def test_string_to_sparse_matrix():
     assert np.allclose(mat.toarray(), expected)
 
 
-def test_string_array_from_str():
-    a = Strings.from_str("X0 Y2, Y3, X2 Y3, X3, Z0 Z1 Z2 Z3", 4)
-    assert len(a) == 5
+def test_from_str_errors():
     with pytest.raises(ValueError) as err:
         Strings.from_str("X0 Y2, oops! Y3, X2 Y3, Z0 Z1 Z2 Z3", 4)
     assert str(err.value) == 'Bad parse: "oops!" is not a valid Pauli matrix in a sparse string.'

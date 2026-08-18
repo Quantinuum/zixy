@@ -3,22 +3,150 @@ from sympy import Expr, Symbol, sympify
 
 from zixy.container.coeffs import ComplexSign, Sign
 from zixy.qubit.pauli import (
+    ComplexSignTerm,
+    ComplexSignTerms,
+    ComplexSignTermSet,
     ComplexTerm,
     ComplexTerms,
+    ComplexTermSet,
     ComplexTermSum as PauliComplexTermSum,
     I,
     RealTerm,
     RealTerms,
+    RealTermSet,
     RealTermSum as PauliRealTermSum,
+    SignTerm,
     SignTerms,
+    SignTermSet,
     String,
     SymbolicTerm,
     SymbolicTerms,
+    SymbolicTermSet,
+    SymbolicTermSum,
     X,
     Y,
     Z,
 )
 from zixy.qubit.state import ComplexTermSum as ComplexState, RealTermSum as RealState
+
+
+@pytest.mark.parametrize(
+    ("term_type", "source", "qubits", "expected", "terms_type"),
+    (
+        (SignTerm, "(1, X0)", 2, "(+1, X0)", None),
+        (SignTerms, "(1, X0), (-1, Z1), (1, X0)", 2, "(+1, X0), (-1, Z1), (+1, X0)", None),
+        (SignTermSet, "(1, X0), (-1, Z1), (1, X0)", 2, "(+1, X0), (-1, Z1)", SignTerms),
+        (ComplexSignTerm, "(1j, X0)", 2, "(+i, X0)", None),
+        (ComplexSignTerms, "(1j, X0), (-1, Z1), (1, X0)", 2, "(+i, X0), (-1, Z1), (+1, X0)", None),
+        (
+            ComplexSignTermSet,
+            "(1j, X0), (-1, Z1), (1, X0)",
+            2,
+            "(+1, X0), (-1, Z1)",
+            ComplexSignTerms,
+        ),
+        (RealTerm, " ( 2.5 , X0 ) ", 2, "(2.5, X0)", None),
+        (
+            RealTerms,
+            " (2.0, X0) , (-0.5, Z1) , (3.0, X0) ",
+            2,
+            "(2.0, X0), (-0.5, Z1), (3.0, X0)",
+            None,
+        ),
+        (RealTermSet, "(2.0, X0), (-0.5, Z1), (3.0, X0)", 2, "(3.0, X0), (-0.5, Z1)", RealTerms),
+        (PauliRealTermSum, "(2.0, X0), (-0.5, Z1), (3.0, X0)", 2, "(5.0, X0), (-0.5, Z1)", None),
+        (ComplexTerm, "(1j, X0)", 2, "(1j, X0)", None),
+        (
+            ComplexTerms,
+            "((1j), X0), ((2), Z1), ((3), X0)",
+            2,
+            "(1j, X0), ((2+0j), Z1), ((3+0j), X0)",
+            None,
+        ),
+        (
+            ComplexTermSet,
+            "((1j), X0), ((2), Z1), ((3), X0)",
+            2,
+            "((3+0j), X0), ((2+0j), Z1)",
+            ComplexTerms,
+        ),
+        (
+            PauliComplexTermSum,
+            "((1j), X0), ((2), Z1), ((3), X0)",
+            2,
+            "((3+1j), X0), ((2+0j), Z1)",
+            None,
+        ),
+        (RealTerm, "(2, X0 Y1 Z2)", 3, "(2.0, X0 Y1 Z2)", None),
+        (RealTerms, "\n(1, X0),\n(2, Y1)\n", 2, "(1.0, X0), (2.0, Y1)", None),
+        (PauliRealTermSum, "(2, X0 Y1 Z2), (-2, X0 Y1 Z2)", 3, "(0.0, X0 Y1 Z2)", None),
+    ),
+)
+def test_from_str(term_type, source, qubits, expected, terms_type):
+    parsed = term_type.from_str(source, qubits)
+    assert str(parsed) == expected
+
+    if terms_type is not None:
+        assert parsed == term_type.from_terms(terms_type.from_str(source, qubits))
+
+
+@pytest.mark.parametrize(
+    "term_type",
+    (
+        SignTerms,
+        SignTermSet,
+        ComplexSignTerms,
+        ComplexSignTermSet,
+        RealTerms,
+        RealTermSet,
+        PauliRealTermSum,
+        ComplexTerms,
+        ComplexTermSet,
+        PauliComplexTermSum,
+    ),
+)
+def test_from_str_empty_containers(term_type):
+    assert str(term_type.from_str("", 2)) == ""
+
+
+@pytest.mark.parametrize(
+    ("term_type", "source"),
+    (
+        (ComplexTerm, "((1j), X0 Y1)"),
+        (ComplexTerms, "((1j), X0), ((2), Y1)"),
+        (ComplexTermSet, "((1j), X0), ((2), Y1)"),
+        (PauliComplexTermSum, "((1j), X0), ((2), Y1)"),
+    ),
+)
+def test_from_str_round_trip(term_type, source):
+    parsed = term_type.from_str(source, 2)
+    assert term_type.from_str(str(parsed), 2) == parsed
+
+
+@pytest.mark.parametrize(
+    "term_type", (SymbolicTerm, SymbolicTerms, SymbolicTermSet, SymbolicTermSum)
+)
+def test_from_str_symbolic_not_implemented(term_type):
+    with pytest.raises(NotImplementedError):
+        term_type.from_str("(a, X0)", 2)
+
+
+@pytest.mark.parametrize("source", ("1, X0", "(1 X0)", "(1, X0, extra)", "(, X0)", "(1, )"))
+def test_from_str_errors(source):
+    with pytest.raises(ValueError):
+        RealTerm.from_str(source, 2)
+
+    with pytest.raises(IndexError):
+        RealTerm.from_str("(1, X2)", 2)
+
+    with pytest.raises(ValueError):
+        SignTerm.from_str("(2, X0)", 2)
+
+    with pytest.raises(ValueError):
+        ComplexSignTerm.from_str("(2, X0)", 2)
+
+    with pytest.raises(ValueError):
+        RealTerm.from_str("(1j, X0)", 2)
 
 
 def test_real_term():

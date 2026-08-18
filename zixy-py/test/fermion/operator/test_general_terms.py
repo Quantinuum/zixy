@@ -12,6 +12,9 @@ from zixy.fermion.operator.general import (
     RealTermSum,
     String,
     SymbolicTerm,
+    SymbolicTerms,
+    SymbolicTermSet,
+    SymbolicTermSum,
 )
 from zixy.fermion.operator.normal import (
     ComplexTermSum as NormalComplexTermSum,
@@ -19,6 +22,109 @@ from zixy.fermion.operator.normal import (
     RealTermSum as NormalRealTermSum,
     String as NormalString,
 )
+
+
+@pytest.mark.parametrize(
+    ("term_type", "source", "modes", "expected", "terms_type"),
+    (
+        (RealTerm, " ( 2.5 , F0^ F1 ) ", 2, "(2.5, F0^ F1)", None),
+        (
+            RealTerms,
+            " (2.0, F0^ F1) , (-0.5, F1 F0^) , (3.0, F0^ F1) ",
+            2,
+            "(2.0, F0^ F1), (-0.5, F1 F0^), (3.0, F0^ F1)",
+            None,
+        ),
+        (
+            RealTermSet,
+            "(2.0, F0^ F1), (-0.5, F1 F0^), (3.0, F0^ F1)",
+            2,
+            "(3.0, F0^ F1), (-0.5, F1 F0^)",
+            RealTerms,
+        ),
+        (
+            RealTermSum,
+            "(2.0, F0^ F1), (-0.5, F1 F0^), (3.0, F0^ F1)",
+            2,
+            "(5.0, F0^ F1), (-0.5, F1 F0^)",
+            None,
+        ),
+        (ComplexTerm, "(1j, F0^ F1)", 2, "(1j, F0^ F1)", None),
+        (
+            ComplexTerms,
+            "((1j), F0^ F1), ((2), F1 F0^), ((3), F0^ F1)",
+            2,
+            "(1j, F0^ F1), ((2+0j), F1 F0^), ((3+0j), F0^ F1)",
+            None,
+        ),
+        (
+            ComplexTermSet,
+            "((1j), F0^ F1), ((2), F1 F0^), ((3), F0^ F1)",
+            2,
+            "((3+0j), F0^ F1), ((2+0j), F1 F0^)",
+            ComplexTerms,
+        ),
+        (
+            ComplexTermSum,
+            "((1j), F0^ F1), ((2), F1 F0^), ((3), F0^ F1)",
+            2,
+            "((3+1j), F0^ F1), ((2+0j), F1 F0^)",
+            None,
+        ),
+        (RealTerm, "(2, F0^ F1 F2^ F0)", 3, "(2.0, F0^ F1 F2^ F0)", None),
+        (RealTermSum, "(2, F0^ F1^ F2), (-2, F0^ F1^ F2)", 3, "(0.0, F0^ F1^ F2)", None),
+    ),
+)
+def test_from_str(term_type, source, modes, expected, terms_type):
+    parsed = term_type.from_str(source, modes)
+    assert str(parsed) == expected
+
+    if terms_type is not None:
+        assert parsed == term_type.from_terms(terms_type.from_str(source, modes))
+
+
+@pytest.mark.parametrize(
+    "term_type",
+    (RealTerms, RealTermSet, RealTermSum, ComplexTerms, ComplexTermSet, ComplexTermSum),
+)
+def test_from_str_empty_containers(term_type):
+    assert str(term_type.from_str("", 2)) == ""
+
+
+@pytest.mark.parametrize(
+    ("term_type", "source"),
+    (
+        (ComplexTerm, "((1j), F0^ F1)"),
+        (ComplexTerms, "((1j), F0^ F1), ((2), F1 F0^)"),
+        (ComplexTermSet, "((1j), F0^ F1), ((2), F1 F0^)"),
+        (ComplexTermSum, "((1j), F0^ F1), ((2), F1 F0^)"),
+    ),
+)
+def test_from_str_round_trip(term_type, source):
+    parsed = term_type.from_str(source, 2)
+    assert term_type.from_str(str(parsed), 2) == parsed
+
+
+@pytest.mark.parametrize(
+    "term_type", (SymbolicTerm, SymbolicTerms, SymbolicTermSet, SymbolicTermSum)
+)
+def test_from_str_symbolic_not_implemented(term_type):
+    with pytest.raises(NotImplementedError):
+        term_type.from_str("(a, F0^ F1)", 2)
+
+
+@pytest.mark.parametrize(
+    "source", ("1, F0^ F1", "(1 F0^ F1)", "(1, F0^ F1, extra)", "(, F0^ F1)", "(1, )")
+)
+def test_from_str_errors(source):
+    with pytest.raises(ValueError):
+        RealTerm.from_str(source, 2)
+
+    with pytest.raises(ValueError):
+        RealTerm.from_str("(1, F2^ F0)", 2)
+
+    with pytest.raises(ValueError):
+        RealTerm.from_str("(1j, F0^ F1)", 2)
 
 
 def test_real_term():

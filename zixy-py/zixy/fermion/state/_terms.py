@@ -29,7 +29,7 @@ from numpy.typing import NDArray
 from sympy import Expr, Symbol
 from typing_extensions import Self
 
-from zixy._zixy import BinarySprings, FermionStateArray, Modes
+from zixy._zixy import FermionStateArray, Modes
 from zixy.container.coeffs import (
     Coeff,
     CoeffT,
@@ -72,29 +72,6 @@ ComplexTermSpec = TermSpec[complex]
 SymbolicTermSpec = TermSpec[Expr]
 
 
-def _data_from_str(
-    source: str, modes: int | Modes | None, coeff_type: type[CoeffT]
-) -> TermData[FermionStateArray, StringSpec, CoeffT]:
-    """Create a new instance of :class:`~zixy.container.data.TermData` by parsing an input string.
-
-    Args:
-        source: Input string to parse.
-        modes: The mode space or mode count. If ``None``, the mode space is inferred from the
-            string specifier.
-        coeff_type: The coefficient type.
-
-    Returns:
-        A new instance containing the state strings and coefficients in the ``source``.
-    """
-    if isinstance(modes, int):
-        modes = Modes.from_count(modes)
-    impl = FermionStateArray(modes, BinarySprings(source))
-    cmpnts = Strings._create(impl)
-    coeffs_type = get_coeffs_type(coeff_type)
-    coeffs = coeffs_type.from_str(source) if "(" in source else coeffs_type.from_size(len(cmpnts))
-    return TermData(cmpnts, coeffs)
-
-
 def _mul(lhs: Term[CoeffT], rhs: OtherCoeffT) -> Term[Any]:
     """Driver for multiplication of a term with a coefficient."""
     if not isinstance(rhs, Coeff):
@@ -119,25 +96,6 @@ class Term(FermionTerm[ImplT, SpecT, CoeffT, ElemT]):
     cmpnts_type = Strings
     coeff_type: type[CoeffT]
 
-    @classmethod
-    def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
-        """Create a new instance of ``cls`` by parsing an input string.
-
-        Args:
-            source: Input string to parse.
-            modes: The mode space or mode count. If ``None``, the mode space is inferred from
-                the string specifier.
-
-        Returns:
-            A new instance containing the state string and coefficient in ``source``.
-        """
-        data = _data_from_str(source, modes, cls.coeff_type)
-        if len(data) != 1:
-            raise ValueError(
-                f"There should be exactly one Term string in the input, not {len(data)}."
-            )
-        return cls._create(data)
-
 
 class Terms(FermionTerms[ImplT, SpecT, CoeffT, ElemT]):
     """A collection of terms consisting of fermionic state strings and coefficients.
@@ -148,21 +106,6 @@ class Terms(FermionTerms[ImplT, SpecT, CoeffT, ElemT]):
     """
 
     term_type: type[Term[CoeffT]]
-
-    @classmethod
-    def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
-        """Create a new instance of ``cls`` by parsing an input string.
-
-        Args:
-            source: Input string to parse.
-            modes: The mode space or mode count. If ``None``, the mode space is inferred from
-                the string specifier.
-
-        Returns:
-            A new instance containing the state strings and coefficients in ``source``.
-        """
-        data = _data_from_str(source, modes, cls.term_type.coeff_type)
-        return cls._create(data)
 
 
 class TermSet(FermionTermSet[ImplT, SpecT, CoeffT, ElemT]):
@@ -189,21 +132,6 @@ class TermSum(FermionTermSum[ImplT, SpecT, CoeffT, ElemT], TermSet[CoeffT]):
         Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
         are not.
     """
-
-    @classmethod
-    def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
-        """Create a new instance of ``cls`` by parsing an input string.
-
-        Args:
-            source: Input string to parse.
-            modes: The mode space or mode count. If ``None``, the mode space is inferred from
-                the string specifier.
-
-        Returns:
-            A new instance containing the state strings and coefficients in ``source``.
-        """
-        terms_ = cls.terms_type.from_str(source, modes)
-        return cls.from_iterable(terms_, terms_.modes)
 
 
 class SignTerm(Term[Sign]):

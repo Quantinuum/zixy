@@ -27,15 +27,13 @@ from typing import TYPE_CHECKING, TypeAlias, overload
 
 from typing_extensions import Self
 
-from zixy._zixy import Modes, NormalFermionOperatorArray
+from zixy._zixy import FermionSprings, Modes, NormalFermionOperatorArray
 from zixy.container.coeffs import Coeff, CoeffT, Sign
 from zixy.fermion.operator._strings import (
     LadderOp,
     String as OperatorString,
     Strings as OperatorStrings,
     StringSet as OperatorStringSet,
-    parse_ladder_product,
-    parse_term_source,
 )
 
 if TYPE_CHECKING:
@@ -50,10 +48,9 @@ ImplT = NormalFermionOperatorArray
 def _default_modes(source: SpecT) -> Modes:
     """Construct the default modes for a string specifier."""
     if isinstance(source, str):
-        max_mode = -1
-        for mode, _ in parse_ladder_product(source):
-            max_mode = max(max_mode, mode)
-        return Modes.from_count(max_mode + 1)
+        return Modes.from_count(
+            0 if not source.strip() else FermionSprings(source).default_n_mode()
+        )
     cre, ann = source
     if not cre and not ann:
         return Modes.from_count(0)
@@ -106,12 +103,13 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
             if not source.strip():
                 self._impl.cmpnt_clear(self.index)
                 return
-            cmpnts, signs = self._impl.from_ladder_product(self.modes, parse_ladder_product(source))
-            if len(cmpnts) != 1 or signs[0] != 1:
-                raise ValueError(
-                    "Fermion string does not normal-order to exactly one positive component."
-                )
-            self._impl.cmpnt_copy_external(self.index, cmpnts, 0)
+            springs = FermionSprings(source)
+            if len(springs) == 0:
+                self._impl.cmpnt_clear(self.index)
+            elif len(springs) == 1:
+                self._impl.cmpnt_set_from_spring(self.index, springs, 0)
+            else:
+                raise ValueError("String input has more than one component.")
         elif isinstance(source, tuple) and len(source) == 2:
             cre, ann = source
             if all(isinstance(x, bool) for x in cre) and all(isinstance(x, bool) for x in ann):
@@ -223,12 +221,13 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
         Returns:
             An instance of ``cls`` parsed from ``source``.
         """
-        terms = parse_term_source(source)
-        if modes is None:
-            modes = _default_modes(" ".join(cmpnt for cmpnt, _ in terms))
-        out = cls(modes)
-        out.append_iterable(cmpnt for cmpnt, _ in terms)
-        return out
+        if isinstance(modes, int):
+            modes = Modes.from_count(modes)
+        if not source.strip():
+            out = cls(modes or 0)
+            out.resize(0)
+            return out
+        return cls._create(cls.cmpnt_type.impl_type(modes, FermionSprings(source)))
 
     @overload
     def __getitem__(self, indexer: int) -> String: ...

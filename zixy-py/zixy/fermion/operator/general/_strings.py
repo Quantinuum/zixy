@@ -27,8 +27,8 @@ from typing import TYPE_CHECKING, TypeAlias, overload
 
 from typing_extensions import Self
 
-from zixy._zixy import GeneralFermionOperatorArray, Modes
-from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet
+from zixy._zixy import FermionSprings, GeneralFermionOperatorArray, Modes
+from zixy.container.cmpnts import Cmpnts, CmpntSet
 from zixy.container.coeffs import Coeff, CoeffT
 from zixy.fermion._strings import _check_modes_compatibility
 from zixy.fermion.operator._strings import (
@@ -36,8 +36,6 @@ from zixy.fermion.operator._strings import (
     String as OperatorString,
     Strings as OperatorStrings,
     StringSet as OperatorStringSet,
-    parse_ladder_product,
-    parse_term_source,
 )
 
 if TYPE_CHECKING:
@@ -51,7 +49,11 @@ ImplT = GeneralFermionOperatorArray
 
 def _default_modes(source: SpecT) -> Modes:
     """Construct the default modes for a string specifier."""
-    ops = parse_ladder_product(source) if isinstance(source, str) else list(source)
+    if isinstance(source, str):
+        return Modes.from_count(
+            0 if not source.strip() else FermionSprings(source).default_n_mode()
+        )
+    ops = list(source)
     return Modes.from_count(max((i for i, _ in ops), default=-1) + 1)
 
 
@@ -69,27 +71,6 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
     def _get_default_modes(source: SpecT) -> Modes:
         """Get the default modes for this string type based on a string specifier."""
         return _default_modes(source)
-
-    def __init__(
-        self,
-        modes: int | Modes | None = None,
-        source: SpecT = "",
-    ):
-        """Initialize the string.
-
-        Args:
-            modes: The mode space or mode count. If ``None``, the mode space is inferred from
-                the string specifier.
-            source: The string specifier to use for default modes and initial value.
-        """
-        if modes is None:
-            modes = self._get_default_modes(source)
-        modes = Modes.from_count(modes) if isinstance(modes, int) else modes
-        ops = parse_ladder_product(source) if isinstance(source, str) else list(source)
-        impl = self.impl_type(modes, len(ops))
-        impl.resize(1)
-        Cmpnt.__init__(self, impl)
-        self.set(ops)
 
     @property
     def max_len(self) -> int:
@@ -121,10 +102,21 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         """
         if isinstance(source, String):
             self._set_copy(source)
+        elif isinstance(source, str):
+            if not source.strip():
+                self._impl.cmpnt_clear(self.index)
+                return
+            springs = FermionSprings(source)
+            if len(springs) == 0:
+                self._impl.cmpnt_clear(self.index)
+            elif len(springs) == 1:
+                self._impl.cmpnt_set_from_spring(self.index, springs, 0)
+            else:
+                raise ValueError("String input has more than one component.")
         else:
-            ops = parse_ladder_product(source) if isinstance(source, str) else list(source)
-            modes, adj = zip(*ops, strict=True) if ops else ((), ())
-            self._impl.cmpnt_set_from_ops(self.index, list(modes), list(adj))
+            ops = list(source)
+            mode_inds, adj = zip(*ops, strict=True) if ops else ((), ())
+            self._impl.cmpnt_set_from_ops(self.index, list(mode_inds), list(adj))
 
     def get_ops(self) -> list[LadderOp]:
         """Get the raw ladder-operator product as ``(mode, is_creation)`` pairs."""
@@ -244,13 +236,16 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
         Returns:
             An instance of ``cls`` parsed from ``source``.
         """
-        parsed = parse_term_source(source)
-        ops_by_term = [parse_ladder_product(cmpnt) for cmpnt, _ in parsed]
+        if isinstance(modes, int):
+            modes = Modes.from_count(modes)
+        if not source.strip():
+            out = cls(modes or 0)
+            out.resize(0)
+            return out
+        springs = FermionSprings(source)
         if modes is None:
-            modes = _default_modes([op for ops in ops_by_term for op in ops])
-        out = cls(modes, max_len=max((len(ops) for ops in ops_by_term), default=0))
-        out.append_iterable(ops_by_term)
-        return out
+            modes = Modes.from_count(springs.default_n_mode())
+        return cls._create(cls.cmpnt_type.impl_type(modes, None, springs))
 
     @overload
     def __getitem__(self, indexer: int) -> String: ...

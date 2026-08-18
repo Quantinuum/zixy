@@ -58,6 +58,19 @@ def test_string_access():
     assert strings[1:4].clone() == Strings.from_iterable(specs[1:4], 6)
 
 
+@pytest.mark.parametrize(
+    ("constructor", "args"),
+    (
+        (String, (2, "F1 F0^")),
+        (Strings.from_str, ("F1 F0^", 2)),
+        (StringSet.from_str, ("F1 F0^", 2)),
+    ),
+)
+def test_rejects_non_normal_ordered_inputs(constructor, args):
+    with pytest.raises(ValueError, match="normal-order"):
+        constructor(*args)
+
+
 def test_string_modification():
     string = String(4, ([0, 2], [1, 3]))
 
@@ -94,11 +107,40 @@ def test_string_set_validates_mode_bounds():
         String(2, ([True, False, True], []))
 
 
-def test_string_from_str():
-    string = String.from_str("F0^ F1", 4)
+@pytest.mark.parametrize(
+    ("cmpnt_type", "source", "modes", "expected"),
+    (
+        (String, "F0^ F1", None, "F0^ F1"),
+        (String, "  F0^   F1  ", None, "F0^ F1"),
+        (String, "F0^ F1", 3, "F0^ F1"),
+        (String, "", 3, ""),
+        (Strings, "F0^ F1, F1^ F0, F0^ F1", None, "F0^ F1, F1^ F0, F0^ F1"),
+        (
+            Strings,
+            " F0^ F1 ,   F1^ F0 , F0^ F1 ",
+            None,
+            "F0^ F1, F1^ F0, F0^ F1",
+        ),
+        (Strings, "F0^ F1, F1^ F0, F0^ F1", 3, "F0^ F1, F1^ F0, F0^ F1"),
+        (Strings, "", 3, ""),
+        (StringSet, "F0^ F1, F1^ F0, F0^ F1", None, "F0^ F1, F1^ F0"),
+        (
+            StringSet,
+            " F0^ F1 ,   F1^ F0 , F0^ F1 ",
+            None,
+            "F0^ F1, F1^ F0",
+        ),
+        (StringSet, "F0^ F1, F1^ F0, F0^ F1", 3, "F0^ F1, F1^ F0"),
+        (StringSet, "", 3, ""),
+    ),
+)
+def test_from_str(cmpnt_type, source, modes, expected):
+    args = () if modes is None else (modes,)
+    parsed = cmpnt_type.from_str(source, *args)
+    assert str(parsed) == expected
 
-    assert str(string) == "F0^ F1"
-    assert String.from_str(str(string), 4) == string
+    if cmpnt_type is StringSet:
+        assert parsed == StringSet.from_cmpnts(Strings.from_str(source, *args))
 
     with pytest.raises(ValueError, match="mode index out of bounds"):
         String.from_str("F2", 2)

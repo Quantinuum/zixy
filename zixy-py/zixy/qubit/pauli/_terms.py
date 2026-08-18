@@ -31,7 +31,6 @@ from typing_extensions import Self
 
 from zixy._zixy import (
     PauliMatrix,
-    PauliSprings,
     QubitPauliArray,
     Qubits,
     SymplecticPart,
@@ -84,30 +83,6 @@ ComplexTermSpec = TermSpec[complex]
 SymbolicTermSpec = TermSpec[Expr]
 
 
-def _data_from_str(
-    source: str, qubits: int | Qubits | None, coeff_type: type[CoeffT]
-) -> TermData[Any, Any, CoeffT]:
-    """Create a new instance of :class:`~zixy.container.data.TermData` by parsing an input string.
-
-    Args:
-        source: Input string to parse.
-        qubits: The qubit register or qubit count. If ``None``, the qubit register is inferred
-            from the string specifier.
-        coeff_type: The coefficient type.
-
-    Returns:
-        A new instance containing the Pauli strings and coefficients in the ``source``.
-    """
-    if isinstance(qubits, int):
-        qubits = Qubits.from_count(qubits)
-    impl, phases = QubitPauliArray.with_phases(qubits, PauliSprings(source))
-    cmpnts = Strings._create(impl)
-    coeffs_type = get_coeffs_type(coeff_type)
-    coeffs = coeffs_type.from_str(source) if "(" in source else coeffs_type.from_size(len(phases))
-    coeffs *= ComplexSignCoeffs._create(phases)
-    return TermData(cmpnts, coeffs)
-
-
 def _mul(
     lhs: Term[CoeffT],
     rhs: OtherCoeffT | String | Term[OtherCoeffT],
@@ -155,27 +130,6 @@ class Term(TermBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
 
     cmpnts_type = Strings
     coeff_type: type[CoeffT]
-
-    @classmethod
-    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Self:
-        """Create a new instance of ``cls`` by parsing an input string.
-
-        Args:
-            source: Input string to parse.
-            qubits: The qubit register or qubit count. If ``None``, the qubit register is
-                inferred from the string specifier.
-
-        Returns:
-            A new instance containing the Pauli string and coefficient in the ``source``.
-        """
-        if isinstance(qubits, int):
-            qubits = Qubits.from_count(qubits)
-        data = _data_from_str(source, qubits, cls.coeff_type)
-        if len(data) != 1:
-            raise ValueError(
-                f"There should be exactly one Term string in the input, not {len(data)}."
-            )
-        return cls._create(data)
 
     @property
     def string(self) -> String:
@@ -242,23 +196,6 @@ class Terms(TermsBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
     """
 
     term_type: type[Term[CoeffT]]
-
-    @classmethod
-    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Self:
-        """Create a new instance of ``cls`` by parsing an input string.
-
-        Args:
-            source: Input string to parse.
-            qubits: The qubit register or qubit count. If ``None``, the qubit register is
-                inferred from the string specifier.
-
-        Returns:
-            A new instance containing the Pauli strings and coefficients in the ``source``.
-        """
-        if isinstance(qubits, int):
-            qubits = Qubits.from_count(qubits)
-        data = _data_from_str(source, qubits, cls.term_type.coeff_type)
-        return cls._create(data)
 
     @property
     def strings(self) -> Strings:
@@ -447,21 +384,6 @@ class TermSum(TermSumBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix], Ter
         Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
         are not.
     """
-
-    @classmethod
-    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Self:
-        """Create a new instance of ``cls`` by parsing an input string.
-
-        Args:
-            source: Input string to parse.
-            qubits: The qubit register or qubit count. If ``None``, the qubit register is
-                inferred from the string specifier.
-
-        Returns:
-            A new instance containing the Pauli strings and coefficients in the ``source``.
-        """
-        terms = cls.terms_type.from_str(source, qubits)
-        return cls.from_iterable(terms, terms.qubits)
 
     def commutator(self, other: TermSum[CoeffT]) -> TermSum[Any]:
         """Compute the commutator of ``self`` with ``other``.

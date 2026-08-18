@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING, Any, TypeAlias, cast, overload
 from sympy import Expr, Symbol
 from typing_extensions import Self
 
-from zixy._zixy import GeneralFermionOperatorArray, Modes, Qubits
+from zixy._zixy import FermionSprings, GeneralFermionOperatorArray, Modes, Qubits
 from zixy.container import terms
 from zixy.container.coeffs import (
     Coeff,
@@ -56,7 +56,7 @@ from zixy.container.terms import (
     TermSet as TermSetBase,
 )
 from zixy.fermion._strings import _check_modes_compatibility
-from zixy.fermion.operator._strings import LadderOp, parse_ladder_product, parse_term_source
+from zixy.fermion.operator._strings import LadderOp
 from zixy.fermion.operator._terms import (
     Term as OperatorTerm,
     Terms as OperatorTerms,
@@ -67,7 +67,6 @@ from zixy.fermion.operator.general._strings import (
     String,
     Strings,
     StringSpec,
-    _default_modes,
 )
 from zixy.qubit.pauli._terms import ComplexTermSum as PauliComplexTermSum
 
@@ -98,36 +97,11 @@ def _max_len_from_source(source: TermSpec[CoeffT]) -> int:
     if isinstance(source, String):
         return len(source.get_ops())
     if isinstance(source, str):
-        return len(parse_ladder_product(source))
+        if not source.strip():
+            return 0
+        springs = FermionSprings(source)
+        return max((len(springs.get_ops(i)) for i in range(len(springs))), default=0)
     return len(source)
-
-
-def _data_from_str(
-    source: str, modes: int | Modes | None, coeff_type: type[CoeffT]
-) -> TermData[GeneralFermionOperatorArray, StringSpec, CoeffT]:
-    """Create a new instance of :class:`~zixy.container.data.TermData` by parsing an input string.
-
-    Args:
-        source: Input string to parse.
-        modes: The mode space or mode count. If ``None``, the mode space is inferred from
-            the string specifier.
-        coeff_type: The coefficient type.
-
-    Returns:
-        A new instance containing the raw fermionic strings and coefficients in the ``source``.
-    """
-    parsed = parse_term_source(source)
-    ops_by_term = [parse_ladder_product(cmpnt) for cmpnt, _ in parsed]
-    if modes is None:
-        modes = _default_modes([op for ops in ops_by_term for op in ops])
-    elif isinstance(modes, int):
-        modes = Modes.from_count(modes)
-    cmpnts = Strings(modes, max_len=max((len(ops) for ops in ops_by_term), default=0))
-    coeffs_type = get_coeffs_type(coeff_type)
-    coeffs = coeffs_type.from_str(source) if "(" in source else coeffs_type.from_size(len(parsed))
-    for ops in ops_by_term:
-        cmpnts.append(ops)
-    return TermData(cmpnts, coeffs)
 
 
 def _mul(lhs: Term[CoeffT], rhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
@@ -190,25 +164,6 @@ class Term(OperatorTerm[ImplT, SpecT, CoeffT, ElemT]):
         TermBase.__init__(self, TermData(cmpnts, coeffs))
         self.set(source)
 
-    @classmethod
-    def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
-        """Create a new instance of ``cls`` by parsing an input string.
-
-        Args:
-            source: Input string to parse.
-            modes: The mode space or mode count. If ``None``, the mode space is inferred from
-                the string specifier.
-
-        Returns:
-            A new instance containing the raw fermionic string and coefficient in the ``source``.
-        """
-        data = _data_from_str(source, modes, cls.coeff_type)
-        if len(data) != 1:
-            raise ValueError(
-                f"There should be exactly one Term string in the input, not {len(data)}."
-            )
-        return cls._create(data)
-
     @property
     def string(self) -> String:
         """Get the string component of the term."""
@@ -254,21 +209,6 @@ class Terms(OperatorTerms[ImplT, SpecT, CoeffT, ElemT]):
     def strings(self) -> Strings:
         """Get the string components of the terms."""
         return cast(Strings, self.cmpnts)
-
-    @classmethod
-    def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
-        """Create a new instance of ``cls`` by parsing an input string.
-
-        Args:
-            source: Input string to parse.
-            modes: The mode space or mode count. If ``None``, the mode space is inferred from
-                the string specifier.
-
-        Returns:
-            A new instance containing the raw fermionic strings and coefficients in the
-            ``source``.
-        """
-        return cls._create(_data_from_str(source, modes, cls.term_type.coeff_type))
 
 
 class TermSet(OperatorTermSet[ImplT, SpecT, CoeffT, ElemT]):
@@ -328,22 +268,6 @@ class TermSum(OperatorTermSum[ImplT, SpecT, CoeffT, ElemT], TermSet[CoeffT]):
             max_len: Maximum operator-product length supported by the backing array.
         """
         TermSet.__init__(self, modes, max_len=max_len)
-
-    @classmethod
-    def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
-        """Create a new instance of ``cls`` by parsing an input string.
-
-        Args:
-            source: Input string to parse.
-            modes: The mode space or mode count. If ``None``, the mode space is inferred from
-                the string specifier.
-
-        Returns:
-            A new instance containing the raw fermionic strings and coefficients in the
-            ``source``.
-        """
-        terms_ = cls.terms_type.from_str(source, modes)
-        return cls.from_iterable(terms_, terms_.modes, terms_.strings.max_len)
 
     @classmethod
     def from_iterable(cls, source: Any, modes: int | Modes = 0, max_len: int = 0) -> Self:

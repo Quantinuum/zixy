@@ -79,6 +79,63 @@ TermSpecT: TypeAlias = (
 OutT = TypeVar("OutT", bound="ViewableBase[Any, Any]")
 
 
+def _parse_term_str(source: str) -> tuple[str | None, str]:
+    """Parse a string representation of a term into its coefficient and component parts.
+
+    Note:
+        The string representation of terms is assumed to be a comma-separated parenthesis-enclosed
+        pair of the coefficient and component. It may also be simply comma-separated components, in
+        which case the coefficient part is returned as ``None``.
+    """
+    # Remove any whitespace
+    string = source.strip()
+
+    # Remove any parentheses and whitespace from each element
+    items = [item.strip() for item in split_top_level(string, ",")]
+
+    # Separate the coefficient and component parts
+    items_coeff: list[str] = []
+    items_cmpnt: list[str] = []
+    for item in items:
+        if not item.startswith("(") or not item.endswith(")"):
+            items_cmpnt.append(item)
+            continue
+        subitems = split_top_level(item[1:-1], ",", keep_empty=True)
+        if len(subitems) == 1:
+            items_cmpnt.append(subitems[0])
+        elif len(subitems) == 2:
+            items_coeff.append(subitems[0])
+            items_cmpnt.append(subitems[1])
+        else:
+            raise ValueError(f"Invalid item '{item}' in string '{source}'.")
+
+    # Join the coefficient and component parts into independently parsable strings
+    source_cmpnt = ", ".join(items_cmpnt)
+    if len(items_coeff) != 0 and len(items_coeff) != len(items_cmpnt):
+        raise ValueError(f"Inconsistent coefficient and component counts in string '{source}'.")
+    source_coeff = ", ".join(items_coeff) if items_coeff else None
+
+    return source_coeff, source_cmpnt
+
+
+def _coeffs_from_str(
+    source_coeff: str | None, coeff_type: type[CoeffT], n_cmpnt: int
+) -> Coeffs[CoeffT]:
+    """Construct coefficient data from parsed coefficient text."""
+    coeffs_type = get_coeffs_type(coeff_type)
+    coeffs = (
+        coeffs_type.from_size(n_cmpnt)
+        if source_coeff is None
+        else coeffs_type.from_str(source_coeff)
+    )
+    if len(coeffs) != n_cmpnt:
+        raise ValueError(
+            f"Length of coefficients ({len(coeffs)}) does not match length of components "
+            f"({n_cmpnt})."
+        )
+    return coeffs
+
+
 class Term(
     ViewableItem[TermData[ImplT, SpecT, CoeffT]],
     Generic[ImplT, SpecT, CoeffT],
@@ -163,6 +220,28 @@ class Term(
         coeffs = get_coeffs_type(cls.coeff_type)()
         coeffs.append(coeff)
         return cls._create(TermData(cmpnts, coeffs))
+
+    @classmethod
+    def from_str(cls, source: str, *args: Any, **kwargs: Any) -> Self:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+            *args: Positional arguments to forward to the component constructor.
+            **kwargs: Keyword arguments to forward to the component constructor.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        source_coeff, source_cmpnt = _parse_term_str(source)
+        cmpnts = cls.cmpnts_type.from_str(source_cmpnt, *args, **kwargs)
+        coeffs = _coeffs_from_str(source_coeff, cls.coeff_type, len(cmpnts))
+        data = TermData(cmpnts, coeffs)
+        if len(data) != 1:
+            raise ValueError(
+                f"There should be exactly one Term string in the input, not {len(data)}."
+            )
+        return cls._create(data)
 
     def clone(self) -> Self:
         """Return a deep copy of ``self``."""
@@ -641,18 +720,23 @@ class Terms(
         return out
 
     @classmethod
-    def from_str(cls, source: str) -> Self:
+    def from_str(cls, source: str, *args: Any, **kwargs: Any) -> Self:
         """Create a new instance of ``cls`` from a string.
 
         Args:
             source: String to parse.
+            *args: Positional arguments to forward to the component constructor.
+            **kwargs: Keyword arguments to forward to the component constructor.
 
         Returns:
             An instance of ``cls`` parsed from ``source``.
         """
-        term_strs = split_top_level(source)
-        terms = [cls.term_type.from_str(t) for t in term_strs]
-        return cls.from_iterable(terms)
+        if not source.strip():
+            return cls(*args, **kwargs)
+        source_coeff, source_cmpnts = _parse_term_str(source)
+        cmpnts = cls.term_type.cmpnts_type.from_str(source_cmpnts, *args, **kwargs)
+        coeffs = _coeffs_from_str(source_coeff, cls.term_type.coeff_type, len(cmpnts))
+        return cls._create(TermData(cmpnts, coeffs))
 
 
 class NumericTerms(Terms[ImplT, SpecT, NumberT]):
@@ -789,16 +873,18 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         return out
 
     @classmethod
-    def from_str(cls, source: str) -> Self:
+    def from_str(cls, source: str, *args: Any, **kwargs: Any) -> Self:
         """Create a new instance of ``cls`` from a string.
 
         Args:
             source: String to parse.
+            *args: Positional arguments to forward to the component constructor.
+            **kwargs: Keyword arguments to forward to the component constructor.
 
         Returns:
             An instance of ``cls`` parsed from ``source``.
         """
-        terms = cls.terms_type.from_str(source)
+        terms = cls.terms_type.from_str(source, *args, **kwargs)
         return cls.from_terms(terms)
 
     @overload
@@ -1249,6 +1335,24 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
         """
         for item in iterable:
             self += item
+
+    @classmethod
+    def from_str(cls, source: str, *args: Any, **kwargs: Any) -> Self:
+        """Create a new instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+            *args: Positional arguments to forward to the component constructor.
+            **kwargs: Keyword arguments to forward to the component constructor.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        terms = cls.terms_type.from_str(source, *args, **kwargs)
+        out = cls.__new__(cls)
+        TermSet.__init__(out, terms._empty_clone())
+        out.add_iterable(terms)
+        return out
 
     def _from_generator(self, gen: Iterator[Term[ImplT, SpecT, CoeffT]]) -> Self:
         """Create a new instance based on ``self`` with contents given by a generator.

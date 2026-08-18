@@ -32,11 +32,36 @@ def test_string_modification():
         string[0] = "bad"  # type: ignore[assignment]
 
 
-def test_string_from_str():
-    string = String.from_str("[1, 0, 1]", 3)
+@pytest.mark.parametrize(
+    ("cmpnt_type", "source", "modes", "expected"),
+    (
+        (String, "[1, 0, 1]", 3, "[1, 0, 1]"),
+        (String, " [ 1 , 0 , 1 ] ", 3, "[1, 0, 1]"),
+        (String, "", 3, "[0, 0, 0]"),
+        (Strings, "[1, 0], [0, 1], [1, 0]", 3, "[1, 0, 0], [0, 1, 0], [1, 0, 0]"),
+        (
+            Strings,
+            " [1, 0] ,   [0, 1] , [1, 0] ",
+            3,
+            "[1, 0, 0], [0, 1, 0], [1, 0, 0]",
+        ),
+        (Strings, "", 3, ""),
+        (StringSet, "[1, 0], [0, 1], [1, 0]", 3, "[1, 0, 0], [0, 1, 0]"),
+        (
+            StringSet,
+            " [1, 0] ,   [0, 1] , [1, 0] ",
+            3,
+            "[1, 0, 0], [0, 1, 0]",
+        ),
+        (StringSet, "", 3, ""),
+    ),
+)
+def test_from_str(cmpnt_type, source, modes, expected):
+    parsed = cmpnt_type.from_str(source, modes)
+    assert str(parsed) == expected
 
-    assert string.get_set() == {0, 2}
-    assert String.from_str(str(string), 3) == string
+    if cmpnt_type is StringSet:
+        assert parsed == StringSet.from_cmpnts(Strings.from_str(source, modes))
 
 
 def test_string_from_str_errors():

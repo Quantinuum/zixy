@@ -3,6 +3,42 @@ import pytest
 from zixy.qubit.state import String, Strings, StringSet
 
 
+@pytest.mark.parametrize(
+    ("cmpnt_type", "source", "qubits", "expected"),
+    (
+        (String, "[1, 0, 1]", None, "[1, 0, 1]"),
+        (String, " [ 1 , 0 , 1 ] ", None, "[1, 0, 1]"),
+        (String, "[1, 0, 1]", 3, "[1, 0, 1]"),
+        (String, "", 3, "[0, 0, 0]"),
+        (Strings, "[1, 0], [0, 1], [1, 0]", None, "[1, 0], [0, 1], [1, 0]"),
+        (
+            Strings,
+            "[1, 0], [0, 1], [1, 0]",
+            3,
+            "[1, 0, 0], [0, 1, 0], [1, 0, 0]",
+        ),
+        (
+            Strings,
+            " [1, 0] ,   [0, 1] , [1, 0] ",
+            3,
+            "[1, 0, 0], [0, 1, 0], [1, 0, 0]",
+        ),
+        (Strings, "", 3, ""),
+        (StringSet, "[1, 0], [0, 1], [1, 0]", None, "[1, 0], [0, 1]"),
+        (StringSet, "[1, 0], [0, 1], [1, 0]", 3, "[1, 0, 0], [0, 1, 0]"),
+        (StringSet, " [1, 0] ,   [0, 1] , [1, 0] ", 3, "[1, 0, 0], [0, 1, 0]"),
+        (StringSet, "", 3, ""),
+    ),
+)
+def test_from_str(cmpnt_type, source, qubits, expected):
+    args = () if qubits is None else (qubits,)
+    parsed = cmpnt_type.from_str(source, *args)
+    assert str(parsed) == expected
+
+    if cmpnt_type is StringSet:
+        assert parsed == StringSet.from_cmpnts(Strings.from_str(source, *args))
+
+
 def test_from_tuple():
     s = String(6, (0, 1, 1, 0, 0, 1))
     assert str(s) == "[0, 1, 1, 0, 0, 1]"

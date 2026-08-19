@@ -14,6 +14,204 @@ from zixy.container.coeffs import (
 )
 
 
+@pytest.mark.parametrize(
+    ("scalar_type", "source", "expected"),
+    (
+        (Sign, "1", Sign.from_int(1)),
+        (Sign, "+1", Sign.from_int(1)),
+        (Sign, "-1", Sign.from_int(-1)),
+        (Sign, " 1 ", Sign.from_int(1)),
+        (Sign, " -1 ", Sign.from_int(-1)),
+        (ComplexSign, "1", ComplexSign.from_complex(1)),
+        (ComplexSign, "+1", ComplexSign.from_complex(1)),
+        (ComplexSign, "-1", ComplexSign.from_complex(-1)),
+        (ComplexSign, "1j", ComplexSign.from_complex(1j)),
+        (ComplexSign, "+1j", ComplexSign.from_complex(1j)),
+        (ComplexSign, "-1j", ComplexSign.from_complex(-1j)),
+        (ComplexSign, "+i", ComplexSign.from_complex(1j)),
+        (ComplexSign, "-i", ComplexSign.from_complex(-1j)),
+        (ComplexSign, " 1j ", ComplexSign.from_complex(1j)),
+    ),
+)
+def test_scalar_from_str(scalar_type, source, expected):
+    assert scalar_type.from_str(source) == expected
+
+
+@pytest.mark.parametrize(
+    ("scalar_type", "source"),
+    (
+        (Sign, "0"),
+        (Sign, "2"),
+        (Sign, "1.0"),
+        (Sign, "i"),
+        (ComplexSign, "0"),
+        (ComplexSign, "2"),
+        (ComplexSign, "1+1j"),
+        (ComplexSign, "i"),
+    ),
+)
+def test_scalar_from_str_errors(scalar_type, source):
+    with pytest.raises(ValueError):
+        scalar_type.from_str(source)
+
+
+@pytest.mark.parametrize(
+    ("coeffs_type", "source", "expected"),
+    (
+        (RealCoeffs, "", []),
+        (RealCoeffs, "[]", []),
+        (RealCoeffs, " [ ] ", []),
+        (ComplexCoeffs, "", []),
+        (ComplexCoeffs, "[]", []),
+        (SignCoeffs, "", []),
+        (SignCoeffs, "[]", []),
+        (ComplexSignCoeffs, "", []),
+        (ComplexSignCoeffs, "[]", []),
+        (RealCoeffs, "1", [1.0]),
+        (RealCoeffs, "1, 2, 3", [1.0, 2.0, 3.0]),
+        (RealCoeffs, " 1 , 2 , 3 ", [1.0, 2.0, 3.0]),
+        (RealCoeffs, "+1, -2, +3.5, -4.25", [1.0, -2.0, 3.5, -4.25]),
+        (RealCoeffs, "1e3, -2.5e-2, 3E+4", [1000.0, -0.025, 30000.0]),
+        (RealCoeffs, ".5, -.25, 0.", [0.5, -0.25, 0.0]),
+        (RealCoeffs, "1000, -2500.5", [1000.0, -2500.5]),
+        (RealCoeffs, "[1]", [1.0]),
+        (RealCoeffs, "[1, 2, 3]", [1.0, 2.0, 3.0]),
+        (RealCoeffs, "[ 1 , -2.5 , 3e2 ]", [1.0, -2.5, 300.0]),
+        (RealCoeffs, "(1), (-2.5), (3e2)", [1.0, -2.5, 300.0]),
+        (RealCoeffs, "   [1, 2, 3]   ", [1.0, 2.0, 3.0]),
+        (ComplexCoeffs, "1", [1 + 0j]),
+        (ComplexCoeffs, "1, 2, 3", [1 + 0j, 2 + 0j, 3 + 0j]),
+        (ComplexCoeffs, "1j, -1j, +1j", [1j, -1j, 1j]),
+        (ComplexCoeffs, "1+2j, -3-4j, 5-6j", [1 + 2j, -3 - 4j, 5 - 6j]),
+        (ComplexCoeffs, "(1+2j), (-3-4j), (5-6j)", [1 + 2j, -3 - 4j, 5 - 6j]),
+        (ComplexCoeffs, "1e2+3e-1j, -4.5e-2-6e3j", [100 + 0.3j, -0.045 - 6000j]),
+        (ComplexCoeffs, "1000+2000j, -3000j", [1000 + 2000j, -3000j]),
+        (ComplexCoeffs, "[1]", [1 + 0j]),
+        (ComplexCoeffs, "[1, 2, 3]", [1 + 0j, 2 + 0j, 3 + 0j]),
+        (ComplexCoeffs, "[(1+2j), (-3-4j), 5]", [1 + 2j, -3 - 4j, 5 + 0j]),
+        (ComplexCoeffs, "[ 1j , (-2+3j) , 4 ]", [1j, -2 + 3j, 4 + 0j]),
+        (ComplexCoeffs, "(1), (2j), (3+4j)", [1 + 0j, 2j, 3 + 4j]),
+        (ComplexCoeffs, "   [(1+2j), 3]   ", [1 + 2j, 3 + 0j]),
+        (SignCoeffs, "1", [Sign.from_int(1)]),
+        (SignCoeffs, "-1", [Sign.from_int(-1)]),
+        (
+            SignCoeffs,
+            "1, -1, 1, 1, -1",
+            [
+                Sign.from_int(1),
+                Sign.from_int(-1),
+                Sign.from_int(1),
+                Sign.from_int(1),
+                Sign.from_int(-1),
+            ],
+        ),
+        (SignCoeffs, "[1, -1, 1]", [Sign.from_int(1), Sign.from_int(-1), Sign.from_int(1)]),
+        (SignCoeffs, " 1 , -1 ", [Sign.from_int(1), Sign.from_int(-1)]),
+        (ComplexSignCoeffs, "1", [ComplexSign.from_complex(1)]),
+        (ComplexSignCoeffs, "-1", [ComplexSign.from_complex(-1)]),
+        (ComplexSignCoeffs, "j", [ComplexSign.from_complex(1j)]),
+        (ComplexSignCoeffs, "1j", [ComplexSign.from_complex(1j)]),
+        (ComplexSignCoeffs, "-1j", [ComplexSign.from_complex(-1j)]),
+        (ComplexSignCoeffs, "i", [ComplexSign.from_complex(1j)]),
+        (ComplexSignCoeffs, "+i", [ComplexSign.from_complex(1j)]),
+        (ComplexSignCoeffs, "-i", [ComplexSign.from_complex(-1j)]),
+        (
+            ComplexSignCoeffs,
+            "1, 1j, -1, -1j",
+            [
+                ComplexSign.from_complex(1),
+                ComplexSign.from_complex(1j),
+                ComplexSign.from_complex(-1),
+                ComplexSign.from_complex(-1j),
+            ],
+        ),
+        (
+            ComplexSignCoeffs,
+            "[1, 1j, -1, -1j]",
+            [
+                ComplexSign.from_complex(1),
+                ComplexSign.from_complex(1j),
+                ComplexSign.from_complex(-1),
+                ComplexSign.from_complex(-1j),
+            ],
+        ),
+        (
+            ComplexSignCoeffs,
+            "(1), (1j), (-1), (-1j)",
+            [
+                ComplexSign.from_complex(1),
+                ComplexSign.from_complex(1j),
+                ComplexSign.from_complex(-1),
+                ComplexSign.from_complex(-1j),
+            ],
+        ),
+    ),
+)
+def test_from_str(coeffs_type, source, expected):
+    assert coeffs_type.from_str(source) == coeffs_type.from_sequence(expected)
+
+
+@pytest.mark.parametrize(
+    ("coeffs_type", "source"),
+    (
+        (RealCoeffs, "1,"),
+        (RealCoeffs, ",1"),
+        (RealCoeffs, "1,,2"),
+        (ComplexCoeffs, "1j,"),
+        (SignCoeffs, "1,"),
+        (ComplexSignCoeffs, "1j,"),
+        (RealCoeffs, "[1, 2"),
+        (RealCoeffs, "1, 2]"),
+        (ComplexCoeffs, "[(1+2j), 3"),
+        (RealCoeffs, "1j"),
+        (RealCoeffs, "1+2j"),
+        (RealCoeffs, "x"),
+        (ComplexCoeffs, "x"),
+        (SignCoeffs, "0"),
+        (SignCoeffs, "1, 0"),
+        (SignCoeffs, "1.0"),
+        (SignCoeffs, "1, 2"),
+        (SignCoeffs, "1j"),
+        (ComplexSignCoeffs, "0"),
+        (ComplexSignCoeffs, "1, 0"),
+        (ComplexSignCoeffs, "1+1j"),
+        (ComplexSignCoeffs, "x"),
+        (RealCoeffs, "[[1], [2]]"),
+        (ComplexCoeffs, "[[1], [2]]"),
+    ),
+)
+def test_from_str_errors(coeffs_type, source):
+    with pytest.raises(ValueError):
+        coeffs_type.from_str(source)
+
+
+@pytest.mark.parametrize(
+    "coeffs",
+    (
+        RealCoeffs.from_sequence([1.0, -2.5, 0.0, 3.25]),
+        ComplexCoeffs.from_sequence([1 + 2j, -3 - 4j, 0j, 5 + 0j]),
+        SignCoeffs.from_sequence([Sign.from_int(1), Sign.from_int(-1), Sign.from_int(1)]),
+        ComplexSignCoeffs.from_sequence(
+            [
+                ComplexSign.from_complex(1),
+                ComplexSign.from_complex(1j),
+                ComplexSign.from_complex(-1),
+                ComplexSign.from_complex(-1j),
+            ]
+        ),
+    ),
+)
+def test_from_str_round_trip(coeffs):
+    assert type(coeffs).from_str(str(coeffs)) == coeffs
+
+
+def test_from_str_returns_owned_vector():
+    parsed = RealCoeffs.from_str("1, 2, 3")
+    parsed[0] = 99
+    assert parsed == RealCoeffs.from_sequence([99.0, 2.0, 3.0])
+    assert RealCoeffs.from_str("1, 2, 3") == RealCoeffs.from_sequence([1.0, 2.0, 3.0])
+
+
 def test_conversion():
     assert int(Sign(0)) == 1
     assert int(Sign(1)) == -1
@@ -430,6 +628,7 @@ def test_sign_vec():
     assert len(SignCoeffs.from_scalar(Sign(False))) == 1
     assert len(SignCoeffs.from_scalar(Sign(False), 5)) == 5
     assert SignCoeffs.from_scalar(Sign(False))[0] == Sign(False)
+    assert SignCoeffs.from_str("[+1, -1]") == SignCoeffs.from_sequence([Sign(False), Sign(True)])
     v = SignCoeffs.from_size(10)
     assert len(v) == 10
     assert all(c == Sign(False) for c in v)
@@ -471,6 +670,7 @@ def test_sign_vec():
     assert str(v) == "[-1, -1, +1, +1]"
     copy = v[:].clone()
     assert copy == v
+    assert SignCoeffs.from_str(str(copy)) == copy
     rcopy = v[::-1].clone()
     assert rcopy == copy[::-1]
     assert rcopy[::-1] == copy
@@ -490,6 +690,9 @@ def test_complex_sign_vec():
     assert len(ComplexSignCoeffs.from_scalar(ComplexSign(3))) == 1
     assert len(ComplexSignCoeffs.from_scalar(ComplexSign(3), 5)) == 5
     assert ComplexSignCoeffs.from_scalar(ComplexSign(3))[0] == ComplexSign(3)
+    assert ComplexSignCoeffs.from_str("[+1, +i, -1, -i]") == ComplexSignCoeffs.from_phases(
+        [0, 1, 2, 3]
+    )
     v = ComplexSignCoeffs.from_size(10)
     assert len(v) == 10
     assert all(c == ComplexSign(0) for c in v)
@@ -531,6 +734,7 @@ def test_complex_sign_vec():
     assert str(v) == "[+i, +i, -1, -1]"
     copy = v[:].clone()
     assert copy == v
+    assert ComplexSignCoeffs.from_str(str(copy)) == copy
     rcopy = v[::-1].clone()
     assert rcopy == copy[::-1]
     assert rcopy[::-1] == copy
@@ -550,6 +754,7 @@ def test_real_vec():
     assert len(RealCoeffs.from_scalar(2.0)) == 1
     assert len(RealCoeffs.from_scalar(2.0, 5)) == 5
     assert RealCoeffs.from_scalar(2.0)[0] == 2
+    assert RealCoeffs.from_str("[1.25, -2.5]") == RealCoeffs.from_sequence([1.25, -2.5])
     v = RealCoeffs.from_size(10)
     assert len(v) == 10
     assert all(c == 1 for c in v)
@@ -595,6 +800,7 @@ def test_real_vec():
     assert str(v) == "[1.0, 2.0, 2.0]"
     copy = v[:].clone()
     assert copy == v
+    assert RealCoeffs.from_str(str(copy)) == copy
     rcopy = v[::-1].clone()
     assert rcopy == copy[::-1]
     assert rcopy[::-1] == copy
@@ -610,10 +816,23 @@ def test_real_vec():
         view.resize(1)
 
 
+def test_parse_deprecated():
+    assert RealCoeffs.from_str("1.0, 2.0") == RealCoeffs.from_sequence([1.0, 2.0])
+    with pytest.deprecated_call():
+        assert RealCoeffs.parse("1.0, 2.0") == RealCoeffs.from_sequence([1.0, 2.0])
+    with pytest.raises(NotImplementedError):
+        SymbolicCoeffs.from_str("x, y")
+    with pytest.deprecated_call(), pytest.raises(NotImplementedError):
+        SymbolicCoeffs.parse("x, y")
+
+
 def test_complex_vec():
     assert len(ComplexCoeffs.from_scalar(2 + 1j)) == 1
     assert len(ComplexCoeffs.from_scalar(2 + 1j, 5)) == 5
     assert ComplexCoeffs.from_scalar(2 + 1j)[0] == 2 + 1j
+    assert ComplexCoeffs.from_str("[(1+2j), (-3+0j)]") == ComplexCoeffs.from_sequence(
+        [1 + 2j, -3 + 0j]
+    )
     v = ComplexCoeffs.from_size(10)
     assert len(v) == 10
     assert all(c == 1 for c in v)
@@ -661,6 +880,7 @@ def test_complex_vec():
     assert str(v) == "[(1+1j), (1+1j), (2+0j), (2+0j)]"
     copy = v[:].clone()
     assert copy == v
+    assert ComplexCoeffs.from_str(str(copy)) == copy
     rcopy = v[::-1].clone()
     assert rcopy == copy[::-1]
     assert rcopy[::-1] == copy

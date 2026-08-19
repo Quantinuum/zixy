@@ -31,29 +31,35 @@ from typing_extensions import Self
 
 from zixy._zixy import (
     PauliMatrix,
-    PauliSprings,
     QubitPauliArray,
     Qubits,
     SymplecticPart,
 )
-from zixy.container import terms
 from zixy.container.coeffs import (
     Coeff,
+    Coeffs,
     CoeffT,
     ComplexCoeffs,
     ComplexSign,
     ComplexSignCoeffs,
     Number,
+    OtherCoeffT,
     RealCoeffs,
     Sign,
     SignCoeffs,
     SymbolicCoeffs,
+    _is_complex,
+    _is_complex_sign,
+    _is_expr,
+    _is_float,
+    _is_int,
+    _is_sign,
     get_coeffs_type,
     typesafe_mul,
 )
 from zixy.container.data import TermData
 from zixy.container.terms import NumericTerms, NumericTermSum
-from zixy.fermion import mappings
+from zixy.qubit._strings import _check_qubits_compatibility
 from zixy.qubit._terms import (
     Term as TermBase,
     Terms as TermsBase,
@@ -69,12 +75,49 @@ from zixy.qubit.state._terms import (
 )
 from zixy.utils import DEFAULT_COMMUTES_ATOL
 
-TermSpec: TypeAlias = String | tuple[StringSpec | String | None, CoeffT | None] | None
+TermSpec: TypeAlias = String | StringSpec | tuple[StringSpec | String, CoeffT | None]
 SignTermSpec = TermSpec[Sign]
 ComplexSignTermSpec = TermSpec[ComplexSign]
 RealTermSpec = TermSpec[float]
 ComplexTermSpec = TermSpec[complex]
 SymbolicTermSpec = TermSpec[Expr]
+
+
+def _mul(
+    lhs: Term[CoeffT],
+    rhs: OtherCoeffT | String | Term[OtherCoeffT],
+) -> Term[Any]:
+    """Driver for multiplication of a term with another term, a string, or a coefficient."""
+    if isinstance(rhs, Coeff):
+        scalar_product = lhs.coeff * rhs
+        return get_term_type(type(scalar_product)).from_cmpnt_coeff(lhs.string, scalar_product)
+    elif isinstance(rhs, String):
+        product = lhs.string * rhs
+        assert isinstance(product, ComplexSignTerm)
+        return product * lhs.coeff
+    elif isinstance(rhs, Term):
+        product = lhs.string * rhs.string
+        assert isinstance(product, ComplexSignTerm)
+        return product * (lhs.coeff * rhs.coeff)
+    return NotImplemented
+
+
+def _rmul(
+    rhs: Term[CoeffT],
+    lhs: OtherCoeffT | String | Term[OtherCoeffT],
+) -> Term[Any]:
+    """Driver for multiplication of another term, a string, or a coefficient with a term."""
+    if isinstance(lhs, Coeff):
+        return _mul(rhs, lhs)
+    elif isinstance(lhs, String):
+        product = lhs * rhs.string
+        assert isinstance(product, ComplexSignTerm)
+        return product * rhs.coeff
+    elif isinstance(lhs, Term):
+        product = lhs.string * rhs.string
+        assert isinstance(product, ComplexSignTerm)
+        return product * (lhs.coeff * rhs.coeff)
+    return NotImplemented
 
 
 class Term(TermBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
@@ -88,54 +131,12 @@ class Term(TermBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
     cmpnts_type = Strings
     coeff_type: type[CoeffT]
 
-    @classmethod
-    def term_data_from_str(
-        cls, source: str, qubits: int | Qubits | None = None
-    ) -> TermData[QubitPauliArray, StringSpec, CoeffT]:
-        """Parse an input string and return the corresponding term data.
-
-        Args:
-            source: Input string to parse.
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
-                index in the input string.
-
-        Returns:
-            The parsed term data.
-        """
-        if isinstance(qubits, int):
-            qubits = Qubits.from_count(qubits)
-        impl, phases = QubitPauliArray.with_phases(qubits, PauliSprings(source))
-        cmpnts = cls.cmpnts_type._create(impl)
-        coeffs_type = get_coeffs_type(cls.coeff_type)
-        coeffs = coeffs_type.parse(source) if "(" in source else coeffs_type.from_size(len(phases))
-        coeffs *= ComplexSignCoeffs._create(phases)
-        return TermData(cmpnts, coeffs)
-
-    @classmethod
-    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Self:
-        """Create a new instance of ``cls`` by parsing an input string.
-
-        Args:
-            source: Input string to parse.
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
-                index in the input string.
-
-        Returns:
-            A new instance containing the Pauli string and coefficient in the ``source``.
-        """
-        data = cls.term_data_from_str(source, qubits)
-        if len(data) != 1:
-            raise ValueError(
-                f"There should be exactly one Term string in the input, not {len(data)}."
-            )
-        return cls._create(data)
-
     @property
     def string(self) -> String:
         """Get the string component of the term."""
         return cast(String, self.cmpnt)
 
-    def __imul__(self, rhs: Coeff | String | Term[CoeffT]) -> Self:  # type: ignore[misc,override]
+    def __imul__(self, rhs: Coeff | String | Term[CoeffT]) -> Self:
         """In-place multiplication of ``self`` by ``rhs``."""
         init_coeff = None
         different_qubits = True
@@ -195,20 +196,6 @@ class Terms(TermsBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
     """
 
     term_type: type[Term[CoeffT]]
-
-    @classmethod
-    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Self:
-        """Create a new instance of ``cls`` by parsing an input string.
-
-        Args:
-            source: Input string to parse.
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
-                index in the input string.
-
-        Returns:
-            A new instance containing the Pauli strings and coefficients in the ``source``.
-        """
-        return cls._create(cls.term_type.term_data_from_str(source, qubits))
 
     @property
     def strings(self) -> Strings:
@@ -398,21 +385,6 @@ class TermSum(TermSumBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix], Ter
         are not.
     """
 
-    @classmethod
-    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Self:
-        """Create a new instance of ``cls`` by parsing an input string.
-
-        Args:
-            source: Input string to parse.
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
-                index in the input string.
-
-        Returns:
-            A new instance containing the Pauli strings and coefficients in the ``source``.
-        """
-        terms = cls.terms_type.from_str(source, qubits)
-        return cls.from_iterable(terms, terms.qubits)
-
     def commutator(self, other: TermSum[CoeffT]) -> TermSum[Any]:
         """Compute the commutator of ``self`` with ``other``.
 
@@ -491,6 +463,60 @@ class SignTerm(Term[Sign]):
 
     coeff_type = Sign
 
+    @overload
+    def __mul__(self, other: Sign) -> SignTerm: ...
+    @overload
+    def __mul__(self, other: ComplexSign) -> ComplexSignTerm: ...
+    @overload
+    def __mul__(self, other: float) -> RealTerm: ...
+    @overload
+    def __mul__(self, other: complex) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: Expr) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, other: String) -> ComplexSignTerm: ...
+    @overload
+    def __mul__(self, other: SignTerm) -> ComplexSignTerm: ...
+    @overload
+    def __mul__(self, other: ComplexSignTerm) -> ComplexSignTerm: ...
+    @overload
+    def __mul__(self, other: RealTerm) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: ComplexTerm) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: SymbolicTerm) -> SymbolicTerm: ...
+
+    def __mul__(self, rhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+        """Multiplication of ``self`` by ``rhs``."""
+        return _mul(self, rhs)
+
+    @overload
+    def __rmul__(self, other: Sign) -> SignTerm: ...
+    @overload
+    def __rmul__(self, other: ComplexSign) -> ComplexSignTerm: ...
+    @overload
+    def __rmul__(self, other: float) -> RealTerm: ...
+    @overload
+    def __rmul__(self, other: complex) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: Expr) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, other: String) -> ComplexSignTerm: ...
+    @overload
+    def __rmul__(self, other: SignTerm) -> ComplexSignTerm: ...
+    @overload
+    def __rmul__(self, other: ComplexSignTerm) -> ComplexSignTerm: ...
+    @overload
+    def __rmul__(self, other: RealTerm) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: ComplexTerm) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: SymbolicTerm) -> SymbolicTerm: ...
+
+    def __rmul__(self, lhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+        """Multiplication of ``lhs`` by ``self``."""
+        return _rmul(self, lhs)
+
 
 class SignTerms(Terms[Sign]):
     """A collection of terms consisting of Pauli strings and sign coefficients.
@@ -528,6 +554,60 @@ class ComplexSignTerm(Term[ComplexSign]):
     """
 
     coeff_type = ComplexSign
+
+    @overload
+    def __mul__(self, other: Sign) -> ComplexSignTerm: ...
+    @overload
+    def __mul__(self, other: ComplexSign) -> ComplexSignTerm: ...
+    @overload
+    def __mul__(self, other: float) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: complex) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: Expr) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, other: String) -> ComplexSignTerm: ...
+    @overload
+    def __mul__(self, other: SignTerm) -> ComplexSignTerm: ...
+    @overload
+    def __mul__(self, other: ComplexSignTerm) -> ComplexSignTerm: ...
+    @overload
+    def __mul__(self, other: RealTerm) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: ComplexTerm) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: SymbolicTerm) -> SymbolicTerm: ...
+
+    def __mul__(self, rhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+        """Multiplication of ``self`` by ``rhs``."""
+        return _mul(self, rhs)
+
+    @overload
+    def __rmul__(self, other: Sign) -> ComplexSignTerm: ...
+    @overload
+    def __rmul__(self, other: ComplexSign) -> ComplexSignTerm: ...
+    @overload
+    def __rmul__(self, other: float) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: complex) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: Expr) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, other: String) -> ComplexSignTerm: ...
+    @overload
+    def __rmul__(self, other: SignTerm) -> ComplexSignTerm: ...
+    @overload
+    def __rmul__(self, other: ComplexSignTerm) -> ComplexSignTerm: ...
+    @overload
+    def __rmul__(self, other: RealTerm) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: ComplexTerm) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: SymbolicTerm) -> SymbolicTerm: ...
+
+    def __rmul__(self, lhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+        """Multiplication of ``lhs`` by ``self``."""
+        return _rmul(self, lhs)
 
 
 class ComplexSignTerms(Terms[ComplexSign]):
@@ -567,6 +647,60 @@ class RealTerm(Term[float]):
     """
 
     coeff_type = float
+
+    @overload
+    def __mul__(self, other: Sign) -> RealTerm: ...
+    @overload
+    def __mul__(self, other: ComplexSign) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: float) -> RealTerm: ...
+    @overload
+    def __mul__(self, other: complex) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: Expr) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, other: String) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: SignTerm) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: ComplexSignTerm) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: RealTerm) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: ComplexTerm) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: SymbolicTerm) -> SymbolicTerm: ...
+
+    def __mul__(self, rhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+        """Multiplication of ``self`` by ``rhs``."""
+        return _mul(self, rhs)
+
+    @overload
+    def __rmul__(self, other: Sign) -> RealTerm: ...
+    @overload
+    def __rmul__(self, other: ComplexSign) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: float) -> RealTerm: ...
+    @overload
+    def __rmul__(self, other: complex) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: Expr) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, other: String) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: SignTerm) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: ComplexSignTerm) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: RealTerm) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: ComplexTerm) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: SymbolicTerm) -> SymbolicTerm: ...
+
+    def __rmul__(self, lhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+        """Multiplication of ``lhs`` by ``self``."""
+        return _rmul(self, lhs)
 
 
 class RealTerms(NumericTerms[QubitPauliArray, StringSpec, float], Terms[float]):
@@ -646,43 +780,14 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
             big_endian,
         )
 
-    @classmethod
-    def from_fermionic(
-        cls,
-        qubits: int | Qubits,
-        mapper: mappings.Mapper,
-        fermion_ops: Sequence[tuple[Sequence[tuple[int, bool]], float]],
-    ) -> Self:
-        """Create an instance of ``cls`` from a fermionic operator given a mapping.
-
-        Args:
-            qubits: The qubit register or qubit count.
-            mapper: The mapping.
-            fermion_ops: A sequence of tuples, where each tuple consists of an integer index
-                indicating the mode and a boolean indicating whether it's a creation (``True``) or
-                annihilation (``False``) operator.
-
-        Returns:
-            The constructed instance.
-        """
-        out = cls(qubits)
-        out_impl = out._impl._cmpnts._impl
-        out_map = out._cmpnt_set._map
-        out_real_coeffs = out._impl._coeffs
-        assert isinstance(out_real_coeffs, RealCoeffs)
-        out_coeffs = out_real_coeffs._impl
-        mapper._impl.op_encode_real(fermion_ops, out_impl, out_map, out_coeffs)
-        return out
-
     @overload  # type: ignore[override]
-    def __mul__(self, other: Coeff) -> Self: ...
-
+    def __mul__(self, other: Coeff | Coeffs[float]) -> Self: ...
     @overload
     def __mul__(self, other: Self) -> ComplexTermSum: ...
 
-    def __mul__(self, other: Self | Coeff) -> Self | ComplexTermSum:
+    def __mul__(self, other: Self | Coeff | Coeffs[float]) -> Self | ComplexTermSum:
         """Multiplication of ``self`` by ``other``."""
-        if isinstance(other, Coeff):
+        if isinstance(other, Coeff | Coeffs):
             return super().__mul__(other)
         elif not isinstance(other, RealTermSum):
             return NotImplemented
@@ -745,26 +850,14 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
             tuple(coeffs),
         )
 
-    def __iadd__(self, rhs: RealTerm | Self | mappings.Contribution[float]) -> Self:  # type: ignore[override,misc]
+    def __iadd__(self, rhs: RealTerm | Self) -> Self:  # type: ignore[override,misc]
         """In-place addition of ``self`` by ``rhs``."""
-        if isinstance(rhs, mappings.Contribution):
-            assert isinstance(self._impl._coeffs, RealCoeffs)  # TODO: resolve
-            rhs._mapper._impl.op_contribute_real(
-                self._impl._cmpnts._impl,
-                self._cmpnt_set._map,
-                self._impl._coeffs._impl,
-                rhs._c,
-            )
-        else:
-            super().__iadd__(rhs)
+        super().__iadd__(rhs)
         return self
 
-    def __isub__(self, rhs: RealTerm | Self | mappings.Contribution[float]) -> Self:  # type: ignore[override,misc]
+    def __isub__(self, rhs: RealTerm | Self) -> Self:  # type: ignore[override,misc]
         """In-place subtraction of ``self`` by ``rhs``."""
-        if isinstance(rhs, mappings.Contribution):
-            self.__iadd__(-rhs)
-        else:
-            super().__isub__(rhs)
+        super().__isub__(rhs)
         return self
 
     def apply(self, state: RealState) -> ComplexState:
@@ -776,6 +869,7 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         Returns:
             The resulting state.
         """
+        _check_qubits_compatibility(self.qubits, state.qubits)
         out = ComplexState(self.qubits)
         assert isinstance(self._impl._coeffs, RealCoeffs)
         assert isinstance(state._impl._coeffs, RealCoeffs)
@@ -800,6 +894,7 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         Returns:
             The resulting matrix element.
         """
+        _check_qubits_compatibility(self.qubits, bra.qubits, ket.qubits)
         assert isinstance(self._impl._coeffs, RealCoeffs)
         assert isinstance(bra._impl._coeffs, RealCoeffs)
         assert isinstance(ket._impl._coeffs, RealCoeffs)
@@ -835,6 +930,60 @@ class ComplexTerm(Term[complex]):
     """
 
     coeff_type = complex
+
+    @overload
+    def __mul__(self, other: Sign) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: ComplexSign) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: float) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: complex) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: Expr) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, other: String) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: SignTerm) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: ComplexSignTerm) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: RealTerm) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: ComplexTerm) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: SymbolicTerm) -> SymbolicTerm: ...
+
+    def __mul__(self, rhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+        """Multiplication of ``self`` by ``rhs``."""
+        return _mul(self, rhs)
+
+    @overload
+    def __rmul__(self, other: Sign) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: ComplexSign) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: float) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: complex) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: Expr) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, other: String) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: SignTerm) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: ComplexSignTerm) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: RealTerm) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: ComplexTerm) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: SymbolicTerm) -> SymbolicTerm: ...
+
+    def __rmul__(self, lhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+        """Multiplication of ``lhs`` by ``self``."""
+        return _rmul(self, lhs)
 
 
 class ComplexTerms(NumericTerms[QubitPauliArray, StringSpec, complex], Terms[complex]):
@@ -925,9 +1074,14 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
             big_endian,
         )
 
-    def __mul__(self, other: Self | Coeff) -> Self | ComplexTermSum:
+    @overload  # type: ignore[override]
+    def __mul__(self, other: Coeff | Coeffs[complex]) -> Self: ...
+    @overload
+    def __mul__(self, other: Self) -> ComplexTermSum: ...
+
+    def __mul__(self, other: Self | Coeff | Coeffs[complex]) -> Self | ComplexTermSum:
         """Multiplication of ``self`` by ``other``."""
-        if isinstance(other, Coeff):
+        if isinstance(other, Coeff | Coeffs):
             return super().__mul__(other)
         elif not isinstance(other, ComplexTermSum):
             return NotImplemented
@@ -963,26 +1117,14 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
             subspace._impl,
         )
 
-    def __iadd__(self, rhs: ComplexTerm | Self | mappings.Contribution[complex]) -> Self:  # type: ignore[override,misc]
+    def __iadd__(self, rhs: ComplexTerm | Self) -> Self:  # type: ignore[override,misc]
         """In-place addition of ``self`` by ``rhs``."""
-        if isinstance(rhs, mappings.Contribution):
-            assert isinstance(self._impl._coeffs, ComplexCoeffs)  # TODO: resolve
-            rhs._mapper._impl.op_contribute_complex(
-                self._impl._cmpnts._impl,
-                self._cmpnt_set._map,
-                self._impl._coeffs._impl,
-                rhs._c,
-            )
-        else:
-            super().__iadd__(rhs)
+        super().__iadd__(rhs)
         return self
 
-    def __isub__(self, rhs: ComplexTerm | Self | mappings.Contribution[complex]) -> Self:  # type: ignore[override,misc]
+    def __isub__(self, rhs: ComplexTerm | Self) -> Self:  # type: ignore[override,misc]
         """In-place subtraction of ``self`` by ``rhs``."""
-        if isinstance(rhs, mappings.Contribution):
-            self.__iadd__(-rhs)
-        else:
-            super().__isub__(rhs)
+        super().__isub__(rhs)
         return self
 
     def apply(self, state: ComplexState) -> ComplexState:
@@ -994,6 +1136,7 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         Returns:
             The resulting state.
         """
+        _check_qubits_compatibility(self.qubits, state.qubits)
         out = ComplexState(self.qubits)
         assert isinstance(self._impl._coeffs, ComplexCoeffs)
         assert isinstance(state._impl._coeffs, ComplexCoeffs)
@@ -1018,6 +1161,7 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         Returns:
             The resulting matrix element.
         """
+        _check_qubits_compatibility(self.qubits, bra.qubits, ket.qubits)
         assert isinstance(self._impl._coeffs, ComplexCoeffs)
         assert isinstance(bra._impl._coeffs, ComplexCoeffs)
         assert isinstance(ket._impl._coeffs, ComplexCoeffs)
@@ -1053,6 +1197,60 @@ class SymbolicTerm(Term[Expr]):
     """
 
     coeff_type = Expr
+
+    @overload
+    def __mul__(self, other: Sign) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, other: ComplexSign) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, other: float) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, other: complex) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, other: Expr) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, other: String) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, other: SignTerm) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, other: ComplexSignTerm) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, other: RealTerm) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, other: ComplexTerm) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, other: SymbolicTerm) -> SymbolicTerm: ...
+
+    def __mul__(self, rhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+        """Multiplication of ``self`` by ``rhs``."""
+        return _mul(self, rhs)
+
+    @overload
+    def __rmul__(self, other: Sign) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, other: ComplexSign) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, other: float) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, other: complex) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, other: Expr) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, other: String) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, other: SignTerm) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, other: ComplexSignTerm) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, other: RealTerm) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, other: ComplexTerm) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, other: SymbolicTerm) -> SymbolicTerm: ...
+
+    def __rmul__(self, lhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+        """Multiplication of ``lhs`` by ``self``."""
+        return _rmul(self, lhs)
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
         """Apply a partial substitution of the symbols in-place.
@@ -1241,13 +1439,14 @@ class SymbolicTermSum(TermSum[Expr]):
 
     @overload  # type: ignore[override]
     def __mul__(self, other: Coeff) -> Self: ...
-
     @overload
     def __mul__(self, other: Self) -> Self: ...
+    @overload
+    def __mul__(self, other: Coeffs[Expr]) -> Self: ...
 
-    def __mul__(self, other: Self | Coeff) -> Self | SymbolicTermSum:
+    def __mul__(self, other: Self | Coeff | Coeffs[Expr]) -> Self | SymbolicTermSum:
         """Multiplication of ``self`` by ``other``."""
-        if isinstance(other, Coeff):
+        if isinstance(other, Coeff | Coeffs):
             return super().__mul__(other)
         elif not isinstance(other, SymbolicTermSum):
             return NotImplemented
@@ -1255,31 +1454,26 @@ class SymbolicTermSum(TermSum[Expr]):
             TermData(other._impl._cmpnts._empty_clone(), SymbolicCoeffs())
         )
         for l_term in self:
+            assert isinstance(l_term, SymbolicTerm)
             for r_term in other:
+                assert isinstance(r_term, SymbolicTerm)
                 product = l_term * r_term
                 product.coeff = product.coeff.simplify()
-                out += product  # type: ignore[arg-type]
+                out += product
         return out
 
 
-class TermRegistry(terms.TermRegistry[QubitPauliArray, StringSpec]):
-    """Registry of term types for each different coefficient type."""
-
-    term_type_sign: type[SignTerm]
-    term_type_complex_sign: type[ComplexSignTerm]
-    term_type_real: type[RealTerm]
-    term_type_complex: type[ComplexTerm]
-    term_type_symbolic: type[SymbolicTerm]
-
-    def __getitem__(self, coeff_type: type[CoeffT]) -> type[Term[CoeffT]]:
-        """Get the term type corresponding to ``coeff_type``."""
-        return cast(type[Term[CoeffT]], super().__getitem__(coeff_type))
-
-
-String._term_registry = TermRegistry(
-    term_type_sign=SignTerm,
-    term_type_complex_sign=ComplexSignTerm,
-    term_type_real=RealTerm,
-    term_type_complex=ComplexTerm,
-    term_type_symbolic=SymbolicTerm,
-)
+def get_term_type(coeff_type: type[CoeffT]) -> type[Term[CoeffT]]:
+    """Get the term type corresponding to ``coeff_type``."""
+    if _is_int(coeff_type) or _is_float(coeff_type):
+        return cast(type[Term[CoeffT]], RealTerm)
+    elif _is_complex(coeff_type):
+        return cast(type[Term[CoeffT]], ComplexTerm)
+    elif _is_sign(coeff_type):
+        return cast(type[Term[CoeffT]], SignTerm)
+    elif _is_complex_sign(coeff_type):
+        return cast(type[Term[CoeffT]], ComplexSignTerm)
+    elif _is_expr(coeff_type):
+        return cast(type[Term[CoeffT]], SymbolicTerm)
+    else:
+        raise TypeError(f"Unsupported coefficient type {coeff_type} for term type lookup.")

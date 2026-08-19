@@ -38,7 +38,7 @@ from zixy.qubit.pauli._terms import (
     SymbolicTermSum,
 )
 
-from zixy._zixy import PauliMatrix, PauliSprings
+from zixy._zixy import PauliMatrix, PauliSprings, SymplecticPart
 
 I = PauliMatrix.I  # noqa: E741
 X = PauliMatrix.X  # noqa: E741
@@ -74,4 +74,5 @@ __all__ = [
     "SymbolicTerms",
     "SymbolicTermSet",
     "SymbolicTermSum",
+    "SymplecticPart",
 ]

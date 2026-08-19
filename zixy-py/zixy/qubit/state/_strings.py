@@ -27,25 +27,27 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING, overload
 
 from zixy._zixy import BinarySprings, Qubits, QubitStateArray
-from zixy.container.coeffs import ComplexSign
+from zixy.container.coeffs import Coeff, ComplexSign
 from zixy.qubit._strings import (
     String as StringBase,
     Strings as StringsBase,
     StringSet as StringSetBase,
+    _check_qubits_compatibility,
     _default_qubits as _default_qubits_base,
 )
 from zixy.qubit.pauli import String as PauliString
 
 if TYPE_CHECKING:
-    from zixy.qubit.state._terms import TermRegistry
+    from zixy.container.coeffs import CoeffT
+    from zixy.qubit.state._terms import Term
 
-StringSpec = None | Sequence[bool] | set[int] | str
+StringSpec = Sequence[bool] | set[int] | str
 ElemT = bool
 SpecT = StringSpec
 ImplT = QubitStateArray
 
 
-def _default_qubits(source: StringSpec = None) -> Qubits:
+def _default_qubits(source: StringSpec) -> Qubits:
     """Construct the default qubits for a string specifier."""
     if isinstance(source, set):
         return Qubits.from_count(max(source) + 1)
@@ -63,14 +65,33 @@ class String(StringBase[ImplT, SpecT, ElemT]):
     """
 
     impl_type = ImplT
-    _term_registry: TermRegistry
 
+    _clear_spec = ""
     _springs_type = BinarySprings
 
     @staticmethod
-    def _get_default_qubits(source: SpecT | None = None) -> Qubits:
+    def _get_default_qubits(source: SpecT) -> Qubits:
         """Get the default qubit space for ``source``."""
         return _default_qubits(source)
+
+    @classmethod
+    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> String:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        if not source.strip():
+            return cls(qubits, "")
+        n = len(BinarySprings(source))
+        if n != 1:
+            raise ValueError(f"Source string should contain one state string, got {n}.")
+        return cls(qubits, source)
 
     def __getitem__(self, i: int) -> bool:
         """Return the bit value of the string at index ``i``."""
@@ -90,7 +111,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         """Get the string as a set of the indices of bits with value 1."""
         return self._impl.cmpnt_get_set(self.index)
 
-    def set(self, source: SpecT | StringBase[ImplT, SpecT, ElemT] | None) -> None:
+    def set(self, source: SpecT | StringBase[ImplT, SpecT, ElemT]) -> None:
         """Set the value of the string.
 
         Args:
@@ -119,8 +140,27 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         r"""Check whether the string is the vacuum state (:math:`\left[0, 0, \ldots, 0\right]`)."""
         return self.count(True) == 0
 
+    def __mul__(self, rhs: CoeffT) -> Term[CoeffT]:
+        """Return the product of ``self`` and ``rhs``."""
+        if not isinstance(rhs, Coeff):
+            return NotImplemented
+        from zixy.qubit.state._terms import get_term_type  # noqa: PLC0415
+
+        term_type = get_term_type(type(rhs))
+        return term_type.from_cmpnt_coeff(self, rhs)
+
+    def __rmul__(self, lhs: CoeffT) -> Term[CoeffT]:
+        """Return the product of ``lhs`` and ``self``."""
+        if not isinstance(lhs, Coeff):
+            return NotImplemented
+        from zixy.qubit.state._terms import get_term_type  # noqa: PLC0415
+
+        term_type = get_term_type(type(lhs))
+        return term_type.from_cmpnt_coeff(self, lhs)
+
     def vdot(self, other: String) -> int:
         """Compute the inner product of this string with another."""
+        _check_qubits_compatibility(self.qubits, other.qubits)
         return int(self == other)
 
     def imul_get_phase(self, op: PauliString) -> ComplexSign:
@@ -138,6 +178,27 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
     cmpnt_type = String
 
     _set_type: type[StringSet]
+    _springs_type = BinarySprings
+
+    @classmethod
+    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Strings:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        if isinstance(qubits, int):
+            qubits = Qubits.from_count(qubits)
+        if not source.strip():
+            out = cls._create(cls.cmpnt_type.impl_type(qubits))
+            out.resize(0)
+            return out
+        return cls._create(cls.cmpnt_type.impl_type(qubits, BinarySprings(source)))
 
     @classmethod
     def new(cls, qubits: int | Qubits = 0, n: int = 0) -> Strings:

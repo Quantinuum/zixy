@@ -1,21 +1,35 @@
 from __future__ import annotations
 
 import pytest
-from mock_cmpnts import String, Strings, StringSet, StringsImplArray
+
+from .mock_cmpnts import String, Strings, StringSet, StringsImplArray
 
 
 def test_cmpnt():
     s = String("hello")
     assert str(s) == "hello"
+    assert String.from_str("hello") == s
     s.set("world")
     assert str(s) == "world"
     s.set(String("hello"))
     assert str(s) == "hello"
     assert str(s.copy()) == "hello"
-    s.set(None)
+    s.set("")
     assert str(s) == ""
     with pytest.raises(TypeError):
+        s.set(None)
+    with pytest.raises(TypeError):
         s.set(1)
+
+
+def test_str():
+    empty = String("")
+    assert empty.to_str() == ""
+    assert String.from_str(empty.to_str()) == empty
+
+    spaced = String("  spaced  ")
+    assert spaced.to_str() == "  spaced  "
+    assert String.from_str(spaced.to_str()) == spaced
 
 
 def test_cmpnt_array():
@@ -97,6 +111,7 @@ def test_cmpnt_set():
     s = StringSet.from_iterable("what a a time to to be to time alive time".split())
     assert len(s) == 6
     assert str(s) == "what, a, time, to, be, alive"
+    assert str(StringSet.from_str(str(s))) == str(s)
     assert s.lookup("be") == 4
     assert s.lookup("was") is None
 

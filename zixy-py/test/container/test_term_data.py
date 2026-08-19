@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import numpy as np
-from mock_cmpnts import Strings
 from sympy import sympify
 
 from zixy import _zixy
@@ -14,6 +13,23 @@ from zixy.container.coeffs import (
     SymbolicCoeffs,
 )
 from zixy.container.data import TermData
+
+from .mock_cmpnts import Strings
+
+
+class SignStringTermData(TermData):
+    cmpnts_type = Strings
+    coeffs_type = SignCoeffs
+
+
+class RealStringTermData(TermData):
+    cmpnts_type = Strings
+    coeffs_type = RealCoeffs
+
+
+class ComplexStringTermData(TermData):
+    cmpnts_type = Strings
+    coeffs_type = ComplexCoeffs
 
 
 def test_sign_term_data() -> None:

@@ -15,6 +15,7 @@ use zixy::container::coeffs::traits::Unrepresentable;
 use zixy::container::errors::IndistinctError;
 use zixy::container::errors::OutOfBounds;
 use zixy::container::word_iters::WordIters;
+use zixy::fermion::traits::DifferentSpaces;
 use zixy::qubit::mode::{BasisError, CoincidentIndex, DifferentModeCounts};
 use zixy::qubit::pauli::cmpnt_major::mat_elem::SubspaceNonorthogonal;
 use zixy::qubit::traits::DifferentQubits;
@@ -154,6 +155,12 @@ pub fn try_py_indices(indices: Vec<isize>, len: usize) -> PyResult<Vec<usize>> {
         out.push(try_py_index(i, len)?);
     }
     Ok(out)
+}
+
+/// Format the indexed component of a `WordIters` container as a string.
+pub fn cmpnt_to_string<T: WordIters>(src: &T, index: isize) -> PyResult<String> {
+    let index = try_py_index(index, src.len())?;
+    Ok(src.fmt_elem(index))
 }
 
 /// Implement this to provide access to a Rust object within a wrapper object.
@@ -306,6 +313,12 @@ impl ErrorToException for BasisError {
             BasisError::Counts(x) => x.get_exception(),
             BasisError::Coincident(x) => x.get_exception(),
         }
+    }
+}
+
+impl ErrorToException for DifferentSpaces {
+    fn get_exception(&self) -> PyErr {
+        PyValueError::new_err(format!("{self}"))
     }
 }
 

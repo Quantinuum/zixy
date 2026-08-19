@@ -54,20 +54,15 @@ from zixy.qubit._strings import (
 from zixy.utils import slice_equal
 
 if TYPE_CHECKING:
-    from zixy.qubit.pauli._terms import Term, TermRegistry
+    from zixy.qubit.pauli._terms import ComplexSignTerm, Term
 
-StringSpec: TypeAlias = (
-    None  # signifies the clear string
-    | Sequence[PauliMatrix]
-    | dict[int, PauliMatrix]
-    | str
-)
+StringSpec: TypeAlias = Sequence[PauliMatrix] | dict[int, PauliMatrix] | str
 ElemT = PauliMatrix
 SpecT = StringSpec
 ImplT = QubitPauliArray
 
 
-def _default_qubits(source: StringSpec = None) -> Qubits:
+def _default_qubits(source: StringSpec) -> Qubits:
     """Construct the default qubits for a string specifier."""
     if isinstance(source, dict):
         if len(source) == 0:
@@ -88,30 +83,32 @@ class String(StringBase[ImplT, SpecT, ElemT]):
     """
 
     impl_type = ImplT
-    _term_registry: TermRegistry
 
+    _clear_spec = ""
     _springs_type = PauliSprings
 
     @staticmethod
-    def _get_default_qubits(source: SpecT | None = None) -> Qubits:
+    def _get_default_qubits(source: SpecT) -> Qubits:
         """Get the default qubit space for ``source``."""
         return _default_qubits(source)
 
     @classmethod
     def from_str(cls, source: str, qubits: int | Qubits | None = None) -> String:
-        """Create a new instance of ``cls`` by parsing an input string.
+        """Create an instance of ``cls`` from a string.
 
         Args:
-            source: Input string to parse.
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
-                index in the input string.
+            source: String to parse.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
 
         Returns:
-            A new instance containing the Pauli string in the ``source``.
+            An instance of ``cls`` parsed from ``source``.
         """
+        if not source.strip():
+            return cls(qubits, "")
         n = len(PauliSprings(source))
         if n != 1:
-            raise ValueError(f"There should be exactly one Pauli string in the input, not {n}.")
+            raise ValueError(f"Source string should contain one Pauli string, got {n}.")
         return cls(qubits, source)
 
     def __getitem__(self, i: int) -> PauliMatrix:
@@ -137,7 +134,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         """Get the string as a dictionary of its elements."""
         return self._impl.cmpnt_get_dict(self.index)
 
-    def set(self, source: SpecT | StringBase[ImplT, SpecT, ElemT] | None) -> None:
+    def set(self, source: SpecT | StringBase[ImplT, SpecT, ElemT]) -> None:
         """Set the value of the string.
 
         Args:
@@ -159,22 +156,31 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         """Check whether the string is diagonal (only :math:`I` and :math:`Z`)."""
         return self.count(PauliMatrix.I) + self.count(PauliMatrix.Z) == len(self.qubits)
 
-    @overload  # type: ignore[override]
-    def __mul__(self, rhs: String) -> Term[ComplexSign]: ...
-
+    @overload
+    def __mul__(self, rhs: String) -> ComplexSignTerm: ...
     @overload
     def __mul__(self, rhs: CoeffT) -> Term[CoeffT]: ...
 
-    def __mul__(self, rhs: CoeffT | String) -> Term[CoeffT] | Term[ComplexSign]:
+    def __mul__(self, rhs: CoeffT | String) -> Term[CoeffT] | ComplexSignTerm:
         """Multiplication of ``self`` by ``rhs``."""
         if not isinstance(rhs, Coeff | String):
             return NotImplemented
+        from zixy.qubit.pauli._terms import ComplexSignTerm, get_term_type  # noqa: PLC0415
+
         if isinstance(rhs, String):
             product, phase = self._impl.cmpnt_mul(self.index, rhs._impl, rhs.index)
             phases = ComplexSignCoeffs.from_scalar(ComplexSign(phase))
-            term_type = self._term_registry[ComplexSign]
-            return term_type._create(TermData(Strings._create(product), phases))
-        return super().__mul__(rhs)  # type: ignore[return-value]
+            return ComplexSignTerm._create(TermData(Strings._create(product), phases))
+        return get_term_type(type(rhs)).from_cmpnt_coeff(self, rhs)
+
+    def __rmul__(self, lhs: CoeffT) -> Term[CoeffT]:
+        """Return the product of ``lhs`` and ``self``."""
+        if not isinstance(lhs, Coeff):
+            return NotImplemented
+        from zixy.qubit.pauli._terms import get_term_type  # noqa: PLC0415
+
+        term_type = get_term_type(type(lhs))
+        return term_type.from_cmpnt_coeff(self, lhs)
 
     def __imul__(self, rhs: String) -> Self:  # type: ignore
         """In-place multiplication of ``self`` by ``rhs``."""
@@ -251,24 +257,27 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
     cmpnt_type = String
 
     _set_type: type[StringSet]
+    _springs_type = PauliSprings
 
     @classmethod
-    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Strings:
-        """Create a new instance of ``cls`` by parsing an input string.
+    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Self:
+        """Create an instance of ``cls`` from a string.
 
         Args:
-            qubits: Space of qubits or a number of qubits. If ``None``, infer from the max qubit
-                index in the input string.
-            source: Input string to parse.
+            source: String to parse.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
 
         Returns:
-            A new instance containing the Pauli string in the ``source``.
+            An instance of ``cls`` parsed from ``source``.
         """
         if isinstance(qubits, int):
             qubits = Qubits.from_count(qubits)
-        return cls._create(
-            cls.cmpnt_type.impl_type(qubits if qubits is not None else None, PauliSprings(source))
-        )
+        if not source.strip():
+            out = cls._create(cls.cmpnt_type.impl_type(qubits))
+            out.resize(0)
+            return out
+        return cls._create(cls.cmpnt_type.impl_type(qubits, PauliSprings(source)))
 
     @overload
     def __getitem__(self, indexer: int) -> String: ...

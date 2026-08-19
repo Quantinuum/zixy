@@ -2,7 +2,7 @@
 
 use std::fmt::Display;
 
-use crate::container::bit_matrix::AsBitMatrix;
+use crate::container::bit_matrix::{AsBitMatrix, AsRowRef};
 use crate::container::coeffs::sign::SignVec;
 use crate::container::coeffs::traits::NumReprVec;
 use crate::container::errors::OutOfBounds;
@@ -11,7 +11,7 @@ use crate::container::traits::{
 };
 use crate::container::word_iters::{self, WordIters};
 use crate::fermion::mode::Modes;
-use crate::fermion::operator::cre_or_ann;
+use crate::fermion::operator::normal::cre_or_ann;
 use crate::fermion::traits::ModesBased;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -184,10 +184,11 @@ impl WordIters for CmpntList {
 
     fn fmt_elem(&self, i: usize) -> String {
         let mut out = self.cre_part.get_elem_ref(i).to_string();
-        if !out.is_empty() {
+        let ann = self.ann_part.get_elem_ref(i).to_string();
+        if !out.is_empty() && !ann.is_empty() {
             out.push(' ');
         }
-        out += self.ann_part.get_elem_ref(i).to_string().as_str();
+        out += ann.as_str();
         out
     }
 }
@@ -206,6 +207,20 @@ impl<'a> CmpntRef<'a> {
     /// Return ann part.
     pub fn get_ann_part(&self) -> cre_or_ann::CmpntRef<'_> {
         self.word_iters.ann_part.get_elem_ref(self.get_index())
+    }
+
+    /// Returns the n-body order of this term, i.e. `(n_cre + n_ann) / 2`.
+    pub fn count_n_body(&self) -> usize {
+        let n_cre = self.get_cre_part().to_set().len();
+        let n_ann = self.get_ann_part().to_set().len();
+        (n_cre + n_ann) / 2
+    }
+
+    /// Returns the change in particle number for this term, i.e. `n_cre - n_ann`.
+    pub fn particle_number_change(&self) -> isize {
+        let n_cre = self.get_cre_part().to_set().len() as isize;
+        let n_ann = self.get_ann_part().to_set().len() as isize;
+        n_cre - n_ann
     }
 }
 

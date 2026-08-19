@@ -5,12 +5,15 @@ from zixy.qubit.pauli import (
     ComplexTermSum,
     I,
     RealTerm,
+    RealTermSet,
     RealTermSum,
+    String,
     SymbolicTermSum,
     X,
     Y,
     Z,
 )
+from zixy.qubit.state import RealTerm as StateRealTerm, String as StateString
 
 
 def test_real_term_sum():
@@ -30,6 +33,13 @@ def test_real_term_sum():
     lc *= 5.0
     assert lc[(X, X, Y, I, I, I)] == -4.0
     assert len(lc) == 2
+    term_set = RealTermSet.from_terms(
+        RealTermSum.from_iterable(
+            (((X, I, I, I, I, X), 3.0), ((X, X, Y, I, I, I), -4.0)), 6
+        ).to_terms()
+    )
+    assert RealTermSet.from_str(str(term_set)) == term_set
+    assert RealTermSum.from_str(str(lc), 6) == lc
 
 
 def test_real_term_add_iterable():
@@ -60,6 +70,41 @@ def test_real_term_add_iterable():
     )
     assert len(lc) == 4
     assert str(lc) == "(-0.5, X0 X1 X2), (3.1, X0 X1 Y2), (-1.0, X0 X1 Y2 Z3), (1.3, Z0 X1 X2)"
+
+
+def test_term_sum_rejects_term_over_different_qubits():
+    term_sum = RealTermSum(2)
+    term = RealTerm.from_cmpnt_coeff(String(3, (X, I, I)), 1.0)
+
+    with pytest.raises(ValueError, match="different qubits"):
+        term_sum += term
+
+
+def test_term_set_check_term():
+    term_set = RealTermSet(3)
+    term = RealTerm.from_cmpnt_coeff(String(3, (X, I, I)), 1.0)
+
+    assert term_set.insert(term) == 0
+    term_set._check_term(term)
+
+    with pytest.raises(ValueError, match="different qubits"):
+        term_set._check_term(RealTerm.from_cmpnt_coeff(String(4, (X, I, I, I)), 1.0))
+
+    with pytest.raises(TypeError, match="Expected a RealTerm instance"):
+        term_set._check_term(StateRealTerm(3, ((1, 0, 0), 1.0)))
+
+
+def test_term_set_check_cmpnt():
+    term_set = RealTermSet(3)
+    string = String(3, (X, I, I))
+
+    term_set._check_cmpnt(string)
+
+    with pytest.raises(ValueError, match="different qubits"):
+        term_set._check_cmpnt(String(4, (X, I, I, I)))
+
+    with pytest.raises(TypeError, match="Expected a String instance"):
+        term_set._check_cmpnt(StateString(3, (1, 0, 0)))
 
 
 def test_real_term_into_other_types():

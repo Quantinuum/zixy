@@ -22,7 +22,7 @@ The structure of this module parallels that of :mod:`~zixy.container.terms` and
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TypeAlias, cast
+from typing import Any, TypeAlias, cast, overload
 
 import numpy as np
 from numpy.typing import NDArray
@@ -30,21 +30,28 @@ from sympy import Expr, Symbol
 from typing_extensions import Self
 
 from zixy._zixy import Qubits, QubitStateArray
-from zixy.container import terms
 from zixy.container.coeffs import (
     Coeff,
     CoeffT,
     ComplexCoeffs,
     ComplexSign,
     Number,
+    OtherCoeffT,
     RealCoeffs,
     Sign,
     SymbolicCoeffs,
+    _is_complex,
+    _is_complex_sign,
+    _is_expr,
+    _is_float,
+    _is_int,
+    _is_sign,
     get_coeffs_type,
     typesafe_mul,
 )
 from zixy.container.data import TermData
 from zixy.container.terms import NumericTerms, NumericTermSum
+from zixy.qubit._strings import _check_qubits_compatibility
 from zixy.qubit._terms import (
     Term as TermBase,
     Terms as TermsBase,
@@ -53,12 +60,25 @@ from zixy.qubit._terms import (
 )
 from zixy.qubit.state._strings import String, Strings, StringSpec
 
-TermSpec: TypeAlias = String | tuple[StringSpec | String | None, CoeffT | None] | None
+TermSpec: TypeAlias = String | StringSpec | tuple[StringSpec | String, CoeffT | None]
 SignTermSpec = TermSpec[Sign]
 ComplexSignTermSpec = TermSpec[ComplexSign]
 RealTermSpec = TermSpec[float]
 ComplexTermSpec = TermSpec[complex]
 SymbolicTermSpec = TermSpec[Expr]
+
+
+def _mul(lhs: Term[CoeffT], rhs: OtherCoeffT) -> Term[Any]:
+    """Driver for multiplication of a term with a coefficient."""
+    if not isinstance(rhs, Coeff):
+        return NotImplemented
+    scalar_product = lhs.coeff * rhs
+    return get_term_type(type(scalar_product)).from_cmpnt_coeff(lhs.string, scalar_product)
+
+
+def _rmul(rhs: Term[CoeffT], lhs: OtherCoeffT) -> Term[Any]:
+    """Driver for multiplication of a coefficient with a term."""
+    return _mul(rhs, lhs)
 
 
 class Term(TermBase[QubitStateArray, StringSpec, CoeffT, bool]):
@@ -77,7 +97,7 @@ class Term(TermBase[QubitStateArray, StringSpec, CoeffT, bool]):
         """Get the string component of the term."""
         return cast(String, self.cmpnt)
 
-    def __imul__(self, rhs: Coeff | String | Term[CoeffT]) -> Self:  # type: ignore[misc,override]
+    def __imul__(self, rhs: Coeff | String | Term[CoeffT]) -> Self:
         """In-place multiplication of ``self`` by ``rhs``."""
         init_coeff = None
         different_qubits = True
@@ -159,8 +179,6 @@ class TermSum(TermSumBase[QubitStateArray, StringSpec, CoeffT, bool], TermSet[Co
         are not.
     """
 
-    pass
-
 
 class SignTerm(Term[Sign]):
     """A term consisting of a state string and a sign coefficient.
@@ -172,6 +190,36 @@ class SignTerm(Term[Sign]):
     """
 
     coeff_type = Sign
+
+    @overload
+    def __mul__(self, other: Sign) -> SignTerm: ...
+    @overload
+    def __mul__(self, other: ComplexSign) -> ComplexSignTerm: ...
+    @overload
+    def __mul__(self, other: float) -> RealTerm: ...
+    @overload
+    def __mul__(self, other: complex) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: Expr) -> SymbolicTerm: ...
+
+    def __mul__(self, rhs: OtherCoeffT) -> Term[Any]:
+        """Multiplication of ``self`` by ``rhs``."""
+        return _mul(self, rhs)
+
+    @overload
+    def __rmul__(self, other: Sign) -> SignTerm: ...
+    @overload
+    def __rmul__(self, other: ComplexSign) -> ComplexSignTerm: ...
+    @overload
+    def __rmul__(self, other: float) -> RealTerm: ...
+    @overload
+    def __rmul__(self, other: complex) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: Expr) -> SymbolicTerm: ...
+
+    def __rmul__(self, lhs: OtherCoeffT) -> Term[Any]:
+        """Multiplication of ``lhs`` by ``self``."""
+        return _rmul(self, lhs)
 
 
 class SignTerms(Terms[Sign]):
@@ -211,6 +259,36 @@ class ComplexSignTerm(Term[ComplexSign]):
 
     coeff_type = ComplexSign
 
+    @overload
+    def __mul__(self, other: Sign) -> ComplexSignTerm: ...
+    @overload
+    def __mul__(self, other: ComplexSign) -> ComplexSignTerm: ...
+    @overload
+    def __mul__(self, other: float) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: complex) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: Expr) -> SymbolicTerm: ...
+
+    def __mul__(self, rhs: OtherCoeffT) -> Term[Any]:
+        """Multiplication of ``self`` by ``rhs``."""
+        return _mul(self, rhs)
+
+    @overload
+    def __rmul__(self, other: Sign) -> ComplexSignTerm: ...
+    @overload
+    def __rmul__(self, other: ComplexSign) -> ComplexSignTerm: ...
+    @overload
+    def __rmul__(self, other: float) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: complex) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: Expr) -> SymbolicTerm: ...
+
+    def __rmul__(self, lhs: OtherCoeffT) -> Term[Any]:
+        """Multiplication of ``lhs`` by ``self``."""
+        return _rmul(self, lhs)
+
 
 class ComplexSignTerms(Terms[ComplexSign]):
     """A collection of terms consisting of state strings and complex sign coefficients.
@@ -249,6 +327,36 @@ class RealTerm(Term[float]):
     """
 
     coeff_type = float
+
+    @overload
+    def __mul__(self, other: Sign) -> RealTerm: ...
+    @overload
+    def __mul__(self, other: ComplexSign) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: float) -> RealTerm: ...
+    @overload
+    def __mul__(self, other: complex) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: Expr) -> SymbolicTerm: ...
+
+    def __mul__(self, rhs: OtherCoeffT) -> Term[Any]:
+        """Multiplication of ``self`` by ``rhs``."""
+        return _mul(self, rhs)
+
+    @overload
+    def __rmul__(self, other: Sign) -> RealTerm: ...
+    @overload
+    def __rmul__(self, other: ComplexSign) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: float) -> RealTerm: ...
+    @overload
+    def __rmul__(self, other: complex) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: Expr) -> SymbolicTerm: ...
+
+    def __rmul__(self, lhs: OtherCoeffT) -> Term[Any]:
+        """Multiplication of ``lhs`` by ``self``."""
+        return _rmul(self, lhs)
 
 
 class RealTerms(NumericTerms[QubitStateArray, StringSpec, float], Terms[float]):
@@ -300,7 +408,8 @@ class RealTermSum(NumericTermSum[QubitStateArray, StringSpec, float], TermSum[fl
         """Create an instance of ``cls`` from a dense vector.
 
         Args:
-            qubits: The qubit register or qubit count.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the dense vector length.
             source: The vector to read from.
             big_endian: Whether to use big endian ordering for the resulting matrix. If ``False``,
                 little endian ordering is used. In big (little) endian ordering, the least
@@ -338,6 +447,7 @@ class RealTermSum(NumericTermSum[QubitStateArray, StringSpec, float], TermSum[fl
 
     def vdot(self, rhs: RealTermSum) -> float:
         """Compute the inner product of ``self`` with ``rhs``."""
+        _check_qubits_compatibility(self.qubits, rhs.qubits)
         assert isinstance(self._impl._coeffs, RealCoeffs)  # TODO: resolve
         assert isinstance(rhs._impl._coeffs, RealCoeffs)  # TODO: resolve
         return float(
@@ -360,6 +470,36 @@ class ComplexTerm(Term[complex]):
     """
 
     coeff_type = complex
+
+    @overload
+    def __mul__(self, other: Sign) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: ComplexSign) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: float) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: complex) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, other: Expr) -> SymbolicTerm: ...
+
+    def __mul__(self, rhs: OtherCoeffT) -> Term[Any]:
+        """Multiplication of ``self`` by ``rhs``."""
+        return _mul(self, rhs)
+
+    @overload
+    def __rmul__(self, other: Sign) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: ComplexSign) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: float) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: complex) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, other: Expr) -> SymbolicTerm: ...
+
+    def __rmul__(self, lhs: OtherCoeffT) -> Term[Any]:
+        """Multiplication of ``lhs`` by ``self``."""
+        return _rmul(self, lhs)
 
 
 class ComplexTerms(NumericTerms[QubitStateArray, StringSpec, complex], Terms[complex]):
@@ -411,7 +551,8 @@ class ComplexTermSum(NumericTermSum[QubitStateArray, StringSpec, complex], TermS
         """Create an instance of ``cls`` from a dense vector.
 
         Args:
-            qubits: The qubit register or qubit count.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the dense vector length.
             source: The vector to read from.
             big_endian: Whether to use big endian ordering for the resulting matrix. If ``False``,
                 little endian ordering is used. In big (little) endian ordering, the least
@@ -463,6 +604,7 @@ class ComplexTermSum(NumericTermSum[QubitStateArray, StringSpec, complex], TermS
 
     def vdot(self, rhs: ComplexTermSum) -> complex:
         """Compute the inner product of ``self`` with ``rhs``."""
+        _check_qubits_compatibility(self.qubits, rhs.qubits)
         assert isinstance(self._impl._coeffs, ComplexCoeffs)  # TODO: resolve
         assert isinstance(rhs._impl._coeffs, ComplexCoeffs)  # TODO: resolve
         return complex(
@@ -485,6 +627,36 @@ class SymbolicTerm(Term[Expr]):
     """
 
     coeff_type = Expr
+
+    @overload
+    def __mul__(self, other: Sign) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, other: ComplexSign) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, other: float) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, other: complex) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, other: Expr) -> SymbolicTerm: ...
+
+    def __mul__(self, rhs: OtherCoeffT) -> Term[Any]:
+        """Multiplication of ``self`` by ``rhs``."""
+        return _mul(self, rhs)
+
+    @overload
+    def __rmul__(self, other: Sign) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, other: ComplexSign) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, other: float) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, other: complex) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, other: Expr) -> SymbolicTerm: ...
+
+    def __rmul__(self, lhs: OtherCoeffT) -> Term[Any]:
+        """Multiplication of ``lhs`` by ``self``."""
+        return _rmul(self, lhs)
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
         """Apply a partial substitution of the symbols in-place.
@@ -514,14 +686,14 @@ class SymbolicTerm(Term[Expr]):
         return out
 
     def try_to_real(self) -> RealTerm:
-        """Try to evaluate ``self`` as a term containing a vector of real coefficients.
+        """Try to evaluate ``self`` as a term containing a real coefficient.
 
         Returns:
             An instance of :class:`~zixy.qubit.state._terms.RealTerm` with the evaluated
-            coefficients.
+            coefficient.
 
         Raises:
-            TypeError: A coefficient is not representable as real or there are free symbols.
+            TypeError: If ``self`` cannot be evaluated with a real coefficient.
 
         See Also:
             :meth:`~zixy.container.coeffs.SymbolicCoeffs.try_to_real`
@@ -531,14 +703,14 @@ class SymbolicTerm(Term[Expr]):
         return RealTerm._create(TermData(cmpnts, coeffs))
 
     def try_to_complex(self) -> ComplexTerm:
-        """Try to evaluate ``self`` as a term containing a vector of complex coefficients.
+        """Try to evaluate ``self`` as a term containing a complex coefficient.
 
         Returns:
             An instance of :class:`~zixy.qubit.state._terms.ComplexTerm` with the evaluated
-            coefficients.
+            coefficient.
 
         Raises:
-            TypeError: A coefficient is not representable as complex or there are free symbols.
+            TypeError: If ``self`` cannot be evaluated with a complex coefficient.
 
         See Also:
             :meth:`~zixy.container.coeffs.SymbolicCoeffs.try_to_complex`
@@ -672,24 +844,17 @@ class SymbolicTermSum(TermSum[Expr]):
     terms_type = SymbolicTerms
 
 
-class TermRegistry(terms.TermRegistry[QubitStateArray, StringSpec]):
-    """Registry of term types for each different coefficient type."""
-
-    term_type_sign: type[SignTerm]
-    term_type_complex_sign: type[ComplexSignTerm]
-    term_type_real: type[RealTerm]
-    term_type_complex: type[ComplexTerm]
-    term_type_symbolic: type[SymbolicTerm]
-
-    def __getitem__(self, coeff_type: type[CoeffT]) -> type[Term[CoeffT]]:
-        """Get the term type corresponding to ``coeff_type``."""
-        return cast(type[Term[CoeffT]], super().__getitem__(coeff_type))
-
-
-String._term_registry = TermRegistry(
-    term_type_sign=SignTerm,
-    term_type_complex_sign=ComplexSignTerm,
-    term_type_real=RealTerm,
-    term_type_complex=ComplexTerm,
-    term_type_symbolic=SymbolicTerm,
-)
+def get_term_type(coeff_type: type[CoeffT]) -> type[Term[CoeffT]]:
+    """Get the term type corresponding to ``coeff_type``."""
+    if _is_int(coeff_type) or _is_float(coeff_type):
+        return cast(type[Term[CoeffT]], RealTerm)
+    elif _is_complex(coeff_type):
+        return cast(type[Term[CoeffT]], ComplexTerm)
+    elif _is_sign(coeff_type):
+        return cast(type[Term[CoeffT]], SignTerm)
+    elif _is_complex_sign(coeff_type):
+        return cast(type[Term[CoeffT]], ComplexSignTerm)
+    elif _is_expr(coeff_type):
+        return cast(type[Term[CoeffT]], SymbolicTerm)
+    else:
+        raise TypeError(f"Unsupported coefficient type {coeff_type} for term type lookup.")

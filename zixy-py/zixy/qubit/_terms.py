@@ -19,16 +19,17 @@ from __future__ import annotations
 from typing import Any, Generic, cast
 
 from zixy._zixy import Qubits
-from zixy.container.cmpnts import SpecT
+from zixy.container.cmpnts import Cmpnt, SpecT
 from zixy.container.coeffs import CoeffT, get_coeffs_type
 from zixy.container.data import TermData
 from zixy.container.terms import (
     Term as TermBase,
     Terms as TermsBase,
     TermSet as TermSetBase,
+    TermSpecT,
     TermSum as TermSumBase,
 )
-from zixy.qubit._strings import ElemT, ImplT, String, Strings
+from zixy.qubit._strings import ElemT, ImplT, String, Strings, _check_qubits_compatibility
 
 
 class Term(Generic[ImplT, SpecT, CoeffT, ElemT], TermBase[ImplT, SpecT, CoeffT]):
@@ -41,7 +42,11 @@ class Term(Generic[ImplT, SpecT, CoeffT, ElemT], TermBase[ImplT, SpecT, CoeffT])
 
     cmpnts_type: type[Strings[ImplT, SpecT, ElemT]]
 
-    def __init__(self, qubits: int | Qubits = 0, source: SpecT | None = None):
+    def __init__(
+        self,
+        qubits: int | Qubits = 0,
+        source: TermSpecT[ImplT, SpecT, CoeffT] = "",  # type: ignore[assignment]
+    ):
         """Initialize the term.
 
         Args:
@@ -131,9 +136,32 @@ class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], TermSetBase[ImplT, SpecT, Co
         TermSetBase.__init__(self, self.terms_type(qubits))
 
     @property
+    def strings(self) -> Strings[ImplT, SpecT, ElemT]:
+        """Get the string components of the terms."""
+        return cast(Strings[ImplT, SpecT, ElemT], self._impl._cmpnts)
+
+    @property
     def qubits(self) -> Qubits:
         """Get the qubits corresponding to ``self``."""
-        return cast(Strings[ImplT, SpecT, ElemT], self._impl._cmpnts).qubits
+        return self.strings.qubits
+
+    def _check_term(self, value: TermBase[ImplT, SpecT, CoeffT]) -> None:
+        """Check whether a term is defined over the same qubits as ``self``."""
+        if not isinstance(value, self.terms_type.term_type):
+            raise TypeError(
+                f"Expected a {self.terms_type.term_type.__name__} instance, got "
+                f"{type(value).__name__}."
+            )
+        _check_qubits_compatibility(self.qubits, value.qubits)
+
+    def _check_cmpnt(self, value: Cmpnt[ImplT, SpecT]) -> None:
+        """Check whether a component is defined over the same qubits as ``self``."""
+        if not isinstance(value, self.terms_type.term_type.cmpnts_type.cmpnt_type):
+            raise TypeError(
+                f"Expected a {self.terms_type.term_type.cmpnts_type.cmpnt_type.__name__} instance, "
+                f"got {type(value).__name__}."
+            )
+        _check_qubits_compatibility(self.qubits, value.qubits)
 
 
 class TermSum(TermSet[ImplT, SpecT, CoeffT, ElemT], TermSumBase[ImplT, SpecT, CoeffT]):

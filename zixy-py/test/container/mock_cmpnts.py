@@ -100,7 +100,7 @@ class StringsImplArray(ImplArray):
     def mapped_equal(self, map: dict[str, int], other: StringsImplArray) -> bool:
         if len(self) != len(other):
             return False
-        return all(self.mapped_lookup(map, s) is not None for s in other._list)
+        return all(self.mapped_lookup(map, other, i) is not None for i in range(len(other)))
 
 
 CmpntSpecT = str
@@ -109,11 +109,25 @@ CmpntSpecT = str
 class String(Cmpnt[StringsImplArray, CmpntSpecT]):
     impl_type = StringsImplArray
 
+    _clear_spec = ""
+
     def __init__(self, source: CmpntSpecT):
         impl = self.impl_type()
         impl.resize(1)
         super().__init__(impl)
         self.set(source)
+
+    @classmethod
+    def from_str(cls, source: str) -> String:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        return cls(source)
 
     def __repr__(self) -> str:
         return str(self._impl._list[self.index])
@@ -121,9 +135,7 @@ class String(Cmpnt[StringsImplArray, CmpntSpecT]):
     def copy(self) -> String:
         return String(self)
 
-    def set(self, source: str | String | None):
-        if source is None:
-            source = ""
+    def set(self, source: str | String):
         if isinstance(source, str):
             self._impl._list[self.index] = source
         elif isinstance(source, String):
@@ -137,6 +149,18 @@ class Strings(Cmpnts[StringsImplArray, CmpntSpecT]):
 
     def __init__(self, n: int = 0):
         super().__init__(StringsImplArray.from_len(n))
+
+    @classmethod
+    def from_str(cls, source: str) -> Strings:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        return cls.from_iterable(source.split(", "))
 
 
 class StringSet(CmpntSet[StringsImplArray, CmpntSpecT]):

@@ -15,6 +15,22 @@ def test_from_phases():
 def test_scalar_conversions():
     assert int(Sign(False)) == 1
     assert int(Sign(True)) == -1
+    assert Sign.from_str("+1") == Sign(False)
+    assert Sign.from_str("-1") == Sign(True)
+
+
+def test_str():
+    empty = SignCoeffs.from_size(0)
+    assert empty.to_str() == "[]"
+    assert SignCoeffs.from_str(empty.to_str()) == empty
+
+    single = SignCoeffs.from_phases((1,))
+    assert single.to_str() == "[-1]"
+    assert SignCoeffs.from_str(single.to_str()) == single
+
+    for value in (Sign(False), Sign(True)):
+        assert value.to_str() == str(value)
+        assert Sign.from_str(value.to_str()) == value
 
 
 def test_scalar_mul():

@@ -30,24 +30,18 @@ from __future__ import annotations
 import builtins
 from abc import abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Sequence
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Generic,
-    TypeVar,
-    overload,
-)
+from typing import TYPE_CHECKING, Any, Generic, TypeVar, overload
 
 from typing_extensions import Self
 
 from zixy._zixy import Map
-from zixy.container.base import ViewableItem, ViewableSequence, requires_ownership
-from zixy.container.coeffs import Coeff, CoeffT, OtherCoeffT
+from zixy.container.base import (
+    StringRepresentable,
+    ViewableItem,
+    ViewableSequence,
+    requires_ownership,
+)
 from zixy.utils import slice_index_gen, slice_len, slice_of_slice, slice_to_tuple
-
-if TYPE_CHECKING:
-    from zixy.container.terms import Term, TermRegistry
-
 
 if TYPE_CHECKING:
     from zixy._zixy import ImplArray
@@ -59,7 +53,7 @@ ImplT = TypeVar("ImplT", bound=ImplArray)
 SpecT = TypeVar("SpecT")
 
 
-class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT]):
+class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT], StringRepresentable):
     """A component.
 
     A single component that may be an owning instance referencing a single element in a Rust-bound
@@ -67,7 +61,7 @@ class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT]):
     """
 
     impl_type: type[ImplT]
-    _term_registry: TermRegistry[ImplT, SpecT]
+    _clear_spec: SpecT
 
     _impl: ImplT
     _index: int | None
@@ -119,8 +113,12 @@ class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT]):
             return NotImplemented
         return self._impl.cmpnts_eq([self.index], other._impl, [other.index])
 
+    def __repr__(self) -> str:
+        """Return a string representation of ``self``."""
+        return self._impl.cmpnt_to_string(self.index)
+
     @abstractmethod
-    def set(self, source: SpecT | Self | None) -> None:
+    def set(self, source: SpecT | Self) -> None:
         """Set the value of the component.
 
         Args:
@@ -137,7 +135,7 @@ class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT]):
         Note:
             This method operates in-place.
         """
-        self.set(None)
+        self.set(self._clear_spec)
 
     @classmethod
     def raise_spec_type_error(cls, source: Any) -> None:
@@ -168,31 +166,8 @@ class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT]):
                 f"Index {self.index} is out of bounds for an array of length {len(self._impl)}"
             )
 
-    @overload
-    def __mul__(self, rhs: Cmpnt[ImplT, SpecT]) -> Term[ImplT, SpecT, OtherCoeffT]: ...
 
-    @overload
-    def __mul__(self, rhs: CoeffT) -> Term[ImplT, SpecT, CoeffT]: ...
-
-    def __mul__(
-        self, rhs: CoeffT | Cmpnt[ImplT, SpecT]
-    ) -> Term[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, OtherCoeffT]:
-        """Return the product of ``self`` and ``rhs``."""
-        if not isinstance(rhs, Coeff):
-            # Cmpnt multiplication is not defined for base Cmpnt, but may be define by derived class
-            return NotImplemented
-        term_type = self._term_registry[type(rhs)]
-        return term_type.from_cmpnt_coeff(self, rhs)
-
-    def __rmul__(self, lhs: CoeffT) -> Term[ImplT, SpecT, CoeffT]:
-        """Return the product of ``lhs`` and ``self``."""
-        if not isinstance(lhs, Coeff):
-            return NotImplemented
-        term_type = self._term_registry[type(lhs)]
-        return term_type.from_cmpnt_coeff(self, lhs)
-
-
-class CmpntSet(Generic[ImplT, SpecT]):
+class CmpntSet(Generic[ImplT, SpecT], StringRepresentable):
     """A collection of unique components.
 
     A set-like container of components that may be used to store unique components and perform
@@ -247,6 +222,21 @@ class CmpntSet(Generic[ImplT, SpecT]):
         out.insert_iterable(cmpnts)
         return out
 
+    @classmethod
+    def from_str(cls, source: str, *args: Any, **kwargs: Any) -> Self:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+            *args: Positional arguments to forward to the component constructor.
+            **kwargs: Keyword arguments to forward to the component constructor.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        cmpnts = cls.cmpnts_type.from_str(source, *args, **kwargs)
+        return cls.from_cmpnts(cmpnts)
+
     def _empty_clone(self) -> Self:
         """Get an empty (owning, contiguous) clone of ``self``."""
         return self._create(self._impl.cmpnts_clone([]))
@@ -274,9 +264,7 @@ class CmpntSet(Generic[ImplT, SpecT]):
         """Get the number of elements in ``self``."""
         return len(self._impl)
 
-    def _get_working_cmpnt(
-        self, value: SpecT | Cmpnt[ImplT, SpecT] | None = None
-    ) -> Cmpnt[ImplT, SpecT]:
+    def _get_working_cmpnt(self, value: SpecT | Cmpnt[ImplT, SpecT]) -> Cmpnt[ImplT, SpecT]:
         """Get a :class:`Cmpnt` instance that contains the component specified by ``value``.
 
         Args:
@@ -374,7 +362,7 @@ class CmpntSet(Generic[ImplT, SpecT]):
         """Iterate over the elements of ``self``."""
         if not len(self):
             return
-        tmp = self._get_working_cmpnt()
+        tmp = self._get_working_cmpnt(self.cmpnts_type.cmpnt_type._clear_spec)
         for i in range(len(self)):
             tmp._impl.cmpnt_copy_external(0, self._impl, i)
             yield tmp
@@ -440,7 +428,9 @@ class CmpntSet(Generic[ImplT, SpecT]):
         return out
 
 
-class Cmpnts(Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT]):
+class Cmpnts(
+    Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT], StringRepresentable
+):
     """A collection of components.
 
     An array-like container of components that may be an owning instance referencing a contiguous
@@ -538,7 +528,7 @@ class Cmpnts(Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT]
     def __setitem__(
         self,
         indexer: int | builtins.slice,
-        source: SpecT | Cmpnt[ImplT, SpecT] | Cmpnts[ImplT, SpecT] | None,
+        source: SpecT | Cmpnt[ImplT, SpecT] | Cmpnts[ImplT, SpecT],
     ) -> None:
         """Set the component at ``indexer`` in ``self`` to ``source``.
 
@@ -657,7 +647,7 @@ class Cmpnts(Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT]
         return out
 
     @requires_ownership
-    def append_n(self, n: int, source: SpecT | Cmpnt[ImplT, SpecT] | None = None) -> Self:
+    def append_n(self, n: int, source: SpecT | Cmpnt[ImplT, SpecT]) -> Self:
         """Append ``source`` to the end of ``self`` ``n`` times.
 
         Args:
@@ -667,6 +657,8 @@ class Cmpnts(Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT]
         Note:
             This method operates in-place.
         """
+        if source is None:
+            source = self.cmpnt_type._clear_spec
         n_old = len(self)
         self.resize(len(self) + n)
         for i in range(n_old, len(self)):
@@ -674,7 +666,7 @@ class Cmpnts(Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT]
         return self
 
     @requires_ownership
-    def append(self, source: SpecT | Cmpnt[ImplT, SpecT] | None = None) -> Self:
+    def append(self, source: SpecT | Cmpnt[ImplT, SpecT]) -> Self:
         """Append ``source`` to the end of ``self``.
 
         Args:
@@ -685,9 +677,7 @@ class Cmpnts(Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT]
         """
         return self.append_n(1, source)
 
-    def append_iterable(
-        self, source: Iterable[SpecT | Cmpnt[ImplT, SpecT] | None] = tuple()
-    ) -> Self:
+    def append_iterable(self, source: Iterable[SpecT | Cmpnt[ImplT, SpecT]] = tuple()) -> Self:
         """Append many values from an iterable source.
 
         Args:

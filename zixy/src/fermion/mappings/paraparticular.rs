@@ -1,12 +1,12 @@
-//! Parapartiular mapper.
+//! Paraparticular mapper.
 
 use crate::fermion::mappings::traits::UpdateParityRho;
 
-/// Struct for implementing Parapartiular Mapper.
+/// Struct for implementing Paraparticular Mapper.
 #[derive(Clone, Copy)]
-pub struct ParapartiularMapper();
+pub struct ParaparticularMapper();
 
-impl UpdateParityRho for ParapartiularMapper {
+impl UpdateParityRho for ParaparticularMapper {
     fn update_set(_: usize, _: usize) -> Vec<usize> {
         Vec::default()
     }

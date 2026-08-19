@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import warnings
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Generic, TypeVar, cast, overload
 
@@ -31,14 +32,18 @@ ElemT = TypeVar("ElemT")
 ImplT = TypeVar("ImplT", bound="QubitArray[Any, Any]")
 
 
-def _default_qubits(source: SpecT | None = None) -> Qubits:
+def _default_qubits(source: SpecT) -> Qubits:
     """Construct the default qubits for a string specifier."""
-    if source is None:
-        return Qubits.from_count(0)
-    elif isinstance(source, tuple | list):
+    if isinstance(source, tuple | list):
         return Qubits.from_count(len(source))
     else:
         raise TypeError("Source object is of an unsupported type.")
+
+
+def _check_qubits_compatibility(*qubits: Qubits) -> None:
+    """Check that all qubit registers are compatible."""
+    if len(qubits) > 1 and any(qubits[0] != other for other in qubits[1:]):
+        raise ValueError("Objects are defined over different qubits.")
 
 
 class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
@@ -51,31 +56,29 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
     _springs_type: type[Springs]
 
     @staticmethod
-    def _get_default_qubits(source: SpecT | None = None) -> Qubits:
+    def _get_default_qubits(source: SpecT) -> Qubits:
         """Get the default qubits for this string type based on a string specifier."""
         return _default_qubits(source)
 
-    def __init__(self, qubits: int | Qubits | None = None, source: SpecT | None = None):
+    def __init__(
+        self,
+        qubits: int | Qubits | None = None,
+        source: SpecT = "",  # type: ignore[assignment]
+    ):
         """Initialize the string.
 
         Args:
-            qubits: The qubit register or qubit count.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
             source: The string specifier to use for default qubits and initial value.
         """
-        if qubits is None and source is not None:
+        if qubits is None:
             qubits = self._get_default_qubits(source)
-        elif qubits is None:
-            raise ValueError("At least one of qubits and source must be specified.")
         impl = self.impl_type(qubits if isinstance(qubits, Qubits) else Qubits.from_count(qubits))
         impl.resize(1)
         super().__init__(impl)
-        if source is not None:
-            self.set(source)
+        self.set(source)
         assert len(self._impl) == 1
-
-    def __repr__(self) -> str:
-        """Return a string representation of ``self``."""
-        return self._impl.cmpnt_to_string(self.index)
 
     @property
     def qubits(self) -> Qubits:
@@ -109,7 +112,7 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
         else:
             self._impl.cmpnt_copy_external(self.index, source._impl, source.index)
 
-    def set(self, source: SpecT | String[ImplT, SpecT, ElemT] | None) -> None:
+    def set(self, source: SpecT | String[ImplT, SpecT, ElemT]) -> None:
         """Set the value of the string.
 
         Args:
@@ -118,8 +121,6 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
         Note:
             This method operates in-place.
         """
-        if source is None:
-            source = tuple()  # type: ignore[assignment]
         if isinstance(source, String):
             self._set_copy(source)
         elif isinstance(source, tuple | list):
@@ -129,9 +130,12 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
                 for i, c in enumerate(source):
                     self[i] = c
         elif isinstance(source, str):
+            if not source.strip():
+                self._impl.cmpnt_set_from_list(self.index, [])
+                return
             springs = self._springs_type(source)
             if len(springs) == 0:
-                self.clear()
+                self._impl.cmpnt_set_from_list(self.index, [])
             elif len(springs) == 1:
                 self._impl.cmpnt_set_from_spring(self.index, springs, 0)
             else:
@@ -169,6 +173,9 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
     contiguous Rust-bound data object, or a view on a slice of the elements in another collection.
     """
 
+    cmpnt_type: type[String[ImplT, SpecT, ElemT]]
+    _springs_type: type[Springs]
+
     def __init__(self, qubits: int | Qubits = 0, n: int = 0):
         """Initialize the string array.
 
@@ -182,6 +189,30 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
             )
         )
         self.resize(n)
+
+    @classmethod
+    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Self:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        if isinstance(qubits, int):
+            qubits = Qubits.from_count(qubits)
+        if not source.strip():
+            out = cls._create(cls.cmpnt_type.impl_type(qubits if qubits is not None else None))
+            out.resize(0)
+            return out
+        return cls._create(
+            cls.cmpnt_type.impl_type(
+                qubits if qubits is not None else None, cls._springs_type(source)
+            )
+        )
 
     @property
     def qubits(self) -> Qubits:
@@ -289,6 +320,8 @@ class StringSet(Generic[ImplT, SpecT, ElemT], CmpntSet[ImplT, SpecT]):
     perform set-like operations on them.
     """
 
+    cmpnts_type: type[Strings[ImplT, SpecT, ElemT]]
+
     def __init__(self, qubits: int | Qubits = 0):
         """Initialize the string set.
 
@@ -305,19 +338,36 @@ class StringSet(Generic[ImplT, SpecT, ElemT], CmpntSet[ImplT, SpecT]):
     def from_strings(cls, strings: Strings[ImplT, SpecT, ElemT]) -> StringSet[ImplT, SpecT, ElemT]:
         """Create a new instance of ``cls`` from the strings in ``strings``.
 
+        Deprecated:
+            Use :meth:`~zixy.container.cmpnts.CmpntSet.from_cmpnts` instead.
+
         Args:
             strings: Owned or viewed strings with which to populate the new instance.
 
         Returns:
             A new instance of ``cls`` containing the strings in ``strings``.
         """
+        warnings.warn(
+            f"{cls.__name__}.from_strings is deprecated, use {cls.__name__}.from_cmpnts instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return cls.from_cmpnts(strings)
 
     def to_strings(self) -> Strings[ImplT, SpecT, ElemT]:
         """Create a new array of strings owning copies of all those contained in ``self``.
 
+        Deprecated:
+            Use :meth:`~zixy.container.cmpnts.CmpntSet.to_cmpnts` instead.
+
         Returns:
             New :class:`Strings` instance containing copies of the strings in ``self``. The
             type is determined by :attr:`~zixy.qubit._strings.StringSet.cmpnts_type`.
         """
+        warnings.warn(
+            f"{type(self).__name__}.to_strings is deprecated, "
+            f"use {type(self).__name__}.to_cmpnts instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return cast(Strings[ImplT, SpecT, ElemT], self.to_cmpnts())

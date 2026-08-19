@@ -1,24 +1,16 @@
 //! Fermion operator products module.
 
-#[cfg(test)]
 use crate::container::bit_matrix::{AsRowMutRef, AsRowRef};
-#[cfg(test)]
 use crate::container::coeffs::sign::{Sign, SignVec};
-#[cfg(test)]
 use crate::container::coeffs::traits::NumReprVec;
-#[cfg(test)]
 use crate::container::traits::{Elements, MutRefElements, RefElements};
-#[cfg(test)]
 use crate::container::word_iters::{ElemMutRef, ElemRef, WordIters};
-#[cfg(test)]
 use crate::fermion::mode::Modes;
-#[cfg(test)]
-use crate::fermion::operator::cmpnt_list::{CmpntList, CmpntRef};
-#[cfg(test)]
-use crate::fermion::operator::cre_or_ann;
+use crate::fermion::operator::normal::cmpnt_list::{CmpntList, CmpntRef};
+use crate::fermion::operator::normal::cre_or_ann;
+use crate::fermion::traits::ModesBased;
 
 /// Stores variables to support the recursive computation of normal-ordered fermion operator products.
-#[cfg(test)]
 struct ProductHelper {
     cmpnts: CmpntList,
     signs: SignVec,
@@ -36,7 +28,7 @@ struct ProductHelper {
 ///   state.
 /// - `lhs_ann`: number of set modes in `LHS_` that have already been processed.
 /// - `rhs_cre`: number of set modes in `RHS^` that have already been processed.
-#[cfg(test)]
+
 #[derive(Clone, Copy, Default)]
 struct Indices {
     bif: usize,
@@ -45,7 +37,6 @@ struct Indices {
     rhs_cre: usize,
 }
 
-#[cfg(test)]
 impl Indices {
     /// Return a copy with both processed common-mode counters advanced by one.
     fn incremented(&self) -> Self {
@@ -56,12 +47,11 @@ impl Indices {
     }
 }
 
-#[cfg(test)]
 impl ProductHelper {
     /// Create an empty helper for building products of operators on the given fermionic mode space.
-    pub fn new(modes: Modes) -> Self {
+    pub fn new() -> Self {
         Self {
-            cmpnts: CmpntList::new(modes),
+            cmpnts: CmpntList::new(Modes::from_count(0)),
             signs: SignVec::default(),
             n_lhs_ann: 0,
             n_rhs_ann: 0,
@@ -98,7 +88,7 @@ impl ProductHelper {
 
     /// Compute and store every branch of the product `lhs * rhs`, including their signs.
     pub fn set(&mut self, lhs: &CmpntRef, rhs: &CmpntRef) {
-        self.cmpnts.clear();
+        self.cmpnts = CmpntList::new(lhs.modes().clone());
         self.signs.clear();
         if Self::destroys(lhs, rhs) {
             return;
@@ -335,6 +325,54 @@ impl ProductHelper {
     }
 }
 
+// Multiply two fermion components, returning the normal-ordered result terms and their signs.
+pub fn mul_cmpnts(lhs: &CmpntRef, rhs: &CmpntRef) -> (CmpntList, SignVec) {
+    let mut helper = ProductHelper::new();
+    helper.set(lhs, rhs);
+    (helper.cmpnts, helper.signs)
+}
+
+/// Compute the number of set bits of `word` at positions strictly below each set bit of `at`, summed together.
+/// This is the anti-symmetric exchange count picked up by inserting or removing, one at a time in descending
+/// mode-index order, the ladder operators flagged in `at` against the fixed occupation pattern `word`.
+fn count_before_each_set_bit(word: u64, mut at: u64) -> u32 {
+    let mut count = 0;
+    while at != 0 {
+        let lowest = at & at.wrapping_neg();
+        count += (word & (lowest - 1)).count_ones();
+        at &= at - 1;
+    }
+    count
+}
+
+/// Result of applying a single normal-ordered ladder operator component to a Slater determinant ket.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ApplyResult {
+    Applied(u64, Sign),
+    /// The fermionic exclusion principle forbids the term, i.e. if `ann` is not a subset of `ket`,
+    /// or if any mode flagged in `cre` is already occupied after removing the modes in `ann`.
+    Zero,
+}
+
+// Apply a single normal-ordered ladder operator component, given as its creation and annihilation mode bitsets,
+/// to a Slater determinant ket occupation bitset.
+/// Returns `ApplyResult::Zero` if the fermionic exclusion principle forbids the term, i.e. if `ann` is not a subset of `ket`,
+/// or if any mode flagged in `cre` is already occupied after removing the modes in `ann`. Otherwise, returns the
+/// resulting occupation bitset together with the anti-symmetric exchange sign picked up by normal-ordering the
+/// application, assuming both `cre` and `ann` list their modes in ascending order.
+pub fn apply_op_ket_u64(cre: u64, ann: u64, ket: u64) -> ApplyResult {
+    if ket & ann != ann {
+        return ApplyResult::Zero;
+    }
+    let ket_after_ann = ket & !ann;
+    if cre & ket_after_ann != 0 {
+        return ApplyResult::Zero;
+    }
+    let exponent =
+        count_before_each_set_bit(ket, ann) + count_before_each_set_bit(ket_after_ann, cre);
+    ApplyResult::Applied(ket_after_ann | cre, Sign(exponent & 1 == 1))
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;
@@ -418,7 +456,7 @@ mod tests {
     ) {
         use crate::container::traits::proj::Borrow;
         use crate::container::traits::EmptyClone;
-        use crate::fermion::operator::cmpnt::Cmpnt;
+        use crate::fermion::operator::normal::cmpnt::Cmpnt;
 
         let modes = Modes::from_count(n_mode);
         let (lhs_cre, lhs_ann) = lhs;
@@ -427,7 +465,7 @@ mod tests {
         let lhs_ann = HashSet::from_iter(lhs_ann.into_iter());
         let rhs_cre = HashSet::from_iter(rhs_cre.into_iter());
         let rhs_ann = HashSet::from_iter(rhs_ann.into_iter());
-        let mut helper = ProductHelper::new(modes.clone());
+        let mut helper = ProductHelper::new();
         let lhs = Cmpnt::from_sets_unchecked(modes.clone(), lhs_cre, lhs_ann);
         let rhs = Cmpnt::from_sets_unchecked(modes.clone(), rhs_cre, rhs_ann);
         helper.set(&lhs.borrow(), &rhs.borrow());
@@ -449,5 +487,32 @@ mod tests {
         let result_signs = SignVec::from_phases(&result_signs);
         assert_eq!(helper.cmpnts, result_cmpnts);
         assert_eq!(helper.signs, result_signs);
+    }
+
+    #[rstest]
+    // c_0^+ |vac> = |0>
+    #[case(0b1, 0b0, 0b0, Some((0b1, false)))]
+    // c_1^+ c_0 |1_0> = |1_1>, no modes in between to pick up a sign.
+    #[case(0b10, 0b1, 0b1, Some((0b10, false)))]
+    // c_2^+ c_0 |1_0 1_1> = -|1_1 1_2>, one occupied mode (1) sits strictly between 0 and 2.
+    #[case(0b100, 0b1, 0b011, Some((0b110, true)))]
+    // c_0^+ c_0 |1_0> = |1_0>, the number operator on an occupied mode leaves the ket unchanged.
+    #[case(0b1, 0b1, 0b1, Some((0b1, false)))]
+    // annihilating an unoccupied mode is forbidden.
+    #[case(0b0, 0b1, 0b0, None)]
+    // creating into an already occupied mode is forbidden.
+    #[case(0b1, 0b0, 0b1, None)]
+    fn test_apply_op_ket_u64(
+        #[case] cre: u64,
+        #[case] ann: u64,
+        #[case] ket: u64,
+        #[case] expected: Option<(u64, bool)>,
+    ) {
+        let expected = match expected {
+            Some((bits, sign)) => ApplyResult::Applied(bits, Sign(sign)),
+            None => ApplyResult::Zero,
+        };
+        let result = apply_op_ket_u64(cre, ann, ket);
+        assert_eq!(result, expected);
     }
 }

@@ -8,29 +8,9 @@ use crate::container::traits::RefElements;
 use crate::container::word_iters;
 use crate::container::word_iters::term_set::AsViewMut;
 use crate::qubit::mode::Qubits;
-use crate::qubit::pauli::cmpnt_major::encoding::invert_endian;
 use crate::qubit::state::{term_set, terms};
-
-pub fn l2_norm_square<C: FieldElem>(state: &impl terms::AsView<C>) -> f64 {
-    state.view().coeffs.iter().map(|c| c.magnitude_sq()).sum()
-}
-
-pub fn l2_norm<C: FieldElem>(state: &impl terms::AsView<C>) -> f64 {
-    l2_norm_square(state).sqrt()
-}
-
-/// Take the inner product of a basis state linear combination with another.
-pub fn vdot<C: FieldElem>(lhs: &impl term_set::AsView<C>, rhs: &impl terms::AsView<C>) -> C {
-    rhs.view()
-        .iter()
-        .map(
-            |rhs| match lhs.lookup_coeff_elem_ref(rhs.get_word_iter_ref()) {
-                Some(lhs) => lhs.complex_conj() * rhs.get_coeff(),
-                None => C::ZERO,
-            },
-        )
-        .sum()
-}
+use crate::utils::arith::invert_endian;
+pub use crate::utils::vector_ops::{l2_norm, vdot};
 
 /// If big_endian is true, the bit associated with mode 0 is the most significant in the index integer
 /// Else, the bit associated with mode n_qubit - 1 is the most significant
@@ -55,7 +35,7 @@ pub fn to_dense<C: FieldElem>(
     Ok(out)
 }
 
-/// Create a state linear combination from a dense array slice of coefficients.
+/// Populate an existing state linear combination in place from a dense array slice of coefficients.
 pub fn assign_from_dense<C: FieldElem>(
     out: &mut term_set::ViewMut<C>,
     source: &[C],
@@ -80,7 +60,7 @@ pub fn assign_from_dense<C: FieldElem>(
     }
 }
 
-/// Create a state linear combination from a dense array slice of coefficients.
+/// Create and return a  new state linear combination from a dense array slice of coefficients.
 pub fn from_dense<C: FieldElem>(
     qubits: Qubits,
     source: &[C],
@@ -102,88 +82,6 @@ mod tests {
     use crate::container::traits::RefElements;
     use crate::container::word_iters::term_set::AsView;
     use crate::qubit::state::terms::Terms;
-    use num_complex::Complex64;
-    use rstest::rstest;
-
-    #[rstest]
-    #[case(vec![], 0.0)]
-    #[case(vec![2.0], 4.0)]
-    #[case(vec![-3.0], 9.0)]
-    #[case(vec![1.0, 2.0, 3.0], 14.0)]
-    #[case(vec![0.0, 0.0, 0.0], 0.0)]
-    #[case(vec![0.0, 2.0, 0.0], 4.0)]
-    fn test_l2_norm_square(#[case] coeffs: Vec<f64>, #[case] expected: f64) {
-        let qubits = Qubits::from_count(coeffs.len());
-        let mut state: terms::Terms<f64> = Terms::new(qubits);
-        for c in coeffs {
-            state.coeffs.push(c);
-        }
-        assert_eq!(l2_norm_square(&state), expected);
-    }
-
-    #[rstest]
-    #[case(vec![Complex64::new(3.0, 4.0)], 25.0)]
-    #[case(vec![Complex64::new(0.0, 5.0)], 25.0)]
-    #[case(vec![Complex64::new(1.0, 1.0)], 2.0)]
-    #[case(vec![Complex64::new(1.0, 1.0), Complex64::new(2.0, -2.0)], 10.0)]
-    #[case(vec![Complex64::new(-3.0, 4.0)], 25.0)]
-    #[case(vec![Complex64::new(0.0, 0.0), Complex64::new(1.0, 0.0)], 1.0)]
-    #[case(vec![Complex64::new(1e-9, 1e-9)], 2e-18)]
-    fn test_l2_norm_square_complex(
-        #[case] coeffs: Vec<num_complex::Complex<f64>>,
-        #[case] expected: f64,
-    ) {
-        let qubits = Qubits::from_count(coeffs.len());
-        let mut state: terms::Terms<num_complex::Complex<f64>> = Terms::new(qubits);
-        for c in coeffs {
-            state.coeffs.push(c);
-        }
-        assert_eq!(l2_norm_square(&state), expected);
-    }
-
-    #[rstest]
-    // Test case: <v1|v2> where |v1> = 2|0> and |v2> = 3|0>, expected <v1|v2> = 6
-    #[case(vec![Complex64::new(2.0, 0.0)], "[0]", vec![Complex64::new(3.0, 0.0)], "[0]",  Complex64::new(6.0, 0.0))]
-    // Test case: <v1|v2> where |v1> = null and |v2> = (3+4i)|1>, expected <v1|v2> = 0
-    #[case(vec![], "", vec![Complex64::new(3.0, 4.0)], "[0]", Complex64::new(0.0, 0.0))]
-    // Test case: <v1|v2> where |v1> = (1+2i)|0> and |v2> = null, expected <v1|v2> = 0
-    #[case(vec![Complex64::new(1.0, 2.0)], "[0]", vec![], "", Complex64::new(0.0, 0.0))]
-    // Test case: <v1|v2> where |v1> = (1+2i)|0> and |v2> = (3+4i)|0>, expected <v1|v2> = (1-2i)(3+4i) = 11-2i
-    #[case(vec![Complex64::new(1.0, 2.0)], "[0]", vec![Complex64::new(3.0, 4.0)], "[0]", Complex64::new(11.0, -2.0))]
-    // Test case: <v1|v2> where |v1> = (1+2i)|1> and |v2> = (3+4i)|0>, expected <v1|v2> = 0 since they are orthogonal
-    #[case(vec![Complex64::new(1.0, 2.0)], "[1]", vec![Complex64::new(3.0, 4.0)], "[0]", Complex64::new(0.0, 0.0))]
-    // Test case: <v1|v2> where |v1> = (1+2i)|0> and |v2> = (3+4i)|1>, expected <v1|v2> = 0 since they are orthogonal
-    #[case(vec![Complex64::new(1.0, 2.0)], "[0]", vec![Complex64::new(3.0, 4.0)], "[1]", Complex64::new(0.0, 0.0))]
-    // Test case: <v1|v2> where |v1> = (1+2i)|01> + (-1+-2.5i)|11> and |v2> = (3+4i)|01> + i|00>, expected <v1|v2> = (1-2i)(3+4i) = 11-2i
-    #[case(vec![Complex64::new(1.0, 2.0), Complex64::new(-1.0, -2.5)], "[0, 1], [1,1]", vec![Complex64::new(3.0, 4.0), Complex64::new(0.0, 1.0)], "[0,1], [0,0]", Complex64::new(11.0, -2.0))]
-    // Test case: <v1|v2> where |v1> = (1+2i)|01> + (-1-2.5i)|11> and |v2> = (3+4i)|01> + i|11>, expected <v1|v2> = (1-2i)(3+4i) + (-1+2.5i)(i) = 8.5-3i
-    #[case(vec![Complex64::new(1.0, 2.0), Complex64::new(-1.0, -2.5)], "[0, 1], [1,1]", vec![Complex64::new(3.0, 4.0), Complex64::new(0.0, 1.0)], "[0,1], [1,1]", Complex64::new(8.5, -3.0))]
-    fn test_vdot(
-        #[case] lhs_coeffs: Vec<num_complex::Complex<f64>>,
-        #[case] lhs_qubit_labels: &str,
-        #[case] rhs_coeffs: Vec<num_complex::Complex<f64>>,
-        #[case] rhs_qubit_labels: &str,
-        #[case] expected: num_complex::Complex<f64>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let qubits_lhs = Qubits::from_count(lhs_coeffs.len());
-        let qubits_rhs = Qubits::from_count(rhs_coeffs.len());
-        let springs_rhs = BinarySprings::from_str(rhs_qubit_labels)?;
-        let springs_lhs = BinarySprings::from_str(lhs_qubit_labels)?;
-        let rhs_terms = Terms::<num_complex::Complex<f64>>::from_springs_coeffs(
-            qubits_rhs,
-            springs_rhs,
-            rhs_coeffs,
-        )?;
-        let lhs_terms = Terms::<num_complex::Complex<f64>>::from_springs_coeffs(
-            qubits_lhs,
-            springs_lhs,
-            lhs_coeffs,
-        )?;
-
-        let lhs_term_set: term_set::TermSet<num_complex::Complex<f64>> = lhs_terms.into();
-        assert_eq!(vdot(&lhs_term_set, &rhs_terms), expected);
-        Ok(())
-    }
 
     #[test]
     fn test_assign_from_dense_endian() {

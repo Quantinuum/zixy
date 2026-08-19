@@ -102,7 +102,7 @@ There are three main kinds of container that encapsulate `CmpntList` with generi
 
 ## Documentation
 
-The source files can be found in the [zixy-py/docs](https://github.com/Quantinuum/zixy/zixy-py/docs) directory. 
+The source files can be found in the [zixy-py/docs](https://github.com/Quantinuum/zixy/tree/main/zixy-py/docs) directory.
 
 1. API docs (generated with sphinx autosummary)
-2. Jupyter notebook examples in [zixy-py/docs/examples](https://github.com/Quantinuum/zixy/zixy-py/docs/examples).
+2. Jupyter notebook examples in [zixy-py/docs/examples](https://github.com/Quantinuum/zixy/tree/main/zixy-py/docs/examples).

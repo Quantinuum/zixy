@@ -17,7 +17,7 @@ use crate::container::coeffs::{ComplexSign, ComplexVec, RealVec};
 use crate::container::map::Map;
 use crate::qubit::mode::Qubits;
 use crate::qubit::pauli::Array as PauliArray;
-use crate::utils::{try_py_index, try_py_indices, ToPyResult};
+use crate::utils::{cmpnt_to_string, try_py_index, try_py_indices, ToPyResult};
 
 /// A list of computational basis state strings
 #[pyclass(subclass)]
@@ -211,8 +211,11 @@ impl Array {
     }
 
     /// Return whether the two referenced cmpnts are equal.
-    pub fn cmpnt_equal(&self, i_lhs: usize, rhs: &Self, i_rhs: usize) -> bool {
-        self.0.compatible_with(&rhs.0) && self.0.get_elem_ref(i_lhs) == rhs.0.get_elem_ref(i_rhs)
+    pub fn cmpnt_equal(&self, i_lhs: isize, rhs: &Self, i_rhs: isize) -> PyResult<bool> {
+        let i_lhs = try_py_index(i_lhs, self.len())?;
+        let i_rhs = try_py_index(i_rhs, rhs.len())?;
+        Ok(self.0.compatible_with(&rhs.0)
+            && self.0.get_elem_ref(i_lhs) == rhs.0.get_elem_ref(i_rhs))
     }
 
     /// Get the number of occurrences of `bit` in the indexed cmpnt.
@@ -223,8 +226,7 @@ impl Array {
 
     /// Get the string representation of the indexed cmpnt.
     pub fn cmpnt_to_string(&self, i: isize) -> PyResult<String> {
-        let i = try_py_index(i, self.len())?;
-        Ok(self.0.get_elem_ref(i).to_string())
+        cmpnt_to_string(&self.0, i)
     }
 
     /// Take the indexed cmpnts of `self` and write them contiguously to a new instance.
@@ -287,6 +289,7 @@ impl Array {
 
     /// Insert into `self` using the map to ensure uniqueness.
     pub fn mapped_insert(&mut self, map: &mut Map, other: &Self, index: isize) -> PyResult<usize> {
+        DifferentQubits::check(&self.0, &other.0).to_py_result()?;
         let index = try_py_index(index, other.len())?;
         let mut tmp = word_iters::set::ViewMut {
             word_iters: &mut self.0,
@@ -297,6 +300,7 @@ impl Array {
 
     /// Find the index in `self` corresponding to the cmpnt indexed in `other` if it exists, else return None.
     pub fn mapped_lookup(&self, map: &Map, other: &Self, index: isize) -> PyResult<Option<usize>> {
+        DifferentQubits::check(&self.0, &other.0).to_py_result()?;
         let index = try_py_index(index, other.len())?;
         let tmp = word_iters::set::View {
             word_iters: &self.0,
@@ -312,6 +316,7 @@ impl Array {
         other: &Self,
         index: isize,
     ) -> PyResult<Option<usize>> {
+        DifferentQubits::check(&self.0, &other.0).to_py_result()?;
         let index = try_py_index(index, other.len())?;
         let out = word_iters::set::View {
             word_iters: &self.0,

@@ -37,7 +37,7 @@ def create_num_op_general(t: type[TermT], qubits: int | Qubits, inds: Sequence[i
         The resulting term representing the number operator.
     """
     out = t(qubits if isinstance(qubits, Qubits) else Qubits.from_count(qubits))
-    out += (None, len(inds) / 2)  # type: ignore[operator]
+    out += ("", len(inds) / 2)  # type: ignore[operator]
     for i in inds:
         out += ({i: Z}, -unit(out.coeff_type) / 2)
     return out  # type: ignore[no-any-return]

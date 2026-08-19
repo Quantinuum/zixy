@@ -13,13 +13,13 @@ def test_array_sizing():
     # empty array
     assert len(a) == 0
     # append a trivial string
-    a.append()
+    a.append("")
     assert len(a) == 1
     # and another
-    a.append()
+    a.append("")
     assert len(a) == 2
     # append 8 trivial strings at once
-    a.append_n(8)
+    a.append_n(8, "")
     assert len(a) == 10
     a.resize(5)
     assert len(a) == 5
@@ -79,12 +79,52 @@ def test_string_modification():
     assert tuple(a[i] for i in range(n_qubit)) == (X, Y, I, Z, I, Y)
 
 
-def test_string_from_str():
+@pytest.mark.parametrize(
+    ("cmpnt_type", "source", "qubits", "expected"),
+    (
+        (String, "X0 Y2", None, "X0 Y2"),
+        (String, "  X0   Y2  ", None, "X0 Y2"),
+        (String, "X0 Y2", 3, "X0 Y2"),
+        (String, "", 3, ""),
+        (Strings, "X0, Y1, X0", None, "X0, Y1, X0"),
+        (Strings, " X0 ,   Y1 , X0 ", None, "X0, Y1, X0"),
+        (Strings, "X0, Y1, X0", 3, "X0, Y1, X0"),
+        (Strings, "", 3, ""),
+        (StringSet, "X0, Y1, X0", None, "X0, Y1"),
+        (StringSet, " X0 ,   Y1 , X0 ", None, "X0, Y1"),
+        (StringSet, "X0, Y1, X0", 3, "X0, Y1"),
+        (StringSet, "", 3, ""),
+    ),
+)
+def test_from_str(cmpnt_type, source, qubits, expected):
+    args = () if qubits is None else (qubits,)
+    parsed = cmpnt_type.from_str(source, *args)
+    assert str(parsed) == expected
+
+    if cmpnt_type is StringSet:
+        assert parsed == StringSet.from_cmpnts(Strings.from_str(source, *args))
+
     with pytest.raises(ValueError) as err:
         String.from_str("X0 Y2, Y3, X2 Y3, X3, Z0 Z1 Z2 Z3", 4)
-    assert str(err.value) == "There should be exactly one Pauli string in the input, not 5."
+    assert str(err.value) == "Source string should contain one Pauli string, got 5."
     a = String.from_str("X0 Z1 Y2 Z3", 4)
     assert a.get_tuple() == (X, Z, Y, Z)
+    assert String.from_str(str(a), 4) == a
+
+
+def test_str():
+    empty = String(4)
+    assert empty.to_str() == ""
+    assert String.from_str(empty.to_str(), 4) == empty
+    assert String(4, "") == empty
+    with pytest.raises(TypeError):
+        String(4, None)
+    with pytest.raises(TypeError):
+        empty.set(None)
+
+    single = String.from_str("X0", 1)
+    assert single.to_str() == "X0"
+    assert String.from_str(single.to_str(), 1) == single
 
 
 def test_string_to_sparse_matrix():
@@ -113,9 +153,7 @@ def test_string_to_sparse_matrix():
     assert np.allclose(mat.toarray(), expected)
 
 
-def test_string_array_from_str():
-    a = Strings.from_str("X0 Y2, Y3, X2 Y3, X3, Z0 Z1 Z2 Z3", 4)
-    assert len(a) == 5
+def test_from_str_errors():
     with pytest.raises(ValueError) as err:
         Strings.from_str("X0 Y2, oops! Y3, X2 Y3, Z0 Z1 Z2 Z3", 4)
     assert str(err.value) == 'Bad parse: "oops!" is not a valid Pauli matrix in a sparse string.'
@@ -125,6 +163,16 @@ def test_string_array_from_str():
         str(err.value)
         == "Mode index 6 is out-of-bounds for component list with 4 modes per component."
     )
+
+
+def test_strings_str():
+    empty = Strings(4)
+    assert empty.to_str() == ""
+    assert Strings.from_str(empty.to_str(), 4) == empty
+
+    single = Strings.from_str("X0", 1)
+    assert single.to_str() == "X0"
+    assert Strings.from_str(single.to_str(), 1) == single
 
 
 def test_array_modification():
@@ -248,6 +296,14 @@ def test_mapped_insert():
         assert a.insert(string) == i
         assert a.lookup(string) == i
 
+    wrong_qubits = String(n_qubit + 1, (X, I, I, I, I, I, I))
+    with pytest.raises(ValueError, match="different qubit spaces"):
+        a.insert(wrong_qubits)
+    with pytest.raises(ValueError, match="different qubit spaces"):
+        a.lookup(wrong_qubits)
+    with pytest.raises(ValueError, match="different qubit spaces"):
+        a.remove(wrong_qubits)
+
 
 def test_mapped_equal():
     n_qubit = 6
@@ -319,6 +375,30 @@ def test_string_set():
     assert StringSet.from_cmpnts(strings).to_cmpnts() == strings
 
 
+def test_string_set_deprecated_string_conversions():
+    strings = Strings.from_iterable(((X,), (Y,)), 1)
+
+    with pytest.deprecated_call(match="StringSet.from_strings is deprecated"):
+        string_set = StringSet.from_strings(strings)
+    with pytest.deprecated_call(match="StringSet.to_strings is deprecated"):
+        round_tripped = string_set.to_strings()
+
+    assert round_tripped == strings
+
+
 def test_string_set_from_iterable():
     s = StringSet.from_iterable(((X,), (Y,), (X,), (I,), (Z,), (Y,), (X,)), 1)
     assert len(s) == 4
+    assert StringSet.from_str(str(s)) == s
+
+
+def test_string_set_str():
+    empty = StringSet(4)
+    assert empty.to_str() == ""
+    empty_round_trip = StringSet.from_str(empty.to_str())
+    assert len(empty_round_trip) == 0
+    assert empty_round_trip.to_str() == ""
+
+    single = StringSet.from_iterable(((X,),), 1)
+    assert single.to_str() == "X0"
+    assert StringSet.from_str(single.to_str()) == single

@@ -34,7 +34,6 @@ from __future__ import annotations
 
 import builtins
 from collections.abc import Callable, Iterable, Iterator, Sequence
-from dataclasses import dataclass
 from typing import (
     Any,
     Generic,
@@ -46,27 +45,24 @@ from typing import (
 
 import numpy as np
 import pandas as pd
-from sympy import Expr
 from typing_extensions import Self
 
-from zixy.container.base import ViewableBase, ViewableItem, ViewableSequence, requires_ownership
+from zixy.container.base import (
+    StringRepresentable,
+    ViewableBase,
+    ViewableItem,
+    ViewableSequence,
+    requires_ownership,
+)
 from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet, ImplT, SpecT
 from zixy.container.coeffs import (
     Coeff,
     Coeffs,
     CoeffT,
-    ComplexSign,
     Number,
     NumberT,
     OtherCoeffT,
     RootOfUnity,
-    Sign,
-    _is_complex,
-    _is_complex_sign,
-    _is_expr,
-    _is_float,
-    _is_int,
-    _is_sign,
     convert,
     convert_vec,
     get_coeffs_type,
@@ -75,19 +71,75 @@ from zixy.container.coeffs import (
     zero,
 )
 from zixy.container.data import TermData
-from zixy.container.mixins import TermMulMixin
-from zixy.utils import DEFAULT_ATOL, DEFAULT_RTOL, slice_index_gen, slice_of_slice
+from zixy.utils import DEFAULT_ATOL, DEFAULT_RTOL, slice_index_gen, slice_of_slice, split_top_level
 
 TermSpecT: TypeAlias = (
-    Cmpnt[ImplT, SpecT] | SpecT | tuple[SpecT | Cmpnt[ImplT, SpecT] | None, CoeffT | None] | None
+    Cmpnt[ImplT, SpecT] | SpecT | tuple[SpecT | Cmpnt[ImplT, SpecT], CoeffT | None]
 )
 OutT = TypeVar("OutT", bound="ViewableBase[Any, Any]")
+
+
+def _parse_term_str(source: str) -> tuple[str | None, str]:
+    """Parse a string representation of a term into its coefficient and component parts.
+
+    Note:
+        The string representation of terms is assumed to be a comma-separated parenthesis-enclosed
+        pair of the coefficient and component. It may also be simply comma-separated components, in
+        which case the coefficient part is returned as ``None``.
+    """
+    # Remove any whitespace
+    string = source.strip()
+
+    # Remove any parentheses and whitespace from each element
+    items = [item.strip() for item in split_top_level(string, ",")]
+
+    # Separate the coefficient and component parts
+    items_coeff: list[str] = []
+    items_cmpnt: list[str] = []
+    for item in items:
+        if not item.startswith("(") or not item.endswith(")"):
+            items_cmpnt.append(item)
+            continue
+        subitems = split_top_level(item[1:-1], ",", keep_empty=True)
+        if len(subitems) == 1:
+            items_cmpnt.append(subitems[0])
+        elif len(subitems) == 2:
+            items_coeff.append(subitems[0])
+            items_cmpnt.append(subitems[1])
+        else:
+            raise ValueError(f"Invalid item '{item}' in string '{source}'.")
+
+    # Join the coefficient and component parts into independently parsable strings
+    source_cmpnt = ", ".join(items_cmpnt)
+    if len(items_coeff) != 0 and len(items_coeff) != len(items_cmpnt):
+        raise ValueError(f"Inconsistent coefficient and component counts in string '{source}'.")
+    source_coeff = ", ".join(items_coeff) if items_coeff else None
+
+    return source_coeff, source_cmpnt
+
+
+def _coeffs_from_str(
+    source_coeff: str | None, coeff_type: type[CoeffT], n_cmpnt: int
+) -> Coeffs[CoeffT]:
+    """Construct coefficient data from parsed coefficient text."""
+    coeffs_type = get_coeffs_type(coeff_type)
+    coeffs = (
+        coeffs_type.from_size(n_cmpnt)
+        if source_coeff is None
+        else coeffs_type.from_str(source_coeff)
+    )
+    if len(coeffs) != n_cmpnt:
+        raise ValueError(
+            f"Length of coefficients ({len(coeffs)}) does not match length of components "
+            f"({n_cmpnt})."
+        )
+    return coeffs
 
 
 class Term(
     ViewableItem[TermData[ImplT, SpecT, CoeffT]],
     Generic[ImplT, SpecT, CoeffT],
-    TermMulMixin[ImplT, SpecT, CoeffT],
+    StringRepresentable,
 ):
     """A term consisting of a component and a coefficient.
 
@@ -169,6 +221,28 @@ class Term(
         coeffs.append(coeff)
         return cls._create(TermData(cmpnts, coeffs))
 
+    @classmethod
+    def from_str(cls, source: str, *args: Any, **kwargs: Any) -> Self:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+            *args: Positional arguments to forward to the component constructor.
+            **kwargs: Keyword arguments to forward to the component constructor.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        source_coeff, source_cmpnt = _parse_term_str(source)
+        cmpnts = cls.cmpnts_type.from_str(source_cmpnt, *args, **kwargs)
+        coeffs = _coeffs_from_str(source_coeff, cls.coeff_type, len(cmpnts))
+        data = TermData(cmpnts, coeffs)
+        if len(data) != 1:
+            raise ValueError(
+                f"There should be exactly one Term string in the input, not {len(data)}."
+            )
+        return cls._create(data)
+
     def clone(self) -> Self:
         """Return a deep copy of ``self``."""
         return type(self)._create(self._impl.clone(self.index))
@@ -224,7 +298,7 @@ class Term(
         """
         try:
             # first, attempt to set just the cmpnt
-            self.cmpnt.set(cast(SpecT | Cmpnt[ImplT, SpecT] | None, source))
+            self.cmpnt.set(cast(SpecT | Cmpnt[ImplT, SpecT], source))
             self.coeff = unit(self.coeff_type)
             return
         except (TypeError, ValueError):
@@ -246,7 +320,7 @@ class Term(
         Note:
             This method operates in-place.
         """
-        self.set(None)
+        self.set("")  # type: ignore[arg-type]
 
     def __repr__(self) -> str:
         """Return a string representation of ``self``."""
@@ -254,10 +328,21 @@ class Term(
         coeff = coeff.replace("-0j", "+0j")
         return f"({coeff}, {self.cmpnt})"
 
+    def __pos__(self) -> Self:
+        """Return ``self``."""
+        return self
+
+    def __neg__(self) -> Self:
+        """Return the negation of ``self``."""
+        out = self.clone()
+        out.coeff = typesafe_mul(out.coeff, -1)
+        return out
+
 
 class Terms(
     Generic[ImplT, SpecT, CoeffT],
     ViewableSequence[Term[ImplT, SpecT, CoeffT], TermData[ImplT, SpecT, CoeffT]],
+    StringRepresentable,
 ):
     """A collection of terms consisting of components and coefficients.
 
@@ -387,8 +472,7 @@ class Terms(
         indexer: int | builtins.slice,
         source: TermSpecT[ImplT, SpecT, CoeffT]
         | Term[ImplT, SpecT, CoeffT]
-        | Terms[ImplT, SpecT, CoeffT]
-        | None,
+        | Terms[ImplT, SpecT, CoeffT],
     ) -> None:
         """Set the term at ``indexer`` in ``self`` to ``source``.
 
@@ -415,7 +499,7 @@ class Terms(
             self[indexer].set(source)
 
     def scale(self, scalar: CoeffT) -> None:
-        """Scale all elements by a given factor.
+        """Scale all elements by a scalar factor.
 
         Args:
             scalar: Scalar factor by which to scale all elements.
@@ -426,10 +510,56 @@ class Terms(
         for term in self:
             term.coeff = typesafe_mul(term.coeff, scalar)
 
-    def __imul__(self, scalar: CoeffT) -> Self:
-        """Multiply ``self`` by ``scalar`` in-place."""
-        self.scale(scalar)
+    def scale_by_coeffs(self, coeffs: Coeffs[CoeffT]) -> None:
+        """Scale all elements by the corresponding coefficient vector.
+
+        Args:
+            coeffs: Coefficients by which to scale the elements of ``self``.
+
+        Note:
+            This method operates in-place.
+        """
+        if len(coeffs) != len(self):
+            raise ValueError(
+                f"Cannot scale {type(self)} of length {len(self)} by "
+                f"{type(coeffs)} of length {len(coeffs)}."
+            )
+
+        if type(coeffs) is self.coeffs_type and coeffs._impl.same_as(self._impl._coeffs._impl):
+            coeffs = coeffs.clone()
+
+        for item, coeff in zip(self, coeffs):
+            item.coeff = typesafe_mul(item.coeff, coeff)
+
+    def __imul__(self, coeff: CoeffT | Coeffs[CoeffT]) -> Self:
+        """Multiply ``self`` in-place by a scalar or coefficient vector."""
+        if isinstance(coeff, Coeffs):
+            self.scale_by_coeffs(coeff)
+        else:
+            self.scale(coeff)
         return self
+
+    def __mul__(self, coeff: CoeffT | Coeffs[CoeffT]) -> Self:
+        """Return ``self`` multiplied by a scalar or coefficient vector."""
+        out = self.clone()
+        out *= coeff
+        return out
+
+    def __rmul__(self, coeff: CoeffT | Coeffs[CoeffT]) -> Self:
+        """Return ``self`` multiplied by a scalar or coefficient vector."""
+        out = self.clone()
+        out *= coeff
+        return out
+
+    def __pos__(self) -> Self:
+        """Return ``self``."""
+        return self
+
+    def __neg__(self) -> Self:
+        """Return the negation of ``self``."""
+        out = self.clone()
+        out *= cast(CoeffT, -1)
+        return out
 
     def _empty_clone(self) -> Self:
         """Get an empty (owning, contiguous) clone of ``self``."""
@@ -510,7 +640,7 @@ class Terms(
     def append_n(
         self,
         n: int,
-        source: TermSpecT[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, CoeffT] | None = None,
+        source: TermSpecT[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, CoeffT] = "",  # type: ignore[assignment]
     ) -> Self:
         """Append ``source`` to the end of ``self`` ``n`` times.
 
@@ -531,7 +661,7 @@ class Terms(
     @requires_ownership
     def append(
         self,
-        source: TermSpecT[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, CoeffT] | None = None,
+        source: TermSpecT[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, CoeffT] = "",  # type: ignore[assignment]
     ) -> Self:
         """Append ``source`` to the end of ``self``.
 
@@ -545,9 +675,7 @@ class Terms(
 
     def append_iterable(
         self,
-        source: Iterable[
-            TermSpecT[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, CoeffT] | None
-        ] = tuple(),
+        source: Iterable[TermSpecT[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, CoeffT]] = tuple(),
     ) -> Self:
         """Append the elements of ``source`` to the end of ``self``.
 
@@ -591,6 +719,25 @@ class Terms(
         out.append_iterable(source)
         return out
 
+    @classmethod
+    def from_str(cls, source: str, *args: Any, **kwargs: Any) -> Self:
+        """Create a new instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+            *args: Positional arguments to forward to the component constructor.
+            **kwargs: Keyword arguments to forward to the component constructor.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        if not source.strip():
+            return cls(*args, **kwargs)
+        source_coeff, source_cmpnts = _parse_term_str(source)
+        cmpnts = cls.term_type.cmpnts_type.from_str(source_cmpnts, *args, **kwargs)
+        coeffs = _coeffs_from_str(source_coeff, cls.term_type.coeff_type, len(cmpnts))
+        return cls._create(TermData(cmpnts, coeffs))
+
 
 class NumericTerms(Terms[ImplT, SpecT, NumberT]):
     """A collection of terms consisting of components and numeric coefficients.
@@ -619,7 +766,7 @@ class NumericTerms(Terms[ImplT, SpecT, NumberT]):
         return out
 
 
-class TermSet(Generic[ImplT, SpecT, CoeffT]):
+class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
     """A collection of unique terms consisting of components and coefficients.
 
     A set-like container of terms that may be used to store unique terms and perform set-like
@@ -725,6 +872,21 @@ class TermSet(Generic[ImplT, SpecT, CoeffT]):
         TermSet.__init__(out, terms)
         return out
 
+    @classmethod
+    def from_str(cls, source: str, *args: Any, **kwargs: Any) -> Self:
+        """Create a new instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+            *args: Positional arguments to forward to the component constructor.
+            **kwargs: Keyword arguments to forward to the component constructor.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        terms = cls.terms_type.from_str(source, *args, **kwargs)
+        return cls.from_terms(terms)
+
     @overload
     def into(self, t: type[OutT]) -> OutT: ...
     @overload
@@ -766,8 +928,16 @@ class TermSet(Generic[ImplT, SpecT, CoeffT]):
         """Get the number of elements in ``self``."""
         return len(self._impl)
 
+    def _check_term(self, value: Term[ImplT, SpecT, CoeffT]) -> None:
+        """Hook to check whether a term is valid for insertion into ``self``."""
+        pass
+
+    def _check_cmpnt(self, value: Cmpnt[ImplT, SpecT]) -> None:
+        """Hook to check whether a component is valid for insertion into ``self``."""
+        pass
+
     def _get_working_term(
-        self, value: Term[ImplT, SpecT, CoeffT] | TermSpecT[ImplT, SpecT, CoeffT] = None
+        self, value: Term[ImplT, SpecT, CoeffT] | TermSpecT[ImplT, SpecT, CoeffT]
     ) -> Term[ImplT, SpecT, CoeffT]:
         """Get a term that contains the data specified by ``value``.
 
@@ -780,12 +950,14 @@ class TermSet(Generic[ImplT, SpecT, CoeffT]):
             that working term.
         """
         if isinstance(value, Term):
-            return value
+            term = value
         else:
             self._working_term.set(value)
-            return self._working_term
+            term = self._working_term
+        self._check_term(term)
+        return term
 
-    def _get_working_cmpnt(self, value: Cmpnt[ImplT, SpecT] | SpecT | None) -> Cmpnt[ImplT, SpecT]:
+    def _get_working_cmpnt(self, value: Cmpnt[ImplT, SpecT] | SpecT) -> Cmpnt[ImplT, SpecT]:
         """Get a component that contains the data specified by ``value``.
 
         Args:
@@ -799,10 +971,12 @@ class TermSet(Generic[ImplT, SpecT, CoeffT]):
         cmpnt_type = self._impl.cmpnt_type
         assert issubclass(cmpnt_type, Cmpnt)
         if isinstance(value, cmpnt_type):
-            return value
+            cmpnt = value
         else:
             self._working_term.cmpnt.set(value)
-            return self._working_term.cmpnt
+            cmpnt = self._working_term.cmpnt
+        self._check_cmpnt(cmpnt)
+        return cmpnt
 
     def insert(self, key: Term[ImplT, SpecT, CoeffT] | TermSpecT[ImplT, SpecT, CoeffT]) -> int:
         """Try to insert the given term.
@@ -978,7 +1152,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT]):
         """Iterate over the elements of ``self``."""
         if not len(self):
             return
-        tmp = self._get_working_term().clone()
+        tmp = self._get_working_term("").clone()  # type: ignore[arg-type]
         for i in range(len(self)):
             tmp.coeff = self._impl._coeffs[i]
             tmp._impl._cmpnts._impl.cmpnt_copy_external(0, self._impl._cmpnts._impl, i)
@@ -1110,9 +1284,19 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
         out -= rhs
         return out
 
-    def __imul__(self, scalar: Coeff) -> Self:
-        """In-place multiplication of ``self`` by ``scalar``."""
-        self._impl._coeffs.scale(scalar)
+    def __pos__(self) -> Self:
+        """Return ``self``."""
+        return self
+
+    def __neg__(self) -> Self:
+        """Return the negation of ``self``."""
+        return self * -1
+
+    def __imul__(self, other: Coeff | Coeffs[CoeffT]) -> Self:
+        """Multiply ``self`` in-place by a scalar or coefficient vector."""
+        if not isinstance(other, Coeff | Coeffs):
+            return NotImplemented
+        self._impl._coeffs *= other
         return self
 
     def __itruediv__(self, scalar: Coeff) -> Self:
@@ -1123,15 +1307,17 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
             self *= 1 / scalar
         return self
 
-    def __mul__(self, scalar: Coeff) -> Self:
-        """Multiplication of ``self`` by ``scalar``."""
+    def __mul__(self, other: Coeff | Coeffs[CoeffT]) -> Self:
+        """Return ``self`` multiplied by a scalar or coefficient vector."""
+        if not isinstance(other, Coeff | Coeffs):
+            return NotImplemented
         out = self.clone()
-        out *= scalar
+        out *= other
         return out
 
-    def __rmul__(self, scalar: Coeff) -> Self:
-        """Multiplication of ``scalar`` by ``self``."""
-        return self * scalar
+    def __rmul__(self, coeff: Coeff | Coeffs[CoeffT]) -> Self:
+        """Return ``self`` multiplied by a scalar or coefficient vector."""
+        return self * coeff
 
     def __truediv__(self, scalar: Coeff) -> Self:
         """Division of ``self`` by ``scalar``."""
@@ -1149,6 +1335,24 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
         """
         for item in iterable:
             self += item
+
+    @classmethod
+    def from_str(cls, source: str, *args: Any, **kwargs: Any) -> Self:
+        """Create a new instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+            *args: Positional arguments to forward to the component constructor.
+            **kwargs: Keyword arguments to forward to the component constructor.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        terms = cls.terms_type.from_str(source, *args, **kwargs)
+        out = cls.__new__(cls)
+        TermSet.__init__(out, terms._empty_clone())
+        out.add_iterable(terms)
+        return out
 
     def _from_generator(self, gen: Iterator[Term[ImplT, SpecT, CoeffT]]) -> Self:
         """Create a new instance based on ``self`` with contents given by a generator.
@@ -1281,29 +1485,3 @@ class NumericTermSum(TermSum[ImplT, SpecT, NumberT]):
             New instance containing all terms that meet the criterion.
         """
         return self._from_generator(self.iter_filter_insignificant(atol))
-
-
-@dataclass
-class TermRegistry(Generic[ImplT, SpecT]):
-    """Registry of term types for each different coefficient type."""
-
-    term_type_sign: type[Term[ImplT, SpecT, Sign]]
-    term_type_complex_sign: type[Term[ImplT, SpecT, ComplexSign]]
-    term_type_real: type[Term[ImplT, SpecT, float]]
-    term_type_complex: type[Term[ImplT, SpecT, complex]]
-    term_type_symbolic: type[Term[ImplT, SpecT, Expr]]
-
-    def __getitem__(self, coeff_type: type[CoeffT]) -> type[Term[ImplT, SpecT, CoeffT]]:
-        """Get the term type corresponding to ``coeff_type``."""
-        if _is_int(coeff_type) or _is_float(coeff_type):
-            return self.term_type_real
-        elif _is_complex(coeff_type):
-            return self.term_type_complex
-        elif _is_sign(coeff_type):
-            return self.term_type_sign
-        elif _is_complex_sign(coeff_type):
-            return self.term_type_complex_sign
-        elif _is_expr(coeff_type):
-            return self.term_type_symbolic
-        else:
-            raise TypeError(f"Unsupported coefficient type {coeff_type} for term registry lookup.")

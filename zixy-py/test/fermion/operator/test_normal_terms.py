@@ -325,7 +325,7 @@ def test_complex_term_mul_by_string():
     product = term * string
 
     assert type(product) is ComplexTermSum
-    assert str(product) == "(1j, ), ((-0-1j), F0^ F0)"
+    assert str(product) == "(1j, ), (-1j, F0^ F0)"
 
 
 def test_symbolic_term_mul_by_string():
@@ -366,7 +366,7 @@ def test_real_term_mul_by_complex_term():
     product = lhs * rhs
 
     assert type(product) is ComplexTermSum
-    assert str(product) == "(2j, ), ((-0-2j), F0^ F0)"
+    assert str(product) == "(2j, ), (-2j, F0^ F0)"
 
 
 def test_symbolic_term_mul_by_symbolic_term():

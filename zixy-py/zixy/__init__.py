@@ -25,5 +25,5 @@ from zixy import qubit
 __all__ = ["container", "fermion", "qubit"]
 
 # x-release-please-start-version
-__version__ = "0.4.0-rc.0"
+__version__ = "0.4.0-rc.1"
 # x-release-please-end

@@ -1,6 +1,6 @@
 [project]
 name = "zixy"
-version = "0.3.2"
+version = "0.4.0-rc.1"
 requires-python = ">=3.10"
 description = "Quantinuum's high performance library for the manipulation of Pauli strings and other quantum algebraic objects"
 license = { file = "LICENCE" }
@@ -33,7 +33,7 @@ dependencies = [
     "numpy>=1.26.4",
     "scipy>=1.15.2",
     "sympy>=1.14.0",
-    "pandas>=2.2.3",
+    "pandas>=2.3.3",
     "typing_extensions>=4.16.0",
 ]
 

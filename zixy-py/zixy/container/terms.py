@@ -1253,9 +1253,12 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
             )
         assert not issubclass(self.coeff_type, RootOfUnity)  # TODO: reflect in typing
         if isinstance(rhs, Term):
+            scaled_coeff = rhs.coeff * convert(scalar, self.coeff_type)
             index, inserted = self.soft_insert(rhs)
-            if not inserted:
-                self._impl._coeffs[index] += rhs.coeff * convert(scalar, self.coeff_type)
+            if inserted:
+                self._impl._coeffs[index] = scaled_coeff
+            else:
+                self._impl._coeffs[index] += scaled_coeff
         else:
             # todo: delegate rust
             for term in rhs:

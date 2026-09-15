@@ -114,6 +114,25 @@ class SymbolicMockTermSum(TermSum[StringsImplArray, str, Expr]):
         super().__init__(SymbolicMockTerms())
 
 
+@pytest.mark.parametrize(
+    ("term_sum_type", "term_type", "coeff"),
+    (
+        (RealMockTermSum, RealMockTerm, 2.5),
+        (ComplexMockTermSum, ComplexMockTerm, 1 + 2j),
+    ),
+)
+def test_termsum_subtraction_negates_new_term(term_sum_type, term_type, coeff):
+    term_sum = term_sum_type()
+    term = term_type.from_cmpnt_coeff(String.from_str("alpha"), coeff)
+
+    result = term_sum - term
+    assert len(term_sum) == 0
+    assert result["alpha"] == -coeff
+
+    term_sum -= term
+    assert term_sum["alpha"] == -coeff
+
+
 def test_sign_terms():
     class MockTerm(Term[StringsImplArray, str, Sign]):
         cmpnts_type = Strings

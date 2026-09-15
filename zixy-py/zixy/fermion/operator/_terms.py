@@ -17,7 +17,8 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Generic, cast
+from collections.abc import Callable
+from typing import Any, Generic, TypeAlias, cast
 
 from typing_extensions import Self
 
@@ -36,10 +37,13 @@ from zixy.fermion.operator._strings import (
     String as OperatorString,
     Strings as OperatorStrings,
 )
+from zixy.mappings.base import Mapper
 from zixy.qubit.pauli._terms import ComplexTermSum as PauliComplexTermSum
 
-if TYPE_CHECKING:
-    from zixy.fermion.mappings import Mapper
+MapperType: TypeAlias = Callable[
+    [int | Qubits],
+    Mapper[OperatorString[Any, Any, Any], PauliComplexTermSum],
+]
 
 
 def _product_sign(n_cre: int, n_ann: int) -> Sign:
@@ -122,14 +126,14 @@ class TermSum(
 
     def to_qubit(
         self,
-        mapper: type[Mapper] | None = None,
+        mapper: MapperType | None = None,
         qubits: int | Qubits | None = None,
     ) -> PauliComplexTermSum:
         """Map the term sum to a qubit Pauli term sum.
 
         Args:
             mapper: The mapper class to use. If ``None``, use
-                :class:`~zixy.fermion.mappings.JordanWignerMapper`.
+                :class:`~zixy.mappings.JordanWignerMapper`.
             qubits: The qubit register or qubit count. If ``None``, the qubit register is
                 inferred from the number of fermionic modes.
 
@@ -138,19 +142,19 @@ class TermSum(
 
         Note:
             This function returns a term sum with complex coefficients. In cases where Hermitian
-            operators guarantee a real mapped representation, users may wish to directly use the
-            :class:`~zixy.fermion.mappings.Mapper` classes for finer control.
+            operators guarantee a real mapped representation, the zero imaginary coefficients
+            are retained to keep the result type consistent.
         """
-        from zixy.fermion.mappings import JordanWignerMapper  # noqa: PLC0415
+        from zixy.mappings import JordanWignerMapper  # noqa: PLC0415
 
-        mapper = JordanWignerMapper if mapper is None else mapper
+        mapper_type = JordanWignerMapper if mapper is None else mapper
         if qubits is None:
             qubits = Qubits.from_count(len(self.modes))
         elif isinstance(qubits, int):
             qubits = Qubits.from_count(qubits)
-        mapper_ = mapper(qubits)
+        mapper_instance = mapper_type(qubits)
         out = PauliComplexTermSum(qubits)
         for term in self:
             cmpnt_type = self.terms_type.term_type.cmpnts_type.cmpnt_type
-            out += mapper_.encode(term.cmpnt.into(cmpnt_type), convert(term.coeff, complex))
+            out += convert(term.coeff, complex) * mapper_instance.apply(term.cmpnt.into(cmpnt_type))
         return out

@@ -1,33 +1,38 @@
-//! Utilities for mapping from single ladder operator strings to Pauli linear combinations.
+//! Utilities for mapping single ladder-operator strings to Pauli linear combinations.
 
 use num_complex::Complex64;
 
 use crate::container::coeffs::complex_sign::ComplexSign;
-use crate::container::coeffs::traits::{HasCoeffsMut, NumRepr, NumReprVec, Represent};
+use crate::container::coeffs::traits::{HasCoeffsMut, NumReprVec, Represent};
 use crate::container::traits::{Elements, MutRefElements, RefElements};
 use crate::container::word_iters::lincomb;
+use crate::container::word_iters::term_set::AsViewMut as _;
 use crate::container::word_iters::terms::AsViewMut;
-use crate::fermion::mappings::traits::UpdateParityRho;
+use crate::mappings::traits::UpdateParityRho;
+use crate::mappings::Mapper;
 use crate::qubit::mode::PauliMatrix::{X, Y, Z};
 use crate::qubit::mode::Qubits;
 use crate::qubit::pauli::cmpnt_major::cmpnt_list::CmpntList;
 use crate::qubit::pauli::cmpnt_major::{term_set, terms};
 use crate::qubit::traits::{PauliWordMutRef, QubitsBased};
 
-/// Workspace that caches mapped real and imaginary Pauli strings for encoding fermionic ladder operator products.
+/// Workspace containing cached real and imaginary Pauli strings for fermionic ladder operators.
 #[derive(Clone)]
-pub struct Operators {
+pub(super) struct OperatorMapper {
     re_strings: CmpntList,
     im_strings: CmpntList,
     work: terms::Terms<ComplexSign>,
 }
 
 /// Operator stored as a mode index and a creation flag (annihilation if false)
-pub type Op = (usize, bool);
+type Op = (usize, bool);
 
-impl Operators {
+impl OperatorMapper {
     /// Create a new instance.
-    pub fn new<T: UpdateParityRho>(qubits: Qubits, mode_ordering: Option<Vec<usize>>) -> Self {
+    pub(super) fn new<T: UpdateParityRho>(
+        qubits: Qubits,
+        mode_ordering: Option<Vec<usize>>,
+    ) -> Self {
         let mode_map_fn = |i: usize| {
             if let Some(mode_ordering) = &mode_ordering {
                 mode_ordering[i]
@@ -77,7 +82,7 @@ impl Operators {
     }
 
     /// Set the internal state of `self` to the product of the fermionic operators in `ops`.
-    pub fn load_product(&mut self, ops: &[Op]) {
+    fn load_product(&mut self, ops: &[Op]) {
         self.work.clear();
         let mut op_iter = ops.iter();
         if let Some(op) = op_iter.next() {
@@ -113,18 +118,8 @@ impl Operators {
         assert_eq!(self.work.len(), 1 << ops.len());
     }
 
-    /// Contribute the loaded contents of `self` to real coefficient `op` scaled by `scalar`.
-    pub fn contribute_real(&mut self, op: &mut term_set::ViewMut<f64>, scalar: f64) {
-        let scalar = scalar / f64::from(self.work.len() as u32);
-        for term in self.work.iter() {
-            if let Ok(s) = f64::try_represent(term.get_coeff()) {
-                lincomb::scaled_iadd_elem(op, term.get_word_iter_ref(), s * scalar);
-            }
-        }
-    }
-
     /// Contribute the loaded contents of `self` to complex coefficient `op` scaled by `scalar`.
-    pub fn contribute_complex(&mut self, op: &mut term_set::ViewMut<Complex64>, scalar: Complex64) {
+    fn contribute_complex(&mut self, op: &mut term_set::ViewMut<Complex64>, scalar: Complex64) {
         let scalar = scalar / f64::from(self.work.len() as u32);
         for term in self.work.iter() {
             lincomb::scaled_iadd_elem(
@@ -136,7 +131,16 @@ impl Operators {
     }
 }
 
-impl QubitsBased for Operators {
+impl Mapper<&[Op], term_set::TermSet<Complex64>> for OperatorMapper {
+    fn apply(&mut self, input: &[Op]) -> term_set::TermSet<Complex64> {
+        self.load_product(input);
+        let mut output = term_set::TermSet::new(self.qubits().clone());
+        self.contribute_complex(&mut output.view_mut(), Complex64::new(1.0, 0.0));
+        output
+    }
+}
+
+impl QubitsBased for OperatorMapper {
     fn qubits(&self) -> &Qubits {
         self.re_strings.qubits()
     }
@@ -145,13 +149,11 @@ impl QubitsBased for Operators {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::fermion::mappings::{
-        bk::BravyiKitaevMapper, jw::JordanWignerMapper, parity::ParityMapper,
-    };
+    use crate::mappings::{bk::BravyiKitaevRule, jw::JordanWignerRule, parity::ParityRule};
 
     #[test]
     fn test_jw() {
-        let ops = Operators::new::<JordanWignerMapper>(Qubits::from_count(4), None);
+        let ops = OperatorMapper::new::<JordanWignerRule>(Qubits::from_count(4), None);
         assert_eq!(
             ops.re_strings.to_string(),
             "X0, Z0 X1, Z0 Z1 X2, Z0 Z1 Z2 X3"
@@ -160,7 +162,7 @@ mod tests {
             ops.im_strings.to_string(),
             "Y0, Z0 Y1, Z0 Z1 Y2, Z0 Z1 Z2 Y3"
         );
-        let mut ops = Operators::new::<JordanWignerMapper>(Qubits::from_count(6), None);
+        let mut ops = OperatorMapper::new::<JordanWignerRule>(Qubits::from_count(6), None);
         ops.load_product(Vec::from([(0, true)]).as_slice());
         assert_eq!(ops.work.to_string(), "(+1, X0), (-i, Y0)");
         ops.load_product(Vec::from([(0, false)]).as_slice());
@@ -181,21 +183,21 @@ mod tests {
 
     #[test]
     fn test_empty_product_is_identity() {
-        let mut ops = Operators::new::<JordanWignerMapper>(Qubits::from_count(2), None);
+        let mut ops = OperatorMapper::new::<JordanWignerRule>(Qubits::from_count(2), None);
         ops.load_product(&[]);
         assert_eq!(ops.work.to_string(), "(+1, )");
     }
 
     #[test]
     fn test_bk() {
-        let ops = Operators::new::<BravyiKitaevMapper>(Qubits::from_count(4), None);
+        let ops = OperatorMapper::new::<BravyiKitaevRule>(Qubits::from_count(4), None);
         assert_eq!(
             ops.re_strings.to_string(),
             "X0 X1 X3, Z0 X1 X3, Z1 X2 X3, Z1 Z2 X3"
         );
         assert_eq!(ops.im_strings.to_string(), "Y0 X1 X3, Y1 X3, Z1 Y2 X3, Y3");
 
-        let mut ops = Operators::new::<BravyiKitaevMapper>(Qubits::from_count(16), None);
+        let mut ops = OperatorMapper::new::<BravyiKitaevRule>(Qubits::from_count(16), None);
         ops.load_product(Vec::from([(2, true), (15, false)]).as_slice());
         assert_eq!(
             ops.work.to_string(),
@@ -223,7 +225,7 @@ mod tests {
 
     #[test]
     fn test_parity() {
-        let ops = Operators::new::<ParityMapper>(Qubits::from_count(4), None);
+        let ops = OperatorMapper::new::<ParityRule>(Qubits::from_count(4), None);
         assert_eq!(
             ops.re_strings.to_string(),
             "X0 X1 X2 X3, Z0 X1 X2 X3, Z1 X2 X3, Z2 X3"
@@ -233,7 +235,7 @@ mod tests {
             "Y0 X1 X2 X3, Y1 X2 X3, Y2 X3, Y3"
         );
 
-        let mut ops = Operators::new::<ParityMapper>(Qubits::from_count(6), None);
+        let mut ops = OperatorMapper::new::<ParityRule>(Qubits::from_count(6), None);
         ops.load_product(Vec::from([(0, false)]).as_slice());
         assert_eq!(
             ops.work.to_string(),

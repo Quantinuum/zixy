@@ -12,19 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Zixy.
+"""Generic mappers between concrete input and output types."""
 
-Zixy is a high performance library for the manipulation of Pauli strings and other quantum
-algebraic objects.
-"""
+from abc import ABC, abstractmethod
+from typing import Generic, TypeVar
 
-from zixy import container
-from zixy import fermion
-from zixy import mappings
-from zixy import qubit
+InputT = TypeVar("InputT")
+OutputT = TypeVar("OutputT")
 
-__all__ = ["container", "fermion", "mappings", "qubit"]
 
-# x-release-please-start-version
-__version__ = "0.4.0-rc.1"
-# x-release-please-end
+class Mapper(Generic[InputT, OutputT], ABC):
+    """A transformation from one concrete value type to another."""
+
+    @abstractmethod
+    def apply(self, value: InputT, /) -> OutputT:
+        """Apply this mapper to ``value``."""
+        raise NotImplementedError

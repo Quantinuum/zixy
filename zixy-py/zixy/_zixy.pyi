@@ -608,42 +608,37 @@ class PauliSprings(Springs):
 class BinarySprings(Springs):
     pass
 
-class Mapper:
-    def op_load_product(self, ladder_operators: list[tuple[int, bool]]) -> None: ...
-    def op_contribute_real(
-        self,
-        cmpnts: QubitPauliArray,
-        map: Map,
-        coeffs: RealVec,
-        scalar: float,
-    ) -> None: ...
-    def op_contribute_complex(
-        self,
-        cmpnts: QubitPauliArray,
-        map: Map,
-        coeffs: ComplexVec,
-        scalar: complex,
-    ) -> None: ...
-
-class JordanWignerMapper(Mapper):
+class JordanWignerMapper:
     def __init__(
         self, qubits: Qubits, mode_ordering: list[int] | None = ...
     ) -> None: ...
+    def apply(
+        self, ladder_operators: list[tuple[int, bool]]
+    ) -> tuple[QubitPauliArray, ComplexVec]: ...
 
-class BravyiKitaevMapper(Mapper):
+class BravyiKitaevMapper:
     def __init__(
         self, qubits: Qubits, mode_ordering: list[int] | None = ...
     ) -> None: ...
+    def apply(
+        self, ladder_operators: list[tuple[int, bool]]
+    ) -> tuple[QubitPauliArray, ComplexVec]: ...
 
-class ParityMapper(Mapper):
+class ParityMapper:
     def __init__(
         self, qubits: Qubits, mode_ordering: list[int] | None = ...
     ) -> None: ...
+    def apply(
+        self, ladder_operators: list[tuple[int, bool]]
+    ) -> tuple[QubitPauliArray, ComplexVec]: ...
 
-class ParaparticularMapper(Mapper):
+class ParaparticularMapper:
     def __init__(
         self, qubits: Qubits, mode_ordering: list[int] | None = ...
     ) -> None: ...
+    def apply(
+        self, ladder_operators: list[tuple[int, bool]]
+    ) -> tuple[QubitPauliArray, ComplexVec]: ...
 
 class CliffordGateList:
     def __init__(self) -> None: ...

@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING, Any, TypeAlias, cast, overload
 from sympy import Expr, Symbol
 from typing_extensions import Self
 
-from zixy._zixy import FermionSprings, GeneralFermionOperatorArray, Modes, Qubits
+from zixy._zixy import FermionSprings, GeneralFermionOperatorArray, Modes
 from zixy.container import terms
 from zixy.container.coeffs import (
     Coeff,
@@ -68,10 +68,8 @@ from zixy.fermion.operator.general._strings import (
     Strings,
     StringSpec,
 )
-from zixy.qubit.pauli._terms import ComplexTermSum as PauliComplexTermSum
 
 if TYPE_CHECKING:
-    from zixy.fermion.mappings import Mapper
     from zixy.fermion.operator.normal._terms import (
         ComplexTermSum as NormalComplexTermSum,
         RealTermSum as NormalRealTermSum,
@@ -563,35 +561,6 @@ class ComplexTermSum(
         impl, coeffs = lhs_impl.lincomb_mul_complex(lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs)
         data = TermData(Strings._create(impl), ComplexCoeffs._create(coeffs))
         return ComplexTermSum._create(data)
-
-    def to_qubit(
-        self,
-        mapper: type[Mapper] | None = None,
-        qubits: int | Qubits | None = None,
-    ) -> PauliComplexTermSum:
-        """Map this fermionic term sum to a qubit Pauli term sum.
-
-        Args:
-            mapper: The mapper class to use. If ``None``, use
-                :class:`~zixy.fermion.mappings.JordanWignerMapper`.
-            qubits: The qubit register or qubit count. If ``None``, the qubit register is
-                inferred from the number of fermionic modes.
-
-        Returns:
-            The mapped Pauli term sum.
-        """
-        from zixy.fermion.mappings import JordanWignerMapper  # noqa: PLC0415
-
-        mapper = JordanWignerMapper if mapper is None else mapper
-        if qubits is None:
-            qubits = Qubits.from_count(len(self.modes))
-        elif isinstance(qubits, int):
-            qubits = Qubits.from_count(qubits)
-        mapper_ = mapper(qubits)
-        out = PauliComplexTermSum(qubits)
-        for term in self:
-            out += mapper_.encode(term.cmpnt.into(String), term.coeff)
-        return out
 
     def to_normal_ordered(self) -> NormalComplexTermSum:
         """Convert this raw general term sum to the normal-ordered representation."""

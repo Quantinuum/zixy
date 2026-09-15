@@ -1,12 +1,10 @@
+"""Tests for fermionic-string mappers."""
+
+from typing import get_type_hints
+
 import pytest
 
 from zixy._zixy import Qubits
-from zixy.fermion.mappings import (
-    BravyiKitaevMapper,
-    JordanWignerMapper,
-    ParaparticularMapper,
-    ParityMapper,
-)
 from zixy.fermion.operator.general import (
     ComplexTermSum as GeneralComplexTermSum,
     RealTermSum as GeneralRealTermSum,
@@ -17,10 +15,14 @@ from zixy.fermion.operator.normal import (
     RealTermSum as NormalRealTermSum,
     String as NormalString,
 )
-from zixy.qubit.pauli import (
-    ComplexTermSum as PauliComplexTermSum,
-    RealTermSum as PauliRealTermSum,
+from zixy.mappings import (
+    BravyiKitaevMapper,
+    JordanWignerMapper,
+    Mapper,
+    ParaparticularMapper,
+    ParityMapper,
 )
+from zixy.qubit.pauli import ComplexTermSum as PauliComplexTermSum
 
 MAPPER_TYPES = (
     JordanWignerMapper,
@@ -139,10 +141,10 @@ MAPPER_TYPES = (
         ),
     ),
 )
-def test_encode_strings(mapper_type, qubits, mode_ordering, string_type, source, expected):
+def test_apply_strings(mapper_type, qubits, mode_ordering, string_type, source, expected):
     mapper = mapper_type(qubits, mode_ordering=mode_ordering)
 
-    terms = mapper.encode(string_type(qubits, source))
+    terms = mapper.apply(string_type(qubits, source))
 
     assert isinstance(terms, PauliComplexTermSum)
     assert str(terms) == expected
@@ -172,29 +174,29 @@ def test_encode_strings(mapper_type, qubits, mode_ordering, string_type, source,
         ),
     ),
 )
-def test_encode_products(source, expected):
+def test_apply_products(source, expected):
     mapper = JordanWignerMapper(4)
 
-    terms = mapper.encode(GeneralString(4, source))
+    terms = mapper.apply(GeneralString(4, source))
 
     assert isinstance(terms, PauliComplexTermSum)
     assert str(terms) == expected
 
 
-def test_encode_products_anticommute():
+def test_apply_products_anticommute():
     mapper = JordanWignerMapper(4)
-    caca = mapper.encode(GeneralString(4, "F0^ F1 F2^ F3"))
-    ccaa = mapper.encode(GeneralString(4, "F0^ F2^ F1 F3"))
+    caca = mapper.apply(GeneralString(4, "F0^ F1 F2^ F3"))
+    ccaa = mapper.apply(GeneralString(4, "F0^ F2^ F1 F3"))
 
     assert caca == -ccaa
 
 
-def test_encode_scaled_sums():
+def test_apply_scaled_sums():
     mapper = JordanWignerMapper(2)
     terms = PauliComplexTermSum(mapper.qubits)
 
-    terms += 2.0 * mapper.encode(GeneralString(2, "F0^ F0"))
-    terms += -mapper.encode(GeneralString(2, "F1^ F1"))
+    terms += 2.0 * mapper.apply(GeneralString(2, "F0^ F0"))
+    terms += -mapper.apply(GeneralString(2, "F1^ F1"))
 
     assert str(terms) == "((0.5+0j), ), ((-1+0j), Z0), ((0.5+0j), Z1)"
 
@@ -206,7 +208,7 @@ def test_to_qubit_number_operator():
     qubit_terms = fermion_terms.to_qubit()
 
     assert str(qubit_terms) == "((0.5+0j), ), ((-0.5+0j), Z0)"
-    assert qubit_terms == mapper.encode(GeneralString(2, "F0^ F0"))
+    assert qubit_terms == mapper.apply(GeneralString(2, "F0^ F0"))
 
 
 @pytest.mark.parametrize(
@@ -231,13 +233,13 @@ def test_to_qubit_real_terms(mapper_type, term_sum_type, string_type, source, pi
     mapper = mapper_type(2)
     fermion_terms = term_sum_type.from_str(source, 2)
 
-    via_native = fermion_terms.to_qubit(mapper=mapper_type)
+    via_to_qubit = fermion_terms.to_qubit(mapper=mapper_type)
     via_strings = PauliComplexTermSum(mapper.qubits)
     for string_source, coeff in pieces:
-        via_strings += mapper.encode_complex(string_type(2, string_source), coeff)
+        via_strings += coeff * mapper.apply(string_type(2, string_source))
 
-    assert isinstance(via_native, PauliComplexTermSum)
-    assert via_native == via_strings
+    assert isinstance(via_to_qubit, PauliComplexTermSum)
+    assert via_to_qubit == via_strings
 
 
 @pytest.mark.parametrize(
@@ -261,28 +263,25 @@ def test_to_qubit_complex_terms(term_sum_type, string_type, source, pieces):
     mapper = JordanWignerMapper(2)
     fermion_terms = term_sum_type.from_str(source, 2)
 
-    via_native = fermion_terms.to_qubit()
+    via_to_qubit = fermion_terms.to_qubit()
     via_strings = PauliComplexTermSum(mapper.qubits)
     for string_source, coeff in pieces:
-        via_strings += mapper.encode(string_type(2, string_source), coeff)
+        via_strings += coeff * mapper.apply(string_type(2, string_source))
 
-    assert isinstance(via_native, PauliComplexTermSum)
-    assert via_native == via_strings
+    assert isinstance(via_to_qubit, PauliComplexTermSum)
+    assert via_to_qubit == via_strings
 
 
-@pytest.mark.parametrize("mapper_type", MAPPER_TYPES)
-def test_encode_real(mapper_type):
-    mapper = mapper_type(2)
+def test_generic_mapper():
+    class StringLength(Mapper[str, int]):
+        def apply(self, value: str, /) -> int:
+            return len(value)
 
-    terms = PauliRealTermSum(mapper.qubits)
-    terms += mapper.encode_real(NormalString(2, "F0^ F1"), 1.0)
-    terms += mapper.encode_real(NormalString(2, "F1^ F0"), 1.0)
+    assert StringLength().apply("abc") == 3
 
-    assert isinstance(terms, PauliRealTermSum)
-    assert terms == (
-        mapper.encode_real(NormalString(2, "F0^ F1"))
-        + mapper.encode_real(NormalString(2, "F1^ F0"))
-    )
+
+def test_to_qubit_type_hints():
+    assert get_type_hints(NormalRealTermSum.to_qubit)["return"] is PauliComplexTermSum
 
 
 @pytest.mark.parametrize(

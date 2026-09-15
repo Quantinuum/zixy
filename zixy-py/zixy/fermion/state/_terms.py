@@ -21,15 +21,15 @@ that are fermionic occupation-number state strings, as defined in
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Any, TypeAlias, cast, overload
+from collections.abc import Callable, Sequence
+from typing import Any, Protocol, TypeAlias, cast, overload
 
 import numpy as np
 from numpy.typing import NDArray
 from sympy import Expr, Symbol
 from typing_extensions import Self
 
-from zixy._zixy import FermionStateArray, Modes
+from zixy._zixy import FermionStateArray, Modes, Qubits
 from zixy.container.coeffs import (
     Coeff,
     CoeffT,
@@ -61,6 +61,12 @@ from zixy.fermion._terms import (
     TermSum as FermionTermSum,
 )
 from zixy.fermion.state._strings import String, Strings, StringSpec
+from zixy.qubit.state._strings import String as QubitStateString
+from zixy.qubit.state._terms import (
+    ComplexTermSum as QubitComplexTermSum,
+    RealTermSum as QubitRealTermSum,
+    SymbolicTermSum as QubitSymbolicTermSum,
+)
 
 TermSpec: TypeAlias = String | StringSpec | tuple[StringSpec | String, CoeffT | None]
 ElemT = bool
@@ -70,6 +76,33 @@ SignTermSpec = TermSpec[Sign]
 RealTermSpec = TermSpec[float]
 ComplexTermSpec = TermSpec[complex]
 SymbolicTermSpec = TermSpec[Expr]
+
+
+class _StateMapperProtocol(Protocol):
+    """Interface required from a mapper used by state ``to_qubit`` methods."""
+
+    def apply(self, value: String, /) -> QubitStateString:
+        """Map a fermionic occupation-number state string."""
+        ...
+
+
+StateMapperType: TypeAlias = Callable[[int | Qubits], _StateMapperProtocol]
+
+
+def _make_state_mapper(
+    mapper: StateMapperType | None, qubits: int | Qubits | None, modes: Modes
+) -> tuple[_StateMapperProtocol, Qubits]:
+    """Construct a state mapper and resolve its output qubit register."""
+    from zixy.mappings import JordanWignerMapper  # noqa: PLC0415
+
+    mapper_type: StateMapperType = JordanWignerMapper if mapper is None else mapper
+    if qubits is None:
+        qubits = Qubits.from_count(len(modes))
+    elif isinstance(qubits, int):
+        qubits = Qubits.from_count(qubits)
+    if len(modes) != len(qubits):
+        raise ValueError("Fermion mode count must equal qubit count.")
+    return mapper_type(qubits), qubits
 
 
 def _mul(lhs: Term[CoeffT], rhs: OtherCoeffT) -> Term[Any]:
@@ -283,6 +316,30 @@ class RealTermSum(NumericTermSum[FermionStateArray, StringSpec, float], TermSum[
 
     terms_type = RealTerms
 
+    def to_qubit(
+        self,
+        mapper: StateMapperType | None = None,
+        qubits: int | Qubits | None = None,
+    ) -> QubitRealTermSum:
+        """Map this fermionic state to a real qubit state.
+
+        Args:
+            mapper: Mapper class to use. If ``None``, use the Jordan--Wigner mapper.
+            qubits: Target qubit register or count. If ``None``, infer it from the fermion modes.
+
+        Returns:
+            The mapped qubit state with unchanged coefficients.
+
+        Note:
+            This uses the conventional direct occupation-basis encoding. It does not construct
+            the state by applying mapped creation operators.
+        """
+        mapper_instance, qubits = _make_state_mapper(mapper, qubits, self.modes)
+        out = QubitRealTermSum(qubits)
+        for term in self:
+            out += mapper_instance.apply(term.cmpnt.into(String)) * term.coeff
+        return out
+
     @classmethod
     def from_dense(
         cls,
@@ -428,6 +485,30 @@ class ComplexTermSum(NumericTermSum[FermionStateArray, StringSpec, complex], Ter
     """
 
     terms_type = ComplexTerms
+
+    def to_qubit(
+        self,
+        mapper: StateMapperType | None = None,
+        qubits: int | Qubits | None = None,
+    ) -> QubitComplexTermSum:
+        """Map this fermionic state to a complex qubit state.
+
+        Args:
+            mapper: Mapper class to use. If ``None``, use the Jordan--Wigner mapper.
+            qubits: Target qubit register or count. If ``None``, infer it from the fermion modes.
+
+        Returns:
+            The mapped qubit state with unchanged coefficients.
+
+        Note:
+            This uses the conventional direct occupation-basis encoding. It does not construct
+            the state by applying mapped creation operators.
+        """
+        mapper_instance, qubits = _make_state_mapper(mapper, qubits, self.modes)
+        out = QubitComplexTermSum(qubits)
+        for term in self:
+            out += mapper_instance.apply(term.cmpnt.into(String)) * term.coeff
+        return out
 
     @classmethod
     def from_dense(
@@ -733,6 +814,30 @@ class SymbolicTermSum(TermSum[Expr]):
     """
 
     terms_type = SymbolicTerms
+
+    def to_qubit(
+        self,
+        mapper: StateMapperType | None = None,
+        qubits: int | Qubits | None = None,
+    ) -> QubitSymbolicTermSum:
+        """Map this fermionic state to a symbolic qubit state.
+
+        Args:
+            mapper: Mapper class to use. If ``None``, use the Jordan--Wigner mapper.
+            qubits: Target qubit register or count. If ``None``, infer it from the fermion modes.
+
+        Returns:
+            The mapped qubit state with unchanged coefficients.
+
+        Note:
+            This uses the conventional direct occupation-basis encoding. It does not construct
+            the state by applying mapped creation operators.
+        """
+        mapper_instance, qubits = _make_state_mapper(mapper, qubits, self.modes)
+        out = QubitSymbolicTermSum(qubits)
+        for term in self:
+            out += mapper_instance.apply(term.cmpnt.into(String)) * term.coeff
+        return out
 
     @property
     def coeffs(self) -> SymbolicCoeffs:

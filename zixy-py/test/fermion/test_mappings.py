@@ -3,6 +3,7 @@
 from typing import get_type_hints
 
 import pytest
+from sympy import Symbol
 
 from zixy._zixy import Qubits
 from zixy.fermion.operator.general import (
@@ -15,6 +16,13 @@ from zixy.fermion.operator.normal import (
     RealTermSum as NormalRealTermSum,
     String as NormalString,
 )
+from zixy.fermion.state import (
+    ComplexTermSum as FermionComplexState,
+    RealTermSum as FermionRealState,
+    String as FermionStateString,
+    SymbolicTerms as FermionSymbolicStateTerms,
+    SymbolicTermSum as FermionSymbolicState,
+)
 from zixy.mappings import (
     BravyiKitaevMapper,
     JordanWignerMapper,
@@ -23,6 +31,12 @@ from zixy.mappings import (
     ParityMapper,
 )
 from zixy.qubit.pauli import ComplexTermSum as PauliComplexTermSum
+from zixy.qubit.state import (
+    ComplexTermSum as QubitComplexState,
+    RealTermSum as QubitRealState,
+    String as QubitStateString,
+    SymbolicTermSum as QubitSymbolicState,
+)
 
 MAPPER_TYPES = (
     JordanWignerMapper,
@@ -323,3 +337,111 @@ def test_to_qubit_rejects_mapper_instance():
 
     with pytest.raises(TypeError, match="is not callable"):
         fermion_terms.to_qubit(mapper=mapper)
+
+
+@pytest.mark.parametrize(
+    ("mapper_type", "expected"),
+    (
+        (JordanWignerMapper, {0, 2}),
+        (BravyiKitaevMapper, {0, 1, 2}),
+        (ParityMapper, {0, 1}),
+        (ParaparticularMapper, {0, 2}),
+    ),
+)
+def test_apply_state_strings(mapper_type, expected):
+    mapped = mapper_type(4).apply(FermionStateString(4, {0, 2}))
+
+    assert isinstance(mapped, QubitStateString)
+    assert mapped.get_set() == expected
+
+
+@pytest.mark.parametrize("mapper_type", MAPPER_TYPES)
+def test_apply_vacuum_state(mapper_type):
+    assert mapper_type(4).apply(FermionStateString(4)).is_vacuum()
+
+
+def test_apply_operator_and_state_use_same_impl():
+    mapper = JordanWignerMapper(2)
+    impl = mapper._impl
+
+    mapper.apply(NormalString(2, "F0^"))
+    mapper.apply(FermionStateString(2, {0}))
+
+    assert mapper._impl is impl
+
+
+def test_apply_state_respects_mode_ordering():
+    mapped = JordanWignerMapper(4, mode_ordering=[3, 2, 1, 0]).apply(FermionStateString(4, {0, 2}))
+
+    assert mapped.get_set() == {1, 3}
+
+
+def test_apply_state_rejects_different_mode_count():
+    with pytest.raises(ValueError, match="mode count must equal qubit count"):
+        JordanWignerMapper(4).apply(FermionStateString(2, {0}))
+
+
+def test_apply_rejects_unsupported_input():
+    with pytest.raises(TypeError, match="Cannot map an instance of object"):
+        JordanWignerMapper(2).apply(object())
+
+
+def test_state_to_qubit_preserves_real_coefficients():
+    state = FermionRealState.from_str("(2, [1, 0, 1, 0]), (-1, [0, 1, 0, 1])", 4)
+
+    mapped = state.to_qubit(mapper=ParityMapper)
+
+    assert isinstance(mapped, QubitRealState)
+    assert str(mapped) == "(2.0, [1, 1, 0, 0]), (-1.0, [0, 1, 1, 0])"
+
+
+def test_state_to_qubit_preserves_complex_coefficients():
+    state = FermionComplexState.from_str("((2j), [1, 0, 1, 0]), ((3), [0, 1, 0, 1])", 4)
+
+    mapped = state.to_qubit(mapper=ParityMapper)
+
+    assert isinstance(mapped, QubitComplexState)
+    assert str(mapped) == "(2j, [1, 1, 0, 0]), ((3+0j), [0, 1, 1, 0])"
+
+
+def test_state_to_qubit_preserves_symbolic_coefficients():
+    x = Symbol("x")
+    terms = FermionSymbolicStateTerms.from_iterable([({0, 2}, x), ({1, 3}, 2 * x)], 4)
+    state = FermionSymbolicState.from_terms(terms)
+
+    mapped = state.to_qubit(mapper=ParityMapper)
+
+    assert isinstance(mapped, QubitSymbolicState)
+    assert str(mapped) == "(x, [1, 1, 0, 0]), (2*x, [0, 1, 1, 0])"
+
+
+def test_state_to_qubit_defaults_to_jordan_wigner():
+    state = FermionRealState.from_str("(2, [1, 0])", 2)
+
+    inferred = state.to_qubit()
+    from_int = state.to_qubit(qubits=2)
+    from_qubits = state.to_qubit(qubits=Qubits.from_count(2))
+
+    assert inferred == FermionRealState.from_str("(2, [1, 0])", 2).to_qubit(
+        mapper=JordanWignerMapper
+    )
+    assert from_int == inferred
+    assert from_qubits == inferred
+
+
+def test_state_to_qubit_rejects_mapper_instance():
+    state = FermionRealState.from_str("(2, [1, 0])", 2)
+
+    with pytest.raises(TypeError, match="is not callable"):
+        state.to_qubit(mapper=JordanWignerMapper(2))
+
+
+def test_state_to_qubit_rejects_different_mode_count():
+    with pytest.raises(ValueError, match="mode count must equal qubit count"):
+        FermionRealState(2).to_qubit(qubits=4)
+
+
+def test_state_to_qubit_type_hints():
+    assert get_type_hints(FermionRealState.to_qubit)["return"] is QubitRealState
+    assert get_type_hints(FermionComplexState.to_qubit)["return"] is QubitComplexState
+    assert get_type_hints(FermionSymbolicState.to_qubit)["return"] is QubitSymbolicState

@@ -45,6 +45,30 @@ use crate::utils::{
 #[derive(Clone)]
 pub struct Array(pub CmpntList);
 
+/// Copy numeric terms, optionally omitting exact zeros, and rebuild their lookup map.
+fn copy_terms<C: Copy + Default + PartialEq>(
+    source: &Array,
+    coeffs: &[C],
+    nonzero: bool,
+) -> PyResult<(Array, Map, Vec<C>)> {
+    if source.len() != coeffs.len() {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Component and coefficient counts must match.",
+        ));
+    }
+    let mut output = source.0.empty_clone();
+    let mut output_coeffs = Vec::with_capacity(coeffs.len());
+    for (index, &coeff) in coeffs.iter().enumerate() {
+        if !nonzero || coeff != C::default() {
+            output.push_elem_ref(source.0.get_elem_ref(index));
+            output_coeffs.push(coeff);
+        }
+    }
+    let mut map = Map(Default::default());
+    map.0.populate_from(&output);
+    Ok((Array(output), map, output_coeffs))
+}
+
 impl Elements for Array {
     fn len(&self) -> usize {
         self.0.len()
@@ -528,6 +552,26 @@ impl Array {
     /// Clear and repopulate the map to reflect the current contents of `self`.
     pub fn refresh_map(&self, map: &mut Map) {
         map.0.populate_from(&self.0);
+    }
+
+    /// Copy real terms, optionally removing exact-zero coefficients.
+    pub fn copy_terms_real(
+        &self,
+        coeffs: &RealVec,
+        nonzero: bool,
+    ) -> PyResult<(Self, Map, RealVec)> {
+        let (array, map, coeffs) = copy_terms(self, &coeffs.0, nonzero)?;
+        Ok((array, map, RealVec(coeffs)))
+    }
+
+    /// Copy complex terms, optionally removing exact-zero coefficients.
+    pub fn copy_terms_complex(
+        &self,
+        coeffs: &ComplexVec,
+        nonzero: bool,
+    ) -> PyResult<(Self, Map, ComplexVec)> {
+        let (array, map, coeffs) = copy_terms(self, &coeffs.0, nonzero)?;
+        Ok((array, map, ComplexVec(coeffs)))
     }
 
     /// Insert into `self` using the map to ensure uniqueness.

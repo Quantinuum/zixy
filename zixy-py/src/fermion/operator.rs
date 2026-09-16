@@ -32,6 +32,11 @@ use crate::utils::{try_py_index, try_py_indices, ToPyResult};
 #[derive(Clone)]
 pub struct NormalArray(pub normal::cmpnt_list::CmpntList);
 
+crate::container::terms::numeric_terms!(NormalArray, |out, source, i| {
+    out.push_elem_ref(source.get_elem_ref(i));
+    Ok(())
+});
+
 impl Elements for NormalArray {
     fn len(&self) -> usize {
         self.0.len()
@@ -779,6 +784,17 @@ impl NormalArray {
 #[repr(transparent)]
 #[derive(Clone)]
 pub struct GeneralArray(pub general::cmpnt_list::CmpntList);
+
+crate::container::terms::numeric_terms!(GeneralArray, |out, source, i| {
+    let (modes, adj) = source.get(i);
+    if modes.len() > out.max_len {
+        return Err(PyValueError::new_err(
+            "Operator string exceeds destination max_len.",
+        ));
+    }
+    out.push(&modes, &adj);
+    Ok(())
+});
 
 impl Elements for GeneralArray {
     fn len(&self) -> usize {

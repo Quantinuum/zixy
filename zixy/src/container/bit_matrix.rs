@@ -453,6 +453,8 @@ pub trait AsRowMutRef: HasIndex {
 
     /// Assign the given springs element to the viewed row.
     fn set_spring(&mut self, springs: &BinarySprings, i: usize) -> Result<(), OutOfBounds> {
+        let row = self.get_index();
+        self.bit_mat_mut().clear_row(row);
         for (b, i_bit) in springs.get_iter(i) {
             self.set_bit(i_bit as usize, b != 0)?;
         }

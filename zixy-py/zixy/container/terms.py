@@ -60,9 +60,11 @@ from zixy.container.coeffs import (
     Coeff,
     Coeffs,
     CoeffT,
+    ComplexCoeffs,
     Number,
     NumberT,
     OtherCoeffT,
+    RealCoeffs,
     RootOfUnity,
     convert,
     convert_vec,
@@ -802,7 +804,36 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         # data and set should point at the same cmpnts
         self._impl._cmpnts._impl = self._cmpnt_set._impl
         self._working_term = terms.new_clear_term()
-        self.insert_iterable(terms)
+        if isinstance(terms._impl._coeffs, RealCoeffs | ComplexCoeffs):
+            self._collect_terms(terms, sum_duplicates=False)
+        else:
+            self.insert_iterable(terms)
+
+    def _collect_terms(self, terms: Terms[ImplT, SpecT, CoeffT], sum_duplicates: bool) -> None:
+        """Collect numeric terms in Rust, normalizing sliced inputs first."""
+        if (
+            not terms.is_owning()
+            or not terms._impl._cmpnts.is_owning()
+            or not terms._impl._coeffs.is_owning()
+        ):
+            terms = terms.clone()
+        source = terms._impl._cmpnts._impl
+        coeffs = terms._impl._coeffs
+        out_coeffs = self._impl._coeffs
+        if isinstance(coeffs, RealCoeffs):
+            assert isinstance(out_coeffs, RealCoeffs)
+            array, mapping, values = source.collect_terms_real(coeffs._impl, sum_duplicates)
+            out_coeffs._impl = values
+        else:
+            assert isinstance(coeffs, ComplexCoeffs)
+            assert isinstance(out_coeffs, ComplexCoeffs)
+            array, mapping, complex_values = source.collect_terms_complex(
+                coeffs._impl, sum_duplicates
+            )
+            out_coeffs._impl = complex_values
+        self._impl._cmpnts._impl = array
+        self._cmpnt_set._impl = array
+        self._cmpnt_set._map = mapping
 
     @property
     def _data(self) -> TermData[ImplT, SpecT, CoeffT]:
@@ -859,8 +890,31 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
 
     def clone(self) -> Self:
         """Return a deep copy of ``self``."""
+        if isinstance(self._impl._coeffs, RealCoeffs | ComplexCoeffs):
+            return self._copy_terms(nonzero=False)
         out = self._empty_clone()
         out.insert_iterable(self)
+        return out
+
+    def _copy_terms(self, nonzero: bool) -> Self:
+        """Copy numeric terms in Rust, optionally omitting exact zeros."""
+        out = self._empty_clone()
+        coeffs = self._impl._coeffs
+        out_coeffs = out._impl._coeffs
+        if isinstance(coeffs, RealCoeffs):
+            assert isinstance(out_coeffs, RealCoeffs)
+            array, mapping, values = self._impl._cmpnts._impl.copy_terms_real(coeffs._impl, nonzero)
+            out_coeffs._impl = values
+        else:
+            assert isinstance(coeffs, ComplexCoeffs)
+            assert isinstance(out_coeffs, ComplexCoeffs)
+            array, mapping, complex_values = self._impl._cmpnts._impl.copy_terms_complex(
+                coeffs._impl, nonzero
+            )
+            out_coeffs._impl = complex_values
+        out._impl._cmpnts._impl = array
+        out._cmpnt_set._impl = array
+        out._cmpnt_set._map = mapping
         return out
 
     def to_terms(self) -> Terms[ImplT, SpecT, CoeffT]:
@@ -1237,6 +1291,8 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
 
     def filter_nonzero(self) -> Self:
         """Filter ``self`` to only the non-zero terms."""
+        if isinstance(self._impl._coeffs, RealCoeffs | ComplexCoeffs):
+            return self._copy_terms(nonzero=True)
         out = self._empty_clone()
         cmpnts = out._cmpnt_set
         coeffs = out._impl._coeffs
@@ -1278,9 +1334,32 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
             else:
                 self._impl._coeffs[index] += scaled_coeff
         else:
-            # todo: delegate rust
-            for term in rhs:
-                self._scaled_iadd(term, scalar)
+            if rhs is self:
+                rhs = rhs.clone()
+            coeffs = self._impl._coeffs
+            rhs_coeffs = rhs._impl._coeffs
+            array = self._impl._cmpnts._impl
+            if isinstance(coeffs, RealCoeffs):
+                assert isinstance(rhs_coeffs, RealCoeffs)
+                array.scaled_iadd_real(
+                    coeffs._impl,
+                    self._cmpnt_set._map,
+                    rhs._impl._cmpnts._impl,
+                    rhs_coeffs._impl,
+                    convert(scalar, float),
+                )
+            elif isinstance(coeffs, ComplexCoeffs):
+                assert isinstance(rhs_coeffs, ComplexCoeffs)
+                array.scaled_iadd_complex(
+                    coeffs._impl,
+                    self._cmpnt_set._map,
+                    rhs._impl._cmpnts._impl,
+                    rhs_coeffs._impl,
+                    convert(scalar, complex),
+                )
+            else:
+                for term in rhs:
+                    self._scaled_iadd(term, scalar)
             filtered = self.filter_nonzero()
             self._impl = filtered._impl
             self._cmpnt_set = filtered._cmpnt_set
@@ -1375,7 +1454,10 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
         terms = cls.terms_type.from_str(source, *args, **kwargs)
         out = cls.__new__(cls)
         TermSet.__init__(out, terms._empty_clone())
-        out.add_iterable(terms)
+        if isinstance(terms._impl._coeffs, RealCoeffs | ComplexCoeffs):
+            out._collect_terms(terms, sum_duplicates=True)
+        else:
+            out.add_iterable(terms)
         return out
 
     def _from_generator(self, gen: Iterator[Term[ImplT, SpecT, CoeffT]]) -> Self:
@@ -1410,7 +1492,11 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
             New instance of ``cls`` containing the terms specified by ``iterable``.
         """
         out = cls(*args, **kwargs)
-        out.add_iterable(iterable)
+        if isinstance(out._impl._coeffs, RealCoeffs | ComplexCoeffs):
+            terms = cls.terms_type.from_iterable(iterable, *args, **kwargs)
+            out._collect_terms(terms, sum_duplicates=True)
+        else:
+            out.add_iterable(iterable)
         return out
 
 
@@ -1428,6 +1514,9 @@ class NumericTermSum(TermSum[ImplT, SpecT, NumberT]):
     @property
     def l1_norm(self) -> NumberT:
         """Get the L1 norm of ``self``."""
+        coeffs = self._impl._coeffs
+        if isinstance(coeffs, RealCoeffs | ComplexCoeffs):
+            return self.coeff_type(coeffs._impl.norm_slice(coeffs.slice, False))
         result: NumberT = zero(self.coeff_type)
         for coeff in self._impl._coeffs:
             result += self.coeff_type(abs(coeff))
@@ -1436,6 +1525,9 @@ class NumericTermSum(TermSum[ImplT, SpecT, NumberT]):
     @property
     def l2_norm_square(self) -> NumberT:
         """Get the square of the L2 norm of ``self``."""
+        coeffs = self._impl._coeffs
+        if isinstance(coeffs, RealCoeffs | ComplexCoeffs):
+            return self.coeff_type(coeffs._impl.norm_slice(coeffs.slice, True))
         result: NumberT = zero(self.coeff_type)
         for coeff in self._impl._coeffs:
             result += self.coeff_type(abs(coeff)) ** 2

@@ -26,6 +26,11 @@ use crate::utils::{cmpnt_to_string, try_py_index, try_py_indices, ToPyResult};
 #[derive(Clone)]
 pub struct Array(pub CmpntList);
 
+crate::container::terms::numeric_terms!(Array, |out, source, i| {
+    out.push_elem_ref(source.get_elem_ref(i));
+    Ok(())
+});
+
 impl Elements for Array {
     fn len(&self) -> usize {
         self.0.len()

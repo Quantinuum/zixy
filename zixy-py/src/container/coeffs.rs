@@ -2,6 +2,7 @@
 use std::ops::Neg;
 
 use numpy::{Complex64, PyArrayMethods, PyReadonlyArray1, PyUntypedArrayMethods};
+use pyo3::types::{PySlice, PySliceMethods};
 use pyo3::{pyclass, pymethods, Bound, PyAny, PyResult};
 use zixy::container::coeffs::traits::{FieldElem, NewUnitsWithLen, NumRepr};
 use zixy::container::{
@@ -21,6 +22,61 @@ use crate::{
     utils::{try_py_index, AccessImplementation},
     wrapped_str,
 };
+
+/// Iterate over a normalized Python slice without allocating index storage.
+fn slice_indices(slice: &Bound<'_, PySlice>, len: usize) -> PyResult<impl Iterator<Item = usize>> {
+    let indices = slice.indices(len as isize)?;
+    Ok((0..indices.slicelength).map(move |i| (indices.start + i as isize * indices.step) as usize))
+}
+
+macro_rules! numeric_vec {
+    ($vector:ty, $scalar:ty, $abs:expr) => {
+        #[pymethods]
+        impl $vector {
+            /// Copy a slice into an independent contiguous vector.
+            fn copy_slice(&self, slice: &Bound<'_, PySlice>) -> PyResult<Self> {
+                Ok(Self(
+                    slice_indices(slice, self.0.len())?
+                        .map(|i| self.0[i])
+                        .collect(),
+                ))
+            }
+
+            /// Scale the selected coefficients in-place.
+            fn scale_slice(&mut self, slice: &Bound<'_, PySlice>, scalar: $scalar) -> PyResult<()> {
+                for i in slice_indices(slice, self.0.len())? {
+                    self.0[i] *= scalar;
+                }
+                Ok(())
+            }
+
+            /// Fill the selected coefficients in-place.
+            fn fill_slice(&mut self, slice: &Bound<'_, PySlice>, scalar: $scalar) -> PyResult<()> {
+                for i in slice_indices(slice, self.0.len())? {
+                    self.0[i] = scalar;
+                }
+                Ok(())
+            }
+
+            /// Sum coefficient magnitudes or their squares over a slice.
+            fn norm_slice(&self, slice: &Bound<'_, PySlice>, squared: bool) -> PyResult<f64> {
+                Ok(slice_indices(slice, self.0.len())?
+                    .map(|i| {
+                        let magnitude = ($abs)(self.0[i]);
+                        if squared {
+                            magnitude * magnitude
+                        } else {
+                            magnitude
+                        }
+                    })
+                    .sum())
+            }
+        }
+    };
+}
+
+numeric_vec!(RealVec, f64, f64::abs);
+numeric_vec!(ComplexVec, Complex64, Complex64::norm);
 
 /// A Unity wrapper for Python.
 #[pyclass(subclass)]

@@ -1284,6 +1284,17 @@ class NumericalCoeffs(Coeffs[NumberT]):
     """
 
     coeffs_type: type[_zixy.RealVec | _zixy.ComplexVec]
+    _impl: _zixy.RealVec | _zixy.ComplexVec
+
+    def clone(self) -> Self:
+        """Copy the viewed coefficients into an independent contiguous vector."""
+        return self._create(self._impl.copy_slice(self.slice))
+
+    def __neg__(self) -> Self:
+        """Return a negated copy of the viewed coefficients."""
+        out = self.clone()
+        out.scale(-1)
+        return out
 
     def any_significant(self, atol: float = DEFAULT_ATOL) -> bool:
         """Check whether any element of ``self`` is significantly different from zero.
@@ -1324,6 +1335,16 @@ class RealCoeffs(NumericalCoeffs[float]):
 
     _impl: _zixy.RealVec
 
+    def scale(self, scalar: Coeff) -> None:
+        """Scale the viewed real coefficients in Rust."""
+        if len(self):
+            self._impl.scale_slice(self.slice, convert(scalar, float))
+
+    def fill(self, coeff: float) -> None:
+        """Fill the viewed real coefficients in Rust."""
+        if len(self):
+            self._impl.fill_slice(self.slice, convert(coeff, float))
+
     @property
     def np_array(self) -> NDArray[np.float64]:
         """Get the contents of ``self`` copied as a flat NumPy array.
@@ -1345,6 +1366,16 @@ class ComplexCoeffs(NumericalCoeffs[complex]):
     coeffs_type = _zixy.ComplexVec
 
     _impl: _zixy.ComplexVec
+
+    def scale(self, scalar: Coeff) -> None:
+        """Scale the viewed complex coefficients in Rust."""
+        if len(self):
+            self._impl.scale_slice(self.slice, convert(scalar, complex))
+
+    def fill(self, coeff: complex) -> None:
+        """Fill the viewed complex coefficients in Rust."""
+        if len(self):
+            self._impl.fill_slice(self.slice, convert(coeff, complex))
 
     @property
     def np_array(self) -> NDArray[np.complex128]:

@@ -272,9 +272,7 @@ class TermSum(OperatorTermSum[ImplT, SpecT, CoeffT, ElemT], TermSet[CoeffT]):
     @classmethod
     def from_iterable(cls, source: Any, modes: int | Modes = 0, max_len: int = 0) -> Self:
         """Create a new instance of ``cls`` from an iterable of terms."""
-        out = cls(modes, max_len=max_len)
-        out.add_iterable(source)
-        return out
+        return super().from_iterable(source, modes, max_len=max_len)
 
     def dagger(self) -> None:
         """Take the adjoint of ``self`` in-place."""

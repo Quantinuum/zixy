@@ -71,6 +71,50 @@ class StringsImplArray(ImplArray):
     def same_as(self, other: StringsImplArray) -> bool:
         return self._list is other._list
 
+    def _collect_numeric(self, coeffs, nonzero=False, sum_duplicates=False):
+        assert len(self) == len(coeffs)
+        out = type(self)()
+        mapping = {}
+        values = type(coeffs)(0)
+        for i, key in enumerate(self._list):
+            value = coeffs[i]
+            if nonzero and value == 0:
+                continue
+            if key in mapping:
+                index = mapping[key]
+                values[index] = values[index] + value if sum_duplicates else value
+            else:
+                mapping[key] = len(out)
+                out._list.append(key)
+                values.append(value)
+        return out, mapping, values
+
+    def copy_terms_real(self, coeffs, nonzero):
+        return self._collect_numeric(coeffs, nonzero=nonzero)
+
+    def copy_terms_complex(self, coeffs, nonzero):
+        return self._collect_numeric(coeffs, nonzero=nonzero)
+
+    def collect_terms_real(self, coeffs, sum):
+        return self._collect_numeric(coeffs, sum_duplicates=sum)
+
+    def collect_terms_complex(self, coeffs, sum):
+        return self._collect_numeric(coeffs, sum_duplicates=sum)
+
+    def scaled_iadd_real(self, coeffs, map, rhs, rhs_coeffs, scalar):
+        assert len(self) == len(coeffs)
+        assert len(rhs) == len(rhs_coeffs)
+        for i, key in enumerate(rhs._list):
+            if key in map:
+                coeffs[map[key]] += scalar * rhs_coeffs[i]
+            else:
+                map[key] = len(self)
+                self._list.append(key)
+                coeffs.append(scalar * rhs_coeffs[i])
+
+    def scaled_iadd_complex(self, coeffs, map, rhs, rhs_coeffs, scalar):
+        self.scaled_iadd_real(coeffs, map, rhs, rhs_coeffs, scalar)
+
     def _refresh_map(self, map: dict[str, int]):
         map.clear()
         map.update({s: i for i, s in enumerate(self._list)})

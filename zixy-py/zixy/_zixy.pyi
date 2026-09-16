@@ -272,6 +272,8 @@ class NormalFermionOperatorArray(FermionArray):
 
 class GeneralFermionOperatorArray(FermionArray):
     max_len: int
+    def refresh_map(self, map: Map) -> None: ...
+    def _reserve_string_length(self, required: int, *, warn: bool = True) -> None: ...
     def __init__(
         self,
         modes: Modes | None = ...,

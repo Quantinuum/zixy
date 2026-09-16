@@ -1,6 +1,8 @@
 use crate::container::bit_matrix::AsBitMatrix;
 use crate::container::bit_matrix::BitMatrix;
+use crate::container::map::Map;
 use crate::container::traits::{Compatible, Elements, EmptyClone};
+use crate::container::word_iters::set::{AsView, View};
 use crate::container::word_iters::WordIters;
 use crate::fermion::mode::ModeInds;
 use crate::fermion::mode::Modes;
@@ -9,15 +11,68 @@ use crate::fermion::traits::ModesBased;
 /// Contiguous and compact storage for non-normal-ordered fermion operator strings.
 #[derive(Clone)]
 pub struct CmpntList {
-    pub mode_part: ModeInds,  // mode index at each operator position
-    pub adj_part: BitMatrix,  // cre/ann flag per slot
-    pub len_part: Vec<usize>, // length of each string
-    pub modes: Modes,         // list of modes
-    pub max_len: usize,       // max operator slots per row
-    pub n_bits: usize,        // number of bits per mode index
+    pub mode_part: ModeInds, // mode index at each operator position
+    pub adj_part: BitMatrix, // cre/ann flag per slot
+    pub len_part: Vec<u64>,  // length of each string, included in packed keys
+    pub modes: Modes,        // list of modes
+    pub max_len: usize,      // max operator slots per row
+    pub n_bits: usize,       // number of bits per mode index
 }
 
 impl CmpntList {
+    /// Grow to the required string length without changing existing strings.
+    pub fn reserve_string_length(&mut self, required: usize) {
+        if required <= self.max_len {
+            return;
+        }
+        let mut out = Self::new(required, self.modes.clone());
+        for i in 0..self.len() {
+            let (modes, adj) = self.get(i);
+            out.push(&modes, &adj);
+        }
+        *self = out;
+    }
+
+    /// Replace one string, growing storage only when necessary.
+    pub fn set(&mut self, row: usize, modes: &[usize], adj: &[bool]) {
+        assert_eq!(modes.len(), adj.len());
+        assert!(row < self.len());
+        self.reserve_string_length(modes.len());
+        self.mode_part.set_row(row, modes);
+        self.adj_part.clear_row(row);
+        for (i, value) in adj.iter().enumerate() {
+            self.adj_part.set_bit_unchecked(row, i, *value);
+        }
+        self.len_part[row] = modes.len() as u64;
+    }
+
+    /// Look up a logical string regardless of the two arrays' storage capacities.
+    pub fn lookup(&self, map: &Map, other: &Self, index: usize) -> Option<usize> {
+        if other.len_part[index] as usize > self.max_len {
+            return None;
+        }
+        // Normalize padding to our row width without allocating or changing either array.
+        let modes = other
+            .mode_part
+            .elem_u64it(index)
+            .chain(std::iter::repeat(0))
+            .take(self.mode_part.u64it_size());
+        let adj = other
+            .adj_part
+            .elem_u64it(index)
+            .chain(std::iter::repeat(0))
+            .take(self.adj_part.u64it_size());
+        View {
+            word_iters: self,
+            map,
+        }
+        .lookup(
+            modes
+                .chain(adj)
+                .chain(std::iter::once(other.len_part[index])),
+        )
+    }
+
     /// Create a new empty non-normal-ordered `CmpntList` with the given mode space and maximum operator string length.
     pub fn new(max_len: usize, modes: Modes) -> Self {
         let n_modes = modes.len();
@@ -44,13 +99,14 @@ impl CmpntList {
             adj.len(),
             "modes and adj must have the same length"
         );
+        self.reserve_string_length(modes.len());
         self.mode_part.push_vec(modes);
         self.adj_part.push_clear();
         let last_row = self.adj_part.len() - 1;
         for (i, value) in adj.iter().enumerate() {
             self.adj_part.set_bit_unchecked(last_row, i, *value);
         }
-        self.len_part.push(modes.len());
+        self.len_part.push(modes.len() as u64);
     }
 
     pub fn push_concat(
@@ -70,6 +126,7 @@ impl CmpntList {
             rhs_adj.len(),
             "rhs modes and adj must have the same length"
         );
+        self.reserve_string_length(lhs_modes.len() + rhs_modes.len());
         self.mode_part
             .push_iter(lhs_modes.iter().chain(rhs_modes.iter()).copied());
         self.adj_part.push_clear();
@@ -77,7 +134,8 @@ impl CmpntList {
         for (i, value) in lhs_adj.iter().chain(rhs_adj.iter()).enumerate() {
             self.adj_part.set_bit_unchecked(last_row, i, *value);
         }
-        self.len_part.push(lhs_modes.len() + rhs_modes.len());
+        self.len_part
+            .push((lhs_modes.len() + rhs_modes.len()) as u64);
     }
 
     /// Return true if no operator strings are stored.
@@ -87,7 +145,7 @@ impl CmpntList {
 
     /// Read back the operator string at index `i` as a tuple of mode indices and cre/ann flags.
     pub fn get(&self, i: usize) -> (Vec<usize>, Vec<bool>) {
-        let length = self.len_part[i];
+        let length = self.len_part[i] as usize;
         let modes = self.mode_part.read_row(i, length);
         let mut adj = Vec::new();
         for j in 0..length {
@@ -120,16 +178,18 @@ impl WordIters for CmpntList {
         self.mode_part
             .elem_u64it(i)
             .chain(self.adj_part.elem_u64it(i))
+            .chain(std::iter::once(self.len_part[i]))
     }
 
     fn elem_u64it_mut(&mut self, i: usize) -> impl Iterator<Item = &mut u64> {
         self.mode_part
             .elem_u64it_mut(i)
             .chain(self.adj_part.elem_u64it_mut(i))
+            .chain(std::iter::once(&mut self.len_part[i]))
     }
 
     fn u64it_size(&self) -> usize {
-        self.mode_part.u64it_size() + self.adj_part.u64it_size()
+        self.mode_part.u64it_size() + self.adj_part.u64it_size() + 1
     }
 
     fn pop_and_swap(&mut self, index: usize) {
@@ -168,6 +228,64 @@ impl ModesBased for CmpntList {
 mod tests {
     use super::*;
     use rstest::rstest;
+
+    #[rstest]
+    #[case(1)]
+    #[case(3)]
+    #[case(65)]
+    #[case(257)]
+    fn test_growth_and_assignment(#[case] n_modes: usize) {
+        let mut strings = CmpntList::new(0, Modes::from_count(n_modes));
+        strings.push(&[], &[]);
+        strings.push(&[0], &[true]);
+        for length in [2, 11, 64, 65, 129] {
+            let modes = vec![n_modes - 1; length];
+            let adj = (0..length).map(|i| i % 2 == 0).collect::<Vec<_>>();
+            strings.set(0, &modes, &adj);
+            assert_eq!(strings.get(0), (modes, adj));
+            assert_eq!(strings.get(1), (vec![0], vec![true]));
+            assert_eq!(strings.max_len, length);
+        }
+        strings.set(0, &[], &[]);
+        assert_eq!(strings.max_len, 129);
+        assert_eq!(strings.get(0), (vec![], vec![]));
+        strings.push_concat(&[0; 100], &[false; 100], &[0; 100], &[true; 100]);
+        assert_eq!(strings.max_len, 200);
+        assert_eq!(strings.get(2).0.len(), 200);
+    }
+
+    #[test]
+    fn test_keys_preserve_length_and_capacity_independence() {
+        use crate::container::word_iters::set::AsViewMut;
+        let mut strings = CmpntList::new(2, Modes::from_count(2));
+        strings.push(&[], &[]);
+        strings.push(&[0], &[false]);
+        strings.push(&[0, 0], &[false, false]);
+        let mut map = Map::default();
+        map.populate_from(&strings);
+        View {
+            word_iters: &strings,
+            map: &map,
+        }
+        .consistency_check();
+        let mut other = CmpntList::new(129, strings.modes.clone());
+        other.push(&[0], &[false]);
+        assert_eq!(strings.lookup(&map, &other, 0), Some(1));
+        strings.reserve_string_length(65);
+        map.populate_from(&strings);
+        assert_eq!(strings.lookup(&map, &other, 0), Some(1));
+        crate::container::word_iters::set::ViewMut {
+            word_iters: &mut strings,
+            map: &mut map,
+        }
+        .drop(1);
+        assert_eq!(strings.get(1), (vec![0, 0], vec![false, false]));
+        View {
+            word_iters: &strings,
+            map: &map,
+        }
+        .consistency_check();
+    }
 
     #[test]
     fn test_empty() {

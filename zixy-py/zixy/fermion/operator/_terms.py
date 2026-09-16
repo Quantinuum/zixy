@@ -42,7 +42,7 @@ from zixy.qubit.pauli._terms import ComplexTermSum as PauliComplexTermSum
 
 MapperType: TypeAlias = Callable[
     [int | Qubits],
-    Mapper[OperatorString[Any, Any, Any], PauliComplexTermSum],
+    Mapper,
 ]
 
 

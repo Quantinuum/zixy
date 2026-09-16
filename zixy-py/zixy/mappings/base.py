@@ -12,19 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Generic mappers between concrete input and output types."""
+"""Base interface for mappers between concrete types."""
 
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
-
-InputT = TypeVar("InputT")
-OutputT = TypeVar("OutputT")
+from typing import Any
 
 
-class Mapper(Generic[InputT, OutputT], ABC):
-    """A transformation from one concrete value type to another."""
+class Mapper(ABC):
+    """Base interface for transformations between domains.
+
+    Concrete mapper classes specify the accepted input and corresponding output types on their
+    ``apply`` implementations.
+    """
 
     @abstractmethod
-    def apply(self, value: InputT, /) -> OutputT:
+    def apply(self, value: Any, /) -> Any:
         """Apply this mapper to ``value``."""
         raise NotImplementedError

@@ -272,8 +272,8 @@ def test_to_qubit_complex_terms(term_sum_type, string_type, source, pieces):
     assert via_to_qubit == via_strings
 
 
-def test_generic_mapper():
-    class StringLength(Mapper[str, int]):
+def test_mapper():
+    class StringLength(Mapper):
         def apply(self, value: str, /) -> int:
             return len(value)
 

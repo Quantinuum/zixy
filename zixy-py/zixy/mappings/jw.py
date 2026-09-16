@@ -26,7 +26,7 @@ from zixy.qubit.pauli._strings import Strings as PauliStrings
 from zixy.qubit.pauli._terms import ComplexTermSum as PauliComplexTermSum
 
 
-class JordanWignerMapper(Mapper[FermionString[Any, Any, Any], PauliComplexTermSum]):
+class JordanWignerMapper(Mapper):
     """Jordan--Wigner mapper from fermionic strings to Pauli term sums."""
 
     _impl: JordanWignerImpl

@@ -26,7 +26,7 @@ from zixy.qubit.pauli._strings import Strings as PauliStrings
 from zixy.qubit.pauli._terms import ComplexTermSum as PauliComplexTermSum
 
 
-class ParityMapper(Mapper[FermionString[Any, Any, Any], PauliComplexTermSum]):
+class ParityMapper(Mapper):
     """Parity mapper from fermionic strings to Pauli term sums."""
 
     _impl: ParityImpl

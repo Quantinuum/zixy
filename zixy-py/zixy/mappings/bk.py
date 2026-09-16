@@ -26,7 +26,7 @@ from zixy.qubit.pauli._strings import Strings as PauliStrings
 from zixy.qubit.pauli._terms import ComplexTermSum as PauliComplexTermSum
 
 
-class BravyiKitaevMapper(Mapper[FermionString[Any, Any, Any], PauliComplexTermSum]):
+class BravyiKitaevMapper(Mapper):
     """Bravyi--Kitaev mapper from fermionic strings to Pauli term sums."""
 
     _impl: BravyiKitaevImpl

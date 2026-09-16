@@ -30,6 +30,12 @@ impl Mapper<&[(usize, bool)], term_set::TermSet<Complex64>> for ParaparticularMa
     }
 }
 
+impl Mapper<&[(usize, bool)], term_set::TermSet<f64>> for ParaparticularMapper {
+    fn apply(&mut self, input: &[(usize, bool)]) -> term_set::TermSet<f64> {
+        self.0.apply(input)
+    }
+}
+
 impl Mapper<FermionStateRef<'_>, BasisState> for ParaparticularMapper {
     fn apply(&mut self, input: FermionStateRef<'_>) -> BasisState {
         self.0.apply_state(input)

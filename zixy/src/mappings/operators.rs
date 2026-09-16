@@ -4,7 +4,7 @@ use num_complex::Complex64;
 
 use crate::container::bit_matrix::{AsRowMutRef, AsRowRef};
 use crate::container::coeffs::complex_sign::ComplexSign;
-use crate::container::coeffs::traits::{HasCoeffsMut, NumReprVec, Represent};
+use crate::container::coeffs::traits::{HasCoeffsMut, NumRepr, NumReprVec, Represent};
 use crate::container::traits::{Elements, MutRefElements, RefElements};
 use crate::container::word_iters::lincomb;
 use crate::container::word_iters::term_set::AsViewMut as _;
@@ -133,6 +133,16 @@ impl OperatorMapper {
         }
     }
 
+    /// Contribute the real part of the loaded mapping to `op`, scaled by `scalar`.
+    fn contribute_real(&mut self, op: &mut term_set::ViewMut<f64>, scalar: f64) {
+        let scalar = scalar / f64::from(self.work.len() as u32);
+        for term in self.work.iter() {
+            if let Ok(coeff) = f64::try_represent(term.get_coeff()) {
+                lincomb::scaled_iadd_elem(op, term.get_word_iter_ref(), coeff * scalar);
+            }
+        }
+    }
+
     /// Map a fermionic occupation-number state using the X support of the cached ladder operators.
     pub(super) fn apply_state(&self, input: FermionStateRef<'_>) -> BasisState {
         assert_eq!(
@@ -163,6 +173,15 @@ impl Mapper<&[Op], term_set::TermSet<Complex64>> for OperatorMapper {
         self.load_product(input);
         let mut output = term_set::TermSet::new(self.qubits().clone());
         self.contribute_complex(&mut output.view_mut(), Complex64::new(1.0, 0.0));
+        output
+    }
+}
+
+impl Mapper<&[Op], term_set::TermSet<f64>> for OperatorMapper {
+    fn apply(&mut self, input: &[Op]) -> term_set::TermSet<f64> {
+        self.load_product(input);
+        let mut output = term_set::TermSet::new(self.qubits().clone());
+        self.contribute_real(&mut output.view_mut(), 1.0);
         output
     }
 }

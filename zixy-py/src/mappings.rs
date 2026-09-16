@@ -13,14 +13,17 @@ use zixy::mappings::Mapper;
 use zixy::qubit::pauli::cmpnt_major::term_set;
 use zixy::qubit::state::cmpnt_list::CmpntList as QubitStateCmpntList;
 
-use crate::container::coeffs::ComplexVec;
+use crate::container::coeffs::{ComplexVec, RealVec};
 use crate::container::map::Map;
 use crate::fermion::state::Array as FermionStateArray;
 use crate::qubit::mode::Qubits;
 use crate::qubit::pauli::Array;
 use crate::qubit::state::Array as QubitStateArray;
 
-fn apply<M>(mapper: &mut M, ladder_operators: Vec<(usize, bool)>) -> (Array, ComplexVec, Map)
+fn apply_complex<M>(
+    mapper: &mut M,
+    ladder_operators: Vec<(usize, bool)>,
+) -> (Array, ComplexVec, Map)
 where
     for<'a> M: Mapper<&'a [(usize, bool)], term_set::TermSet<Complex64>>,
 {
@@ -28,6 +31,18 @@ where
     (
         Array(output.terms.word_iters),
         ComplexVec(output.terms.coeffs),
+        Map(output.map),
+    )
+}
+
+fn apply_real<M>(mapper: &mut M, ladder_operators: Vec<(usize, bool)>) -> (Array, RealVec, Map)
+where
+    for<'a> M: Mapper<&'a [(usize, bool)], term_set::TermSet<f64>>,
+{
+    let output = mapper.apply(ladder_operators.as_slice());
+    (
+        Array(output.terms.word_iters),
+        RealVec(output.terms.coeffs),
         Map(output.map),
     )
 }
@@ -55,8 +70,16 @@ impl JordanWignerMapper {
     }
 
     /// Apply the mapper to a ladder-operator product.
-    pub fn apply(&mut self, ladder_operators: Vec<(usize, bool)>) -> (Array, ComplexVec, Map) {
-        apply(&mut self.0, ladder_operators)
+    pub fn apply_complex(
+        &mut self,
+        ladder_operators: Vec<(usize, bool)>,
+    ) -> (Array, ComplexVec, Map) {
+        apply_complex(&mut self.0, ladder_operators)
+    }
+
+    /// Apply the mapper to the real part of a ladder-operator product.
+    pub fn apply_real(&mut self, ladder_operators: Vec<(usize, bool)>) -> (Array, RealVec, Map) {
+        apply_real(&mut self.0, ladder_operators)
     }
 
     /// Apply the mapper to a fermionic occupation-number state.
@@ -80,8 +103,16 @@ impl BravyiKitaevMapper {
     }
 
     /// Apply the mapper to a ladder-operator product.
-    pub fn apply(&mut self, ladder_operators: Vec<(usize, bool)>) -> (Array, ComplexVec, Map) {
-        apply(&mut self.0, ladder_operators)
+    pub fn apply_complex(
+        &mut self,
+        ladder_operators: Vec<(usize, bool)>,
+    ) -> (Array, ComplexVec, Map) {
+        apply_complex(&mut self.0, ladder_operators)
+    }
+
+    /// Apply the mapper to the real part of a ladder-operator product.
+    pub fn apply_real(&mut self, ladder_operators: Vec<(usize, bool)>) -> (Array, RealVec, Map) {
+        apply_real(&mut self.0, ladder_operators)
     }
 
     /// Apply the mapper to a fermionic occupation-number state.
@@ -105,8 +136,16 @@ impl ParityMapper {
     }
 
     /// Apply the mapper to a ladder-operator product.
-    pub fn apply(&mut self, ladder_operators: Vec<(usize, bool)>) -> (Array, ComplexVec, Map) {
-        apply(&mut self.0, ladder_operators)
+    pub fn apply_complex(
+        &mut self,
+        ladder_operators: Vec<(usize, bool)>,
+    ) -> (Array, ComplexVec, Map) {
+        apply_complex(&mut self.0, ladder_operators)
+    }
+
+    /// Apply the mapper to the real part of a ladder-operator product.
+    pub fn apply_real(&mut self, ladder_operators: Vec<(usize, bool)>) -> (Array, RealVec, Map) {
+        apply_real(&mut self.0, ladder_operators)
     }
 
     /// Apply the mapper to a fermionic occupation-number state.
@@ -130,8 +169,16 @@ impl ParaparticularMapper {
     }
 
     /// Apply the mapper to a ladder-operator product.
-    pub fn apply(&mut self, ladder_operators: Vec<(usize, bool)>) -> (Array, ComplexVec, Map) {
-        apply(&mut self.0, ladder_operators)
+    pub fn apply_complex(
+        &mut self,
+        ladder_operators: Vec<(usize, bool)>,
+    ) -> (Array, ComplexVec, Map) {
+        apply_complex(&mut self.0, ladder_operators)
+    }
+
+    /// Apply the mapper to the real part of a ladder-operator product.
+    pub fn apply_real(&mut self, ladder_operators: Vec<(usize, bool)>) -> (Array, RealVec, Map) {
+        apply_real(&mut self.0, ladder_operators)
     }
 
     /// Apply the mapper to a fermionic occupation-number state.

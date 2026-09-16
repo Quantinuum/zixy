@@ -373,6 +373,38 @@ class TermSet(TermSetBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix]):
 
     terms_type: type[Terms[CoeffT]]
 
+    def _copy_terms(self, nonzero: bool) -> Self:
+        """Copy numeric Pauli terms in Rust, optionally omitting exact zeros."""
+        coeffs = self._impl._coeffs
+        if not isinstance(coeffs, RealCoeffs | ComplexCoeffs):
+            return super().filter_nonzero() if nonzero else super().clone()
+        out = self._empty_clone()
+        out_coeffs = out._impl._coeffs
+        if isinstance(coeffs, RealCoeffs):
+            assert isinstance(out_coeffs, RealCoeffs)
+            array, mapping, real_coeffs = self._impl._cmpnts._impl.copy_terms_real(
+                coeffs._impl, nonzero
+            )
+            out_coeffs._impl = real_coeffs
+        else:
+            assert isinstance(out_coeffs, ComplexCoeffs)
+            array, mapping, complex_coeffs = self._impl._cmpnts._impl.copy_terms_complex(
+                coeffs._impl, nonzero
+            )
+            out_coeffs._impl = complex_coeffs
+        out._impl._cmpnts._impl = array
+        out._cmpnt_set._impl = array
+        out._cmpnt_set._map = mapping
+        return out
+
+    def filter_nonzero(self) -> Self:
+        """Copy the terms whose coefficients are not exactly zero."""
+        return self._copy_terms(nonzero=True)
+
+    def clone(self) -> Self:
+        """Return a deep copy of the terms, including zero coefficients."""
+        return self._copy_terms(nonzero=False)
+
 
 class TermSum(TermSumBase[QubitPauliArray, StringSpec, CoeffT, PauliMatrix], TermSet[CoeffT]):
     """A sum of terms consisting of Pauli strings and coefficients.

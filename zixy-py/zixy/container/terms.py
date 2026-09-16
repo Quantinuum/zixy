@@ -1228,7 +1228,16 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
 
     def filter_nonzero(self) -> Self:
         """Filter ``self`` to only the non-zero terms."""
-        return self._from_generator(self.iter_filter_nonzero())
+        out = self._empty_clone()
+        cmpnts = out._cmpnt_set
+        coeffs = out._impl._coeffs
+        # Components are already unique: copy them without constructing term views
+        # or repeating coefficient conversion and component compatibility checks.
+        for index, coeff in enumerate(self._impl._coeffs):
+            if coeff != 0:
+                cmpnts._impl.mapped_insert(cmpnts._map, self._impl._cmpnts._impl, index)
+                coeffs.append(coeff)
+        return out
 
 
 class TermSum(TermSet[ImplT, SpecT, CoeffT]):
@@ -1263,7 +1272,10 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
             # todo: delegate rust
             for term in rhs:
                 self._scaled_iadd(term, scalar)
-            TermSet.__init__(self, self.filter_nonzero().to_terms())
+            filtered = self.filter_nonzero()
+            self._impl = filtered._impl
+            self._cmpnt_set = filtered._cmpnt_set
+            self._working_term = filtered._working_term
 
     def __iadd__(self, rhs: Term[ImplT, SpecT, CoeffT] | Self) -> Self:
         """Add ``rhs`` to ``self`` in-place."""

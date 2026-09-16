@@ -40,10 +40,7 @@ from zixy.fermion.operator._strings import (
 from zixy.mappings.base import Mapper
 from zixy.qubit.pauli._terms import ComplexTermSum as PauliComplexTermSum
 
-MapperType: TypeAlias = Callable[
-    [int | Qubits],
-    Mapper,
-]
+MapperType: TypeAlias = Callable[[int | Qubits], Mapper]
 
 
 def _product_sign(n_cre: int, n_ann: int) -> Sign:

@@ -134,7 +134,7 @@ def test_array_sizing():
 def test_string_from_str_errors():
     string = String(4, "F0")
 
-    with pytest.raises(ValueError, match="longer than max_len"):
+    with pytest.warns(UserWarning, match="from 1 to 2"):
         string.set("F0 F1")
 
     with pytest.raises(ValueError, match="mode index out of bounds"):

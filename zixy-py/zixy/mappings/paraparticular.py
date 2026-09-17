@@ -43,7 +43,7 @@ class ParaparticularMapper(Mapper):
 
     def apply(self, value: FermionString[Any, Any, Any], /) -> PauliComplexTermSum:
         """Map ``value`` to a complex Pauli term sum."""
-        cmpnts, coeffs = self._impl.apply(value.get_ops())
+        cmpnts, coeffs, map_ = self._impl.apply(value.get_ops())
         return PauliComplexTermSum._create(
-            TermData(PauliStrings._create(cmpnts), ComplexCoeffs._create(coeffs))
+            TermData(PauliStrings._create(cmpnts), ComplexCoeffs._create(coeffs)), map_
         )

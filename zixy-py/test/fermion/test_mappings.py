@@ -183,6 +183,21 @@ def test_apply_products(source, expected):
     assert str(terms) == expected
 
 
+@pytest.mark.parametrize("mapper_type", MAPPER_TYPES)
+def test_apply_adopts_native_map_without_python_reinsertion(mapper_type, monkeypatch):
+    def fail(*_args):
+        raise AssertionError("mapped terms were reinserted in Python")
+
+    monkeypatch.setattr(PauliComplexTermSum, "insert_iterable", fail)
+
+    terms = mapper_type(2).apply(GeneralString(2, "F0 F1^"))
+
+    assert len(terms) == 4
+    found = terms.lookup(terms.strings[0])
+    assert found is not None
+    assert found[0] == 0
+
+
 def test_apply_products_anticommute():
     mapper = JordanWignerMapper(4)
     caca = mapper.apply(GeneralString(4, "F0^ F1 F2^ F3"))

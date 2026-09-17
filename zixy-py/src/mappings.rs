@@ -10,10 +10,11 @@ use zixy::mappings::Mapper;
 use zixy::qubit::pauli::cmpnt_major::term_set;
 
 use crate::container::coeffs::ComplexVec;
+use crate::container::map::Map;
 use crate::qubit::mode::Qubits;
 use crate::qubit::pauli::Array;
 
-fn apply<M>(mapper: &mut M, ladder_operators: Vec<(usize, bool)>) -> (Array, ComplexVec)
+fn apply<M>(mapper: &mut M, ladder_operators: Vec<(usize, bool)>) -> (Array, ComplexVec, Map)
 where
     for<'a> M: Mapper<&'a [(usize, bool)], term_set::TermSet<Complex64>>,
 {
@@ -21,6 +22,7 @@ where
     (
         Array(output.terms.word_iters),
         ComplexVec(output.terms.coeffs),
+        Map(output.map),
     )
 }
 
@@ -39,7 +41,7 @@ impl JordanWignerMapper {
     }
 
     /// Apply the mapper to a ladder-operator product.
-    pub fn apply(&mut self, ladder_operators: Vec<(usize, bool)>) -> (Array, ComplexVec) {
+    pub fn apply(&mut self, ladder_operators: Vec<(usize, bool)>) -> (Array, ComplexVec, Map) {
         apply(&mut self.0, ladder_operators)
     }
 }
@@ -59,7 +61,7 @@ impl BravyiKitaevMapper {
     }
 
     /// Apply the mapper to a ladder-operator product.
-    pub fn apply(&mut self, ladder_operators: Vec<(usize, bool)>) -> (Array, ComplexVec) {
+    pub fn apply(&mut self, ladder_operators: Vec<(usize, bool)>) -> (Array, ComplexVec, Map) {
         apply(&mut self.0, ladder_operators)
     }
 }
@@ -79,7 +81,7 @@ impl ParityMapper {
     }
 
     /// Apply the mapper to a ladder-operator product.
-    pub fn apply(&mut self, ladder_operators: Vec<(usize, bool)>) -> (Array, ComplexVec) {
+    pub fn apply(&mut self, ladder_operators: Vec<(usize, bool)>) -> (Array, ComplexVec, Map) {
         apply(&mut self.0, ladder_operators)
     }
 }
@@ -99,7 +101,7 @@ impl ParaparticularMapper {
     }
 
     /// Apply the mapper to a ladder-operator product.
-    pub fn apply(&mut self, ladder_operators: Vec<(usize, bool)>) -> (Array, ComplexVec) {
+    pub fn apply(&mut self, ladder_operators: Vec<(usize, bool)>) -> (Array, ComplexVec, Map) {
         apply(&mut self.0, ladder_operators)
     }
 }

@@ -12,15 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Submodule for fermionic operators, states, and mappings."""
+"""Submodule for fermionic operators and states."""
 
-from zixy.fermion.mappings import (
-    BravyiKitaevMapper,
-    JordanWignerMapper,
-    Mapper,
-    ParaparticularMapper,
-    ParityMapper,
-)
 from zixy.fermion.operator import (
     ComplexTerm,
     ComplexTerms,
@@ -66,11 +59,6 @@ from zixy.fermion.state import (
 )
 
 __all__ = [
-    "JordanWignerMapper",
-    "BravyiKitaevMapper",
-    "ParityMapper",
-    "ParaparticularMapper",
-    "Mapper",
     "StringSpec",
     "String",
     "Strings",

@@ -47,6 +47,7 @@ import numpy as np
 import pandas as pd
 from typing_extensions import Self
 
+from zixy._zixy import Map
 from zixy.container.base import (
     StringRepresentable,
     ViewableBase,
@@ -829,17 +830,25 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         return self._data.cmpnt_type
 
     @classmethod
-    def _create(cls, data: TermData[ImplT, SpecT, CoeffT]) -> Self:
+    def _create(cls, data: TermData[ImplT, SpecT, CoeffT], map_: Map | None = None) -> Self:
         """Create a new instance of ``cls``.
 
         Args:
             data: Raw term data object.
+            map_: Populated component lookup map for ``data``. If supplied, adopt both directly.
 
         Returns:
             A new instance of ``cls``.
         """
         out = cls.__new__(cls)
-        TermSet.__init__(out, cls.terms_type._create(data))
+        if map_ is None:
+            TermSet.__init__(out, cls.terms_type._create(data))
+        else:
+            assert len(data) == len(map_)
+            out._impl = data
+            cmpnt_set_type = data.cmpnts_type._set_type
+            out._cmpnt_set = cmpnt_set_type._create(data._cmpnts._impl, map_)
+            out._working_term = cls.terms_type._create(data).new_clear_term()
         return out
 
     def _empty_clone(self) -> Self:

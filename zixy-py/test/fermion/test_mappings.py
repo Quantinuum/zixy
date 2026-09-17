@@ -30,7 +30,10 @@ from zixy.mappings import (
     ParaparticularMapper,
     ParityMapper,
 )
-from zixy.qubit.pauli import ComplexTermSum as PauliComplexTermSum
+from zixy.qubit.pauli import (
+    ComplexTermSum as PauliComplexTermSum,
+    RealTermSum as PauliRealTermSum,
+)
 from zixy.qubit.state import (
     ComplexTermSum as QubitComplexState,
     RealTermSum as QubitRealState,
@@ -307,6 +310,31 @@ def test_mapper():
             return len(value)
 
     assert StringLength().apply("abc") == 3
+
+
+@pytest.mark.parametrize("mapper_type", MAPPER_TYPES)
+def test_apply_real_fermion_operator(mapper_type):
+    mapper = mapper_type(2)
+
+    mapped = mapper.apply(NormalString(2, "F0^ F1"), real=True)
+    mapped += mapper.apply(NormalString(2, "F1^ F0"), real=True)
+
+    expected = mapper.apply(NormalString(2, "F0^ F1"))
+    expected += mapper.apply(NormalString(2, "F1^ F0"))
+    assert isinstance(mapped, PauliRealTermSum)
+    assert mapped.into(PauliComplexTermSum) == expected
+
+
+def test_apply_state_accepts_real_none():
+    mapped = JordanWignerMapper(2).apply(FermionStateString(2), real=None)
+
+    assert isinstance(mapped, QubitStateString)
+
+
+@pytest.mark.parametrize("real", (False, True))
+def test_apply_state_rejects_non_none_real(real):
+    with pytest.raises(TypeError, match="real must be None for fermionic state strings"):
+        JordanWignerMapper(2).apply(FermionStateString(2), real=real)
 
 
 def test_to_qubit_type_hints():

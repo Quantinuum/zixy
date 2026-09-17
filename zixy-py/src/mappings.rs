@@ -2,17 +2,23 @@
 
 use num_complex::Complex64;
 use pyo3::{pyclass, pymethods};
+use zixy::container::traits::RefElements;
+use zixy::container::word_iters::Elem;
+use zixy::fermion::state::cmpnt_list::CmpntRef as FermionStateRef;
 use zixy::mappings::bk::BravyiKitaevMapper as BravyiKitaevMapper_;
 use zixy::mappings::jw::JordanWignerMapper as JordanWignerMapper_;
 use zixy::mappings::paraparticular::ParaparticularMapper as ParaparticularMapper_;
 use zixy::mappings::parity::ParityMapper as ParityMapper_;
 use zixy::mappings::Mapper;
 use zixy::qubit::pauli::cmpnt_major::term_set;
+use zixy::qubit::state::cmpnt_list::CmpntList as QubitStateCmpntList;
 
 use crate::container::coeffs::ComplexVec;
 use crate::container::map::Map;
+use crate::fermion::state::Array as FermionStateArray;
 use crate::qubit::mode::Qubits;
 use crate::qubit::pauli::Array;
+use crate::qubit::state::Array as QubitStateArray;
 
 fn apply<M>(mapper: &mut M, ladder_operators: Vec<(usize, bool)>) -> (Array, ComplexVec, Map)
 where
@@ -24,6 +30,14 @@ where
         ComplexVec(output.terms.coeffs),
         Map(output.map),
     )
+}
+
+fn apply_state<M>(mapper: &mut M, state: &FermionStateArray, index: usize) -> QubitStateArray
+where
+    for<'a> M: Mapper<FermionStateRef<'a>, Elem<QubitStateCmpntList>>,
+{
+    let output = mapper.apply(state.0.get_elem_ref(index));
+    QubitStateArray(output.0)
 }
 
 /// A Jordan--Wigner mapper.
@@ -43,6 +57,11 @@ impl JordanWignerMapper {
     /// Apply the mapper to a ladder-operator product.
     pub fn apply(&mut self, ladder_operators: Vec<(usize, bool)>) -> (Array, ComplexVec, Map) {
         apply(&mut self.0, ladder_operators)
+    }
+
+    /// Apply the mapper to a fermionic occupation-number state.
+    pub fn apply_state(&mut self, state: &FermionStateArray, index: usize) -> QubitStateArray {
+        apply_state(&mut self.0, state, index)
     }
 }
 
@@ -64,6 +83,11 @@ impl BravyiKitaevMapper {
     pub fn apply(&mut self, ladder_operators: Vec<(usize, bool)>) -> (Array, ComplexVec, Map) {
         apply(&mut self.0, ladder_operators)
     }
+
+    /// Apply the mapper to a fermionic occupation-number state.
+    pub fn apply_state(&mut self, state: &FermionStateArray, index: usize) -> QubitStateArray {
+        apply_state(&mut self.0, state, index)
+    }
 }
 
 /// A parity mapper.
@@ -84,6 +108,11 @@ impl ParityMapper {
     pub fn apply(&mut self, ladder_operators: Vec<(usize, bool)>) -> (Array, ComplexVec, Map) {
         apply(&mut self.0, ladder_operators)
     }
+
+    /// Apply the mapper to a fermionic occupation-number state.
+    pub fn apply_state(&mut self, state: &FermionStateArray, index: usize) -> QubitStateArray {
+        apply_state(&mut self.0, state, index)
+    }
 }
 
 /// A paraparticular mapper.
@@ -103,5 +132,10 @@ impl ParaparticularMapper {
     /// Apply the mapper to a ladder-operator product.
     pub fn apply(&mut self, ladder_operators: Vec<(usize, bool)>) -> (Array, ComplexVec, Map) {
         apply(&mut self.0, ladder_operators)
+    }
+
+    /// Apply the mapper to a fermionic occupation-number state.
+    pub fn apply_state(&mut self, state: &FermionStateArray, index: usize) -> QubitStateArray {
+        apply_state(&mut self.0, state, index)
     }
 }

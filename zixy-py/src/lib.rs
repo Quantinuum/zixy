@@ -2,6 +2,7 @@
 pub mod cmpnt;
 pub mod container;
 pub mod fermion;
+pub mod mappings;
 pub mod qubit;
 pub mod utils;
 
@@ -23,11 +24,10 @@ fn _zixy(_py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     m.add_class::<crate::qubit::pauli::Array>()?;
     m.add_class::<crate::qubit::state::Array>()?;
 
-    m.add_class::<crate::fermion::mappings::Mapper>()?;
-    m.add_class::<crate::fermion::mappings::JordanWignerMapper>()?;
-    m.add_class::<crate::fermion::mappings::BravyiKitaevMapper>()?;
-    m.add_class::<crate::fermion::mappings::ParityMapper>()?;
-    m.add_class::<crate::fermion::mappings::ParaparticularMapper>()?;
+    m.add_class::<crate::mappings::JordanWignerMapper>()?;
+    m.add_class::<crate::mappings::BravyiKitaevMapper>()?;
+    m.add_class::<crate::mappings::ParityMapper>()?;
+    m.add_class::<crate::mappings::ParaparticularMapper>()?;
     m.add_class::<crate::fermion::mode::Modes>()?;
     m.add_class::<crate::fermion::springs::FermionSprings>()?;
     m.add_class::<crate::fermion::state::Array>()?;

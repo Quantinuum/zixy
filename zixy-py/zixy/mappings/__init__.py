@@ -12,19 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Zixy.
+"""Mappers between algebraic representations."""
 
-Zixy is a high performance library for the manipulation of Pauli strings and other quantum
-algebraic objects.
-"""
+from zixy.mappings.base import Mapper
+from zixy.mappings.bk import BravyiKitaevMapper
+from zixy.mappings.jw import JordanWignerMapper
+from zixy.mappings.paraparticular import ParaparticularMapper
+from zixy.mappings.parity import ParityMapper
 
-from zixy import container
-from zixy import fermion
-from zixy import mappings
-from zixy import qubit
-
-__all__ = ["container", "fermion", "mappings", "qubit"]
-
-# x-release-please-start-version
-__version__ = "0.4.0-rc.1"
-# x-release-please-end
+__all__ = [
+    "Mapper",
+    "JordanWignerMapper",
+    "BravyiKitaevMapper",
+    "ParityMapper",
+    "ParaparticularMapper",
+]

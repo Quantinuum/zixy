@@ -142,8 +142,8 @@ class TermSum(
 
         Note:
             This function returns a term sum with complex coefficients. In cases where Hermitian
-            operators guarantee a real mapped representation, the zero imaginary coefficients
-            are retained to keep the result type consistent.
+            operators guarantee a real mapped representation, users may wish to directly use the
+            :class:`~zixy.fermion.mappings.Mapper` classes for finer control.
         """
         from zixy.mappings import JordanWignerMapper  # noqa: PLC0415
 

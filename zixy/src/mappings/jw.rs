@@ -2,11 +2,13 @@
 
 use num_complex::Complex64;
 
+use crate::fermion::state::cmpnt_list::CmpntRef as FermionStateRef;
 use crate::mappings::operators::OperatorMapper;
 use crate::mappings::traits::UpdateParityRho;
 use crate::mappings::Mapper;
 use crate::qubit::mode::Qubits;
 use crate::qubit::pauli::cmpnt_major::term_set;
+use crate::qubit::state::cmpnt::BasisState;
 
 /// Jordan--Wigner mapper from fermionic ladder-operator products to Pauli term sums.
 #[derive(Clone)]
@@ -25,6 +27,12 @@ impl JordanWignerMapper {
 impl Mapper<&[(usize, bool)], term_set::TermSet<Complex64>> for JordanWignerMapper {
     fn apply(&mut self, input: &[(usize, bool)]) -> term_set::TermSet<Complex64> {
         self.0.apply(input)
+    }
+}
+
+impl Mapper<FermionStateRef<'_>, BasisState> for JordanWignerMapper {
+    fn apply(&mut self, input: FermionStateRef<'_>) -> BasisState {
+        self.0.apply_state(input)
     }
 }
 

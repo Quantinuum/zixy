@@ -2,19 +2,22 @@
 
 use num_complex::Complex64;
 
+use crate::container::bit_matrix::{AsRowMutRef, AsRowRef};
 use crate::container::coeffs::complex_sign::ComplexSign;
 use crate::container::coeffs::traits::{HasCoeffsMut, NumReprVec, Represent};
 use crate::container::traits::{Elements, MutRefElements, RefElements};
 use crate::container::word_iters::lincomb;
 use crate::container::word_iters::term_set::AsViewMut as _;
 use crate::container::word_iters::terms::AsViewMut;
+use crate::fermion::state::cmpnt_list::CmpntRef as FermionStateRef;
 use crate::mappings::traits::UpdateParityRho;
 use crate::mappings::Mapper;
 use crate::qubit::mode::PauliMatrix::{X, Y, Z};
 use crate::qubit::mode::Qubits;
 use crate::qubit::pauli::cmpnt_major::cmpnt_list::CmpntList;
 use crate::qubit::pauli::cmpnt_major::{term_set, terms};
-use crate::qubit::traits::{PauliWordMutRef, QubitsBased};
+use crate::qubit::state::cmpnt::BasisState;
+use crate::qubit::traits::{PauliWordMutRef, PauliWordRef, QubitsBased};
 
 /// Workspace containing cached real and imaginary Pauli strings for fermionic ladder operators.
 #[derive(Clone)]
@@ -129,6 +132,30 @@ impl OperatorMapper {
             );
         }
     }
+
+    /// Map a fermionic occupation-number state using the X support of the cached ladder operators.
+    pub(super) fn apply_state(&self, input: FermionStateRef<'_>) -> BasisState {
+        assert_eq!(
+            input.n_bit(),
+            self.qubits().len(),
+            "Fermion mode count must equal qubit count"
+        );
+        let mut output = BasisState::new(self.qubits().clone());
+        for (i_mode, occupied) in AsRowRef::iter(&input).enumerate() {
+            if !occupied {
+                continue;
+            }
+            for (i_qubit, pauli) in
+                PauliWordRef::iter(&self.re_strings.get_elem_ref(i_mode)).enumerate()
+            {
+                if pauli == X || pauli == Y {
+                    let bit = output.borrow().get_bit_unchecked(i_qubit);
+                    output.borrow_mut().set_bit_unchecked(i_qubit, !bit);
+                }
+            }
+        }
+        output
+    }
 }
 
 impl Mapper<&[Op], term_set::TermSet<Complex64>> for OperatorMapper {
@@ -149,7 +176,19 @@ impl QubitsBased for OperatorMapper {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mappings::{bk::BravyiKitaevRule, jw::JordanWignerRule, parity::ParityRule};
+    use crate::container::word_iters::Elem;
+    use crate::fermion::mode::Modes;
+    use crate::fermion::state::cmpnt_list::CmpntList as FermionStateCmpntList;
+    use crate::mappings::{
+        bk::BravyiKitaevRule, jw::JordanWignerRule, paraparticular::ParaparticularRule,
+        parity::ParityRule,
+    };
+    use std::collections::HashSet;
+
+    fn fermion_state(occupied: impl IntoIterator<Item = usize>) -> Elem<FermionStateCmpntList> {
+        Elem::<FermionStateCmpntList>::from_set(Modes::from_count(4), HashSet::from_iter(occupied))
+            .unwrap()
+    }
 
     #[test]
     fn test_jw() {
@@ -186,6 +225,44 @@ mod tests {
         let mut ops = OperatorMapper::new::<JordanWignerRule>(Qubits::from_count(2), None);
         ops.load_product(&[]);
         assert_eq!(ops.work.to_string(), "(+1, )");
+    }
+
+    #[test]
+    fn test_state_mappings() {
+        let input = fermion_state([0, 2]);
+        for (mapped, expected) in [
+            (
+                OperatorMapper::new::<JordanWignerRule>(Qubits::from_count(4), None)
+                    .apply_state(input.borrow()),
+                HashSet::from([0, 2]),
+            ),
+            (
+                OperatorMapper::new::<BravyiKitaevRule>(Qubits::from_count(4), None)
+                    .apply_state(input.borrow()),
+                HashSet::from([0, 1, 2]),
+            ),
+            (
+                OperatorMapper::new::<ParityRule>(Qubits::from_count(4), None)
+                    .apply_state(input.borrow()),
+                HashSet::from([0, 1]),
+            ),
+            (
+                OperatorMapper::new::<ParaparticularRule>(Qubits::from_count(4), None)
+                    .apply_state(input.borrow()),
+                HashSet::from([0, 2]),
+            ),
+        ] {
+            assert_eq!(mapped.borrow().to_set(), expected);
+        }
+    }
+
+    #[test]
+    fn test_state_mapping_mode_ordering() {
+        let input = fermion_state([0, 2]);
+        let mapped =
+            OperatorMapper::new::<JordanWignerRule>(Qubits::from_count(4), Some(vec![3, 2, 1, 0]))
+                .apply_state(input.borrow());
+        assert_eq!(mapped.borrow().to_set(), HashSet::from([1, 3]));
     }
 
     #[test]

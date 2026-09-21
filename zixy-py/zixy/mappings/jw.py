@@ -15,19 +15,21 @@
 """Jordan--Wigner mapper implementation."""
 
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, overload
 
 from zixy._zixy import JordanWignerMapper as JordanWignerImpl, Qubits
 from zixy.container.coeffs import ComplexCoeffs
 from zixy.container.data import TermData
-from zixy.fermion.operator._strings import String as FermionString
+from zixy.fermion.operator._strings import String as FermionOperatorString
+from zixy.fermion.state import String as FermionStateString
 from zixy.mappings.base import Mapper
 from zixy.qubit.pauli._strings import Strings as PauliStrings
 from zixy.qubit.pauli._terms import ComplexTermSum as PauliComplexTermSum
+from zixy.qubit.state import String as QubitStateString
 
 
 class JordanWignerMapper(Mapper):
-    """Jordan--Wigner mapper from fermionic strings to Pauli term sums."""
+    """Jordan--Wigner mapper from fermionic operators and states to qubit values."""
 
     _impl: JordanWignerImpl
     qubits: Qubits
@@ -41,9 +43,23 @@ class JordanWignerMapper(Mapper):
             qubits, list(mode_ordering) if mode_ordering is not None else None
         )
 
-    def apply(self, value: FermionString[Any, Any, Any], /) -> PauliComplexTermSum:
-        """Map ``value`` to a complex Pauli term sum."""
-        cmpnts, coeffs, map_ = self._impl.apply(value.get_ops())
-        return PauliComplexTermSum._create(
-            TermData(PauliStrings._create(cmpnts), ComplexCoeffs._create(coeffs)), map_
-        )
+    @overload
+    def apply(self, value: FermionOperatorString[Any, Any, Any], /) -> PauliComplexTermSum: ...
+
+    @overload
+    def apply(self, value: FermionStateString, /) -> QubitStateString: ...
+
+    def apply(
+        self, value: FermionOperatorString[Any, Any, Any] | FermionStateString, /
+    ) -> PauliComplexTermSum | QubitStateString:
+        """Map a fermionic operator string or occupation-number state string."""
+        if isinstance(value, FermionStateString):
+            if len(value.modes) != len(self.qubits):
+                raise ValueError("Fermion mode count must equal qubit count.")
+            return QubitStateString._create(self._impl.apply_state(value._impl, value.index))
+        if isinstance(value, FermionOperatorString):
+            cmpnts, coeffs, map_ = self._impl.apply(value.get_ops())
+            return PauliComplexTermSum._create(
+                TermData(PauliStrings._create(cmpnts), ComplexCoeffs._create(coeffs)), map_
+            )
+        raise TypeError(f"Cannot map an instance of {type(value).__name__}.")

@@ -615,6 +615,7 @@ class JordanWignerMapper:
     def apply(
         self, ladder_operators: list[tuple[int, bool]]
     ) -> tuple[QubitPauliArray, ComplexVec, Map]: ...
+    def apply_state(self, state: FermionStateArray, index: int) -> QubitStateArray: ...
 
 class BravyiKitaevMapper:
     def __init__(
@@ -623,6 +624,7 @@ class BravyiKitaevMapper:
     def apply(
         self, ladder_operators: list[tuple[int, bool]]
     ) -> tuple[QubitPauliArray, ComplexVec, Map]: ...
+    def apply_state(self, state: FermionStateArray, index: int) -> QubitStateArray: ...
 
 class ParityMapper:
     def __init__(
@@ -631,6 +633,7 @@ class ParityMapper:
     def apply(
         self, ladder_operators: list[tuple[int, bool]]
     ) -> tuple[QubitPauliArray, ComplexVec, Map]: ...
+    def apply_state(self, state: FermionStateArray, index: int) -> QubitStateArray: ...
 
 class ParaparticularMapper:
     def __init__(
@@ -639,6 +642,7 @@ class ParaparticularMapper:
     def apply(
         self, ladder_operators: list[tuple[int, bool]]
     ) -> tuple[QubitPauliArray, ComplexVec, Map]: ...
+    def apply_state(self, state: FermionStateArray, index: int) -> QubitStateArray: ...
 
 class CliffordGateList:
     def __init__(self) -> None: ...

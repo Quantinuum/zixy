@@ -110,7 +110,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
 
     @property
     def max_len(self) -> int:
-        """Get the number of operators per string that fit without resizing."""
+        """Get the current per-string operator capacity."""
         return self._impl.max_len
 
     @classmethod
@@ -258,12 +258,12 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
 
     @property
     def max_len(self) -> int:
-        """Get the number of operators per string that fit without resizing."""
+        """Get the current per-string operator capacity."""
         return self._impl.max_len
 
     @requires_ownership
     def append_n(self, n: int, source: SpecT | Cmpnt[ImplT, SpecT]) -> Self:
-        """Append a string repeatedly, growing storage before adding rows."""
+        """Append a string repeatedly, resizing the container before adding rows if necessary."""
         if n < 0:
             raise ValueError("The number of strings to append must be non-negative.")
         if n == 0:
@@ -353,7 +353,7 @@ class StringSet(OperatorStringSet[ImplT, SpecT, ElemT]):
 
     @property
     def max_len(self) -> int:
-        """Get the number of operators per string that fit without resizing."""
+        """Get the current per-string operator capacity."""
         return self._impl.max_len
 
     def _get_working_cmpnt(self, value: SpecT | Cmpnt[ImplT, SpecT]) -> Cmpnt[ImplT, SpecT]:

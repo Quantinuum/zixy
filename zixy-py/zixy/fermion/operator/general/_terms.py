@@ -176,7 +176,7 @@ class Term(OperatorTerm[ImplT, SpecT, CoeffT, ElemT]):
 
     @property
     def max_len(self) -> int:
-        """Get the number of operators per string that fit without resizing."""
+        """Get the current per-string operator capacity."""
         return self.string.max_len
 
     def dagger(self) -> None:
@@ -222,7 +222,7 @@ class Terms(OperatorTerms[ImplT, SpecT, CoeffT, ElemT]):
 
     @property
     def max_len(self) -> int:
-        """Get the number of operators per string that fit without resizing."""
+        """Get the current per-string operator capacity."""
         return self.strings.max_len
 
     @requires_ownership
@@ -231,7 +231,7 @@ class Terms(OperatorTerms[ImplT, SpecT, CoeffT, ElemT]):
         n: int,
         source: terms.TermSpecT[ImplT, SpecT, CoeffT] | TermBase[ImplT, SpecT, CoeffT] = "",
     ) -> Self:
-        """Append a term repeatedly, growing storage before adding rows."""
+        """Append a term repeatedly, resizing the container before adding rows if necessary."""
         if n < 0:
             raise ValueError("The number of terms to append must be non-negative.")
         if n == 0:
@@ -296,7 +296,7 @@ class TermSet(OperatorTermSet[ImplT, SpecT, CoeffT, ElemT]):
 
     @property
     def max_len(self) -> int:
-        """Get the number of operators per string that fit without resizing."""
+        """Get the current per-string operator capacity."""
         return self.strings.max_len
 
     def _get_working_term(

@@ -356,13 +356,13 @@ class TermSum(OperatorTermSum[ImplT, SpecT, CoeffT, ElemT], TermSet[CoeffT]):
     @classmethod
     def from_iterable(cls, source: Any, modes: int | Modes = 0, max_len: int = 0) -> Self:
         """Create a new instance of ``cls`` from an iterable of terms."""
+        terms = cls.terms_type.from_iterable(source, modes, max_len=max_len)
         out = cls(modes, max_len=max_len)
-        if isinstance(source, Sequence):
-            out.strings._impl._reserve_string_length(
-                max(map(_max_len_from_source, source), default=0),
-                warn=False,
-            )
-        out.add_iterable(source)
+        if isinstance(terms._impl._coeffs, RealCoeffs | ComplexCoeffs):
+            out._collect_terms(terms, sum_duplicates=True)
+        else:
+            out.strings._impl._reserve_string_length(terms.max_len, warn=False)
+            out.add_iterable(terms)
         return out
 
     def dagger(self) -> None:

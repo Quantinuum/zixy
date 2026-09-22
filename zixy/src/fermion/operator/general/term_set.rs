@@ -33,10 +33,10 @@ impl<C: NumRepr> TermSet<C> {
         }
     }
     pub fn push_term(&mut self, modes: &[usize], adj: &[bool], coeff: C) {
-        let old_capacity = self.terms.word_iters.max_len;
+        let old_max_len = self.terms.word_iters.max_len;
         let i = self.terms.word_iters.len();
         self.terms.word_iters.push(modes, adj);
-        if self.terms.word_iters.max_len != old_capacity {
+        if self.terms.word_iters.max_len != old_max_len {
             self.map.populate_from(&self.terms.word_iters);
         } else {
             let k = self.terms.word_iters.hash_at_index(i);
@@ -53,12 +53,12 @@ impl<C: NumRepr> TermSet<C> {
         rhs_adj: &[bool],
         coeff: C,
     ) {
-        let old_capacity = self.terms.word_iters.max_len;
+        let old_max_len = self.terms.word_iters.max_len;
         let i = self.terms.word_iters.len();
         self.terms
             .word_iters
             .push_concat(lhs_modes, lhs_adj, rhs_modes, rhs_adj);
-        if self.terms.word_iters.max_len != old_capacity {
+        if self.terms.word_iters.max_len != old_max_len {
             self.map.populate_from(&self.terms.word_iters);
         } else {
             let k = self.terms.word_iters.hash_at_index(i);

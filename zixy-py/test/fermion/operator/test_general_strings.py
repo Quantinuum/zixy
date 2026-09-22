@@ -27,7 +27,7 @@ def test_string_access():
 def test_string_modification():
     string = String(4, [(0, True), (2, False)])
 
-    assert string.max_len == 2
+    assert string.max_string_len == 2
     assert string.get_ops() == [(0, True), (2, False)]
 
     string.set("F3 F1^")
@@ -115,7 +115,7 @@ def test_string_mul_errors():
 
 
 def test_array_sizing():
-    strings = Strings(5, max_len=3)
+    strings = Strings(5, max_string_len=3)
     specs = (
         [(0, True), (1, False)],
         [(2, False), (0, True), (4, False)],
@@ -126,9 +126,9 @@ def test_array_sizing():
     strings.append_iterable(specs)
 
     assert len(strings) == len(specs)
-    assert strings.max_len == 3
+    assert strings.max_string_len == 3
     assert [string.get_ops() for string in strings] == [list(spec) for spec in specs]
-    assert strings[1:3].clone() == Strings.from_iterable(specs[1:3], 5, max_len=3)
+    assert strings[1:3].clone() == Strings.from_iterable(specs[1:3], 5, max_string_len=3)
 
 
 def test_string_from_str_errors():
@@ -148,7 +148,7 @@ def test_string_array_from_str():
     strings = Strings.from_str("F0 F0^, F1^ F2, F2 F1^ F0", 3)
 
     assert len(strings) == 3
-    assert strings.max_len == 3
+    assert strings.max_string_len == 3
     assert str(strings[1:]) == "F1^ F2, F2 F1^ F0"
     assert [string.get_ops() for string in strings] == [
         [(0, False), (0, True)],
@@ -166,7 +166,7 @@ def test_array_modification():
             [(3, True), (0, False)],
         ),
         4,
-        max_len=2,
+        max_string_len=2,
     )
 
     strings[0], strings[3] = strings[3].clone(), strings[0].clone()
@@ -179,7 +179,7 @@ def test_array_modification():
 
 
 def test_errors():
-    strings = Strings(4, max_len=1)
+    strings = Strings(4, max_string_len=1)
 
     with pytest.raises(IndexError):
         strings[0]
@@ -197,7 +197,7 @@ def test_string_set():
 
 
 def test_mapped_insert():
-    string_set = StringSet(4, max_len=3)
+    string_set = StringSet(4, max_string_len=3)
     specs = (
         [(0, True), (1, False)],
         [(1, False), (0, True)],
@@ -231,17 +231,17 @@ def test_mapped_equal():
         [(2, True), (3, False), (1, True)],
     )
 
-    strings = Strings.from_iterable(specs, 4, max_len=3)
-    reversed_strings = Strings.from_iterable(reversed(specs), 4, max_len=3)
+    strings = Strings.from_iterable(specs, 4, max_string_len=3)
+    reversed_strings = Strings.from_iterable(reversed(specs), 4, max_string_len=3)
 
     assert strings != reversed_strings
-    assert StringSet.from_iterable(strings, 4, max_len=3) == StringSet.from_iterable(
-        reversed_strings, 4, max_len=3
+    assert StringSet.from_iterable(strings, 4, max_string_len=3) == StringSet.from_iterable(
+        reversed_strings, 4, max_string_len=3
     )
 
 
 def test_mapped_remove():
-    string_set = StringSet(4, max_len=3)
+    string_set = StringSet(4, max_string_len=3)
     specs = (
         [(0, True), (1, False)],
         [(1, False), (0, True)],
@@ -266,7 +266,7 @@ def test_string_set_from_iterable():
         [],
     )
 
-    string_set = StringSet.from_iterable(specs, 2, max_len=2)
+    string_set = StringSet.from_iterable(specs, 2, max_string_len=2)
     assert len(string_set) == 3
-    assert StringSet.from_iterable(reversed(specs), 2, max_len=2) == string_set
+    assert StringSet.from_iterable(reversed(specs), 2, max_string_len=2) == string_set
     assert StringSet.from_cmpnts(string_set.to_cmpnts()).to_cmpnts() == string_set.to_cmpnts()

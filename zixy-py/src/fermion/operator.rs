@@ -136,10 +136,10 @@ fn normal_order_product(
     modes: Modes_,
     ops: Vec<(usize, bool)>,
 ) -> PyResult<(NormalArray, RealVec)> {
-    let max_len = ops.len();
+    let max_string_len = ops.len();
     let (mode_inds, adj): (Vec<_>, Vec<_>) = ops.into_iter().unzip();
     check_general_ops(&modes, &mode_inds, &adj)?;
-    let mut general_set = general::term_set::TermSet::<f64>::new(max_len, modes);
+    let mut general_set = general::term_set::TermSet::<f64>::new(max_string_len, modes);
     general_set.push_term(&mode_inds, &adj, 1.0);
     let out = zixy::fermion::operator::lincomb::to_normal_order(&general_set.as_terms());
     Ok(normal_set_to_py_real(out))
@@ -853,10 +853,10 @@ fn clean_complex_coeffs(mut coeffs: Vec<Complex64>) -> Vec<Complex64> {
 #[pymethods]
 impl GeneralArray {
     #[new]
-    #[pyo3(signature = (modes=None, max_len=None, springs=None))]
+    #[pyo3(signature = (modes=None, max_string_len=None, springs=None))]
     fn __init__(
         modes: Option<Modes>,
-        max_len: Option<usize>,
+        max_string_len: Option<usize>,
         springs: Option<FermionSprings>,
     ) -> PyResult<Self> {
         let springs = springs.unwrap_or_default();
@@ -865,12 +865,12 @@ impl GeneralArray {
                 springs.0.get_mode_inds().default_n_mode() as usize,
             ))
         });
-        let inferred_max_len = (0..springs.0.len())
+        let inferred_max_string_len = (0..springs.0.len())
             .map(|i| springs.0.get_ladder_op_iter(i).count())
             .max()
             .unwrap_or(0);
-        let max_len = max_len.unwrap_or(0).max(inferred_max_len);
-        let mut out = Self(general::cmpnt_list::CmpntList::new(max_len, modes.0));
+        let max_string_len = max_string_len.unwrap_or(0).max(inferred_max_string_len);
+        let mut out = Self(general::cmpnt_list::CmpntList::new(max_string_len, modes.0));
         for i in 0..springs.0.len() {
             let (mode_inds, adj): (Vec<_>, Vec<_>) = springs
                 .0
@@ -907,20 +907,20 @@ impl GeneralArray {
     }
 
     #[getter]
-    fn get_max_len(&self) -> usize {
-        self.0.max_len
+    fn get_max_string_len(&self) -> usize {
+        self.0.max_string_len
     }
 
     /// Reserve string storage; internal initial allocations can suppress growth warnings.
     #[pyo3(signature = (required, *, warn=true))]
     fn _reserve_string_length(&mut self, required: usize, warn: bool) -> PyResult<()> {
-        if required > self.0.max_len {
+        if required > self.0.max_string_len {
             if warn {
                 let message = std::ffi::CString::new(format!(
-                    "Increased max_len from {} to {required} to fit a fermion string with {required} operators. \
+                    "Increased max_string_len from {} to {required} to fit a fermion string with {required} operators. \
                      This may copy existing strings. If you know the longest string in advance, \
-                     set max_len when creating the object to avoid repeated resizing.",
-                    self.0.max_len,
+                     set max_string_len when creating the object to avoid repeated resizing.",
+                    self.0.max_string_len,
                 )).expect("warning contains no null bytes");
                 Python::attach(|py| PyErr::warn(py, &py.get_type::<PyUserWarning>(), &message, 2))?;
             }
@@ -1055,9 +1055,9 @@ impl GeneralArray {
             return Ok(found);
         }
         let (modes, adj) = other.0.get(index);
-        let old_capacity = self.0.max_len;
+        let old_capacity = self.0.max_string_len;
         self._reserve_string_length(modes.len(), true)?;
-        if self.0.max_len != old_capacity {
+        if self.0.max_string_len != old_capacity {
             map.0.populate_from(&self.0);
         }
         let out = self.0.len();

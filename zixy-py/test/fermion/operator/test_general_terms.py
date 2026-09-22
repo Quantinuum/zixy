@@ -199,7 +199,7 @@ def test_term_daggered(term, original, expected):
 
 
 def test_real_terms():
-    terms = RealTerms(4, max_len=2)
+    terms = RealTerms(4, max_string_len=2)
     assert len(terms) == 0
     terms.resize(4)
 
@@ -223,7 +223,7 @@ def test_real_terms():
 
 
 def test_complex_terms():
-    terms = ComplexTerms(3, max_len=2)
+    terms = ComplexTerms(3, max_string_len=2)
     terms.append_iterable(
         (
             ("F1 F0^", 1 + 2j),
@@ -244,7 +244,7 @@ def test_complex_terms():
 
 
 def test_append_iterable():
-    terms = RealTerms(4, max_len=2)
+    terms = RealTerms(4, max_string_len=2)
     terms.append_iterable(
         (
             ("F1 F0^", 2.0),
@@ -276,7 +276,7 @@ def test_real_term_add_iterable():
             RealTerm(4, ("F2", 0.25)),
         ),
         4,
-        max_len=2,
+        max_string_len=2,
     )
 
     assert str(term_sum) == "(0.0, F1 F0^), (0.25, F2)"
@@ -286,7 +286,7 @@ def test_real_term_add_iterable():
 
 
 def test_term_sum_rejects_term_over_different_modes():
-    term_sum = RealTermSum(max_len=4)
+    term_sum = RealTermSum(max_string_len=4)
     term = RealTerm.from_cmpnt_coeff(String(4, "F0^ F0"), 1.0)
 
     with pytest.raises(ValueError, match="different modes"):
@@ -294,7 +294,7 @@ def test_term_sum_rejects_term_over_different_modes():
 
 
 def test_term_set_check_term():
-    term_set = RealTermSet(3, max_len=2)
+    term_set = RealTermSet(3, max_string_len=2)
     term = RealTerm.from_str("F0^ F1", 3)
 
     assert term_set.insert(term) == 0
@@ -308,7 +308,7 @@ def test_term_set_check_term():
 
 
 def test_term_set_check_cmpnt():
-    term_set = RealTermSet(3, max_len=2)
+    term_set = RealTermSet(3, max_string_len=2)
     string = String(3, "F0^ F1")
 
     term_set._check_cmpnt(string)
@@ -321,7 +321,7 @@ def test_term_set_check_cmpnt():
 
 
 def test_real_term_into_other_types():
-    term_set = RealTermSet(4, max_len=2)
+    term_set = RealTermSet(4, max_string_len=2)
 
     assert term_set.insert(("F1 F0^", 2.0)) == 0
     assert term_set.insert(("F2", -1.0)) == 1

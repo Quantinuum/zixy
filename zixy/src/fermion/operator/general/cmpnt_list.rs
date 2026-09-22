@@ -11,18 +11,18 @@ use crate::fermion::traits::ModesBased;
 /// Contiguous and compact storage for non-normal-ordered fermion operator strings.
 #[derive(Clone)]
 pub struct CmpntList {
-    pub mode_part: ModeInds, // mode index at each operator position
-    pub adj_part: BitMatrix, // cre/ann flag per slot
-    pub len_part: Vec<u64>,  // length of each string, included in packed keys
-    pub modes: Modes,        // list of modes
-    pub max_len: usize,      // max operator slots per row
-    pub n_bits: usize,       // number of bits per mode index
+    pub mode_part: ModeInds,   // mode index at each operator position
+    pub adj_part: BitMatrix,   // cre/ann flag per slot
+    pub len_part: Vec<u64>,    // length of each string, included in packed keys
+    pub modes: Modes,          // list of modes
+    pub max_string_len: usize, // max operator slots per row
+    pub n_bits: usize,         // number of bits per mode index
 }
 
 impl CmpntList {
     /// Grow to the required string length without changing existing strings.
     pub fn reserve_string_length(&mut self, required: usize) {
-        if required <= self.max_len {
+        if required <= self.max_string_len {
             return;
         }
         let mut out = Self::new(required, self.modes.clone());
@@ -48,7 +48,7 @@ impl CmpntList {
 
     /// Look up a logical string regardless of the two arrays' storage capacities.
     pub fn lookup(&self, map: &Map, other: &Self, index: usize) -> Option<usize> {
-        if other.len_part[index] as usize > self.max_len {
+        if other.len_part[index] as usize > self.max_string_len {
             return None;
         }
         // Normalize padding to our row width without allocating or changing either array.
@@ -74,7 +74,7 @@ impl CmpntList {
     }
 
     /// Create a new empty non-normal-ordered `CmpntList` with the given mode space and maximum operator string length.
-    pub fn new(max_len: usize, modes: Modes) -> Self {
+    pub fn new(max_string_len: usize, modes: Modes) -> Self {
         let n_modes = modes.len();
         let n_bits = if n_modes <= 1 {
             1
@@ -82,11 +82,11 @@ impl CmpntList {
             (usize::BITS as usize) - (n_modes - 1).leading_zeros() as usize
         };
         Self {
-            mode_part: ModeInds::new(n_bits, max_len),
-            adj_part: BitMatrix::new(max_len),
+            mode_part: ModeInds::new(n_bits, max_string_len),
+            adj_part: BitMatrix::new(max_string_len),
             len_part: Vec::new(),
             modes,
-            max_len,
+            max_string_len,
             n_bits,
         }
     }
@@ -169,7 +169,7 @@ impl Compatible for CmpntList {
 
 impl EmptyClone for CmpntList {
     fn empty_clone(&self) -> Self {
-        Self::new(self.max_len, self.modes.clone())
+        Self::new(self.max_string_len, self.modes.clone())
     }
 }
 
@@ -244,13 +244,13 @@ mod tests {
             strings.set(0, &modes, &adj);
             assert_eq!(strings.get(0), (modes, adj));
             assert_eq!(strings.get(1), (vec![0], vec![true]));
-            assert_eq!(strings.max_len, length);
+            assert_eq!(strings.max_string_len, length);
         }
         strings.set(0, &[], &[]);
-        assert_eq!(strings.max_len, 129);
+        assert_eq!(strings.max_string_len, 129);
         assert_eq!(strings.get(0), (vec![], vec![]));
         strings.push_concat(&[0; 100], &[false; 100], &[0; 100], &[true; 100]);
-        assert_eq!(strings.max_len, 200);
+        assert_eq!(strings.max_string_len, 200);
         assert_eq!(strings.get(2).0.len(), 200);
     }
 

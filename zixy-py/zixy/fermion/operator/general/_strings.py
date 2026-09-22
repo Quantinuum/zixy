@@ -19,8 +19,8 @@ operators, acting on a register of fermionic modes.
 
 The structure of this module parallels that of :mod:`~zixy.container.cmpnts`.
 
-``max_string_len`` is the maximum number of creation or annihilation operators per string. Set it
-to the longest expected operator string when constructing a container so that the backing storage
+``max_string_len`` is the maximum number of creation or annihilation operators per string. It is
+recommended that the user sets ``max_len`` to the longest expected operator string when constructing
 can be selected efficiently.
 """
 

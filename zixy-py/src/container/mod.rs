@@ -2,3 +2,4 @@
 #[allow(dead_code)]
 pub mod coeffs;
 pub mod map;
+pub mod terms;

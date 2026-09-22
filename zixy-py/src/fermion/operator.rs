@@ -777,9 +777,9 @@ pub struct GeneralArray(pub general::cmpnt_list::CmpntList);
 
 crate::container::terms::numeric_terms!(GeneralArray, |out, source, i| {
     let (modes, adj) = source.get(i);
-    if modes.len() > out.max_len {
+    if modes.len() > out.max_string_len {
         return Err(PyValueError::new_err(
-            "Operator string exceeds destination max_len.",
+            "Operator string exceeds destination max_string_len.",
         ));
     }
     out.push(&modes, &adj);

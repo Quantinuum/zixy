@@ -116,6 +116,15 @@ impl ModeInds {
         }
     }
 
+    /// Replace one row of packed mode indices.
+    pub fn set_row(&mut self, row: usize, values: &[usize]) {
+        self.table.clear_row(row);
+        for (i, value) in values.iter().enumerate() {
+            let (word, offset) = self.get_offset(i);
+            self.table[row][word] |= (*value as u64) << offset;
+        }
+    }
+
     /// Read back integer stored at slot `i_slot` in row `i_row` by reversing the packing from `push_vec`.
     pub fn get_value(&self, i_row: usize, i_slot: usize) -> usize {
         let (i_u64, bit_offset) = self.get_offset(i_slot);

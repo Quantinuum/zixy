@@ -4,8 +4,8 @@ use std::collections::HashSet;
 
 use itertools::Itertools;
 use num_complex::Complex64;
-use pyo3::exceptions::PyValueError;
-use pyo3::{pyclass, pymethods, PyErr, PyResult};
+use pyo3::exceptions::{PyUserWarning, PyValueError};
+use pyo3::{pyclass, pymethods, PyErr, PyResult, Python};
 use zixy::cmpnt::springs::ModeSettings;
 use zixy::container::bit_matrix::{AsRowMutRef, AsRowRef};
 use zixy::container::map::Map as CoreMap;
@@ -138,27 +138,17 @@ fn normal_order_product(
 ) -> PyResult<(NormalArray, RealVec)> {
     let max_len = ops.len();
     let (mode_inds, adj): (Vec<_>, Vec<_>) = ops.into_iter().unzip();
-    check_general_ops(&modes, &mode_inds, &adj, max_len)?;
+    check_general_ops(&modes, &mode_inds, &adj)?;
     let mut general_set = general::term_set::TermSet::<f64>::new(max_len, modes);
     general_set.push_term(&mode_inds, &adj, 1.0);
     let out = zixy::fermion::operator::lincomb::to_normal_order(&general_set.as_terms());
     Ok(normal_set_to_py_real(out))
 }
 
-fn check_general_ops(
-    modes: &Modes_,
-    mode_inds: &[usize],
-    adj: &[bool],
-    max_len: usize,
-) -> PyResult<()> {
+fn check_general_ops(modes: &Modes_, mode_inds: &[usize], adj: &[bool]) -> PyResult<()> {
     if mode_inds.len() != adj.len() {
         return Err(PyErr::new::<PyValueError, _>(
             "modes and adj must have the same length",
-        ));
-    }
-    if mode_inds.len() > max_len {
-        return Err(PyErr::new::<PyValueError, _>(
-            "operator product is longer than max_len",
         ));
     }
     if mode_inds.iter().any(|mode| *mode >= modes.len()) {
@@ -879,7 +869,7 @@ impl GeneralArray {
             .map(|i| springs.0.get_ladder_op_iter(i).count())
             .max()
             .unwrap_or(0);
-        let max_len = max_len.unwrap_or(inferred_max_len);
+        let max_len = max_len.unwrap_or(0).max(inferred_max_len);
         let mut out = Self(general::cmpnt_list::CmpntList::new(max_len, modes.0));
         for i in 0..springs.0.len() {
             let (mode_inds, adj): (Vec<_>, Vec<_>) = springs
@@ -887,7 +877,7 @@ impl GeneralArray {
                 .get_ladder_op_iter(i)
                 .map(|(is_cre, mode)| (usize::from(mode), is_cre))
                 .unzip();
-            check_general_ops(out.0.modes(), &mode_inds, &adj, max_len)?;
+            check_general_ops(out.0.modes(), &mode_inds, &adj)?;
             out.0.push(&mode_inds, &adj);
         }
         Ok(out)
@@ -921,6 +911,24 @@ impl GeneralArray {
         self.0.max_len
     }
 
+    /// Reserve string storage; internal initial allocations can suppress growth warnings.
+    #[pyo3(signature = (required, *, warn=true))]
+    fn _reserve_string_length(&mut self, required: usize, warn: bool) -> PyResult<()> {
+        if required > self.0.max_len {
+            if warn {
+                let message = std::ffi::CString::new(format!(
+                    "Increased max_len from {} to {required} to fit a fermion string with {required} operators. \
+                     This may copy existing strings. If you know the longest string in advance, \
+                     set max_len when creating the object to avoid repeated resizing.",
+                    self.0.max_len,
+                )).expect("warning contains no null bytes");
+                Python::attach(|py| PyErr::warn(py, &py.get_type::<PyUserWarning>(), &message, 2))?;
+            }
+            self.0.reserve_string_length(required);
+        }
+        Ok(())
+    }
+
     fn append_clear(&mut self) {
         self.0.push(&[], &[]);
     }
@@ -935,27 +943,10 @@ impl GeneralArray {
         mode_inds: Vec<usize>,
         adj: Vec<bool>,
     ) -> PyResult<()> {
-        let max_len = if self.0.max_len == 0 {
-            mode_inds.len()
-        } else {
-            self.0.max_len
-        };
-        check_general_ops(self.0.modes(), &mode_inds, &adj, max_len)?;
+        check_general_ops(self.0.modes(), &mode_inds, &adj)?;
         let i = try_py_index(i, self.len())?;
-        let mut out = if max_len == self.0.max_len {
-            self.0.empty_clone()
-        } else {
-            general::cmpnt_list::CmpntList::new(max_len, self.0.modes().clone())
-        };
-        for j in 0..self.len() {
-            if i == j {
-                out.push(&mode_inds, &adj);
-            } else {
-                let (row_modes, row_adj) = self.0.get(j);
-                out.push(&row_modes, &row_adj);
-            }
-        }
-        self.0 = out;
+        self._reserve_string_length(mode_inds.len(), true)?;
+        self.0.set(i, &mode_inds, &adj);
         Ok(())
     }
 
@@ -1060,15 +1051,15 @@ impl GeneralArray {
     fn mapped_insert(&mut self, map: &mut Map, other: &Self, index: isize) -> PyResult<usize> {
         DifferentSpaces::check(&self.0, &other.0).to_py_result()?;
         let index = try_py_index(index, other.len())?;
-        if let Some(found) = (word_iters::set::View {
-            word_iters: &self.0,
-            map: &map.0,
-        })
-        .lookup(other.0.elem_u64it(index))
-        {
+        if let Some(found) = self.0.lookup(&map.0, &other.0, index) {
             return Ok(found);
         }
         let (modes, adj) = other.0.get(index);
+        let old_capacity = self.0.max_len;
+        self._reserve_string_length(modes.len(), true)?;
+        if self.0.max_len != old_capacity {
+            map.0.populate_from(&self.0);
+        }
         let out = self.0.len();
         self.0.push(&modes, &adj);
         map.0.insert(self.0.hash_at_index(out), out);
@@ -1078,11 +1069,7 @@ impl GeneralArray {
     fn mapped_lookup(&self, map: &Map, other: &Self, index: isize) -> PyResult<Option<usize>> {
         DifferentSpaces::check(&self.0, &other.0).to_py_result()?;
         let index = try_py_index(index, other.len())?;
-        let tmp = word_iters::set::View {
-            word_iters: &self.0,
-            map: &map.0,
-        };
-        Ok(tmp.lookup(other.0.elem_u64it(index)))
+        Ok(self.0.lookup(&map.0, &other.0, index))
     }
 
     fn mapped_remove(
@@ -1093,11 +1080,7 @@ impl GeneralArray {
     ) -> PyResult<Option<usize>> {
         DifferentSpaces::check(&self.0, &other.0).to_py_result()?;
         let index = try_py_index(index, other.len())?;
-        let out = word_iters::set::View {
-            word_iters: &self.0,
-            map: &map.0,
-        }
-        .lookup(other.0.elem_u64it(index));
+        let out = self.0.lookup(&map.0, &other.0, index);
         if let Some(i) = out {
             word_iters::set::ViewMut {
                 word_iters: &mut self.0,
@@ -1114,13 +1097,7 @@ impl GeneralArray {
             return Ok(false);
         }
         for i in 0..other.len() {
-            if (word_iters::set::View {
-                word_iters: &self.0,
-                map: &map.0,
-            })
-            .lookup(other.0.elem_u64it(i))
-            .is_none()
-            {
+            if self.0.lookup(&map.0, &other.0, i).is_none() {
                 return Ok(false);
             }
         }
@@ -1130,7 +1107,7 @@ impl GeneralArray {
     #[staticmethod]
     fn from_ladder_product(modes: Modes, ops: Vec<(usize, bool)>) -> PyResult<Self> {
         let (mode_inds, adj): (Vec<_>, Vec<_>) = ops.into_iter().unzip();
-        check_general_ops(&modes.0, &mode_inds, &adj, mode_inds.len())?;
+        check_general_ops(&modes.0, &mode_inds, &adj)?;
         let mut out = general::cmpnt_list::CmpntList::new(mode_inds.len(), modes.0);
         out.push(&mode_inds, &adj);
         Ok(Self(out))

@@ -19,11 +19,10 @@ operators, acting on a register of fermionic modes.
 
 The structure of this module parallels that of :mod:`~zixy.container.cmpnts`.
 
-``max_len`` reserves space for that many creation or annihilation operators per
-string, not that many modes or terms. Known constructor inputs determine the initial size
-silently. Longer strings added later grow the storage to the required length and issue a
-``UserWarning``, because growth can copy existing strings. Give the expected longest string
-length at construction to avoid repeated resizing. Shorter assignments do not shrink storage.
+``max_len`` is the maximum number of creation or annihilation operators per string. It is
+recommended that the user sets ``max_len`` to the longest expected operator string when constructing
+a container. Automatic dynamic resizing of containers is supported, but is not efficient, and will
+result in a warning message.
 """
 
 from __future__ import annotations
@@ -93,7 +92,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         *,
         max_len: int = 0,
     ):
-        """Create a string, reserving space for at least ``max_len`` operators."""
+        """Create a string with a maximum length of ``max_len`` operators."""
         if modes is None:
             modes = _default_modes(source)
         modes = Modes.from_count(modes) if isinstance(modes, int) else modes
@@ -110,7 +109,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
 
     @property
     def max_len(self) -> int:
-        """Get the current per-string operator capacity."""
+        """Get the maximum number of operators per string."""
         return self._impl.max_len
 
     @classmethod
@@ -121,7 +120,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
             source: String to parse.
             modes: The mode space or mode count. If ``None``, the mode space is inferred from
                 the string specifier.
-            max_len: Number of operators per string to reserve space for.
+            max_len: Maximum number of operators per string.
 
         Returns:
             An instance of ``cls`` parsed from ``source``.
@@ -250,7 +249,7 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
         Args:
             modes: The mode space or number of modes.
             n: Number of default elements with which to create the instance.
-            max_len: Initial number of operators per string to reserve space for.
+            max_len: Maximum number of operators per string.
         """
         modes = Modes.from_count(modes) if isinstance(modes, int) else modes
         Cmpnts.__init__(self, self.cmpnt_type.impl_type(modes, max_len))
@@ -258,12 +257,12 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
 
     @property
     def max_len(self) -> int:
-        """Get the current per-string operator capacity."""
+        """Get the maximum number of operators per string."""
         return self._impl.max_len
 
     @requires_ownership
     def append_n(self, n: int, source: SpecT | Cmpnt[ImplT, SpecT]) -> Self:
-        """Append a string repeatedly, resizing the container before adding rows if necessary."""
+        """Append a string repeatedly."""
         if n < 0:
             raise ValueError("The number of strings to append must be non-negative.")
         if n == 0:
@@ -301,7 +300,7 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
             source: String to parse.
             modes: The mode space or mode count. If ``None``, the mode space is inferred from
                 the string specifier.
-            max_len: Number of operators per string to reserve space for.
+            max_len: Maximum number of operators per string.
 
         Returns:
             An instance of ``cls`` parsed from ``source``.
@@ -347,13 +346,13 @@ class StringSet(OperatorStringSet[ImplT, SpecT, ElemT]):
 
         Args:
             modes: The mode space or number of modes.
-            max_len: Initial number of operators per string to reserve space for.
+            max_len: Maximum number of operators per string.
         """
         CmpntSet.__init__(self, self.cmpnts_type(modes, max_len=max_len)._impl)
 
     @property
     def max_len(self) -> int:
-        """Get the current per-string operator capacity."""
+        """Get the maximum number of operators per string."""
         return self._impl.max_len
 
     def _get_working_cmpnt(self, value: SpecT | Cmpnt[ImplT, SpecT]) -> Cmpnt[ImplT, SpecT]:

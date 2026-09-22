@@ -161,7 +161,7 @@ class Term(OperatorTerm[ImplT, SpecT, CoeffT, ElemT]):
         Args:
             modes: The mode space or number of modes.
             source: The term specifier to use for initial value.
-            max_len: Initial number of operators per string to reserve space for.
+            max_len: Maximum number of operators per string.
         """
         cmpnts = self.cmpnts_type(modes, 1, max_len)
         cmpnts._impl._reserve_string_length(_max_len_from_source(source), warn=False)
@@ -176,7 +176,7 @@ class Term(OperatorTerm[ImplT, SpecT, CoeffT, ElemT]):
 
     @property
     def max_len(self) -> int:
-        """Get the current per-string operator capacity."""
+        """Get the maximum number of operators per string."""
         return self.string.max_len
 
     def dagger(self) -> None:
@@ -209,7 +209,7 @@ class Terms(OperatorTerms[ImplT, SpecT, CoeffT, ElemT]):
         Args:
             modes: The mode space or number of modes.
             n: The number of items to initialize the array with.
-            max_len: Initial number of operators per string to reserve space for.
+            max_len: Maximum number of operators per string.
         """
         cmpnts = self.term_type.cmpnts_type(modes, n, max_len)
         coeffs = get_coeffs_type(self.term_type.coeff_type).from_size(n)
@@ -222,7 +222,7 @@ class Terms(OperatorTerms[ImplT, SpecT, CoeffT, ElemT]):
 
     @property
     def max_len(self) -> int:
-        """Get the current per-string operator capacity."""
+        """Get the maximum number of operators per string."""
         return self.strings.max_len
 
     @requires_ownership
@@ -231,7 +231,7 @@ class Terms(OperatorTerms[ImplT, SpecT, CoeffT, ElemT]):
         n: int,
         source: terms.TermSpecT[ImplT, SpecT, CoeffT] | TermBase[ImplT, SpecT, CoeffT] = "",
     ) -> Self:
-        """Append a term repeatedly, resizing the container before adding rows if necessary."""
+        """Append a term repeatedly."""
         if n < 0:
             raise ValueError("The number of terms to append must be non-negative.")
         if n == 0:
@@ -280,7 +280,7 @@ class TermSet(OperatorTermSet[ImplT, SpecT, CoeffT, ElemT]):
 
         Args:
             modes: The mode space or number of modes.
-            max_len: Initial number of operators per string to reserve space for.
+            max_len: Maximum number of operators per string.
         """
         TermSetBase.__init__(self, self.terms_type(modes, max_len=max_len))
 
@@ -296,7 +296,7 @@ class TermSet(OperatorTermSet[ImplT, SpecT, CoeffT, ElemT]):
 
     @property
     def max_len(self) -> int:
-        """Get the current per-string operator capacity."""
+        """Get the maximum number of operators per string."""
         return self.strings.max_len
 
     def _get_working_term(
@@ -349,7 +349,7 @@ class TermSum(OperatorTermSum[ImplT, SpecT, CoeffT, ElemT], TermSet[CoeffT]):
 
         Args:
             modes: The mode space or number of modes.
-            max_len: Initial number of operators per string to reserve space for.
+            max_len: Maximum number of operators per string.
         """
         TermSet.__init__(self, modes, max_len=max_len)
 

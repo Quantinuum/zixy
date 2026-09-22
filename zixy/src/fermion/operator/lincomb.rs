@@ -58,8 +58,8 @@ pub fn to_normal_order<C: FieldElem>(terms: &general_term_set::View<C>) -> Norma
 
 /// Convert a normal-ordered term set to a general term set, preserving order.
 pub fn to_general<C: FieldElem>(terms: &normal_term_set::View<C>) -> GeneralTermSet<C> {
-    let max_len = 2 * terms.word_iters.modes().len();
-    let mut out = GeneralTermSet::<C>::new(max_len, terms.to_modes().clone());
+    let max_string_len = 2 * terms.word_iters.modes().len();
+    let mut out = GeneralTermSet::<C>::new(max_string_len, terms.to_modes().clone());
     let n_terms = terms.word_iters.len().min(terms.coeffs.len());
     for (i, coeff) in terms.coeffs.iter().take(n_terms).enumerate() {
         let cmpnt = terms.word_iters.get_elem_ref(i);

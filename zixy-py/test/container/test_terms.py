@@ -18,6 +18,41 @@ from zixy.container.terms import NumericTerms, NumericTermSum, Term, Terms, Term
 from .mock_cmpnts import String, Strings, StringSet, StringsImplArray
 
 
+@pytest.mark.parametrize("pattern", ((), (0, 0), (1, 2), (0, 1, 0, 2, 0)))
+@pytest.mark.parametrize(
+    "kind",
+    ("real_set", "real_sum", "complex_set", "complex_sum", "symbolic_sum"),
+)
+def test_filter_nonzero_preserves_order_and_independence(kind, pattern):
+    cls, nonzero = {
+        "real_set": (RealMockTermSet, 1e-20),
+        "real_sum": (RealMockTermSum, 1e-20),
+        "complex_set": (ComplexMockTermSet, 1e-20j),
+        "complex_sum": (ComplexMockTermSum, 1e-20j),
+        "symbolic_sum": (SymbolicMockTermSum, sympify("x")),
+    }[kind]
+    source = cls.from_terms(
+        cls.terms_type.from_iterable([(str(i), nonzero * value) for i, value in enumerate(pattern)])
+    )
+    expected = [(str(t.cmpnt), t.coeff) for t in source if t.coeff != 0]
+    before = [(str(t.cmpnt), t.coeff) for t in source]
+
+    result = source.filter_nonzero()
+
+    assert type(result) is cls
+    assert [(str(t.cmpnt), t.coeff) for t in result] == expected
+    assert [(str(t.cmpnt), t.coeff) for t in source] == before
+    for key, coeff in expected:
+        assert result.lookup_coeff(key) == coeff
+    if expected:
+        result.remove(expected[0][0])
+        assert not result.contains(expected[0][0])
+        assert source.contains(expected[0][0])
+    result.insert(("new", nonzero))
+    assert result.lookup_coeff("new") == nonzero
+    assert not source.contains("new")
+
+
 def _mock_term_from_str(cls: type[Term[StringsImplArray, str, object]], source: str) -> object:
     if not source.startswith("(") or not source.endswith(")"):
         raise ValueError(f"String {source} is not a valid representation of a term.")

@@ -12,19 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Zixy.
+"""Base interface for mappers between concrete types."""
 
-Zixy is a high performance library for the manipulation of Pauli strings and other quantum
-algebraic objects.
-"""
+from abc import ABC, abstractmethod
+from typing import Any
 
-from zixy import container
-from zixy import fermion
-from zixy import mappings
-from zixy import qubit
 
-__all__ = ["container", "fermion", "mappings", "qubit"]
+class Mapper(ABC):
+    """Base interface for transformations between domains.
 
-# x-release-please-start-version
-__version__ = "0.4.0-rc.1"
-# x-release-please-end
+    Concrete mapper classes specify the accepted input and corresponding output types on their
+    ``apply`` implementations.
+    """
+
+    @abstractmethod
+    def apply(self, value: Any, /) -> Any:
+        """Apply this mapper to ``value``."""
+        raise NotImplementedError

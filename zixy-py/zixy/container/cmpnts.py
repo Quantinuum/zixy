@@ -194,18 +194,26 @@ class CmpntSet(Generic[ImplT, SpecT], StringRepresentable):
         self.insert_iterable(self.cmpnts_type._create(impl))
 
     @classmethod
-    def _create(cls, impl: ImplT) -> Self:
+    def _create(cls, impl: ImplT, map_: Map | None = None) -> Self:
         """Create a new instance of ``cls``.
 
         Args:
             impl: Rust-bound object storing the data. Unlike :class:`Cmpnts`, this is copied from,
                 not referenced directly by ``self``.
+            map_: Populated lookup map for ``impl``. If supplied, adopt both directly.
 
         Returns:
             A new instance of ``cls``.
         """
         out = cls.__new__(cls)
-        CmpntSet.__init__(out, impl)
+        if map_ is None:
+            CmpntSet.__init__(out, impl)
+        else:
+            assert isinstance(impl, cls.cmpnts_type.cmpnt_type.impl_type), type(impl)
+            assert len(impl) == len(map_)
+            out._impl = impl
+            out._map = map_
+            out._working_cmpnt = cls.cmpnts_type._create(impl.cmpnts_clone([])).new_clear_cmpnt()
         return out
 
     @classmethod

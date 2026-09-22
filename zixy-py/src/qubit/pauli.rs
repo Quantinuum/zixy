@@ -1,5 +1,6 @@
 //! Array of Pauli strings.
 use std::collections::HashMap;
+
 use std::path::PathBuf;
 
 use bincode::config;
@@ -44,6 +45,11 @@ use crate::utils::{
 #[repr(transparent)]
 #[derive(Clone)]
 pub struct Array(pub CmpntList);
+
+crate::container::terms::numeric_terms!(Array, |out, source, i| {
+    out.push_elem_ref(source.get_elem_ref(i));
+    Ok(())
+});
 
 impl Elements for Array {
     fn len(&self) -> usize {

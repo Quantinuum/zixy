@@ -12,8 +12,8 @@ pub fn rmul<C: FieldElem>(
     lhs: &general_term_set::View<C>,
     rhs: &general_term_set::View<C>,
 ) -> Result<GeneralTermSet<C>, DifferentSpaces> {
-    let max_len = lhs.word_iters.max_len + rhs.word_iters.max_len;
-    let mut out = GeneralTermSet::<C>::new(max_len, lhs.to_modes());
+    let max_string_len = lhs.word_iters.max_string_len + rhs.word_iters.max_string_len;
+    let mut out = GeneralTermSet::<C>::new(max_string_len, lhs.to_modes());
     DifferentSpaces::check_transitive(lhs, rhs, &out)?;
     let n_lhs = lhs.word_iters.len().min(lhs.coeffs.len());
     let n_rhs = rhs.word_iters.len().min(rhs.coeffs.len());

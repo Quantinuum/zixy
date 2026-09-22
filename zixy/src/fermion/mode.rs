@@ -84,10 +84,10 @@ pub struct ModeInds {
 
 impl ModeInds {
     /// Create a new empty row
-    pub fn new(n_bits: usize, max_len: usize) -> Self {
+    pub fn new(n_bits: usize, max_string_len: usize) -> Self {
         assert!((1..=64).contains(&n_bits), "n_bits must be in 1..=64");
         let slots_per_word = 64 / n_bits;
-        let row_size = divceil(max_len as isize, slots_per_word as isize) as usize;
+        let row_size = divceil(max_string_len as isize, slots_per_word as isize) as usize;
         Self {
             table: Table::new(row_size),
             n_bits,
@@ -113,6 +113,15 @@ impl ModeInds {
         for (i, value) in values.into_iter().enumerate() {
             let (i_u64, bit_offset) = self.get_offset(i);
             self.table[last_row][i_u64] |= (value as u64) << bit_offset;
+        }
+    }
+
+    /// Replace one row of packed mode indices.
+    pub fn set_row(&mut self, row: usize, values: &[usize]) {
+        self.table.clear_row(row);
+        for (i, value) in values.iter().enumerate() {
+            let (word, offset) = self.get_offset(i);
+            self.table[row][word] |= (*value as u64) << offset;
         }
     }
 

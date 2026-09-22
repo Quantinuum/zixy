@@ -11,7 +11,7 @@ from zixy.qubit import pauli, state as qubit_state
 
 DOMAINS = (
     (pauli, ("X0", "Y1", "Z2"), {}),
-    (general, ("F0^", "F1 F2^", "F2^ F0 F1^"), {"max_len": 5}),
+    (general, ("F0^", "F1 F2^", "F2^ F0 F1^"), {"max_string_len": 5}),
     (normal, ("F0^", "F1", "F2^"), {}),
     (fermion_state, ("[1, 0, 0]", "[0, 1, 0]", "[0, 0, 1]"), {}),
     (qubit_state, ("[1, 0, 0]", "[0, 1, 0]", "[0, 0, 1]"), {}),
@@ -92,8 +92,8 @@ def test_bulk_addition(cls):
 
 @pytest.mark.parametrize("cls", (general.RealTermSum, general.ComplexTermSum))
 def test_product_preserves_lengths_and_lookup(cls):
-    lhs = cls.from_iterable([("F0^", 2), ("F1 F2^", 3)], 3, max_len=4)
-    rhs = cls.from_iterable([("F2", 5), ("F0^ F1", 7)], 3, max_len=3)
+    lhs = cls.from_iterable([("F0^", 2), ("F1 F2^", 3)], 3, max_string_len=4)
+    rhs = cls.from_iterable([("F2", 5), ("F0^ F1", 7)], 3, max_string_len=3)
     product = lhs * rhs
     expected = cls.from_iterable(
         [
@@ -103,7 +103,7 @@ def test_product_preserves_lengths_and_lookup(cls):
             ("F1 F2^ F0^ F1", 21),
         ],
         3,
-        max_len=7,
+        max_string_len=7,
     )
     assert snapshot(product) == snapshot(expected)
     for key, coeff in snapshot(expected):
@@ -177,17 +177,17 @@ def test_required_numeric_bulk_api(domain, keys, kwargs, name, monkeypatch):
 
 @pytest.mark.parametrize("cls", (general.RealTermSum, general.ComplexTermSum))
 def test_general_bulk_addition_different_storage_layouts(cls):
-    lhs = cls.from_iterable([("F1^", 2)], 3, max_len=5)
-    rhs = cls.from_iterable([("F1^", 3), ("F2 F1^", 4)], 3, max_len=128)
+    lhs = cls.from_iterable([("F1^", 2)], 3, max_string_len=5)
+    rhs = cls.from_iterable([("F1^", 3), ("F2 F1^", 4)], 3, max_string_len=128)
     lhs += rhs
     assert len(lhs) == 2
     assert lhs.lookup_coeff("F1^") == 5
     assert lhs.lookup_coeff("F2 F1^") == 4
     assert rhs.lookup_coeff("F1^") == 3
     # Validate all source strings before mutating the destination.
-    bad = cls.from_iterable([("F1^", 10), ("F1^ " * 6, 1)], 3, max_len=128)
+    bad = cls.from_iterable([("F1^", 10), ("F1^ " * 6, 1)], 3, max_string_len=128)
     before = snapshot(lhs)
-    with pytest.raises(ValueError, match="max_len"):
+    with pytest.raises(ValueError, match="max_string_len"):
         lhs += bad
     assert snapshot(lhs) == before
 

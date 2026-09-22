@@ -26,7 +26,7 @@ pub fn scaled_iadd<T: WordIters, C: FieldElem>(
         return Err(PyValueError::new_err("Incompatible component spaces."));
     }
     // Normalize the source to the destination layout and validate capacity before
-    // mutating the destination. General fermion arrays may have different max_len.
+    // mutating the destination. General fermion arrays may have different max_string_len.
     let mut source = lhs.empty_clone();
     for i in 0..rhs.len() {
         push(&mut source, rhs, i)?;

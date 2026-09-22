@@ -19,10 +19,9 @@ operators, acting on a register of fermionic modes.
 
 The structure of this module parallels that of :mod:`~zixy.container.cmpnts`.
 
-``max_len`` is the maximum number of creation or annihilation operators per string. It is
+``max_string_len`` is the maximum number of creation or annihilation operators per string. It is
 recommended that the user sets ``max_len`` to the longest expected operator string when constructing
-a container. Automatic dynamic resizing of containers is supported, but is not efficient, and will
-result in a warning message.
+can be selected efficiently.
 """
 
 from __future__ import annotations
@@ -90,13 +89,13 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         modes: int | Modes | None = None,
         source: SpecT = "",
         *,
-        max_len: int = 0,
+        max_string_len: int = 0,
     ):
-        """Create a string with a maximum length of ``max_len`` operators."""
+        """Create a string with a maximum length of ``max_string_len`` operators."""
         if modes is None:
             modes = _default_modes(source)
         modes = Modes.from_count(modes) if isinstance(modes, int) else modes
-        impl = self.impl_type(modes, max_len)
+        impl = self.impl_type(modes, max_string_len)
         impl._reserve_string_length(_string_length(source), warn=False)
         impl.resize(1)
         Cmpnt.__init__(self, impl)
@@ -108,24 +107,26 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         return _default_modes(source)
 
     @property
-    def max_len(self) -> int:
+    def max_string_len(self) -> int:
         """Get the maximum number of operators per string."""
-        return self._impl.max_len
+        return self._impl.max_string_len
 
     @classmethod
-    def from_str(cls, source: str, modes: int | Modes | None = None, *, max_len: int = 0) -> Self:
+    def from_str(
+        cls, source: str, modes: int | Modes | None = None, *, max_string_len: int = 0
+    ) -> Self:
         """Create an instance of ``cls`` by parsing an input string.
 
         Args:
             source: String to parse.
             modes: The mode space or mode count. If ``None``, the mode space is inferred from
                 the string specifier.
-            max_len: Maximum number of operators per string.
+            max_string_len: Maximum number of operators per string.
 
         Returns:
             An instance of ``cls`` parsed from ``source``.
         """
-        return cls(modes, source, max_len=max_len)
+        return cls(modes, source, max_string_len=max_string_len)
 
     def set(self, source: SpecT | String) -> None:
         """Set the value of the string.
@@ -243,22 +244,22 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
     cmpnt_type = String
     _set_type: type[StringSet]
 
-    def __init__(self, modes: int | Modes = 0, n: int = 0, max_len: int = 0):
+    def __init__(self, modes: int | Modes = 0, n: int = 0, max_string_len: int = 0):
         """Initialize the string array.
 
         Args:
             modes: The mode space or number of modes.
             n: Number of default elements with which to create the instance.
-            max_len: Maximum number of operators per string.
+            max_string_len: Maximum number of operators per string.
         """
         modes = Modes.from_count(modes) if isinstance(modes, int) else modes
-        Cmpnts.__init__(self, self.cmpnt_type.impl_type(modes, max_len))
+        Cmpnts.__init__(self, self.cmpnt_type.impl_type(modes, max_string_len))
         self.resize(n)
 
     @property
-    def max_len(self) -> int:
+    def max_string_len(self) -> int:
         """Get the maximum number of operators per string."""
-        return self._impl.max_len
+        return self._impl.max_string_len
 
     @requires_ownership
     def append_n(self, n: int, source: SpecT | Cmpnt[ImplT, SpecT]) -> Self:
@@ -267,7 +268,7 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
             raise ValueError("The number of strings to append must be non-negative.")
         if n == 0:
             return self
-        value = String(self.modes, max_len=_string_length(source))
+        value = String(self.modes, max_string_len=_string_length(source))
         if isinstance(source, Cmpnt):
             value._impl.cmpnt_copy_external(0, source._impl, source.index)
         else:
@@ -281,10 +282,10 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
         iterable: Iterable[SpecT | Cmpnt[ImplT, SpecT]],
         modes: int | Modes = 0,
         n: int = 0,
-        max_len: int = 0,
+        max_string_len: int = 0,
     ) -> Self:
         """Create an array, preallocating known sequences and streaming other iterables."""
-        out = cls(modes, n, max_len)
+        out = cls(modes, n, max_string_len)
         if isinstance(iterable, Sequence):
             out._impl._reserve_string_length(
                 max(map(_string_length, iterable), default=0), warn=False
@@ -293,14 +294,16 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
         return out
 
     @classmethod
-    def from_str(cls, source: str, modes: int | Modes | None = None, *, max_len: int = 0) -> Self:
+    def from_str(
+        cls, source: str, modes: int | Modes | None = None, *, max_string_len: int = 0
+    ) -> Self:
         """Create an instance of ``cls`` by parsing an input string.
 
         Args:
             source: String to parse.
             modes: The mode space or mode count. If ``None``, the mode space is inferred from
                 the string specifier.
-            max_len: Maximum number of operators per string.
+            max_string_len: Maximum number of operators per string.
 
         Returns:
             An instance of ``cls`` parsed from ``source``.
@@ -308,13 +311,13 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
         if isinstance(modes, int):
             modes = Modes.from_count(modes)
         if not source.strip():
-            out = cls(modes or 0, max_len=max_len)
+            out = cls(modes or 0, max_string_len=max_string_len)
             out.resize(0)
             return out
         springs = FermionSprings(source)
         if modes is None:
             modes = Modes.from_count(springs.default_n_mode())
-        return cls._create(cls.cmpnt_type.impl_type(modes, max_len, springs))
+        return cls._create(cls.cmpnt_type.impl_type(modes, max_string_len, springs))
 
     @overload
     def __getitem__(self, indexer: int) -> String: ...
@@ -341,19 +344,19 @@ class StringSet(OperatorStringSet[ImplT, SpecT, ElemT]):
 
     cmpnts_type = Strings
 
-    def __init__(self, modes: int | Modes = 0, max_len: int = 0):
+    def __init__(self, modes: int | Modes = 0, max_string_len: int = 0):
         """Initialize the string set.
 
         Args:
             modes: The mode space or number of modes.
-            max_len: Maximum number of operators per string.
+            max_string_len: Maximum number of operators per string.
         """
-        CmpntSet.__init__(self, self.cmpnts_type(modes, max_len=max_len)._impl)
+        CmpntSet.__init__(self, self.cmpnts_type(modes, max_string_len=max_string_len)._impl)
 
     @property
-    def max_len(self) -> int:
+    def max_string_len(self) -> int:
         """Get the maximum number of operators per string."""
-        return self._impl.max_len
+        return self._impl.max_string_len
 
     def _get_working_cmpnt(self, value: SpecT | Cmpnt[ImplT, SpecT]) -> Cmpnt[ImplT, SpecT]:
         """Prepare a lookup or insertion string without warning about temporary storage."""
@@ -365,10 +368,10 @@ class StringSet(OperatorStringSet[ImplT, SpecT, ElemT]):
         cls,
         iterable: Iterable[SpecT | Cmpnt[ImplT, SpecT]],
         modes: int | Modes = 0,
-        max_len: int = 0,
+        max_string_len: int = 0,
     ) -> Self:
         """Create a set, preallocating known sequences and streaming other iterables."""
-        out = cls(modes, max_len)
+        out = cls(modes, max_string_len)
         if isinstance(iterable, Sequence):
             out._impl._reserve_string_length(
                 max(map(_string_length, iterable), default=0), warn=False

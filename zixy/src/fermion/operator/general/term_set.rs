@@ -26,17 +26,17 @@ impl<'a, C: NumRepr> AsViewMut<C> for ViewMut<'a, C> {}
 
 impl<C: NumRepr> TermSet<C> {
     /// Create a new instance.
-    pub fn new(max_len: usize, modes: Modes) -> Self {
+    pub fn new(max_string_len: usize, modes: Modes) -> Self {
         Self {
-            terms: Terms::new(max_len, modes),
+            terms: Terms::new(max_string_len, modes),
             map: Map::default(),
         }
     }
     pub fn push_term(&mut self, modes: &[usize], adj: &[bool], coeff: C) {
-        let old_max_len = self.terms.word_iters.max_len;
+        let old_max_string_len = self.terms.word_iters.max_string_len;
         let i = self.terms.word_iters.len();
         self.terms.word_iters.push(modes, adj);
-        if self.terms.word_iters.max_len != old_max_len {
+        if self.terms.word_iters.max_string_len != old_max_string_len {
             self.map.populate_from(&self.terms.word_iters);
         } else {
             let k = self.terms.word_iters.hash_at_index(i);
@@ -53,12 +53,12 @@ impl<C: NumRepr> TermSet<C> {
         rhs_adj: &[bool],
         coeff: C,
     ) {
-        let old_max_len = self.terms.word_iters.max_len;
+        let old_max_string_len = self.terms.word_iters.max_string_len;
         let i = self.terms.word_iters.len();
         self.terms
             .word_iters
             .push_concat(lhs_modes, lhs_adj, rhs_modes, rhs_adj);
-        if self.terms.word_iters.max_len != old_max_len {
+        if self.terms.word_iters.max_string_len != old_max_string_len {
             self.map.populate_from(&self.terms.word_iters);
         } else {
             let k = self.terms.word_iters.hash_at_index(i);
@@ -75,9 +75,9 @@ impl<C: NumRepr> ModesBased for TermSet<C> {
 }
 
 impl<C: NumRepr> Terms<C> {
-    pub fn new(max_len: usize, modes: Modes) -> Self {
+    pub fn new(max_string_len: usize, modes: Modes) -> Self {
         use crate::container::traits::EmptyFrom;
-        Self::empty_from(&CmpntList::new(max_len, modes))
+        Self::empty_from(&CmpntList::new(max_string_len, modes))
     }
 }
 
@@ -105,7 +105,7 @@ mod tests {
         terms.push_term(&[], &[], 1.0);
         terms.push_term(&[0], &[false], 2.0);
         terms.push_concat_term(&[1; 64], &[true; 64], &[2], &[false], 3.0);
-        assert_eq!(terms.terms.word_iters.max_len, 65);
+        assert_eq!(terms.terms.word_iters.max_string_len, 65);
         assert_eq!(terms.terms.coeffs, vec![1.0, 2.0, 3.0]);
         SetView {
             word_iters: &terms.terms.word_iters,

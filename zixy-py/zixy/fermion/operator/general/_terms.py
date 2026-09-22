@@ -88,7 +88,7 @@ ComplexTermSpec = TermSpec[complex]
 SymbolicTermSpec = TermSpec[Expr]
 
 
-def _max_len_from_source(
+def _max_string_len_from_source(
     source: terms.TermSpecT[ImplT, SpecT, CoeffT] | TermBase[ImplT, SpecT, CoeffT],
 ) -> int:
     """Get the maximum operator-product length from a term source."""
@@ -97,7 +97,7 @@ def _max_len_from_source(
         and len(source) == 2
         and (source[1] is None or isinstance(source[1], Coeff))
     ):
-        return _max_len_from_source(source[0])
+        return _max_string_len_from_source(source[0])
     if isinstance(source, TermBase):
         return _string_length(source.cmpnt)
     if isinstance(source, Cmpnt):
@@ -154,17 +154,17 @@ class Term(OperatorTerm[ImplT, SpecT, CoeffT, ElemT]):
         self,
         modes: int | Modes = 0,
         source: TermSpec[CoeffT] = "",
-        max_len: int = 0,
+        max_string_len: int = 0,
     ):
         """Initialize the term.
 
         Args:
             modes: The mode space or number of modes.
             source: The term specifier to use for initial value.
-            max_len: Maximum number of operators per string.
+            max_string_len: Maximum number of operators per string.
         """
-        cmpnts = self.cmpnts_type(modes, 1, max_len)
-        cmpnts._impl._reserve_string_length(_max_len_from_source(source), warn=False)
+        cmpnts = self.cmpnts_type(modes, 1, max_string_len)
+        cmpnts._impl._reserve_string_length(_max_string_len_from_source(source), warn=False)
         coeffs = get_coeffs_type(self.coeff_type).from_size(1)
         TermBase.__init__(self, TermData(cmpnts, coeffs))
         self.set(source)
@@ -175,9 +175,9 @@ class Term(OperatorTerm[ImplT, SpecT, CoeffT, ElemT]):
         return cast(String, self.cmpnt)
 
     @property
-    def max_len(self) -> int:
+    def max_string_len(self) -> int:
         """Get the maximum number of operators per string."""
-        return self.string.max_len
+        return self.string.max_string_len
 
     def dagger(self) -> None:
         """Take the adjoint of ``self`` in-place."""
@@ -203,15 +203,15 @@ class Terms(OperatorTerms[ImplT, SpecT, CoeffT, ElemT]):
 
     term_type: type[Term[CoeffT]]
 
-    def __init__(self, modes: int | Modes = 0, n: int = 0, max_len: int = 0):
+    def __init__(self, modes: int | Modes = 0, n: int = 0, max_string_len: int = 0):
         """Initialize the term array.
 
         Args:
             modes: The mode space or number of modes.
             n: The number of items to initialize the array with.
-            max_len: Maximum number of operators per string.
+            max_string_len: Maximum number of operators per string.
         """
-        cmpnts = self.term_type.cmpnts_type(modes, n, max_len)
+        cmpnts = self.term_type.cmpnts_type(modes, n, max_string_len)
         coeffs = get_coeffs_type(self.term_type.coeff_type).from_size(n)
         TermsBase.__init__(self, TermData(cmpnts, coeffs))
 
@@ -221,9 +221,9 @@ class Terms(OperatorTerms[ImplT, SpecT, CoeffT, ElemT]):
         return cast(Strings, self.cmpnts)
 
     @property
-    def max_len(self) -> int:
+    def max_string_len(self) -> int:
         """Get the maximum number of operators per string."""
-        return self.strings.max_len
+        return self.strings.max_string_len
 
     @requires_ownership
     def append_n(
@@ -237,10 +237,10 @@ class Terms(OperatorTerms[ImplT, SpecT, CoeffT, ElemT]):
         if n == 0:
             return self
         value: TermBase[ImplT, SpecT, CoeffT] = self.term_type(
-            self.modes, max_len=_max_len_from_source(source)
+            self.modes, max_string_len=_max_string_len_from_source(source)
         )
         value.set(source)
-        self.strings._impl._reserve_string_length(_max_len_from_source(value))
+        self.strings._impl._reserve_string_length(_max_string_len_from_source(value))
         return TermsBase[ImplT, SpecT, CoeffT].append_n(self, n, value)
 
     @classmethod
@@ -249,13 +249,13 @@ class Terms(OperatorTerms[ImplT, SpecT, CoeffT, ElemT]):
         source: Iterable[terms.TermSpecT[ImplT, SpecT, CoeffT] | TermBase[ImplT, SpecT, CoeffT]],
         modes: int | Modes = 0,
         n: int = 0,
-        max_len: int = 0,
+        max_string_len: int = 0,
     ) -> Self:
         """Create terms, preallocating known sequences and streaming other iterables."""
-        out = cls(modes, n, max_len)
+        out = cls(modes, n, max_string_len)
         if isinstance(source, Sequence):
             out.strings._impl._reserve_string_length(
-                max(map(_max_len_from_source, source), default=0),
+                max(map(_max_string_len_from_source, source), default=0),
                 warn=False,
             )
         out.append_iterable(source)
@@ -275,14 +275,14 @@ class TermSet(OperatorTermSet[ImplT, SpecT, CoeffT, ElemT]):
 
     terms_type: type[Terms[CoeffT]]
 
-    def __init__(self, modes: int | Modes = 0, max_len: int = 0):
+    def __init__(self, modes: int | Modes = 0, max_string_len: int = 0):
         """Initialize the term set.
 
         Args:
             modes: The mode space or number of modes.
-            max_len: Maximum number of operators per string.
+            max_string_len: Maximum number of operators per string.
         """
-        TermSetBase.__init__(self, self.terms_type(modes, max_len=max_len))
+        TermSetBase.__init__(self, self.terms_type(modes, max_string_len=max_string_len))
 
     @property
     def strings(self) -> Strings:
@@ -295,9 +295,9 @@ class TermSet(OperatorTermSet[ImplT, SpecT, CoeffT, ElemT]):
         return self._impl._coeffs
 
     @property
-    def max_len(self) -> int:
+    def max_string_len(self) -> int:
         """Get the maximum number of operators per string."""
-        return self.strings.max_len
+        return self.strings.max_string_len
 
     def _get_working_term(
         self,
@@ -305,7 +305,7 @@ class TermSet(OperatorTermSet[ImplT, SpecT, CoeffT, ElemT]):
     ) -> TermBase[ImplT, SpecT, CoeffT]:
         """Prepare a term without warning about temporary storage."""
         self._working_term.cmpnt._impl._reserve_string_length(
-            _max_len_from_source(value),
+            _max_string_len_from_source(value),
             warn=False,
         )
         return TermSetBase._get_working_term(self, value)
@@ -320,13 +320,13 @@ class TermSet(OperatorTermSet[ImplT, SpecT, CoeffT, ElemT]):
         cls,
         iterable: Iterable[terms.TermSpecT[ImplT, SpecT, CoeffT] | TermBase[ImplT, SpecT, CoeffT]],
         modes: int | Modes = 0,
-        max_len: int = 0,
+        max_string_len: int = 0,
     ) -> Self:
         """Create a set, preallocating known sequences and streaming other iterables."""
-        out = cls(modes, max_len)
+        out = cls(modes, max_string_len)
         if isinstance(iterable, Sequence):
             out.strings._impl._reserve_string_length(
-                max(map(_max_len_from_source, iterable), default=0),
+                max(map(_max_string_len_from_source, iterable), default=0),
                 warn=False,
             )
         out.insert_iterable(iterable)
@@ -344,39 +344,41 @@ class TermSum(OperatorTermSum[ImplT, SpecT, CoeffT, ElemT], TermSet[CoeffT]):
         are not.
     """
 
-    def __init__(self, modes: int | Modes = 0, max_len: int = 0):
+    def __init__(self, modes: int | Modes = 0, max_string_len: int = 0):
         """Initialize the term sum.
 
         Args:
             modes: The mode space or number of modes.
-            max_len: Maximum number of operators per string.
+            max_string_len: Maximum number of operators per string.
         """
-        TermSet.__init__(self, modes, max_len=max_len)
+        TermSet.__init__(self, modes, max_string_len=max_string_len)
 
     @classmethod
-    def from_iterable(cls, source: Any, modes: int | Modes = 0, max_len: int = 0) -> Self:
+    def from_iterable(cls, source: Any, modes: int | Modes = 0, max_string_len: int = 0) -> Self:
         """Create a new instance of ``cls`` from an iterable of terms."""
-        terms = cls.terms_type.from_iterable(source, modes, max_len=max_len)
-        out = cls(modes, max_len=max_len)
+        terms = cls.terms_type.from_iterable(source, modes, max_string_len=max_string_len)
+        out = cls(modes, max_string_len=max_string_len)
         if isinstance(terms._impl._coeffs, RealCoeffs | ComplexCoeffs):
             out._collect_terms(terms, sum_duplicates=True)
         else:
-            out.strings._impl._reserve_string_length(terms.max_len, warn=False)
+            out.strings._impl._reserve_string_length(terms.max_string_len, warn=False)
             out.add_iterable(terms)
         return out
 
     def dagger(self) -> None:
         """Take the adjoint of ``self`` in-place."""
-        out = type(self)(self.modes, max_len=self.max_len)
+        out = type(self)(self.modes, max_string_len=self.max_string_len)
         for term in self:
             out += term.into(self.terms_type.term_type).daggered()
         terms.TermSum.__init__(self, out.to_terms())
 
     def _added(self, rhs: TermBase[ImplT, SpecT, CoeffT] | Self, scalar: int) -> Self:
         """Allocate a sum with enough string storage for both operands."""
-        required = rhs.max_len if isinstance(rhs, TermSum) else _max_len_from_source(rhs)
+        required = (
+            rhs.max_string_len if isinstance(rhs, TermSum) else _max_string_len_from_source(rhs)
+        )
         out = self.clone()
-        if required > out.max_len:
+        if required > out.max_string_len:
             out.strings._impl._reserve_string_length(required, warn=False)
             out.strings._impl.refresh_map(out._cmpnt_set._map)
         terms.TermSum[ImplT, SpecT, CoeffT]._scaled_iadd(out, rhs, scalar)

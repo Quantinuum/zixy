@@ -16,13 +16,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generic, TypeAlias, TypeVar, overload
+from typing import TYPE_CHECKING, Generic
 
-from sympy import Expr
 from typing_extensions import Self
 
 from zixy.container.cmpnts import Cmpnt, Cmpnts, ImplT, SpecT
-from zixy.container.coeffs import Coeffs, CoeffT, ComplexCoeffs, RealCoeffs, SymbolicCoeffs
+from zixy.container.coeffs import Coeffs, CoeffT
 from zixy.utils import slice_single_item
 
 if TYPE_CHECKING:

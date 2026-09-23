@@ -9,14 +9,16 @@ use zixy::container::traits::{Compatible, Elements, EmptyClone, MutRefElements, 
 use zixy::container::utils::DistinctPair;
 use zixy::container::word_iters::set::{AsView as _, AsViewMut as _};
 use zixy::container::word_iters::{self, WordIters};
+use zixy::fermion::operator::normal::products::{apply_op_ket_u64, ApplyResult};
 use zixy::fermion::state;
 use zixy::fermion::state::cmpnt_list::CmpntList;
 use zixy::fermion::traits::{DifferentSpaces, ModesBased};
 
 use crate::cmpnt::state_springs::BinarySprings;
-use crate::container::coeffs::{ComplexVec, RealVec};
+use crate::container::coeffs::{ComplexVec, RealVec, Sign};
 use crate::container::map::Map;
 use crate::fermion::mode::Modes;
+use crate::fermion::operator::NormalArray;
 use crate::utils::{cmpnt_to_string, try_py_index, try_py_indices, ToPyResult};
 
 /// A list of fermionic occupation-number basis state strings.
@@ -184,6 +186,33 @@ impl Array {
         let src = src.0.get_elem_ref(i_src);
         dst.assign(src);
         Ok(())
+    }
+
+    /// Apply a normal-ordered operator string in-place and return its fermionic sign.
+    pub fn cmpnt_operator_string_imul(
+        &mut self,
+        index: isize,
+        operators: &NormalArray,
+        operator_index: isize,
+    ) -> PyResult<Option<Sign>> {
+        DifferentSpaces::check(&self.0, &operators.0).to_py_result()?;
+        let index = try_py_index(index, self.len())?;
+        let operator_index = try_py_index(operator_index, operators.len())?;
+        let operator = operators.0.get_elem_ref(operator_index);
+        let creation = operator.get_cre_part().get_u64it().next().unwrap_or(0);
+        let annihilation = operator.get_ann_part().get_u64it().next().unwrap_or(0);
+        let ket = self.0.get_elem_ref(index).get_u64it().next().unwrap_or(0);
+        Ok(match apply_op_ket_u64(creation, annihilation, ket) {
+            ApplyResult::Applied(bits, sign) => {
+                if let Some(word) = self.0.get_elem_mut_ref(index).get_u64it_mut().next() {
+                    *word = bits;
+                } else {
+                    debug_assert_eq!(bits, 0);
+                }
+                Some(sign.into())
+            }
+            ApplyResult::Zero => None,
+        })
     }
 
     /// Return whether the two referenced components are equal.

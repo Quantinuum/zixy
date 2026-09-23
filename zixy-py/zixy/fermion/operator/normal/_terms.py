@@ -66,9 +66,12 @@ from zixy.fermion.operator.normal._strings import (
     Strings,
     StringSpec,
 )
+from zixy.fermion.state._strings import String as StateString
 from zixy.fermion.state._terms import (
     ComplexTermSum as ComplexState,
     RealTermSum as RealState,
+    SymbolicTerm as SymbolicStateTerm,
+    SymbolicTermSum as SymbolicState,
 )
 
 if TYPE_CHECKING:
@@ -85,6 +88,8 @@ SignTermSpec = TermSpec[Sign]
 RealTermSpec = TermSpec[float]
 ComplexTermSpec = TermSpec[complex]
 SymbolicTermSpec = TermSpec[Expr]
+NumericState: TypeAlias = RealState | ComplexState
+State: TypeAlias = NumericState | SymbolicState
 
 
 def _term_sum_from_product(
@@ -508,7 +513,14 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
             )
         )
 
-    def apply(self, state: RealState) -> RealState:
+    @overload
+    def apply(self, state: RealState) -> RealState: ...
+    @overload
+    def apply(self, state: ComplexState) -> ComplexState: ...
+    @overload
+    def apply(self, state: SymbolicState) -> SymbolicState: ...
+
+    def apply(self, state: State) -> State:
         """Apply ``self`` to a state.
 
         Args:
@@ -518,6 +530,10 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
             The resulting state.
         """
         _check_modes_compatibility(self.modes, state.modes)
+        if isinstance(state, ComplexState):
+            return self.into(ComplexTermSum).apply(state)
+        if isinstance(state, SymbolicState):
+            return self.into(SymbolicTermSum).apply(state)
         out = RealState(self.modes)
         assert isinstance(self._impl._coeffs, RealCoeffs)
         assert isinstance(state._impl._coeffs, RealCoeffs)
@@ -530,9 +546,20 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
             out._cmpnt_set._map,
             out._impl._coeffs._impl,
         )
-        return out
+        return out.filter_nonzero()
 
-    def mat_elem(self, bra: RealState, ket: RealState) -> float:
+    @overload
+    def mat_elem(self, bra: RealState, ket: RealState) -> float: ...
+    @overload
+    def mat_elem(self, bra: ComplexState, ket: NumericState) -> complex: ...
+    @overload
+    def mat_elem(self, bra: RealState, ket: ComplexState) -> complex: ...
+    @overload
+    def mat_elem(self, bra: SymbolicState, ket: State) -> Expr: ...
+    @overload
+    def mat_elem(self, bra: NumericState, ket: SymbolicState) -> Expr: ...
+
+    def mat_elem(self, bra: State, ket: State) -> float | complex | Expr:
         """Evaluate the matrix element of ``self`` between a bra and ket state.
 
         Args:
@@ -543,6 +570,10 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
             The resulting matrix element.
         """
         _check_modes_compatibility(self.modes, bra.modes, ket.modes)
+        if isinstance(bra, SymbolicState) or isinstance(ket, SymbolicState):
+            return self.into(SymbolicTermSum).mat_elem(bra, ket)
+        if isinstance(bra, ComplexState) or isinstance(ket, ComplexState):
+            return self.into(ComplexTermSum).mat_elem(bra, ket)
         assert isinstance(self._impl._coeffs, RealCoeffs)
         assert isinstance(bra._impl._coeffs, RealCoeffs)
         assert isinstance(ket._impl._coeffs, RealCoeffs)
@@ -556,7 +587,14 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
             )
         )
 
-    def exp_val(self, state: RealState) -> float:
+    @overload
+    def exp_val(self, state: RealState) -> float: ...
+    @overload
+    def exp_val(self, state: ComplexState) -> complex: ...
+    @overload
+    def exp_val(self, state: SymbolicState) -> Expr: ...
+
+    def exp_val(self, state: State) -> float | complex | Expr:
         """Evaluate the expectation value of ``self`` with respect to a state.
 
         Args:
@@ -754,7 +792,12 @@ class ComplexTermSum(
             )
         )
 
-    def apply(self, state: ComplexState) -> ComplexState:
+    @overload
+    def apply(self, state: NumericState) -> ComplexState: ...
+    @overload
+    def apply(self, state: SymbolicState) -> SymbolicState: ...
+
+    def apply(self, state: State) -> ComplexState | SymbolicState:
         """Apply ``self`` to a state.
 
         Args:
@@ -764,6 +807,10 @@ class ComplexTermSum(
             The resulting state.
         """
         _check_modes_compatibility(self.modes, state.modes)
+        if isinstance(state, RealState):
+            state = state.into(ComplexState)
+        elif isinstance(state, SymbolicState):
+            return self.into(SymbolicTermSum).apply(state)
         out = ComplexState(self.modes)
         assert isinstance(self._impl._coeffs, ComplexCoeffs)
         assert isinstance(state._impl._coeffs, ComplexCoeffs)
@@ -776,9 +823,16 @@ class ComplexTermSum(
             out._cmpnt_set._map,
             out._impl._coeffs._impl,
         )
-        return out
+        return out.filter_nonzero()
 
-    def mat_elem(self, bra: ComplexState, ket: ComplexState) -> complex:
+    @overload
+    def mat_elem(self, bra: NumericState, ket: NumericState) -> complex: ...
+    @overload
+    def mat_elem(self, bra: SymbolicState, ket: State) -> Expr: ...
+    @overload
+    def mat_elem(self, bra: NumericState, ket: SymbolicState) -> Expr: ...
+
+    def mat_elem(self, bra: State, ket: State) -> complex | Expr:
         """Evaluate the matrix element of ``self`` between a bra and ket state.
 
         Args:
@@ -789,6 +843,12 @@ class ComplexTermSum(
             The resulting matrix element.
         """
         _check_modes_compatibility(self.modes, bra.modes, ket.modes)
+        if isinstance(bra, SymbolicState) or isinstance(ket, SymbolicState):
+            return self.into(SymbolicTermSum).mat_elem(bra, ket)
+        if isinstance(bra, RealState):
+            bra = bra.into(ComplexState)
+        if isinstance(ket, RealState):
+            ket = ket.into(ComplexState)
         assert isinstance(self._impl._coeffs, ComplexCoeffs)
         assert isinstance(bra._impl._coeffs, ComplexCoeffs)
         assert isinstance(ket._impl._coeffs, ComplexCoeffs)
@@ -802,7 +862,12 @@ class ComplexTermSum(
             )
         )
 
-    def exp_val(self, state: ComplexState) -> complex:
+    @overload
+    def exp_val(self, state: NumericState) -> complex: ...
+    @overload
+    def exp_val(self, state: SymbolicState) -> Expr: ...
+
+    def exp_val(self, state: State) -> complex | Expr:
         """Evaluate the expectation value of ``self`` with respect to a state.
 
         Args:
@@ -1020,6 +1085,60 @@ class SymbolicTermSum(TermSum[Expr]):
         out = self.clone()
         out.isubs(values)
         return out
+
+    def apply(self, state: State) -> SymbolicState:
+        """Apply ``self`` to a state.
+
+        Args:
+            state: The state to apply to.
+
+        Returns:
+            The resulting symbolic state.
+        """
+        _check_modes_compatibility(self.modes, state.modes)
+        if not isinstance(state, SymbolicState):
+            state = state.into(SymbolicState)
+        out = SymbolicState(self.modes)
+        for op_term in self:
+            assert isinstance(op_term, SymbolicTerm)
+            for state_term in state:
+                assert isinstance(state_term, SymbolicStateTerm)
+                string = state_term.string.clone()
+                assert isinstance(string, StateString)
+                sign = string._impl.cmpnt_operator_string_imul(
+                    string.index, op_term.string._impl, op_term.string.index
+                )
+                if sign is not None:
+                    out += string * (op_term.coeff * state_term.coeff * Sign(sign).to_symbolic())
+        return out.filter_nonzero()
+
+    def mat_elem(self, bra: State, ket: State) -> Expr:
+        """Evaluate the matrix element of ``self`` between a bra and ket state.
+
+        Args:
+            bra: The bra state.
+            ket: The ket state.
+
+        Returns:
+            The resulting symbolic matrix element.
+        """
+        _check_modes_compatibility(self.modes, bra.modes, ket.modes)
+        if not isinstance(bra, SymbolicState):
+            bra = bra.into(SymbolicState)
+        if not isinstance(ket, SymbolicState):
+            ket = ket.into(SymbolicState)
+        return bra.vdot(self.apply(ket))
+
+    def exp_val(self, state: State) -> Expr:
+        """Evaluate the expectation value of ``self`` with respect to a state.
+
+        Args:
+            state: The state to evaluate with respect to.
+
+        Returns:
+            The resulting symbolic expectation value.
+        """
+        return self.mat_elem(state, state)
 
 
 def get_term_type(coeff_type: type[CoeffT]) -> type[Term[CoeffT]]:

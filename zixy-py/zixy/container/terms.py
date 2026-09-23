@@ -81,6 +81,7 @@ TermSpecT: TypeAlias = (
     Cmpnt[ImplT, SpecT] | SpecT | tuple[SpecT | Cmpnt[ImplT, SpecT], CoeffT | None]
 )
 OutT = TypeVar("OutT", bound="ViewableBase[Any, Any]")
+OutTermSetT = TypeVar("OutTermSetT", bound="TermSet[Any, Any, Any]")
 
 
 def _parse_term_str(source: str) -> tuple[str | None, str]:
@@ -952,11 +953,9 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         return cls.from_terms(terms)
 
     @overload
-    def into(self, t: type[OutT]) -> OutT: ...
+    def into(self, t: type[OutTermSetT]) -> OutTermSetT: ...
     @overload
-    def into(
-        self, t: type[TermSet[ImplT, SpecT, OtherCoeffT]]
-    ) -> TermSet[ImplT, SpecT, OtherCoeffT]: ...
+    def into(self, t: type[OutT]) -> OutT: ...
 
     def into(
         self, t: type[OutT] | type[TermSet[ImplT, SpecT, OtherCoeffT]]

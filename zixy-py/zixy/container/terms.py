@@ -45,6 +45,7 @@ from typing import (
 
 import numpy as np
 import pandas as pd
+from sympy import Expr, simplify, sympify
 from typing_extensions import Self
 
 from zixy._zixy import Map
@@ -1220,6 +1221,16 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
             tmp.coeff = self._impl._coeffs[i]
             tmp._impl._cmpnts._impl.cmpnt_copy_external(0, self._impl._cmpnts._impl, i)
             yield tmp
+
+    def _symbolic_vdot(self: TermSet[ImplT, SpecT, Expr], rhs: TermSet[ImplT, SpecT, Expr]) -> Expr:
+        """Compute a sparse symbolic inner product between compatible term sets."""
+        result = sympify(0)
+        for term in rhs:
+            lhs_coeff = self.lookup_coeff(term.cmpnt)
+            if lhs_coeff is not None:
+                conjugated = lhs_coeff.conjugate() if hasattr(lhs_coeff, "conjugate") else lhs_coeff
+                result += conjugated * term.coeff
+        return simplify(result)
 
     def _from_generator(self, gen: Iterator[Term[ImplT, SpecT, CoeffT]]) -> Self:
         """Creates a new instance from a generator yielding instances of :class:`Term`."""

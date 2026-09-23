@@ -16,13 +16,18 @@
 
 from __future__ import annotations
 
-from typing import Generic
+from typing import TYPE_CHECKING, Generic
 
 from typing_extensions import Self
 
 from zixy.container.cmpnts import Cmpnt, Cmpnts, ImplT, SpecT
 from zixy.container.coeffs import Coeffs, CoeffT
 from zixy.utils import slice_single_item
+
+if TYPE_CHECKING:
+    from zixy._zixy import ImplArray
+else:
+    ImplArray = object
 
 
 class TermData(Generic[ImplT, SpecT, CoeffT]):

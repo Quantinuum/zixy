@@ -815,6 +815,11 @@ class SymbolicTermSum(TermSum[Expr]):
 
     terms_type = SymbolicTerms
 
+    def vdot(self, rhs: SymbolicTermSum) -> Expr:
+        """Compute the inner product of ``self`` with ``rhs``."""
+        _check_modes_compatibility(self.modes, rhs.modes)
+        return self._symbolic_vdot(rhs)
+
     def to_qubit(
         self,
         mapper: StateMapperType | None = None,

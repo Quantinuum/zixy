@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import numpy as np
-from sympy import sympify
+import pytest
+from sympy import Expr, sympify
 
 from zixy import _zixy
 from zixy.container.coeffs import (

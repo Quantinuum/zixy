@@ -183,6 +183,76 @@ jobs:
           name: wheels-sdist
           path: dist
 
+  wasm:
+    needs: check-tag
+    if: ${{ needs.check-tag.outputs.run == 'true' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        emsdk_version:
+          - '4.0.9'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install nightly Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_NIGHTLY_VERSION }}
+      - name: Add required rust targets and components
+        run: |
+          rustup override set ${{ env.RUST_NIGHTLY_VERSION }}
+          rustup target add wasm32-unknown-emscripten
+          rustup component add rust-src --toolchain ${{ env.RUST_NIGHTLY_VERSION }}-x86_64-unknown-linux-gnu
+      - name: Install Node.js for emsdk
+        uses: actions/setup-node@v7
+        with:
+          node-version: '18'
+      - name: Setup emsdk manually
+        # Ideally this should match both the version used by rustc and the pyodide ABI.
+        # See <https://doc.rust-lang.org/beta/rustc/platform-support/wasm32-unknown-emscripten.html>
+        # and <https://github.com/pyodide/pyodide/blob/main/docs/development/abi.md>
+        # Pyodide `0.2X` requires emscripten 4
+        # Pyodide `314.X` requires emscripten 5
+        # We fix a rustc version compatible with both.
+        run: |
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git
+          cd emsdk
+          ./emsdk install ${{ matrix.emsdk_version }}
+          ./emsdk activate ${{ matrix.emsdk_version }}
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+
+      # Emscripten's ABI is unstable, so we pass `-Zbuild-std` to rebuild Rust
+      # std with the specific emscripten version we are using, as indicated in
+      # <https://doc.rust-lang.org/beta/rustc/platform-support/wasm32-unknown-emscripten.html#emscripten-abi-compatibility>
+      - name: Build wasm wheels
+        run: |
+          source ../emsdk/emsdk_env.sh
+          uvx maturin build \
+            -Z build-std \
+            --release \
+            -i python${{ env.PYTHON_VERSION }} \
+            --target wasm32-unknown-emscripten \
+            -o ../dist \
+            -v
+        working-directory: ${{ env.MODULE_DIR }}
+        env:
+          CARGO_BUILD_TARGET: wasm32-unknown-emscripten
+          TARGET: wasm32-unknown-emscripten
+          CFLAGS: -fPIC
+          CXXFLAGS: -fPIC
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v7
+        with:
+          name: wheels-wasm-${{ matrix.platform.target }}-${{ matrix.emsdk_version }}
+          path: dist
+
   release:
     name: Release
     runs-on: ubuntu-latest

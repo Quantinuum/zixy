@@ -207,7 +207,7 @@ impl Array {
                 if let Some(word) = self.0.get_elem_mut_ref(index).get_u64it_mut().next() {
                     *word = bits;
                 } else {
-                    debug_assert_eq!(bits, 0);
+                    assert_eq!(bits, 0);
                 }
                 Some(sign.into())
             }

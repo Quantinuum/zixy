@@ -210,6 +210,7 @@ pub fn apply<C: FieldElem>(
     state: &state::terms::View<C>,
     out: &mut state::term_set::ViewMut<C>,
 ) {
+    assert!(op.word_iters.to_modes().len() <= 64);
     let mut tmp = word_iters::Elem::<StateList>::new(state.word_iters.to_modes());
     for (op_cmpnt, op_coeff) in op.word_iters.iter().zip(op.coeffs.iter()) {
         for (state_cmpnt, state_coeff) in state.word_iters.iter().zip(state.coeffs.iter()) {

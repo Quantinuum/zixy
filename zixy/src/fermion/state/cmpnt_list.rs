@@ -162,7 +162,10 @@ impl<'a> CmpntMutRef<'a> {
     /// created mode is already occupied).
     /// Assumes the mode space fits in a single `u64` word.
     pub fn assign_mul_by_op(&mut self, op: operator::CmpntRef, rhs: CmpntRef) -> AssignResult {
-        assert!(self.modes().len() <= 64);
+        assert!(
+            self.modes().len() <= 64,
+            "fermion state component multiplication supports at most 64 modes"
+        );
         let cre = op.get_cre_part().get_u64it().next().unwrap_or(0);
         let ann = op.get_ann_part().get_u64it().next().unwrap_or(0);
         let ket = rhs.get_u64it().next().unwrap_or(0);

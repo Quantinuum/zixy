@@ -450,14 +450,14 @@ def test_complex_term_sum_dagger():
             NormalRealTermSum,
             "F0 F0^ F1 F1^",
             3,
-            "(1.0, ), (-1.0, F1^ F1), (-1.0, F0^ F0), " "(-1.0, F0^ F1^ F0 F1)",
+            "(1.0, ), (-1.0, F1^ F1), (-1.0, F0^ F0), (-1.0, F0^ F1^ F0 F1)",
         ),
         (
             ComplexTermSum,
             NormalComplexTermSum,
             "((2j), F0 F0^ F1 F1^), ((1-1j), F0 F0^)",
             3,
-            "((1+1j), ), (-2j, F1^ F1), ((-1-1j), F0^ F0), " "(-2j, F0^ F1^ F0 F1)",
+            "((1+1j), ), (-2j, F1^ F1), ((-1-1j), F0^ F0), (-2j, F0^ F1^ F0 F1)",
         ),
     ),
 )

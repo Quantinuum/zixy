@@ -198,6 +198,10 @@ impl Array {
         DifferentSpaces::check(&self.0, &operators.0).to_py_result()?;
         let index = try_py_index(index, self.len())?;
         let operator_index = try_py_index(operator_index, operators.len())?;
+        assert!(
+            self.0.modes().len() <= 64,
+            "in-place fermion operator application supports at most 64 modes"
+        );
         let operator = operators.0.get_elem_ref(operator_index);
         let creation = operator.get_cre_part().get_u64it().next().unwrap_or(0);
         let annihilation = operator.get_ann_part().get_u64it().next().unwrap_or(0);

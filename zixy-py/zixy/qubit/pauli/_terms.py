@@ -22,7 +22,7 @@ The structure of this module parallels that of :mod:`~zixy.container.terms` and
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, TypeAlias, cast, overload
+from typing import Any, Literal, TypeAlias, cast, overload
 
 import numpy as np
 from numpy.typing import NDArray
@@ -72,6 +72,8 @@ from zixy.qubit.state._strings import Strings as StateStrings
 from zixy.qubit.state._terms import (
     ComplexTermSum as ComplexState,
     RealTermSum as RealState,
+    SymbolicTerm as SymbolicStateTerm,
+    SymbolicTermSum as SymbolicState,
 )
 from zixy.utils import DEFAULT_COMMUTES_ATOL
 
@@ -81,6 +83,8 @@ ComplexSignTermSpec = TermSpec[ComplexSign]
 RealTermSpec = TermSpec[float]
 ComplexTermSpec = TermSpec[complex]
 SymbolicTermSpec = TermSpec[Expr]
+NumericState: TypeAlias = RealState | ComplexState
+State: TypeAlias = NumericState | SymbolicState
 
 
 def _mul(
@@ -860,7 +864,12 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         super().__isub__(rhs)
         return self
 
-    def apply(self, state: RealState) -> ComplexState:
+    @overload
+    def apply(self, state: NumericState) -> ComplexState: ...
+    @overload
+    def apply(self, state: SymbolicState) -> SymbolicState: ...
+
+    def apply(self, state: State) -> ComplexState | SymbolicState:
         """Apply ``self`` to a state.
 
         Args:
@@ -870,6 +879,10 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
             The resulting state.
         """
         _check_qubits_compatibility(self.qubits, state.qubits)
+        if isinstance(state, ComplexState):
+            return self.into(ComplexTermSum).apply(state)
+        if isinstance(state, SymbolicState):
+            return self.into(SymbolicTermSum).apply(state)
         out = ComplexState(self.qubits)
         assert isinstance(self._impl._coeffs, RealCoeffs)
         assert isinstance(state._impl._coeffs, RealCoeffs)
@@ -882,41 +895,87 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
             out._cmpnt_set._map,
             out._impl._coeffs._impl,
         )
-        return out
+        return out.filter_nonzero()
 
-    def mat_elem(self, bra: RealState, ket: RealState) -> float:
+    @overload
+    def mat_elem(self, bra: RealState, ket: RealState, *, real: Literal[True]) -> float: ...
+    @overload
+    def mat_elem(
+        self, bra: NumericState, ket: NumericState, *, real: Literal[False] = False
+    ) -> complex: ...
+    @overload
+    def mat_elem(self, bra: RealState, ket: RealState, *, real: bool) -> float | complex: ...
+    @overload
+    def mat_elem(self, bra: SymbolicState, ket: State, *, real: Literal[False] = False) -> Expr: ...
+    @overload
+    def mat_elem(
+        self, bra: NumericState, ket: SymbolicState, *, real: Literal[False] = False
+    ) -> Expr: ...
+
+    def mat_elem(self, bra: State, ket: State, *, real: bool = False) -> float | complex | Expr:
         """Evaluate the matrix element of ``self`` between a bra and ket state.
 
         Args:
             bra: The bra state.
             ket: The ket state.
+            real: Use the optimized real-valued implementation. The bra and ket state must be
+                real, and the resulting matrix element is therein assumed to be real,
+                irrespective of the operator.
 
         Returns:
             The resulting matrix element.
+
+        Raises:
+            TypeError: If ``real`` is ``True`` and either state has non-real coefficients.
         """
         _check_qubits_compatibility(self.qubits, bra.qubits, ket.qubits)
-        assert isinstance(self._impl._coeffs, RealCoeffs)
-        assert isinstance(bra._impl._coeffs, RealCoeffs)
-        assert isinstance(ket._impl._coeffs, RealCoeffs)
-        return float(
-            self._impl._cmpnts._impl.mat_elem_real(
-                self._impl._coeffs._impl,
-                bra._impl._cmpnts._impl,
-                bra._impl._coeffs._impl,
-                ket._impl._cmpnts._impl,
-                ket._impl._coeffs._impl,
+        if real:
+            if not isinstance(bra, RealState) or not isinstance(ket, RealState):
+                raise TypeError("real=True requires real bra and ket states.")
+            assert isinstance(self._impl._coeffs, RealCoeffs)
+            assert isinstance(bra._impl._coeffs, RealCoeffs)
+            assert isinstance(ket._impl._coeffs, RealCoeffs)
+            return float(
+                self._impl._cmpnts._impl.mat_elem_real(
+                    self._impl._coeffs._impl,
+                    bra._impl._cmpnts._impl,
+                    bra._impl._coeffs._impl,
+                    ket._impl._cmpnts._impl,
+                    ket._impl._coeffs._impl,
+                )
             )
-        )
+        if isinstance(bra, SymbolicState) or isinstance(ket, SymbolicState):
+            return self.into(SymbolicTermSum).mat_elem(bra, ket)
+        return self.into(ComplexTermSum).mat_elem(bra, ket)
 
-    def exp_val(self, state: RealState) -> float:
+    @overload
+    def exp_val(self, state: RealState, *, real: Literal[True]) -> float: ...
+    @overload
+    def exp_val(self, state: NumericState, *, real: Literal[False] = False) -> complex: ...
+    @overload
+    def exp_val(self, state: RealState, *, real: bool) -> float | complex: ...
+    @overload
+    def exp_val(self, state: SymbolicState, *, real: Literal[False] = False) -> Expr: ...
+
+    def exp_val(self, state: State, *, real: bool = False) -> float | complex | Expr:
         """Evaluate the expectation value of ``self`` with respect to a state.
 
         Args:
             state: The state to evaluate with respect to.
+            real: If ``True``, use the optimized real-valued implementation and return a
+                ``float``. This is supported only for states with real coefficients. The default
+                is ``False``, which uses the complex-valued implementation.
 
         Returns:
             The resulting expectation value.
+
+        Raises:
+            TypeError: If ``real`` is ``True`` and the state has non-real coefficients.
         """
+        if real:
+            if not isinstance(state, RealState):
+                raise TypeError("real=True requires a real state.")
+            return self.mat_elem(state, state, real=True)
         return self.mat_elem(state, state)
 
 
@@ -1127,7 +1186,12 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         super().__isub__(rhs)
         return self
 
-    def apply(self, state: ComplexState) -> ComplexState:
+    @overload
+    def apply(self, state: NumericState) -> ComplexState: ...
+    @overload
+    def apply(self, state: SymbolicState) -> SymbolicState: ...
+
+    def apply(self, state: State) -> ComplexState | SymbolicState:
         """Apply ``self`` to a state.
 
         Args:
@@ -1137,6 +1201,10 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
             The resulting state.
         """
         _check_qubits_compatibility(self.qubits, state.qubits)
+        if isinstance(state, RealState):
+            state = state.into(ComplexState)
+        elif isinstance(state, SymbolicState):
+            return self.into(SymbolicTermSum).apply(state)
         out = ComplexState(self.qubits)
         assert isinstance(self._impl._coeffs, ComplexCoeffs)
         assert isinstance(state._impl._coeffs, ComplexCoeffs)
@@ -1149,9 +1217,16 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
             out._cmpnt_set._map,
             out._impl._coeffs._impl,
         )
-        return out
+        return out.filter_nonzero()
 
-    def mat_elem(self, bra: ComplexState, ket: ComplexState) -> complex:
+    @overload
+    def mat_elem(self, bra: NumericState, ket: NumericState) -> complex: ...
+    @overload
+    def mat_elem(self, bra: SymbolicState, ket: State) -> Expr: ...
+    @overload
+    def mat_elem(self, bra: NumericState, ket: SymbolicState) -> Expr: ...
+
+    def mat_elem(self, bra: State, ket: State) -> complex | Expr:
         """Evaluate the matrix element of ``self`` between a bra and ket state.
 
         Args:
@@ -1162,6 +1237,12 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
             The resulting matrix element.
         """
         _check_qubits_compatibility(self.qubits, bra.qubits, ket.qubits)
+        if isinstance(bra, SymbolicState) or isinstance(ket, SymbolicState):
+            return self.into(SymbolicTermSum).mat_elem(bra, ket)
+        if isinstance(bra, RealState):
+            bra = bra.into(ComplexState)
+        if isinstance(ket, RealState):
+            ket = ket.into(ComplexState)
         assert isinstance(self._impl._coeffs, ComplexCoeffs)
         assert isinstance(bra._impl._coeffs, ComplexCoeffs)
         assert isinstance(ket._impl._coeffs, ComplexCoeffs)
@@ -1175,7 +1256,12 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
             )
         )
 
-    def exp_val(self, state: ComplexState) -> complex:
+    @overload
+    def exp_val(self, state: NumericState) -> complex: ...
+    @overload
+    def exp_val(self, state: SymbolicState) -> Expr: ...
+
+    def exp_val(self, state: State) -> complex | Expr:
         """Evaluate the expectation value of ``self`` with respect to a state.
 
         Args:
@@ -1461,6 +1547,56 @@ class SymbolicTermSum(TermSum[Expr]):
                 product.coeff = product.coeff.simplify()
                 out += product
         return out
+
+    def apply(self, state: State) -> SymbolicState:
+        """Apply ``self`` to a state.
+
+        Args:
+            state: The state to apply to.
+
+        Returns:
+            The resulting symbolic state.
+        """
+        _check_qubits_compatibility(self.qubits, state.qubits)
+        if not isinstance(state, SymbolicState):
+            state = state.into(SymbolicState)
+        out = SymbolicState(self.qubits)
+        for op_term in self:
+            assert isinstance(op_term, SymbolicTerm)
+            for state_term in state:
+                assert isinstance(state_term, SymbolicStateTerm)
+                string = state_term.string.clone()
+                phase = string.imul_get_phase(op_term.string)
+                out += string * (op_term.coeff * state_term.coeff * phase.to_symbolic())
+        return out.filter_nonzero()
+
+    def mat_elem(self, bra: State, ket: State) -> Expr:
+        """Evaluate the matrix element of ``self`` between a bra and ket state.
+
+        Args:
+            bra: The bra state.
+            ket: The ket state.
+
+        Returns:
+            The resulting symbolic matrix element.
+        """
+        _check_qubits_compatibility(self.qubits, bra.qubits, ket.qubits)
+        if not isinstance(bra, SymbolicState):
+            bra = bra.into(SymbolicState)
+        if not isinstance(ket, SymbolicState):
+            ket = ket.into(SymbolicState)
+        return bra.vdot(self.apply(ket))
+
+    def exp_val(self, state: State) -> Expr:
+        """Evaluate the expectation value of ``self`` with respect to a state.
+
+        Args:
+            state: The state to evaluate with respect to.
+
+        Returns:
+            The resulting symbolic expectation value.
+        """
+        return self.mat_elem(state, state)
 
 
 def get_term_type(coeff_type: type[CoeffT]) -> type[Term[CoeffT]]:

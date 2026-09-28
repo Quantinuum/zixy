@@ -843,6 +843,11 @@ class SymbolicTermSum(TermSum[Expr]):
 
     terms_type = SymbolicTerms
 
+    def vdot(self, rhs: SymbolicTermSum) -> Expr:
+        """Compute the inner product of ``self`` with ``rhs``."""
+        _check_qubits_compatibility(self.qubits, rhs.qubits)
+        return self._symbolic_vdot(rhs)
+
 
 def get_term_type(coeff_type: type[CoeffT]) -> type[Term[CoeffT]]:
     """Get the term type corresponding to ``coeff_type``."""

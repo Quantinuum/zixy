@@ -1,4 +1,6 @@
 import pytest
+from sympy import Expr, I as imaginary_unit, S, symbols
+from typing_extensions import assert_type
 
 from zixy.container.coeffs import Sign
 from zixy.qubit.pauli import I, RealTerm as PauliRealTerm, String as PauliString, X
@@ -224,6 +226,52 @@ def test_vdot_rejects_different_qubits():
 def test_complex_vdot_rejects_different_qubits():
     lhs = ComplexTermSum.from_str("[1, 0]", 2)
     rhs = ComplexTermSum.from_str("[1, 0, 0]", 3)
+
+    with pytest.raises(ValueError, match="different qubits"):
+        lhs.vdot(rhs)
+
+
+def test_symbolic_vdot():
+    x, y, z = symbols("x y z", real=True)
+    lhs = SymbolicTermSum.from_iterable(
+        [
+            ("[1, 0, 0]", x + imaginary_unit * y),
+            ("[0, 1, 0]", 2 * x),
+            ("[0, 0, 1]", z),
+        ],
+        3,
+    )
+    rhs = SymbolicTermSum.from_iterable([("[1, 0, 0]", z), ("[0, 1, 0]", 3), ("[1, 1, 0]", y)], 3)
+    lhs_before = lhs.clone()
+    rhs_before = rhs.clone()
+
+    result = lhs.vdot(rhs)
+
+    assert_type(result, Expr)
+    assert result == 6 * x + z * (x - imaginary_unit * y)
+    assert result.subs(x, 2) == 12 + z * (2 - imaginary_unit * y)
+    assert lhs == lhs_before
+    assert rhs == rhs_before
+    lhs["[1, 0, 0]"] = S.Zero
+    rhs["[1, 0, 0]"] = S.Zero
+    assert result == 6 * x + z * (x - imaginary_unit * y)
+
+
+def test_symbolic_vdot_empty_and_disjoint():
+    x = symbols("x")
+    empty = SymbolicTermSum(2)
+    lhs = SymbolicTermSum.from_iterable([("[1, 0]", x)], 2)
+    rhs = SymbolicTermSum.from_iterable([("[0, 1]", x)], 2)
+
+    assert empty.vdot(empty) is S.Zero
+    assert empty.vdot(lhs) is S.Zero
+    assert lhs.vdot(empty) is S.Zero
+    assert lhs.vdot(rhs) is S.Zero
+
+
+def test_symbolic_vdot_rejects_different_qubits():
+    lhs = SymbolicTermSum.from_str("[1, 0]", 2)
+    rhs = SymbolicTermSum.from_str("[1, 0, 0]", 3)
 
     with pytest.raises(ValueError, match="different qubits"):
         lhs.vdot(rhs)

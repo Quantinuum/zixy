@@ -19,7 +19,7 @@ bench = false
 
 [dependencies]
 zixy = { path = "../zixy", version = "0.4.3"}
-pyo3 = { workspace = true, features = ["py-clone", "abi3-py310", "num-complex"] }
+pyo3 = { workspace = true, features = ["py-clone", "abi3-py312", "num-complex"] }
 numpy = { workspace = true }
 itertools = { workspace = true }
 sprs = { workspace = true }

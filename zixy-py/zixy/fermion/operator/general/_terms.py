@@ -22,7 +22,7 @@ that are raw fermionic strings, as defined in
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
-from typing import TYPE_CHECKING, Any, Self, TypeAlias, cast, overload
+from typing import TYPE_CHECKING, Any, Self, cast, overload
 
 from sympy import Expr, Symbol
 
@@ -78,7 +78,9 @@ if TYPE_CHECKING:
         RealTermSum as NormalRealTermSum,
     )
 
-TermSpec: TypeAlias = String | StringSpec | tuple[StringSpec | String, CoeffT | None]
+type TermSpec[C: (float, complex, Sign, ComplexSign, Expr)] = (
+    String | StringSpec | tuple[StringSpec | String, C | None]
+)
 ElemT = list[LadderOp]
 SpecT = StringSpec
 ImplT = GeneralFermionOperatorArray

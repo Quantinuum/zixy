@@ -27,7 +27,7 @@ can be selected efficiently.
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
-from typing import TYPE_CHECKING, Self, TypeAlias, overload
+from typing import TYPE_CHECKING, Self, overload
 
 from zixy._zixy import FermionSprings, GeneralFermionOperatorArray, Modes
 from zixy.container.base import requires_ownership
@@ -44,7 +44,7 @@ from zixy.fermion.operator._strings import (
 if TYPE_CHECKING:
     from zixy.fermion.operator.general._terms import Term
 
-StringSpec: TypeAlias = str | Sequence[LadderOp]
+type StringSpec = str | Sequence[LadderOp]
 ElemT = list[LadderOp]
 SpecT = StringSpec
 ImplT = GeneralFermionOperatorArray

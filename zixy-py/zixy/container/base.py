@@ -27,12 +27,11 @@ from typing import (
     Generic,
     ParamSpec,
     Protocol,
+    Self,
     TypeVar,
     cast,
     overload,
 )
-
-from typing_extensions import Self
 
 from zixy.utils import slice_index, slice_len
 

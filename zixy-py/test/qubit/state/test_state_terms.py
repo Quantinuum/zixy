@@ -1,6 +1,7 @@
+from typing import assert_type
+
 import pytest
 from sympy import Expr, I as imaginary_unit, S, symbols
-from typing_extensions import assert_type
 
 from zixy.container.coeffs import Sign
 from zixy.qubit.pauli import I, RealTerm as PauliRealTerm, String as PauliString, X

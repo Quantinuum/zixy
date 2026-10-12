@@ -16,9 +16,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generic
-
-from typing_extensions import Self
+from typing import TYPE_CHECKING, Generic, Self
 
 from zixy.container.cmpnts import Cmpnt, Cmpnts, ImplT, SpecT
 from zixy.container.coeffs import Coeffs, CoeffT

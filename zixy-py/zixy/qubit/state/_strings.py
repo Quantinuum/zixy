@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     from zixy.container.coeffs import CoeffT
     from zixy.qubit.state._terms import Term
 
-StringSpec = Sequence[bool] | set[int] | str
+type StringSpec = Sequence[bool] | set[int] | str
 ElemT = bool
 SpecT = StringSpec
 ImplT = QubitStateArray

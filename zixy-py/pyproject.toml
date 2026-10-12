@@ -84,7 +84,6 @@ select = [
     "NPY",  # NumPy-specific rules
 ]
 ignore = [
-    "UP040",  # NOTE: fixed higher in the stack
     "PLC2801",  # unnecessary-dunder-call
     "PLR09",  # too-many-x
     "PLR1714",  # repeated-equality-comparison

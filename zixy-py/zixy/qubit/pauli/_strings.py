@@ -24,7 +24,7 @@ The structure of this module parallels that of :mod:`~zixy.container.cmpnts` and
 from __future__ import annotations
 
 from collections.abc import Iterator, Sequence
-from typing import TYPE_CHECKING, Self, TypeAlias, cast, overload
+from typing import TYPE_CHECKING, Self, cast, overload
 
 import numpy as np
 from numpy.typing import NDArray
@@ -55,7 +55,7 @@ from zixy.utils import slice_equal
 if TYPE_CHECKING:
     from zixy.qubit.pauli._terms import ComplexSignTerm, Term
 
-StringSpec: TypeAlias = Sequence[PauliMatrix] | dict[int, PauliMatrix] | str
+type StringSpec = Sequence[PauliMatrix] | dict[int, PauliMatrix] | str
 ElemT = PauliMatrix
 SpecT = StringSpec
 ImplT = QubitPauliArray

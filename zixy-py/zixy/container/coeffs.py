@@ -56,7 +56,7 @@ from zixy.utils import (
     split_top_level,
 )
 
-Number: TypeAlias = int | float | complex
+Number: TypeAlias = int | float | complex  # noqa: UP040
 NumberT = TypeVar("NumberT", float, complex)
 
 
@@ -565,8 +565,8 @@ class ComplexSign(RootOfUnity):
         return complex(self)
 
 
-Scalar: TypeAlias = Number | Sign | ComplexSign
-Coeff: TypeAlias = Scalar | Expr
+Scalar: TypeAlias = Number | Sign | ComplexSign  # noqa: UP040
+Coeff: TypeAlias = Scalar | Expr  # noqa: UP040
 CoeffT = TypeVar("CoeffT", float, complex, Sign, ComplexSign, Expr)
 OtherCoeffT = TypeVar("OtherCoeffT", float, complex, Sign, ComplexSign, Expr)
 

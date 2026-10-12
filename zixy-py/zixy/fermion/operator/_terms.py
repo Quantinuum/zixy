@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from collections.abc import Callable
-from typing import Any, Generic, Self, TypeAlias, cast
+from typing import Any, Generic, Self, cast
 
 from zixy._zixy import Qubits
 from zixy.container.cmpnts import SpecT
@@ -38,7 +38,7 @@ from zixy.fermion.operator._strings import (
 from zixy.mappings.base import Mapper
 from zixy.qubit.pauli._terms import ComplexTermSum as PauliComplexTermSum
 
-MapperType: TypeAlias = Callable[[int | Qubits], Mapper]
+type MapperType = Callable[[int | Qubits], Mapper]
 
 
 def _product_sign(n_cre: int, n_ann: int) -> Sign:

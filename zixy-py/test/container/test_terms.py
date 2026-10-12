@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from typing import Self
+
 import pytest
 from sympy import Expr, sympify
-from typing_extensions import Self
 
 from zixy.container.coeffs import (
     ComplexCoeffs,

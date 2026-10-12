@@ -1,7 +1,7 @@
 [project]
 name = "zixy"
 version = "0.4.0"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 description = "Quantinuum's high performance library for the manipulation of Pauli strings and other quantum algebraic objects"
 license = { file = "LICENCE" }
 readme = "README.md"
@@ -17,8 +17,6 @@ maintainers = [
 ]
 classifiers = [
     "Environment :: Console",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: Apache Software License",

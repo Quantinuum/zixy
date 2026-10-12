@@ -85,7 +85,6 @@ select = [
     "NPY",  # NumPy-specific rules
 ]
 ignore = [
-    "UP035",  # NOTE: fixed in style/typing-extensions-312
     "UP040",  # NOTE: fixed higher in the stack
     "PLC2801",  # unnecessary-dunder-call
     "PLR09",  # too-many-x

@@ -13,11 +13,10 @@
 # limitations under the License.
 
 from collections.abc import Sequence, Sized
-from typing import Any, ClassVar, Generic, TypeVar
+from typing import Any, ClassVar, Generic, Self, TypeVar
 
 from numpy import bool_, complex128, float64, uint8
 from numpy.typing import NDArray
-from typing_extensions import Self
 
 class Map:
     def __init__(self, *args: Any, **kwargs: Any) -> None: ...

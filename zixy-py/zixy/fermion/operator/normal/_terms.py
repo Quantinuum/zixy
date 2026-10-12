@@ -21,10 +21,9 @@ that are normal-ordered fermionic strings, as defined in
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypeAlias, cast, overload
+from typing import TYPE_CHECKING, Any, Self, TypeAlias, cast, overload
 
 from sympy import Expr, Symbol
-from typing_extensions import Self
 
 from zixy._zixy import Modes, NormalFermionOperatorArray
 from zixy.container import terms

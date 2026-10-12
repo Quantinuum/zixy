@@ -30,9 +30,7 @@ from __future__ import annotations
 import builtins
 from abc import abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Sequence
-from typing import TYPE_CHECKING, Any, Generic, TypeVar, overload
-
-from typing_extensions import Self
+from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar, overload
 
 from zixy._zixy import Map
 from zixy.container.base import (

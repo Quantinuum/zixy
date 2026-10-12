@@ -33,6 +33,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Generic,
+    Self,
     TypeAlias,
     TypeVar,
     overload,
@@ -41,7 +42,7 @@ from typing import (
 import numpy as np
 from numpy.typing import NDArray
 from sympy import Expr, Float, I, Integer, Symbol, diff, sympify
-from typing_extensions import Self, TypeIs
+from typing_extensions import TypeIs
 
 from zixy import _zixy
 from zixy.container.base import StringRepresentable, ViewableSequence, requires_ownership

@@ -25,7 +25,6 @@ from typing import (
     Any,
     Concatenate,
     Generic,
-    ParamSpec,
     Protocol,
     Self,
     TypeVar,
@@ -34,11 +33,6 @@ from typing import (
 )
 
 from zixy.utils import slice_index, slice_len
-
-P = ParamSpec("P")
-R = TypeVar("R")
-OwnT = TypeVar("OwnT", bound="SupportsOwnership")
-OutT = TypeVar("OutT", bound="ViewableBase[Any, Any]")
 
 
 class SupportsOwnership(Protocol):
@@ -53,9 +47,9 @@ class SupportsOwnership(Protocol):
         ...
 
 
-def requires_ownership(
-    method: Callable[Concatenate[OwnT, P], R],
-) -> Callable[Concatenate[OwnT, P], R]:
+def requires_ownership[T: ViewableBase[Any, Any], **P, R](
+    method: Callable[Concatenate[T, P], R],
+) -> Callable[Concatenate[T, P], R]:
     """Decorator for methods that can only be called on owning views.
 
     Args:
@@ -66,7 +60,7 @@ def requires_ownership(
     """
 
     @wraps(method)
-    def wrapper(self: OwnT, *args: P.args, **kwargs: P.kwargs) -> R:
+    def wrapper(self: T, *args: P.args, **kwargs: P.kwargs) -> R:
         if not self.is_owning():
             raise ValueError(
                 f"Cannot call {method.__name__} on a non-owning view. Consider cloning the object "
@@ -74,7 +68,7 @@ def requires_ownership(
             )
         return method(self, *args, **kwargs)
 
-    return cast(Callable[Concatenate[OwnT, P], R], wrapper)
+    return cast(Callable[Concatenate[T, P], R], wrapper)
 
 
 class Resizable(Sized, Protocol):
@@ -95,12 +89,7 @@ class Resizable(Sized, Protocol):
         ...
 
 
-T = TypeVar("T")
-ImplT = TypeVar("ImplT", bound=Resizable)
-IndexerT = TypeVar("IndexerT", int | None, slice)
-
-
-class ViewableBase(Generic[ImplT, IndexerT]):
+class ViewableBase[ImplT: Resizable, IndexerT: (int | None, slice)]:
     """Abstract base class for classes with an ownership model and underlying Rust-bound data."""
 
     _impl: ImplT
@@ -131,7 +120,7 @@ class ViewableBase(Generic[ImplT, IndexerT]):
         """Return a deep copy of ``self``."""
         pass
 
-    def into(self, t: type[OutT]) -> OutT:
+    def into[T: ViewableBase[Any, Any]](self, t: type[T]) -> T:
         """Clone ``self`` into a new related container of type ``t``.
 
         Args:
@@ -145,7 +134,7 @@ class ViewableBase(Generic[ImplT, IndexerT]):
         return into(self, t)
 
 
-class ViewableItem(ViewableBase[ImplT, int | None]):
+class ViewableItem[ImplT: Resizable](ViewableBase[ImplT, int | None]):
     """Abstract base class for items with an ownership model and underlying Rust-bound data."""
 
     _index: int | None
@@ -175,7 +164,7 @@ class ViewableItem(ViewableBase[ImplT, int | None]):
         return 0 if self._index is None else self._index
 
 
-class ViewableSequence(ViewableBase[ImplT, slice], Generic[T, ImplT], Sequence[T]):
+class ViewableSequence[T, ImplT: Resizable](ViewableBase[ImplT, slice], Sequence[T]):
     """Abstract base class for sequences with an ownership model and underlying Rust-bound data."""
 
     _slice: slice

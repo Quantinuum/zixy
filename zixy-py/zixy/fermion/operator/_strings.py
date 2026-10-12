@@ -21,7 +21,7 @@ operators, acting on a register of fermionic modes.
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Generic, Self, TypeAlias, TypeVar
+from typing import Generic, Self, TypeVar
 
 from zixy.container.cmpnts import SpecT
 from zixy.fermion._strings import (
@@ -31,7 +31,7 @@ from zixy.fermion._strings import (
     StringSet as FermionStringSet,
 )
 
-LadderOp: TypeAlias = tuple[int, bool]
+type LadderOp = tuple[int, bool]
 ElemT = TypeVar("ElemT")
 
 

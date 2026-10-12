@@ -22,7 +22,7 @@ The structure of this module parallels that of :mod:`~zixy.container.terms` and
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, Self, TypeAlias, cast, overload
+from typing import Any, Self, cast, overload
 
 import numpy as np
 from numpy.typing import NDArray
@@ -59,7 +59,9 @@ from zixy.qubit._terms import (
 )
 from zixy.qubit.state._strings import String, Strings, StringSpec
 
-TermSpec: TypeAlias = String | StringSpec | tuple[StringSpec | String, CoeffT | None]
+type TermSpec[C: (float, complex, Sign, ComplexSign, Expr)] = (
+    String | StringSpec | tuple[StringSpec | String, C | None]
+)
 SignTermSpec = TermSpec[Sign]
 ComplexSignTermSpec = TermSpec[ComplexSign]
 RealTermSpec = TermSpec[float]

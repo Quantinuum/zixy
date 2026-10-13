@@ -34,15 +34,7 @@ from __future__ import annotations
 
 import builtins
 from collections.abc import Callable, Iterable, Iterator, Sequence
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Generic,
-    Self,
-    TypeVar,
-    cast,
-    overload,
-)
+from typing import TYPE_CHECKING, Any, Self, cast, overload
 
 import numpy as np
 import pandas as pd
@@ -56,16 +48,13 @@ from zixy.container.base import (
     ViewableSequence,
     requires_ownership,
 )
-from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet, ImplT, SpecT
+from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet
 from zixy.container.coeffs import (
     Coeff,
     Coeffs,
-    CoeffT,
     ComplexCoeffs,
     ComplexSign,
     Number,
-    NumberT,
-    OtherCoeffT,
     RealCoeffs,
     RootOfUnity,
     Sign,
@@ -85,11 +74,9 @@ else:
     ImplArray = object
 
 
-type TermSpecT[I: ImplArray, S, C: (float, complex, Sign, ComplexSign, Expr)] = (
-    Cmpnt[I, S] | S | tuple[S | Cmpnt[I, S], C | None]
+type TermSpecT[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)] = (
+    Cmpnt[ImplT, SpecT] | SpecT | tuple[SpecT | Cmpnt[ImplT, SpecT], C | None]
 )
-OutT = TypeVar("OutT", bound="ViewableBase[Any, Any]")
-OutTermSetT = TypeVar("OutTermSetT", bound="TermSet[Any, Any, Any]")
 
 
 def _parse_term_str(source: str) -> tuple[str | None, str]:
@@ -131,9 +118,9 @@ def _parse_term_str(source: str) -> tuple[str | None, str]:
     return source_coeff, source_cmpnt
 
 
-def _coeffs_from_str(
-    source_coeff: str | None, coeff_type: type[CoeffT], n_cmpnt: int
-) -> Coeffs[CoeffT]:
+def _coeffs_from_str[C: (float, complex, Sign, ComplexSign, Expr)](
+    source_coeff: str | None, coeff_type: type[C], n_cmpnt: int
+) -> Coeffs[C]:
     """Construct coefficient data from parsed coefficient text."""
     coeffs_type = get_coeffs_type(coeff_type)
     coeffs = (
@@ -149,9 +136,8 @@ def _coeffs_from_str(
     return coeffs
 
 
-class Term(
-    ViewableItem[TermData[ImplT, SpecT, CoeffT]],
-    Generic[ImplT, SpecT, CoeffT],
+class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
+    ViewableItem[TermData[ImplT, SpecT, C]],
     StringRepresentable,
 ):
     """A term consisting of a component and a coefficient.
@@ -161,13 +147,13 @@ class Term(
     a view on an element in another collection.
     """
 
-    coeff_type: type[CoeffT]
+    coeff_type: type[C]
     cmpnts_type: type[Cmpnts[ImplT, SpecT]]
 
-    _impl: TermData[ImplT, SpecT, CoeffT]
+    _impl: TermData[ImplT, SpecT, C]
     _index: int | None
 
-    def __init__(self, data: TermData[ImplT, SpecT, CoeffT], indexer: int | None = None):
+    def __init__(self, data: TermData[ImplT, SpecT, C], indexer: int | None = None):
         """Initialize the term.
 
         Args:
@@ -188,7 +174,7 @@ class Term(
         self._index = indexer
 
     @property
-    def _data(self) -> TermData[ImplT, SpecT, CoeffT]:
+    def _data(self) -> TermData[ImplT, SpecT, C]:
         """The raw term data object underlying ``self``."""
         return self._impl
 
@@ -198,12 +184,12 @@ class Term(
         return self.cmpnts_type.cmpnt_type
 
     @property
-    def coeffs_type(self) -> type[Coeffs[CoeffT]]:
+    def coeffs_type(self) -> type[Coeffs[C]]:
         """The coefficient container type of ``self``."""
         return get_coeffs_type(self.coeff_type)
 
     @classmethod
-    def _create(cls, data: TermData[ImplT, SpecT, CoeffT], indexer: int | None = None) -> Self:
+    def _create(cls, data: TermData[ImplT, SpecT, C], indexer: int | None = None) -> Self:
         """Create an instance of ``cls``.
 
         Args:
@@ -219,7 +205,7 @@ class Term(
         return out
 
     @classmethod
-    def from_cmpnt_coeff(cls, cmpnt: Cmpnt[ImplT, SpecT], coeff: CoeffT) -> Self:
+    def from_cmpnt_coeff(cls, cmpnt: Cmpnt[ImplT, SpecT], coeff: C) -> Self:
         """Factory to make an instance of ``cls`` from a component and a coefficient.
 
         Args:
@@ -266,12 +252,12 @@ class Term(
         return self._data.cmpnts[self.index]
 
     @property
-    def coeff(self) -> CoeffT:
+    def coeff(self) -> C:
         """A copy of the coefficient of ``self``."""
         return self._data.coeffs[self.index]
 
     @coeff.setter
-    def coeff(self, value: CoeffT) -> None:
+    def coeff(self, value: C) -> None:
         """Set the coefficient of ``self``.
 
         Args:
@@ -300,7 +286,7 @@ class Term(
         )
         return result
 
-    def set(self, source: Self | TermSpecT[ImplT, SpecT, CoeffT]) -> None:
+    def set(self, source: Self | TermSpecT[ImplT, SpecT, C]) -> None:
         """Set the value of the term.
 
         Args:
@@ -352,9 +338,8 @@ class Term(
         return out
 
 
-class Terms(
-    Generic[ImplT, SpecT, CoeffT],
-    ViewableSequence[Term[ImplT, SpecT, CoeffT], TermData[ImplT, SpecT, CoeffT]],
+class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
+    ViewableSequence[Term[ImplT, SpecT, C], TermData[ImplT, SpecT, C]],
     StringRepresentable,
 ):
     """A collection of terms consisting of components and coefficients.
@@ -364,11 +349,11 @@ class Terms(
     a slice of the elements in another collection.
     """
 
-    term_type: type[Term[ImplT, SpecT, CoeffT]]
+    term_type: type[Term[ImplT, SpecT, C]]
 
-    _impl: TermData[ImplT, SpecT, CoeffT]
+    _impl: TermData[ImplT, SpecT, C]
 
-    def __init__(self, data: TermData[ImplT, SpecT, CoeffT], indexer: slice = slice(None)):
+    def __init__(self, data: TermData[ImplT, SpecT, C], indexer: slice = slice(None)):
         """Initialize the term array.
 
         Args:
@@ -380,12 +365,12 @@ class Terms(
         self._slice = indexer
 
     @property
-    def _data(self) -> TermData[ImplT, SpecT, CoeffT]:
+    def _data(self) -> TermData[ImplT, SpecT, C]:
         """The raw term data object underlying ``self``."""
         return self._impl
 
     @classmethod
-    def _create(cls, data: TermData[ImplT, SpecT, CoeffT], indexer: slice = slice(None)) -> Self:
+    def _create(cls, data: TermData[ImplT, SpecT, C], indexer: slice = slice(None)) -> Self:
         """Create a new instance of ``cls``.
 
         Args:
@@ -411,12 +396,12 @@ class Terms(
         return all(self[i] == other[i] for i in range(len(self)))
 
     @property
-    def coeffs_type(self) -> type[Coeffs[CoeffT]]:
+    def coeffs_type(self) -> type[Coeffs[C]]:
         """The coefficient container type of ``self``."""
         return get_coeffs_type(self._data.coeff_type)
 
     @property
-    def coeff_type(self) -> type[CoeffT]:
+    def coeff_type(self) -> type[C]:
         """The coefficient type of ``self``."""
         return self._impl.coeff_type
 
@@ -436,7 +421,7 @@ class Terms(
         return self._data.cmpnts[self.slice]
 
     @property
-    def coeffs(self) -> Coeffs[CoeffT]:
+    def coeffs(self) -> Coeffs[C]:
         """The coefficients of ``self``."""
         return self._data.coeffs[self.slice]
 
@@ -445,14 +430,14 @@ class Terms(
         return ", ".join(str(s) for s in self)
 
     @overload
-    def __getitem__(self, indexer: int) -> Term[ImplT, SpecT, CoeffT]: ...
+    def __getitem__(self, indexer: int) -> Term[ImplT, SpecT, C]: ...
 
     @overload
-    def __getitem__(self, indexer: builtins.slice) -> Terms[ImplT, SpecT, CoeffT]: ...
+    def __getitem__(self, indexer: builtins.slice) -> Terms[ImplT, SpecT, C]: ...
 
     def __getitem__(
         self, indexer: int | builtins.slice
-    ) -> Term[ImplT, SpecT, CoeffT] | Terms[ImplT, SpecT, CoeffT]:
+    ) -> Term[ImplT, SpecT, C] | Terms[ImplT, SpecT, C]:
         """Get the element or elements selected by ``indexer``.
 
         Args:
@@ -474,18 +459,16 @@ class Terms(
     def __setitem__(
         self,
         indexer: int,
-        source: TermSpecT[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, CoeffT],
+        source: TermSpecT[ImplT, SpecT, C] | Term[ImplT, SpecT, C],
     ) -> None: ...
 
     @overload
-    def __setitem__(self, indexer: builtins.slice, source: Terms[ImplT, SpecT, CoeffT]) -> None: ...
+    def __setitem__(self, indexer: builtins.slice, source: Terms[ImplT, SpecT, C]) -> None: ...
 
     def __setitem__(
         self,
         indexer: int | builtins.slice,
-        source: TermSpecT[ImplT, SpecT, CoeffT]
-        | Term[ImplT, SpecT, CoeffT]
-        | Terms[ImplT, SpecT, CoeffT],
+        source: TermSpecT[ImplT, SpecT, C] | Term[ImplT, SpecT, C] | Terms[ImplT, SpecT, C],
     ) -> None:
         """Set the term at ``indexer`` in ``self`` to ``source``.
 
@@ -511,7 +494,7 @@ class Terms(
                 )
             self[indexer].set(source)
 
-    def scale(self, scalar: CoeffT) -> None:
+    def scale(self, scalar: C) -> None:
         """Scale all elements by a scalar factor.
 
         Args:
@@ -523,7 +506,7 @@ class Terms(
         for term in self:
             term.coeff = typesafe_mul(term.coeff, scalar)
 
-    def scale_by_coeffs(self, coeffs: Coeffs[CoeffT]) -> None:
+    def scale_by_coeffs(self, coeffs: Coeffs[C]) -> None:
         """Scale all elements by the corresponding coefficient vector.
 
         Args:
@@ -544,7 +527,7 @@ class Terms(
         for item, coeff in zip(self, coeffs):
             item.coeff = typesafe_mul(item.coeff, coeff)
 
-    def __imul__(self, coeff: CoeffT | Coeffs[CoeffT]) -> Self:
+    def __imul__(self, coeff: C | Coeffs[C]) -> Self:
         """Multiply ``self`` in-place by a scalar or coefficient vector."""
         if isinstance(coeff, Coeffs):
             self.scale_by_coeffs(coeff)
@@ -552,13 +535,13 @@ class Terms(
             self.scale(coeff)
         return self
 
-    def __mul__(self, coeff: CoeffT | Coeffs[CoeffT]) -> Self:
+    def __mul__(self, coeff: C | Coeffs[C]) -> Self:
         """Return ``self`` multiplied by a scalar or coefficient vector."""
         out = self.clone()
         out *= coeff
         return out
 
-    def __rmul__(self, coeff: CoeffT | Coeffs[CoeffT]) -> Self:
+    def __rmul__(self, coeff: C | Coeffs[C]) -> Self:
         """Return ``self`` multiplied by a scalar or coefficient vector."""
         out = self.clone()
         out *= coeff
@@ -571,7 +554,7 @@ class Terms(
     def __neg__(self) -> Self:
         """Return the negation of ``self``."""
         out = self.clone()
-        out *= cast(CoeffT, -1)
+        out *= cast(C, -1)
         return out
 
     def _empty_clone(self) -> Self:
@@ -595,7 +578,7 @@ class Terms(
             out.append(self[i])
         return out
 
-    def new_clear_term(self) -> Term[ImplT, SpecT, CoeffT]:
+    def new_clear_term(self) -> Term[ImplT, SpecT, C]:
         """Factory to make a new term with a zero component and a unit coefficient.
 
         Returns:
@@ -611,8 +594,8 @@ class Terms(
         return tmp
 
     def iter_filter_map(
-        self, f: Callable[[Term[ImplT, SpecT, CoeffT]], bool]
-    ) -> Iterator[Term[ImplT, SpecT, CoeffT]]:
+        self, f: Callable[[Term[ImplT, SpecT, C]], bool]
+    ) -> Iterator[Term[ImplT, SpecT, C]]:
         """Lazily evaluate a filter-map operation over the components of ``self``.
 
         Args:
@@ -634,7 +617,7 @@ class Terms(
             if f(tmp):
                 yield tmp
 
-    def filter_map(self, f: Callable[[Term[ImplT, SpecT, CoeffT]], bool]) -> Self:
+    def filter_map(self, f: Callable[[Term[ImplT, SpecT, C]], bool]) -> Self:
         """Eagerly evaluate a filter-map operation over the terms of ``self``.
 
         Args:
@@ -653,7 +636,7 @@ class Terms(
     def append_n(
         self,
         n: int,
-        source: TermSpecT[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, CoeffT] = "",  # type: ignore[assignment]
+        source: TermSpecT[ImplT, SpecT, C] | Term[ImplT, SpecT, C] = "",  # type: ignore[assignment]
     ) -> Self:
         """Append ``source`` to the end of ``self`` ``n`` times.
 
@@ -674,7 +657,7 @@ class Terms(
     @requires_ownership
     def append(
         self,
-        source: TermSpecT[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, CoeffT] = "",  # type: ignore[assignment]
+        source: TermSpecT[ImplT, SpecT, C] | Term[ImplT, SpecT, C] = "",  # type: ignore[assignment]
     ) -> Self:
         """Append ``source`` to the end of ``self``.
 
@@ -688,7 +671,7 @@ class Terms(
 
     def append_iterable(
         self,
-        source: Iterable[TermSpecT[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, CoeffT]] = tuple(),
+        source: Iterable[TermSpecT[ImplT, SpecT, C] | Term[ImplT, SpecT, C]] = tuple(),
     ) -> Self:
         """Append the elements of ``source`` to the end of ``self``.
 
@@ -714,7 +697,7 @@ class Terms(
     @classmethod
     def from_iterable(
         cls,
-        source: Iterable[TermSpecT[ImplT, SpecT, CoeffT] | Term[ImplT, SpecT, CoeffT]],
+        source: Iterable[TermSpecT[ImplT, SpecT, C] | Term[ImplT, SpecT, C]],
         *args: Any,
         **kwargs: Any,
     ) -> Self:
@@ -752,7 +735,7 @@ class Terms(
         return cls._create(TermData(cmpnts, coeffs))
 
 
-class NumericTerms(Terms[ImplT, SpecT, NumberT]):
+class NumericTerms[ImplT: ImplArray, SpecT, C: (float, complex)](Terms[ImplT, SpecT, C]):
     """A collection of terms consisting of components and numeric coefficients.
 
     An array-like container of terms consisting of components and coefficients that may be an
@@ -779,7 +762,9 @@ class NumericTerms(Terms[ImplT, SpecT, NumberT]):
         return out
 
 
-class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
+class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
+    StringRepresentable
+):
     """A collection of unique terms consisting of components and coefficients.
 
     A set-like container of terms that may be used to store unique terms and perform set-like
@@ -790,13 +775,13 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         are not.
     """
 
-    terms_type: type[Terms[ImplT, SpecT, CoeffT]]
+    terms_type: type[Terms[ImplT, SpecT, C]]
 
-    _impl: TermData[ImplT, SpecT, CoeffT]
+    _impl: TermData[ImplT, SpecT, C]
     _cmpnt_set: CmpntSet[ImplT, SpecT]
-    _working_term: Term[ImplT, SpecT, CoeffT]
+    _working_term: Term[ImplT, SpecT, C]
 
-    def __init__(self, terms: Terms[ImplT, SpecT, CoeffT]):
+    def __init__(self, terms: Terms[ImplT, SpecT, C]):
         """Initialize the term set.
 
         Args:
@@ -819,7 +804,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         else:
             self.insert_iterable(terms)
 
-    def _collect_terms(self, terms: Terms[ImplT, SpecT, CoeffT], sum_duplicates: bool) -> None:
+    def _collect_terms(self, terms: Terms[ImplT, SpecT, C], sum_duplicates: bool) -> None:
         """Collect numeric terms in Rust, normalizing sliced inputs first."""
         if (
             not terms.is_owning()
@@ -846,17 +831,17 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         self._cmpnt_set._map = mapping
 
     @property
-    def _data(self) -> TermData[ImplT, SpecT, CoeffT]:
+    def _data(self) -> TermData[ImplT, SpecT, C]:
         """The raw term data object underlying ``self``."""
         return self._impl
 
     @property
-    def coeffs_type(self) -> type[Coeffs[CoeffT]]:
+    def coeffs_type(self) -> type[Coeffs[C]]:
         """The coefficient container type of ``self``."""
         return self._impl.coeffs_type
 
     @property
-    def coeff_type(self) -> type[CoeffT]:
+    def coeff_type(self) -> type[C]:
         """The coefficient type of ``self``."""
         return self._data.coeff_type
 
@@ -871,7 +856,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         return self._data.cmpnt_type
 
     @classmethod
-    def _create(cls, data: TermData[ImplT, SpecT, CoeffT], map_: Map | None = None) -> Self:
+    def _create(cls, data: TermData[ImplT, SpecT, C], map_: Map | None = None) -> Self:
         """Create a new instance of ``cls``.
 
         Args:
@@ -927,12 +912,12 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         out._cmpnt_set._map = mapping
         return out
 
-    def to_terms(self) -> Terms[ImplT, SpecT, CoeffT]:
+    def to_terms(self) -> Terms[ImplT, SpecT, C]:
         """Get a collection of terms containing the same data as ``self``."""
         return self.terms_type._create(self._impl.clone())
 
     @classmethod
-    def from_terms(cls, terms: Terms[ImplT, SpecT, CoeffT]) -> Self:
+    def from_terms(cls, terms: Terms[ImplT, SpecT, C]) -> Self:
         """Create a new instance of ``cls`` from ``terms``.
 
         Args:
@@ -961,13 +946,13 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         return cls.from_terms(terms)
 
     @overload
-    def into(self, t: type[OutTermSetT]) -> OutTermSetT: ...
+    def into[T: TermSet[Any, Any, Any]](self, t: type[T]) -> T: ...
     @overload
-    def into(self, t: type[OutT]) -> OutT: ...
+    def into[T: ViewableBase[Any, Any]](self, t: type[T]) -> T: ...
 
-    def into(
-        self, t: type[OutT] | type[TermSet[ImplT, SpecT, OtherCoeffT]]
-    ) -> OutT | TermSet[ImplT, SpecT, OtherCoeffT]:
+    def into[T: ViewableBase[Any, Any], COther: (float, complex, Sign, ComplexSign, Expr)](
+        self, t: type[T] | type[TermSet[ImplT, SpecT, COther]]
+    ) -> T | TermSet[ImplT, SpecT, COther]:
         """Clone ``self`` into a new related container of type ``t``.
 
         Args:
@@ -999,7 +984,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         """Get the number of elements in ``self``."""
         return len(self._impl)
 
-    def _check_term(self, value: Term[ImplT, SpecT, CoeffT]) -> None:
+    def _check_term(self, value: Term[ImplT, SpecT, C]) -> None:
         """Hook to check whether a term is valid for insertion into ``self``."""
         pass
 
@@ -1008,8 +993,8 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         pass
 
     def _get_working_term(
-        self, value: Term[ImplT, SpecT, CoeffT] | TermSpecT[ImplT, SpecT, CoeffT]
-    ) -> Term[ImplT, SpecT, CoeffT]:
+        self, value: Term[ImplT, SpecT, C] | TermSpecT[ImplT, SpecT, C]
+    ) -> Term[ImplT, SpecT, C]:
         """Get a term that contains the data specified by ``value``.
 
         Args:
@@ -1049,7 +1034,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         self._check_cmpnt(cmpnt)
         return cmpnt
 
-    def insert(self, key: Term[ImplT, SpecT, CoeffT] | TermSpecT[ImplT, SpecT, CoeffT]) -> int:
+    def insert(self, key: Term[ImplT, SpecT, C] | TermSpecT[ImplT, SpecT, C]) -> int:
         """Try to insert the given term.
 
         Args:
@@ -1069,7 +1054,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         return index
 
     def soft_insert(
-        self, key: Term[ImplT, SpecT, CoeffT] | TermSpecT[ImplT, SpecT, CoeffT]
+        self, key: Term[ImplT, SpecT, C] | TermSpecT[ImplT, SpecT, C]
     ) -> tuple[int, bool]:
         """Insertion method which does not overwrite coefficient values.
 
@@ -1095,7 +1080,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
 
     def insert_iterable(
         self,
-        source: Iterable[Term[ImplT, SpecT, CoeffT] | TermSpecT[ImplT, SpecT, CoeffT]] = tuple(),
+        source: Iterable[Term[ImplT, SpecT, C] | TermSpecT[ImplT, SpecT, C]] = tuple(),
     ) -> None:
         """Insert many terms from an iterable source.
 
@@ -1109,7 +1094,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
             self.insert(item)
 
     def lookup_index(
-        self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, CoeffT]
+        self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, C]
     ) -> int | None:
         """Try to find the index of the component specified by ``value`` in ``self``.
 
@@ -1123,9 +1108,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         value = self._get_working_term(value)
         return self._cmpnt_set.lookup(value.cmpnt)
 
-    def lookup_coeff(
-        self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, CoeffT]
-    ) -> CoeffT | None:
+    def lookup_coeff(self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, C]) -> C | None:
         """Try to find the coefficient of the term specified by ``value`` in ``self``.
 
         Args:
@@ -1141,8 +1124,8 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         return self._impl._coeffs[index]
 
     def lookup(
-        self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, CoeffT]
-    ) -> tuple[int, CoeffT] | None:
+        self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, C]
+    ) -> tuple[int, C] | None:
         """Try to find the index and coefficient of the component specified by ``value``.
 
         Args:
@@ -1156,7 +1139,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
             return None
         return index, self._impl._coeffs[index]
 
-    def contains(self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, CoeffT]) -> bool:
+    def contains(self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, C]) -> bool:
         """Check whether the component specified by ``value`` is stored in ``self``.
 
         Args:
@@ -1167,7 +1150,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         """
         return self.lookup(value) is not None
 
-    def remove(self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, CoeffT]) -> int:
+    def remove(self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, C]) -> int:
         """Try to remove the component specified by ``value`` from ``self``.
 
         If the component is found, removal proceeds via swap-remove.
@@ -1188,9 +1171,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         self._impl._coeffs.swap_remove(i)
         return i
 
-    def __getitem__(
-        self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, CoeffT]
-    ) -> CoeffT:
+    def __getitem__(self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, C]) -> C:
         """Get the coefficient of the term with component specified by ``value``.
 
         Args:
@@ -1207,7 +1188,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
             raise KeyError(f"Value {value} not found in TermSet.")
         return out
 
-    def __setitem__(self, key: SpecT | Term[ImplT, SpecT, CoeffT], coeff: CoeffT) -> None:
+    def __setitem__(self, key: SpecT | Term[ImplT, SpecT, C], coeff: C) -> None:
         """Set the coefficient of the term with component specified by ``key``."""
         self._impl._coeffs[self.insert(key)] = coeff
 
@@ -1219,7 +1200,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
             return False
         return all(self.lookup_coeff(term.cmpnt) == term.coeff for term in other)
 
-    def __iter__(self) -> Iterator[Term[ImplT, SpecT, CoeffT]]:
+    def __iter__(self) -> Iterator[Term[ImplT, SpecT, C]]:
         """Iterate over the elements of ``self``."""
         if not len(self):
             return
@@ -1239,15 +1220,15 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
                 result += conjugated * term.coeff
         return simplify(result)
 
-    def _from_generator(self, gen: Iterator[Term[ImplT, SpecT, CoeffT]]) -> Self:
+    def _from_generator(self, gen: Iterator[Term[ImplT, SpecT, C]]) -> Self:
         """Creates a new instance from a generator yielding instances of :class:`Term`."""
         out = self._empty_clone()
         out.insert_iterable(gen)
         return out
 
     def iter_filter_map(
-        self, f: Callable[[Term[ImplT, SpecT, CoeffT]], bool]
-    ) -> Iterator[Term[ImplT, SpecT, CoeffT]]:
+        self, f: Callable[[Term[ImplT, SpecT, C]], bool]
+    ) -> Iterator[Term[ImplT, SpecT, C]]:
         """Lazily evaluate a filter-map operation over the terms of ``self``.
 
         Args:
@@ -1264,7 +1245,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         """
         return (term for term in self if f(term))
 
-    def filter_map(self, f: Callable[[Term[ImplT, SpecT, CoeffT]], bool]) -> Self:
+    def filter_map(self, f: Callable[[Term[ImplT, SpecT, C]], bool]) -> Self:
         """Eagerly evaluate a filter-map operation over the terms of ``self``.
 
         Args:
@@ -1285,7 +1266,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
     @classmethod
     def from_iterable(
         cls,
-        iterable: Iterable[Term[ImplT, SpecT, CoeffT] | TermSpecT[ImplT, SpecT, CoeffT]],
+        iterable: Iterable[Term[ImplT, SpecT, C] | TermSpecT[ImplT, SpecT, C]],
         *args: Any,
         **kwargs: Any,
     ) -> Self:
@@ -1303,7 +1284,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         out.insert_iterable(iterable)
         return out
 
-    def iter_filter_nonzero(self) -> Iterator[Term[ImplT, SpecT, CoeffT]]:
+    def iter_filter_nonzero(self) -> Iterator[Term[ImplT, SpecT, C]]:
         """Iterate over the non-zero terms of ``self``."""
         return (term for term in self if term.coeff != 0)
 
@@ -1323,7 +1304,9 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         return out
 
 
-class TermSum(TermSet[ImplT, SpecT, CoeffT]):
+class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
+    TermSet[ImplT, SpecT, C]
+):
     """A sum of terms consisting of components and coefficients.
 
     A set-like container of terms that may be used to store unique terms and perform algebraic
@@ -1334,7 +1317,7 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
         are not.
     """
 
-    def _scaled_iadd(self, rhs: Term[ImplT, SpecT, CoeffT] | Self, scalar: Coeff) -> None:
+    def _scaled_iadd(self, rhs: Term[ImplT, SpecT, C] | Self, scalar: Coeff) -> None:
         """Add ``scalar`` times ``rhs`` to ``self`` in-place."""
         if not isinstance(rhs, Term | TermSum):
             rhs = self._get_working_term(rhs)
@@ -1383,23 +1366,23 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
             self._cmpnt_set = filtered._cmpnt_set
             self._working_term = filtered._working_term
 
-    def __iadd__(self, rhs: Term[ImplT, SpecT, CoeffT] | Self) -> Self:
+    def __iadd__(self, rhs: Term[ImplT, SpecT, C] | Self) -> Self:
         """Add ``rhs`` to ``self`` in-place."""
         self._scaled_iadd(rhs, 1)
         return self
 
-    def __isub__(self, rhs: Term[ImplT, SpecT, CoeffT] | Self) -> Self:
+    def __isub__(self, rhs: Term[ImplT, SpecT, C] | Self) -> Self:
         """Subtract ``rhs`` from ``self`` in-place."""
         self._scaled_iadd(rhs, -1)
         return self
 
-    def __add__(self, rhs: Term[ImplT, SpecT, CoeffT] | Self) -> Self:
+    def __add__(self, rhs: Term[ImplT, SpecT, C] | Self) -> Self:
         """Addition of ``self`` and ``rhs``."""
         out = self.clone()
         out += rhs
         return out
 
-    def __sub__(self, rhs: Term[ImplT, SpecT, CoeffT] | Self) -> Self:
+    def __sub__(self, rhs: Term[ImplT, SpecT, C] | Self) -> Self:
         """Subtraction of ``rhs`` from ``self``."""
         out = self.clone()
         out -= rhs
@@ -1413,7 +1396,7 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
         """Return the negation of ``self``."""
         return self * -1
 
-    def __imul__(self, other: Coeff | Coeffs[CoeffT]) -> Self:
+    def __imul__(self, other: Coeff | Coeffs[C]) -> Self:
         """Multiply ``self`` in-place by a scalar or coefficient vector."""
         if not isinstance(other, Coeff | Coeffs):
             return NotImplemented
@@ -1428,7 +1411,7 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
             self *= 1 / scalar
         return self
 
-    def __mul__(self, other: Coeff | Coeffs[CoeffT]) -> Self:
+    def __mul__(self, other: Coeff | Coeffs[C]) -> Self:
         """Return ``self`` multiplied by a scalar or coefficient vector."""
         if not isinstance(other, Coeff | Coeffs):
             return NotImplemented
@@ -1436,7 +1419,7 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
         out *= other
         return out
 
-    def __rmul__(self, coeff: Coeff | Coeffs[CoeffT]) -> Self:
+    def __rmul__(self, coeff: Coeff | Coeffs[C]) -> Self:
         """Return ``self`` multiplied by a scalar or coefficient vector."""
         return self * coeff
 
@@ -1445,7 +1428,7 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
         factor = 1 / scalar if not isinstance(scalar, RootOfUnity) else 1 / scalar.to_numeric()
         return self * factor
 
-    def add_iterable(self, iterable: Iterable[Term[ImplT, SpecT, CoeffT]]) -> None:
+    def add_iterable(self, iterable: Iterable[Term[ImplT, SpecT, C]]) -> None:
         """In-place addition of the terms in ``iterable`` to ``self``.
 
         Args:
@@ -1478,7 +1461,7 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
             out.add_iterable(terms)
         return out
 
-    def _from_generator(self, gen: Iterator[Term[ImplT, SpecT, CoeffT]]) -> Self:
+    def _from_generator(self, gen: Iterator[Term[ImplT, SpecT, C]]) -> Self:
         """Create a new instance based on ``self`` with contents given by a generator.
 
         Args:
@@ -1495,7 +1478,7 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
     @classmethod
     def from_iterable(
         cls,
-        iterable: Iterable[Term[ImplT, SpecT, CoeffT]],  # type: ignore[override]
+        iterable: Iterable[Term[ImplT, SpecT, C]],  # type: ignore[override]
         *args: Any,
         **kwargs: Any,
     ) -> Self:
@@ -1518,7 +1501,7 @@ class TermSum(TermSet[ImplT, SpecT, CoeffT]):
         return out
 
 
-class NumericTermSum(TermSum[ImplT, SpecT, NumberT]):
+class NumericTermSum[ImplT: ImplArray, SpecT, C: (float, complex)](TermSum[ImplT, SpecT, C]):
     """A sum of terms consisting of components and numeric coefficients.
 
     A set-like container of terms that may be used to store unique terms and perform algebraic
@@ -1530,23 +1513,23 @@ class NumericTermSum(TermSum[ImplT, SpecT, NumberT]):
     """
 
     @property
-    def l1_norm(self) -> NumberT:
+    def l1_norm(self) -> C:
         """The L1 norm of ``self``."""
         coeffs = self._impl._coeffs
         if isinstance(coeffs, RealCoeffs | ComplexCoeffs):
             return self.coeff_type(coeffs._impl.norm_slice(coeffs.slice, False))
-        result: NumberT = zero(self.coeff_type)
+        result: C = zero(self.coeff_type)
         for coeff in self._impl._coeffs:
             result += self.coeff_type(abs(coeff))
         return result
 
     @property
-    def l2_norm_square(self) -> NumberT:
+    def l2_norm_square(self) -> C:
         """The square of the L2 norm of ``self``."""
         coeffs = self._impl._coeffs
         if isinstance(coeffs, RealCoeffs | ComplexCoeffs):
             return self.coeff_type(coeffs._impl.norm_slice(coeffs.slice, True))
-        result: NumberT = zero(self.coeff_type)
+        result: C = zero(self.coeff_type)
         for coeff in self._impl._coeffs:
             result += self.coeff_type(abs(coeff)) ** 2
         return result
@@ -1574,7 +1557,7 @@ class NumericTermSum(TermSum[ImplT, SpecT, NumberT]):
 
     def iter_filter_significant(
         self, atol: float = DEFAULT_ATOL
-    ) -> Iterator[Term[ImplT, SpecT, NumberT]]:
+    ) -> Iterator[Term[ImplT, SpecT, C]]:
         """Lazily generate terms in ``self`` with coefficients no less than ``atol``.
 
         Args:
@@ -1598,7 +1581,7 @@ class NumericTermSum(TermSum[ImplT, SpecT, NumberT]):
 
     def iter_filter_insignificant(
         self, atol: float = DEFAULT_ATOL
-    ) -> Iterator[Term[ImplT, SpecT, NumberT]]:
+    ) -> Iterator[Term[ImplT, SpecT, C]]:
         """Lazily generate terms in ``self`` with coefficients less than ``atol``.
 
         Args:

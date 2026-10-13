@@ -16,10 +16,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generic, Self
+from typing import TYPE_CHECKING, Self
 
-from zixy.container.cmpnts import Cmpnt, Cmpnts, ImplT, SpecT
-from zixy.container.coeffs import Coeffs, CoeffT
+from sympy import Expr
+
+from zixy.container.cmpnts import Cmpnt, Cmpnts
+from zixy.container.coeffs import Coeffs, ComplexSign, Sign
 from zixy.utils import slice_single_item
 
 if TYPE_CHECKING:
@@ -28,13 +30,13 @@ else:
     ImplArray = object
 
 
-class TermData(Generic[ImplT, SpecT, CoeffT]):
+class TermData[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)]:
     """Data for terms, consisting of an array of components and a vector of coefficients."""
 
-    _coeffs: Coeffs[CoeffT]
+    _coeffs: Coeffs[C]
     _cmpnts: Cmpnts[ImplT, SpecT]
 
-    def __init__(self, cmpnts: Cmpnts[ImplT, SpecT], coeffs: Coeffs[CoeffT]):
+    def __init__(self, cmpnts: Cmpnts[ImplT, SpecT], coeffs: Coeffs[C]):
         """Initialize the data.
 
         Args:
@@ -54,7 +56,7 @@ class TermData(Generic[ImplT, SpecT, CoeffT]):
         return self._cmpnts
 
     @property
-    def coeffs(self) -> Coeffs[CoeffT]:
+    def coeffs(self) -> Coeffs[C]:
         """The coefficients of ``self``."""
         return self._coeffs
 
@@ -69,12 +71,12 @@ class TermData(Generic[ImplT, SpecT, CoeffT]):
         return self._cmpnts.cmpnt_type
 
     @property
-    def coeffs_type(self) -> type[Coeffs[CoeffT]]:
+    def coeffs_type(self) -> type[Coeffs[C]]:
         """The coefficient container type of ``self``."""
         return type(self._coeffs)
 
     @property
-    def coeff_type(self) -> type[CoeffT]:
+    def coeff_type(self) -> type[C]:
         """The coefficient type of ``self``."""
         return self._coeffs.coeff_type
 

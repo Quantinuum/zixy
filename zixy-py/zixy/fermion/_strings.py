@@ -17,16 +17,13 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Generic, Self, TypeVar, overload
+from typing import TYPE_CHECKING, Self, overload
 
 from zixy._zixy import Modes
-from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet, SpecT
+from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet
 
 if TYPE_CHECKING:
     from zixy._zixy import FermionArray
-
-ElemT = TypeVar("ElemT")
-ImplT = TypeVar("ImplT", bound="FermionArray")
 
 
 def _check_modes_compatibility(*modes: Modes) -> None:
@@ -35,7 +32,7 @@ def _check_modes_compatibility(*modes: Modes) -> None:
         raise ValueError("Objects are defined over different modes.")
 
 
-class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
+class String[ImplT: FermionArray, SpecT, ElemT](Cmpnt[ImplT, SpecT]):
     """A fermionic string.
 
     A single mode-based string that may be an owning instance referencing a single element in a
@@ -92,7 +89,7 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
         pass
 
 
-class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
+class Strings[ImplT: FermionArray, SpecT, ElemT](Cmpnts[ImplT, SpecT]):
     """A collection of fermionic strings.
 
     An array-like container of mode-based strings that may be an owning instance referencing a
@@ -139,7 +136,7 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
         return self._set_type._create(self._impl).to_cmpnts()
 
 
-class StringSet(Generic[ImplT, SpecT, ElemT], CmpntSet[ImplT, SpecT]):
+class StringSet[ImplT: FermionArray, SpecT, ElemT](CmpntSet[ImplT, SpecT]):
     """A collection of unique fermionic strings.
 
     A set-like container of mode-based strings that may be used to store unique components and

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from collections.abc import Sequence, Sized
-from typing import Any, ClassVar, Generic, Self, TypeVar
+from typing import Any, ClassVar, Self
 
 from numpy import bool_, complex128, float64, uint8
 from numpy.typing import NDArray
@@ -325,10 +325,7 @@ class GeneralFermionOperatorArray(FermionArray):
         cmpnts: GeneralFermionOperatorArray, coeffs: ComplexVec
     ) -> tuple[NormalFermionOperatorArray, ComplexVec]: ...
 
-ElemT = TypeVar("ElemT")
-SpringsT = TypeVar("SpringsT", bound=Springs)
-
-class QubitArray(Generic[SpringsT, ElemT], ImplArray):
+class QubitArray[SpringsT: Springs, ElemT](ImplArray):
     qubits: Qubits
 
     def __init__(self, qubits: Qubits | None = ..., source: SpringsT | None = ...) -> None: ...

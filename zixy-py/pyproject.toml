@@ -89,6 +89,7 @@ ignore = [
     "PLR09",  # too-many-x
     "PLR1714",  # repeated-equality-comparison
     "PLR2004",  # magic-value-comparison
+    "PLW0717",  # too-many-statements-in-try-clause
     "PLW1641",  # eq-without-hash
     "PLW2901",  # redefined-loop-name
 ]

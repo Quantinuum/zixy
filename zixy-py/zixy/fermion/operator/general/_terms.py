@@ -171,7 +171,7 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerm[ImplT, Spe
     @property
     def string(self) -> String:
         """The string component of the term."""
-        return cast(String, self.cmpnt)
+        return cast("String", self.cmpnt)
 
     @property
     def max_string_len(self) -> int:
@@ -217,7 +217,7 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerms[ImplT, S
     @property
     def strings(self) -> Strings:
         """The string components of the terms."""
-        return cast(Strings, self.cmpnts)
+        return cast("Strings", self.cmpnts)
 
     @property
     def max_string_len(self) -> int:
@@ -288,7 +288,7 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
     @property
     def strings(self) -> Strings:
         """The string components of the terms."""
-        return cast(Strings, self._impl._cmpnts)
+        return cast("Strings", self._impl._cmpnts)
 
     @property
     def coeffs(self) -> Any:
@@ -809,7 +809,7 @@ class SymbolicTerms(Terms[Expr]):
     @property
     def coeffs(self) -> SymbolicCoeffs:
         """The coefficients of ``self``."""
-        return cast(SymbolicCoeffs, self._data.coeffs[self.slice])
+        return cast("SymbolicCoeffs", self._data.coeffs[self.slice])
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
         """Apply a partial substitution of the symbols in-place.

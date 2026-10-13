@@ -16,12 +16,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Sized
 from typing import TYPE_CHECKING, Any, cast
 
 from sympy import Expr
 
-from zixy.container.base import ViewableBase
 from zixy.container.cmpnts import Cmpnt, Cmpnts
 from zixy.container.coeffs import (
     Coeffs,
@@ -36,7 +34,10 @@ from zixy.container.data import TermData
 from zixy.container.terms import Term, Terms
 
 if TYPE_CHECKING:
+    from collections.abc import Sized
+
     from zixy._zixy import ImplArray
+    from zixy.container.base import ViewableBase
 else:
     ImplArray = object
 
@@ -58,15 +59,15 @@ def into[T](source: ViewableBase[Any, Any], t: type[T]) -> T:
     if not isinstance(t, type):
         raise TypeError(f"Conversion target must be a type, got {type(t)}.")
     if issubclass(t, Cmpnt):
-        return cast(T, _into_cmpnt(source, t))
+        return cast("T", _into_cmpnt(source, t))
     if issubclass(t, Cmpnts):
-        return cast(T, _into_cmpnts(source, t))
+        return cast("T", _into_cmpnts(source, t))
     if issubclass(t, Term):
-        return cast(T, _into_term(source, t))
+        return cast("T", _into_term(source, t))
     if issubclass(t, Terms):
-        return cast(T, _into_terms(source, t))
+        return cast("T", _into_terms(source, t))
     if issubclass(t, Coeffs):
-        return cast(T, _into_coeffs(source, t))
+        return cast("T", _into_coeffs(source, t))
     raise TypeError(f"Cannot convert {type(source)} into unsupported target type {t}.")
 
 

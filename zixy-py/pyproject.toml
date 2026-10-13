@@ -91,6 +91,7 @@ ignore = [
     "PLW0717",  # too-many-statements-in-try-clause
     "PLW1641",  # eq-without-hash
     "PLW2901",  # redefined-loop-name
+    "UP040",  # non-pep695-type-alias
 ]
 
 [tool.ruff.lint.per-file-ignores]

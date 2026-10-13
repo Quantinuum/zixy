@@ -48,7 +48,7 @@ from zixy.utils import (
     split_top_level,
 )
 
-Number: TypeAlias = int | float | complex  # noqa: UP040
+Number: TypeAlias = int | float | complex
 
 
 def _imul_factor_error(lhs: Any, rhs: Any, factor: Any) -> ValueError:
@@ -556,8 +556,8 @@ class ComplexSign(RootOfUnity):
         return complex(self)
 
 
-Scalar: TypeAlias = Number | Sign | ComplexSign  # noqa: UP040
-Coeff: TypeAlias = Scalar | Expr  # noqa: UP040
+Scalar: TypeAlias = Number | Sign | ComplexSign
+Coeff: TypeAlias = Scalar | Expr
 
 
 def zero[C: (float, complex, Sign, ComplexSign, Expr)](coeff_type: type[C]) -> C:

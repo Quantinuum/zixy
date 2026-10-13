@@ -17,14 +17,16 @@
 from __future__ import annotations
 
 from collections.abc import Sized
-from typing import Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any, cast
+
+from sympy import Expr
 
 from zixy.container.base import ViewableBase
-from zixy.container.cmpnts import Cmpnt, Cmpnts, ImplT, SpecT
+from zixy.container.cmpnts import Cmpnt, Cmpnts
 from zixy.container.coeffs import (
     Coeffs,
-    CoeffT,
-    OtherCoeffT,
+    ComplexSign,
+    Sign,
     convert,
     convert_vec,
     get_coeffs_type,
@@ -33,11 +35,13 @@ from zixy.container.coeffs import (
 from zixy.container.data import TermData
 from zixy.container.terms import Term, Terms
 
-OutT = TypeVar("OutT")
-TargetSpecT = TypeVar("TargetSpecT")
+if TYPE_CHECKING:
+    from zixy._zixy import ImplArray
+else:
+    ImplArray = object
 
 
-def into(source: ViewableBase[Any, Any], t: type[OutT]) -> OutT:
+def into[T](source: ViewableBase[Any, Any], t: type[T]) -> T:
     """Clone ``source`` into a new related container of type ``t``.
 
     Args:
@@ -54,19 +58,19 @@ def into(source: ViewableBase[Any, Any], t: type[OutT]) -> OutT:
     if not isinstance(t, type):
         raise TypeError(f"Conversion target must be a type, got {type(t)}.")
     if issubclass(t, Cmpnt):
-        return cast(OutT, _into_cmpnt(source, t))
+        return cast(T, _into_cmpnt(source, t))
     if issubclass(t, Cmpnts):
-        return cast(OutT, _into_cmpnts(source, t))
+        return cast(T, _into_cmpnts(source, t))
     if issubclass(t, Term):
-        return cast(OutT, _into_term(source, t))
+        return cast(T, _into_term(source, t))
     if issubclass(t, Terms):
-        return cast(OutT, _into_terms(source, t))
+        return cast(T, _into_terms(source, t))
     if issubclass(t, Coeffs):
-        return cast(OutT, _into_coeffs(source, t))
+        return cast(T, _into_coeffs(source, t))
     raise TypeError(f"Cannot convert {type(source)} into unsupported target type {t}.")
 
 
-def _check_cmpnt_compatibility(
+def _check_cmpnt_compatibility[ImplT: ImplArray, SpecT, TargetSpecT](
     source_type: type[Cmpnt[ImplT, SpecT]], target_type: type[Cmpnt[ImplT, TargetSpecT]]
 ) -> None:
     """Check that source and target component types are compatible for conversion."""
@@ -86,7 +90,9 @@ def _require_single_item(source: Sized, t: type[Any]) -> None:
         )
 
 
-def _require_unit_coeff(source: Term[ImplT, SpecT, CoeffT], t: type[Any]) -> None:
+def _require_unit_coeff[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
+    source: Term[ImplT, SpecT, C], t: type[Any]
+) -> None:
     """Check that ``source`` has the unit coefficient for its coefficient type."""
     coeff = source.coeff
     unit_coeff = unit(source.coeff_type)
@@ -97,7 +103,9 @@ def _require_unit_coeff(source: Term[ImplT, SpecT, CoeffT], t: type[Any]) -> Non
         )
 
 
-def _require_unit_coeffs(source: Terms[ImplT, SpecT, CoeffT], t: type[Any]) -> None:
+def _require_unit_coeffs[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
+    source: Terms[ImplT, SpecT, C], t: type[Any]
+) -> None:
     """Check that all coefficients in ``source`` are unit values."""
     unit_coeff = unit(source.coeff_type)
     if any(coeff != unit_coeff for coeff in source.coeffs):
@@ -107,16 +115,17 @@ def _require_unit_coeffs(source: Terms[ImplT, SpecT, CoeffT], t: type[Any]) -> N
         )
 
 
-def _clone_coeffs_as(
-    source: Coeffs[CoeffT], target_type: type[Coeffs[OtherCoeffT]]
-) -> Coeffs[OtherCoeffT]:
+def _clone_coeffs_as[
+    C: (float, complex, Sign, ComplexSign, Expr),
+    COther: (float, complex, Sign, ComplexSign, Expr),
+](source: Coeffs[C], target_type: type[Coeffs[COther]]) -> Coeffs[COther]:
     """Clone coefficient data from ``source`` as ``target_type``."""
     if type(source) is target_type:
         return source.clone()
     return convert_vec(source, target_type)
 
 
-def _clone_cmpnts_as(
+def _clone_cmpnts_as[ImplT: ImplArray, SpecT, TargetSpecT](
     source: Cmpnts[ImplT, SpecT], target_type: type[Cmpnts[ImplT, TargetSpecT]]
 ) -> Cmpnts[ImplT, TargetSpecT]:
     """Clone component data from ``source`` as ``target_type``."""
@@ -124,7 +133,7 @@ def _clone_cmpnts_as(
     return target_type._create(source.clone()._impl)
 
 
-def _clone_cmpnt_as(
+def _clone_cmpnt_as[ImplT: ImplArray, SpecT, TargetSpecT](
     source: Cmpnt[ImplT, SpecT], target_type: type[Cmpnt[ImplT, TargetSpecT]]
 ) -> Cmpnt[ImplT, TargetSpecT]:
     """Clone component data from ``source`` as ``target_type``."""
@@ -132,7 +141,9 @@ def _clone_cmpnt_as(
     return target_type._create(source.clone()._impl)
 
 
-def _into_cmpnt(source: object, t: type[Cmpnt[ImplT, TargetSpecT]]) -> Cmpnt[ImplT, TargetSpecT]:
+def _into_cmpnt[ImplT: ImplArray, SpecT](
+    source: object, t: type[Cmpnt[ImplT, SpecT]]
+) -> Cmpnt[ImplT, SpecT]:
     """Convert to a single component."""
     if isinstance(source, Cmpnt):
         return _clone_cmpnt_as(source, t)
@@ -149,7 +160,9 @@ def _into_cmpnt(source: object, t: type[Cmpnt[ImplT, TargetSpecT]]) -> Cmpnt[Imp
     raise TypeError(f"Cannot convert {type(source)} into component type {t}.")
 
 
-def _into_cmpnts(source: object, t: type[Cmpnts[ImplT, TargetSpecT]]) -> Cmpnts[ImplT, TargetSpecT]:
+def _into_cmpnts[ImplT: ImplArray, SpecT](
+    source: object, t: type[Cmpnts[ImplT, SpecT]]
+) -> Cmpnts[ImplT, SpecT]:
     """Convert to a component sequence."""
     if isinstance(source, Cmpnt):
         _check_cmpnt_compatibility(type(source), t.cmpnt_type)
@@ -166,9 +179,9 @@ def _into_cmpnts(source: object, t: type[Cmpnts[ImplT, TargetSpecT]]) -> Cmpnts[
     raise TypeError(f"Cannot convert {type(source)} into component collection type {t}.")
 
 
-def _into_term(
-    source: object, t: type[Term[ImplT, TargetSpecT, CoeffT]]
-) -> Term[ImplT, TargetSpecT, CoeffT]:
+def _into_term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
+    source: object, t: type[Term[ImplT, SpecT, C]]
+) -> Term[ImplT, SpecT, C]:
     """Convert to a single term."""
     if isinstance(source, Cmpnt):
         _check_cmpnt_compatibility(type(source), t.cmpnts_type.cmpnt_type)
@@ -189,9 +202,9 @@ def _into_term(
     raise TypeError(f"Cannot convert {type(source)} into term type {t}.")
 
 
-def _into_terms(
-    source: object, t: type[Terms[ImplT, TargetSpecT, CoeffT]]
-) -> Terms[ImplT, TargetSpecT, CoeffT]:
+def _into_terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
+    source: object, t: type[Terms[ImplT, SpecT, C]]
+) -> Terms[ImplT, SpecT, C]:
     """Convert to a term sequence."""
     cmpnts_type = t.term_type.cmpnts_type
     coeffs_type = get_coeffs_type(t.term_type.coeff_type)
@@ -216,7 +229,9 @@ def _into_terms(
     raise TypeError(f"Cannot convert {type(source)} into term collection type {t}.")
 
 
-def _into_coeffs(source: object, t: type[Coeffs[OtherCoeffT]]) -> Coeffs[OtherCoeffT]:
+def _into_coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
+    source: object, t: type[Coeffs[C]]
+) -> Coeffs[C]:
     """Convert to a coefficient vector."""
     if isinstance(source, Coeffs):
         return _clone_coeffs_as(source, t)

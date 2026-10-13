@@ -40,7 +40,6 @@ from zixy.container.base import StringRepresentable, ViewableSequence, requires_
 from zixy.utils import (
     DEFAULT_ATOL,
     DEFAULT_RTOL,
-    isclass,
     slice_index,
     slice_index_gen,
     slice_len,

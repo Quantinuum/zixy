@@ -37,12 +37,6 @@ from zixy.container.coeffs import (
     RealCoeffs,
     Sign,
     SymbolicCoeffs,
-    _is_complex,
-    _is_complex_sign,
-    _is_expr,
-    _is_float,
-    _is_int,
-    _is_sign,
     get_coeffs_type,
 )
 from zixy.container.data import TermData
@@ -64,6 +58,7 @@ from zixy.qubit.state._terms import (
     RealTermSum as QubitRealTermSum,
     SymbolicTermSum as QubitSymbolicTermSum,
 )
+from zixy.utils import isclass
 
 type TermSpec[C: (float, complex, Sign, ComplexSign, Expr)] = (
     String | StringSpec | tuple[StringSpec | String, C | None]
@@ -885,13 +880,13 @@ def get_term_type[C: (float, complex, Sign, ComplexSign, Expr)](
     coeff_type: type[C],
 ) -> type[Term[C]]:
     """Get the term type corresponding to ``coeff_type``."""
-    if _is_sign(coeff_type):
+    if issubclass(coeff_type, Sign):
         return cast(type[Term[C]], SignTerm)
-    elif _is_int(coeff_type) or _is_float(coeff_type):
+    elif isclass(coeff_type, int) or isclass(coeff_type, float):
         return cast(type[Term[C]], RealTerm)
-    elif _is_complex(coeff_type) or _is_complex_sign(coeff_type):
+    elif isclass(coeff_type, complex) or issubclass(coeff_type, ComplexSign):
         return cast(type[Term[C]], ComplexTerm)
-    elif _is_expr(coeff_type):
+    elif issubclass(coeff_type, Expr):
         return cast(type[Term[C]], SymbolicTerm)
     else:
         raise TypeError(f"Unsupported coefficient type {coeff_type} for term type lookup.")

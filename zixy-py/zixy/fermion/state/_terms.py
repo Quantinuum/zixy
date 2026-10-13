@@ -545,14 +545,14 @@ class ComplexTermSum(NumericTermSum[FermionStateArray, StringSpec, complex], Ter
 
     @property
     def real_part(self) -> RealTermSum:
-        """Return the real part of ``self``."""
+        """The real part of ``self``."""
         assert isinstance(self._data.coeffs, ComplexCoeffs)
         data = TermData(self._data.cmpnts.clone(), self._data.coeffs.real_part)
         return RealTermSum._create(data)
 
     @property
     def imag_part(self) -> RealTermSum:
-        """Return the imaginary part of ``self``."""
+        """The imaginary part of ``self``."""
         assert isinstance(self._data.coeffs, ComplexCoeffs)
         data = TermData(self._data.cmpnts.clone(), self._data.coeffs.imag_part)
         return RealTermSum._create(data)
@@ -706,12 +706,12 @@ class SymbolicTerms(Terms[Expr]):
 
     @property
     def coeffs(self) -> SymbolicCoeffs:
-        """Get the coefficients of ``self``."""
+        """The coefficients of ``self``."""
         return cast(SymbolicCoeffs, self._data.coeffs[self.slice])
 
     @property
     def free_symbols(self) -> set[Symbol]:
-        """Get the set of free (unsubstituted) symbols in ``self``.
+        """The set of free (unsubstituted) symbols in ``self``.
 
         Returns:
             Union of the sets of free symbols across all coefficients in ``self``.
@@ -847,7 +847,7 @@ class SymbolicTermSum(TermSum[Expr]):
 
     @property
     def coeffs(self) -> SymbolicCoeffs:
-        """Get the coefficients of ``self``."""
+        """The coefficients of ``self``."""
         return cast(SymbolicCoeffs, self._data.coeffs)
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:

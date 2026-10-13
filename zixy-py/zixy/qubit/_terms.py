@@ -61,12 +61,12 @@ class Term(Generic[ImplT, SpecT, CoeffT, ElemT], TermBase[ImplT, SpecT, CoeffT])
 
     @property
     def string(self) -> String[ImplT, SpecT, ElemT]:
-        """Get the string component of the term."""
+        """The string component of the term."""
         return cast(String[ImplT, SpecT, ElemT], self.cmpnt)
 
     @property
     def qubits(self) -> Qubits:
-        """Get the qubits corresponding to ``self``."""
+        """The qubits corresponding to ``self``."""
         return self.string._impl.qubits
 
     def to_sparse_matrix(self, big_endian: bool = False) -> Any:
@@ -105,12 +105,12 @@ class Terms(Generic[ImplT, SpecT, CoeffT, ElemT], TermsBase[ImplT, SpecT, CoeffT
 
     @property
     def strings(self) -> Strings[ImplT, SpecT, ElemT]:
-        """Get the string components of the terms."""
+        """The string components of the terms."""
         return cast(Strings[ImplT, SpecT, ElemT], self.cmpnts)
 
     @property
     def qubits(self) -> Qubits:
-        """Get the qubits corresponding to ``self``."""
+        """The qubits corresponding to ``self``."""
         return self.strings.qubits
 
 
@@ -137,12 +137,12 @@ class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], TermSetBase[ImplT, SpecT, Co
 
     @property
     def strings(self) -> Strings[ImplT, SpecT, ElemT]:
-        """Get the string components of the terms."""
+        """The string components of the terms."""
         return cast(Strings[ImplT, SpecT, ElemT], self._impl._cmpnts)
 
     @property
     def qubits(self) -> Qubits:
-        """Get the qubits corresponding to ``self``."""
+        """The qubits corresponding to ``self``."""
         return self.strings.qubits
 
     def _check_term(self, value: TermBase[ImplT, SpecT, CoeffT]) -> None:

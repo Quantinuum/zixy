@@ -1696,27 +1696,29 @@ def convert_vec[C: (float, complex, Sign, ComplexSign, Expr)](
     return out
 
 
-def get_coeffs_type[C: (float, complex, Sign, ComplexSign, Expr)](t: type[C]) -> type[Coeffs[C]]:
+def get_coeffs_type[C: (float, complex, Sign, ComplexSign, Expr)](
+    coeff_type: type[C],
+) -> type[Coeffs[C]]:
     """Get the coefficient vector type corresponding to a given coefficient type.
 
     Args:
-        t: The coefficient type for which to get the corresponding vector type.
+        coeff_type: The coefficient type for which to get the corresponding vector type.
 
     Returns:
-        The coefficient vector type corresponding to ``t``.
+        The coefficient vector type corresponding to ``coeff_type``.
     """
-    if issubclass(t, Sign):
+    if issubclass(coeff_type, Sign):
         return SignCoeffs
-    elif issubclass(t, ComplexSign):
+    elif issubclass(coeff_type, ComplexSign):
         return ComplexSignCoeffs
-    elif not issubclass(t, complex) and issubclass(t, float | int):
+    elif not issubclass(coeff_type, complex) and issubclass(coeff_type, float | int):
         return RealCoeffs
-    elif not issubclass(t, float | int) and issubclass(t, complex):
+    elif not issubclass(coeff_type, float | int) and issubclass(coeff_type, complex):
         return ComplexCoeffs
-    elif issubclass(t, Expr):
+    elif issubclass(coeff_type, Expr):
         return SymbolicCoeffs
     else:
-        raise TypeError(f"Unsupported coefficient type {t}.")
+        raise TypeError(f"Unsupported coefficient type {coeff_type}.")
 
 
 __all__ = [

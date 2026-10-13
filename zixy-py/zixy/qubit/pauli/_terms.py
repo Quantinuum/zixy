@@ -66,7 +66,7 @@ from zixy.qubit.state._terms import (
     SymbolicTerm as SymbolicStateTerm,
     SymbolicTermSum as SymbolicState,
 )
-from zixy.utils import DEFAULT_COMMUTES_ATOL, isclass
+from zixy.utils import DEFAULT_COMMUTES_ATOL
 
 type TermSpec[C: (float, complex, Sign, ComplexSign, Expr)] = (
     String | StringSpec | tuple[StringSpec | String, C | None]
@@ -1629,16 +1629,23 @@ class SymbolicTermSum(TermSum[Expr]):
 def get_term_type[C: (float, complex, Sign, ComplexSign, Expr)](
     coeff_type: type[C],
 ) -> type[Term[C]]:
-    """Get the term type corresponding to ``coeff_type``."""
-    if isclass(coeff_type, int) or isclass(coeff_type, float):
-        return cast(type[Term[C]], RealTerm)
-    elif isclass(coeff_type, complex):
-        return cast(type[Term[C]], ComplexTerm)
-    elif issubclass(coeff_type, Sign):
-        return cast(type[Term[C]], SignTerm)
+    """Get the term type corresponding to a given coefficient type.
+
+    Args:
+        coeff_type: The coefficient type for which to get the corresponding term type.
+
+    Returns:
+        The term type corresponding to ``coeff_type``.
+    """
+    if issubclass(coeff_type, Sign):
+        return SignTerm
     elif issubclass(coeff_type, ComplexSign):
-        return cast(type[Term[C]], ComplexSignTerm)
+        return ComplexSignTerm
+    if not issubclass(coeff_type, complex) and issubclass(coeff_type, float | int):
+        return RealTerm
+    if not issubclass(coeff_type, float | int) and issubclass(coeff_type, complex):
+        return ComplexTerm
     elif issubclass(coeff_type, Expr):
-        return cast(type[Term[C]], SymbolicTerm)
+        return SymbolicTerm
     else:
-        raise TypeError(f"Unsupported coefficient type {coeff_type} for term type lookup.")
+        raise TypeError(f"Unsupported coefficient type {coeff_type}.")

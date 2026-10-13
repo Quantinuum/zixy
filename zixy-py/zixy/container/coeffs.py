@@ -32,7 +32,6 @@ from collections.abc import Iterable, Sequence
 from typing import TYPE_CHECKING, Any, Self, TypeAlias, overload
 
 import numpy as np
-from numpy.typing import NDArray
 from sympy import Expr, Float, I, Integer, Symbol, diff, sympify
 
 from zixy import _zixy
@@ -725,6 +724,8 @@ def typesafe_mul[C: (float, complex, Sign, ComplexSign, Expr)](lhs: C, rhs: Coef
 
 
 if TYPE_CHECKING:
+    from numpy.typing import NDArray
+
     BaseVec = _zixy.BaseVec
 else:
     BaseVec = object

@@ -21,11 +21,9 @@ The structure of this module parallels that of :mod:`~zixy.container.terms` and
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Any, Literal, Self, cast, overload
+from typing import TYPE_CHECKING, Any, Literal, Self, cast, overload
 
 import numpy as np
-from numpy.typing import NDArray
 from sympy import Expr, Symbol
 
 from zixy._zixy import (
@@ -57,9 +55,7 @@ from zixy.qubit._terms import (
     TermSet as TermSetBase,
     TermSum as TermSumBase,
 )
-from zixy.qubit.clifford import GateList
 from zixy.qubit.pauli._strings import String, Strings, StringSpec
-from zixy.qubit.state._strings import Strings as StateStrings
 from zixy.qubit.state._terms import (
     ComplexTermSum as ComplexState,
     RealTermSum as RealState,
@@ -67,6 +63,14 @@ from zixy.qubit.state._terms import (
     SymbolicTermSum as SymbolicState,
 )
 from zixy.utils import DEFAULT_COMMUTES_ATOL
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from numpy.typing import NDArray
+
+    from zixy.qubit.clifford import GateList
+    from zixy.qubit.state._strings import Strings as StateStrings
 
 type TermSpec[C: (float, complex, Sign, ComplexSign, Expr)] = (
     String | StringSpec | tuple[StringSpec | String, C | None]
@@ -139,7 +143,7 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](
     @property
     def string(self) -> String:
         """The string component of the term."""
-        return cast(String, self.cmpnt)
+        return cast("String", self.cmpnt)
 
     def __imul__(self, rhs: Coeff | String | Term[C]) -> Self:
         """In-place multiplication of ``self`` by ``rhs``."""
@@ -207,7 +211,7 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](
     @property
     def strings(self) -> Strings:
         """The components of ``self``."""
-        return cast(Strings, self.cmpnts)
+        return cast("Strings", self.cmpnts)
 
     def lexicographic_sort(self, ascending: bool = False) -> None:
         """Lexicographically sort the terms in-place.
@@ -402,8 +406,8 @@ class TermSum[C: (float, complex, Sign, ComplexSign, Expr)](
         .. math::
             [A, B] = AB - BA.
         """
-        out = cast(Any, self) * other - cast(Any, other) * self
-        return cast(TermSum[Any], out)
+        out = cast("Any", self) * other - cast("Any", other) * self
+        return cast("TermSum[Any]", out)
 
     def commutes_with(self, other: TermSum[C], atol: float = DEFAULT_COMMUTES_ATOL) -> bool:
         """Check whether ``self`` commutes with ``other``.
@@ -441,7 +445,7 @@ class TermSum[C: (float, complex, Sign, ComplexSign, Expr)](
         from .num_ops import create_num_op  # noqa: PLC0415
 
         return self.commutes_with(
-            cast(Any, create_num_op(cast(Any, type(self)), self.qubits)), atol
+            cast("Any", create_num_op(cast("Any", type(self)), self.qubits)), atol
         )
 
     def conserves_odd_bit_hamming_weight(self, atol: float = DEFAULT_COMMUTES_ATOL) -> bool:
@@ -459,7 +463,7 @@ class TermSum[C: (float, complex, Sign, ComplexSign, Expr)](
         from .num_ops import create_num_op_odd_bits  # noqa: PLC0415
 
         return self.commutes_with(
-            cast(Any, create_num_op_odd_bits(cast(Any, type(self)), self.qubits)), atol
+            cast("Any", create_num_op_odd_bits(cast("Any", type(self)), self.qubits)), atol
         )
 
 
@@ -1441,7 +1445,7 @@ class SymbolicTerms(Terms[Expr]):
     @property
     def coeffs(self) -> SymbolicCoeffs:
         """The coefficients of ``self``."""
-        return cast(SymbolicCoeffs, self._data.coeffs[self.slice])
+        return cast("SymbolicCoeffs", self._data.coeffs[self.slice])
 
     @property
     def free_symbols(self) -> set[Symbol]:

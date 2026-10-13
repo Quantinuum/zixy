@@ -16,12 +16,12 @@
 
 from __future__ import annotations
 
-import builtins
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator, Sequence, Sized
 from functools import wraps
 from typing import (
+    TYPE_CHECKING,
     Any,
     Concatenate,
     Protocol,
@@ -31,6 +31,9 @@ from typing import (
 )
 
 from zixy.utils import slice_index, slice_len
+
+if TYPE_CHECKING:
+    import builtins
 
 
 class SupportsOwnership(Protocol):
@@ -66,7 +69,7 @@ def requires_ownership[T: ViewableBase[Any, Any], **P, R](
             )
         return method(self, *args, **kwargs)
 
-    return cast(Callable[Concatenate[T, P], R], wrapper)
+    return cast("Callable[Concatenate[T, P], R]", wrapper)
 
 
 class Resizable(Sized, Protocol):

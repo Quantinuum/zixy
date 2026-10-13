@@ -29,7 +29,6 @@ from __future__ import annotations
 
 import builtins
 from abc import abstractmethod
-from collections.abc import Callable, Iterable, Iterator, Sequence
 from typing import TYPE_CHECKING, Any, Self, overload
 
 from zixy._zixy import Map
@@ -42,6 +41,8 @@ from zixy.container.base import (
 from zixy.utils import slice_index_gen, slice_len, slice_of_slice, slice_to_tuple
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable, Iterator, Sequence
+
     from zixy._zixy import ImplArray
 else:
     ImplArray = object

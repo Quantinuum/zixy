@@ -21,11 +21,8 @@ The structure of this module parallels that of :mod:`~zixy.container.terms` and
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Any, Self, cast, overload
+from typing import TYPE_CHECKING, Any, Self, cast, overload
 
-import numpy as np
-from numpy.typing import NDArray
 from sympy import Expr, Symbol
 
 from zixy._zixy import Qubits, QubitStateArray
@@ -50,6 +47,12 @@ from zixy.qubit._terms import (
     TermSum as TermSumBase,
 )
 from zixy.qubit.state._strings import String, Strings, StringSpec
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    import numpy as np
+    from numpy.typing import NDArray
 
 type TermSpec[C: (float, complex, Sign, ComplexSign, Expr)] = (
     String | StringSpec | tuple[StringSpec | String, C | None]
@@ -96,7 +99,7 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](
     @property
     def string(self) -> String:
         """The string component of the term."""
-        return cast(String, self.cmpnt)
+        return cast("String", self.cmpnt)
 
     def __imul__(self, rhs: Coeff | String | Term[C]) -> Self:
         """In-place multiplication of ``self`` by ``rhs``."""
@@ -154,7 +157,7 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](
     @property
     def strings(self) -> Strings:
         """The string components of ``self``."""
-        return cast(Strings, self.cmpnts)
+        return cast("Strings", self.cmpnts)
 
 
 class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
@@ -741,7 +744,7 @@ class SymbolicTerms(Terms[Expr]):
     @property
     def coeffs(self) -> SymbolicCoeffs:
         """The coefficients of ``self``."""
-        return cast(SymbolicCoeffs, self._data.coeffs[self.slice])
+        return cast("SymbolicCoeffs", self._data.coeffs[self.slice])
 
     @property
     def free_symbols(self) -> set[Symbol]:

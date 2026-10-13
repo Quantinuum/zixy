@@ -24,6 +24,7 @@ from zixy.container.coeffs import ComplexSign
 
 if TYPE_CHECKING:
     from zixy._zixy import FermionArray
+    from zixy.fermion.operator._strings import String as OperatorString, Strings as OperatorStrings
 
 from abc import abstractmethod
 from collections.abc import Callable
@@ -37,7 +38,6 @@ from zixy.fermion._terms import (
     TermSet as FermionTermSet,
     TermSum as FermionTermSum,
 )
-from zixy.fermion.operator._strings import String as OperatorString, Strings as OperatorStrings
 from zixy.mappings.base import Mapper
 from zixy.qubit.pauli._terms import ComplexTermSum as PauliComplexTermSum
 
@@ -67,7 +67,7 @@ class Term[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
     @property
     def string(self) -> OperatorString[ImplT, SpecT, ElemT]:
         """The string component of the term."""
-        return cast(OperatorString[ImplT, SpecT, ElemT], self.cmpnt)
+        return cast("OperatorString[ImplT, SpecT, ElemT]", self.cmpnt)
 
     @abstractmethod
     def dagger(self) -> None:
@@ -90,7 +90,7 @@ class Terms[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, E
     @property
     def strings(self) -> OperatorStrings[ImplT, SpecT, ElemT]:
         """The string components of the terms."""
-        return cast(OperatorStrings[ImplT, SpecT, ElemT], self.cmpnts)
+        return cast("OperatorStrings[ImplT, SpecT, ElemT]", self.cmpnts)
 
 
 class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
@@ -103,7 +103,7 @@ class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign,
     @property
     def strings(self) -> OperatorStrings[ImplT, SpecT, ElemT]:
         """The string components of the terms."""
-        return cast(OperatorStrings[ImplT, SpecT, ElemT], self._impl._cmpnts)
+        return cast("OperatorStrings[ImplT, SpecT, ElemT]", self._impl._cmpnts)
 
     @property
     def coeffs(self) -> Any:

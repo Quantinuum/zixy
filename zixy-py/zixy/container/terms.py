@@ -32,15 +32,12 @@ operations.
 
 from __future__ import annotations
 
-import builtins
-from collections.abc import Callable, Iterable, Iterator, Sequence
 from typing import TYPE_CHECKING, Any, Self, cast, overload
 
 import numpy as np
 import pandas as pd
 from sympy import Expr, simplify, sympify
 
-from zixy._zixy import Map
 from zixy.container.base import (
     StringRepresentable,
     ViewableBase,
@@ -69,7 +66,10 @@ from zixy.container.data import TermData
 from zixy.utils import DEFAULT_ATOL, DEFAULT_RTOL, slice_index_gen, slice_of_slice, split_top_level
 
 if TYPE_CHECKING:
-    from zixy._zixy import ImplArray
+    import builtins
+    from collections.abc import Callable, Iterable, Iterator, Sequence
+
+    from zixy._zixy import ImplArray, Map
 else:
     ImplArray = object
 
@@ -297,7 +297,7 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         """
         try:
             # first, attempt to set just the cmpnt
-            self.cmpnt.set(cast(SpecT | Cmpnt[ImplT, SpecT], source))
+            self.cmpnt.set(cast("SpecT | Cmpnt[ImplT, SpecT]", source))
             self.coeff = unit(self.coeff_type)
             return
         except (TypeError, ValueError):
@@ -554,7 +554,7 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
     def __neg__(self) -> Self:
         """Return the negation of ``self``."""
         out = self.clone()
-        out *= cast(C, -1)
+        out *= cast("C", -1)
         return out
 
     def _empty_clone(self) -> Self:
@@ -1537,7 +1537,7 @@ class NumericTermSum[ImplT: ImplArray, SpecT, C: (float, complex)](TermSum[ImplT
     @property
     def l2_norm(self) -> Number:
         """The L2 norm of ``self``."""
-        return cast(Number, self.l2_norm_square**0.5)
+        return cast("Number", self.l2_norm_square**0.5)
 
     def l1_normalize(self) -> None:
         """Divide ``self`` by its L1 norm.

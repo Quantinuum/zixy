@@ -23,12 +23,11 @@ from sympy import Expr
 from zixy.container.coeffs import ComplexSign, Sign
 
 if TYPE_CHECKING:
-    from zixy._zixy import FermionArray
+    from zixy._zixy import FermionArray, Modes
+    from zixy.container.cmpnts import Cmpnt
 
 from typing import cast
 
-from zixy._zixy import Modes
-from zixy.container.cmpnts import Cmpnt
 from zixy.container.coeffs import get_coeffs_type
 from zixy.container.data import TermData
 from zixy.container.terms import (
@@ -73,7 +72,7 @@ class Term[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
     @property
     def string(self) -> String[ImplT, SpecT, ElemT]:
         """The string component of the term."""
-        return cast(String[ImplT, SpecT, ElemT], self.cmpnt)
+        return cast("String[ImplT, SpecT, ElemT]", self.cmpnt)
 
     @property
     def modes(self) -> Modes:
@@ -107,7 +106,7 @@ class Terms[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, E
     @property
     def strings(self) -> Strings[ImplT, SpecT, ElemT]:
         """The string components of the terms."""
-        return cast(Strings[ImplT, SpecT, ElemT], self.cmpnts)
+        return cast("Strings[ImplT, SpecT, ElemT]", self.cmpnts)
 
     @property
     def modes(self) -> Modes:
@@ -141,7 +140,7 @@ class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign,
     @property
     def strings(self) -> Strings[ImplT, SpecT, ElemT]:
         """The string components of the terms."""
-        return cast(Strings[ImplT, SpecT, ElemT], self._impl._cmpnts)
+        return cast("Strings[ImplT, SpecT, ElemT]", self._impl._cmpnts)
 
     @property
     def modes(self) -> Modes:

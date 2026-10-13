@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet, ImplArray
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 """
 Mock-up a viewable component list system with classes extending:

@@ -134,7 +134,7 @@ class Sign(RootOfUnity):
 
     @property
     def phase(self) -> bool:
-        """Get the phase :math:`k` satisfying the value of the sign as :math:`(-1)^k`."""
+        """The phase :math:`k` such that the sign equals :math:`(-1)^k`."""
         return self._impl.to_phase()
 
     def __eq__(self, other: object) -> bool:
@@ -329,7 +329,7 @@ class ComplexSign(RootOfUnity):
 
     @property
     def phase(self) -> int:
-        """Get the phase :math:`k` satisfying the value of the sign as :math:`(-1)^k`."""
+        """The phase :math:`k` such that the sign equals :math:`i^k`."""
         return self._impl.to_phase()
 
     def __eq__(self, other: object) -> bool:
@@ -1121,7 +1121,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
     @property
     @abstractmethod
     def np_array(self) -> NDArray[np.generic]:
-        """Get the contents of ``self`` copied as a flat NumPy array.
+        """The contents of ``self`` as a flat NumPy array copy.
 
         Returns:
             NumPy array containing all elements of ``self``.
@@ -1227,7 +1227,7 @@ class SignCoeffs(RootOfUnityCoeffs[Sign]):
 
     @property
     def np_array(self) -> NDArray[np.int64]:
-        """Get the contents of ``self`` copied as a flat NumPy array.
+        """The contents of ``self`` as a flat NumPy array copy.
 
         Returns:
             NumPy array containing all elements of ``self``.
@@ -1269,7 +1269,7 @@ class ComplexSignCoeffs(RootOfUnityCoeffs[ComplexSign]):
 
     @property
     def np_array(self) -> NDArray[np.complex128]:
-        """Get the contents of ``self`` copied as a flat NumPy array.
+        """The contents of ``self`` as a flat NumPy array copy.
 
         Returns:
             NumPy array containing all elements of ``self``.
@@ -1348,7 +1348,7 @@ class RealCoeffs(NumericalCoeffs[float]):
 
     @property
     def np_array(self) -> NDArray[np.float64]:
-        """Get the contents of ``self`` copied as a flat NumPy array.
+        """The contents of ``self`` as a flat NumPy array copy.
 
         Returns:
             NumPy array containing all elements of ``self``.
@@ -1380,7 +1380,7 @@ class ComplexCoeffs(NumericalCoeffs[complex]):
 
     @property
     def np_array(self) -> NDArray[np.complex128]:
-        """Get the contents of ``self`` copied as a flat NumPy array.
+        """The contents of ``self`` as a flat NumPy array copy.
 
         Returns:
             NumPy array containing all elements of ``self``.
@@ -1389,12 +1389,12 @@ class ComplexCoeffs(NumericalCoeffs[complex]):
 
     @property
     def real_part(self) -> RealCoeffs:
-        """Get the real part of ``self`` as a new instance of :class:`RealCoeffs`."""
+        """The real part of ``self`` as a new instance of :class:`RealCoeffs`."""
         return RealCoeffs.from_sequence(self.np_array.real)
 
     @property
     def imag_part(self) -> RealCoeffs:
-        """Get the imaginary part of ``self`` as a new instance of :class:`RealCoeffs`."""
+        """The imaginary part of ``self`` as a new instance of :class:`RealCoeffs`."""
         return RealCoeffs.from_sequence(self.np_array.imag)
 
 
@@ -1589,7 +1589,7 @@ class SymbolicCoeffs(Coeffs[Expr]):
 
     @property
     def free_symbols(self) -> set[Symbol]:
-        """Get the set of free (unsubstituted) symbols in ``self``.
+        """The set of free (unsubstituted) symbols in ``self``.
 
         Returns:
             Union of the sets of free symbols across all coefficients in ``self``.
@@ -1707,7 +1707,7 @@ class SymbolicCoeffs(Coeffs[Expr]):
 
     @property
     def np_array(self) -> NDArray[np.float64 | np.complex128]:
-        """Get the contents of ``self`` copied as a flat NumPy array.
+        """The contents of ``self`` as a flat NumPy array copy.
 
         Returns:
             NumPy array containing all elements of ``self``.

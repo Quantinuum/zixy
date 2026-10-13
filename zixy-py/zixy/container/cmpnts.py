@@ -30,7 +30,7 @@ from __future__ import annotations
 import builtins
 from abc import abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Sequence
-from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Self, overload
 
 from zixy._zixy import Map
 from zixy.container.base import (
@@ -47,11 +47,7 @@ else:
     ImplArray = object
 
 
-ImplT = TypeVar("ImplT", bound=ImplArray)
-SpecT = TypeVar("SpecT")
-
-
-class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT], StringRepresentable):
+class Cmpnt[ImplT: ImplArray, SpecT](ViewableItem[ImplT], StringRepresentable):
     """A component.
 
     A single component that may be an owning instance referencing a single element in a Rust-bound
@@ -165,7 +161,7 @@ class Cmpnt(ViewableItem[ImplT], Generic[ImplT, SpecT], StringRepresentable):
             )
 
 
-class CmpntSet(Generic[ImplT, SpecT], StringRepresentable):
+class CmpntSet[ImplT: ImplArray, SpecT](StringRepresentable):
     """A collection of unique components.
 
     A set-like container of components that may be used to store unique components and perform
@@ -430,8 +426,8 @@ class CmpntSet(Generic[ImplT, SpecT], StringRepresentable):
         return out
 
 
-class Cmpnts(
-    Generic[ImplT, SpecT], ViewableSequence[Cmpnt[ImplT, SpecT], ImplT], StringRepresentable
+class Cmpnts[ImplT: ImplArray, SpecT](
+    ViewableSequence[Cmpnt[ImplT, SpecT], ImplT], StringRepresentable
 ):
     """A collection of components.
 

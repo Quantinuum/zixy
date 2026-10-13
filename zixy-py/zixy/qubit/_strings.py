@@ -18,19 +18,16 @@ from __future__ import annotations
 
 import warnings
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar, cast, overload
+from typing import TYPE_CHECKING, Any, Self, cast, overload
 
 from zixy._zixy import Qubits
-from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet, SpecT
+from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet
 
 if TYPE_CHECKING:
     from zixy._zixy import QubitArray, Springs
 
-ElemT = TypeVar("ElemT")
-ImplT = TypeVar("ImplT", bound="QubitArray[Any, Any]")
 
-
-def _default_qubits(source: SpecT) -> Qubits:
+def _default_qubits[SpecT](source: SpecT) -> Qubits:
     """Construct the default qubits for a string specifier."""
     if isinstance(source, tuple | list):
         return Qubits.from_count(len(source))
@@ -44,7 +41,7 @@ def _check_qubits_compatibility(*qubits: Qubits) -> None:
         raise ValueError("Objects are defined over different qubits.")
 
 
-class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
+class String[ImplT: QubitArray[Any, Any], SpecT, ElemT](Cmpnt[ImplT, SpecT]):
     """A string.
 
     A single qubit-based string that may be an owning instance referencing a single element in a
@@ -164,7 +161,7 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
         return self._impl.cmpnt_to_sparse_matrix(self.index, big_endian)  # type: ignore[attr-defined]
 
 
-class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
+class Strings[ImplT: QubitArray[Any, Any], SpecT, ElemT](Cmpnts[ImplT, SpecT]):
     """A collection of strings.
 
     An array-like container of qubit-based strings that may be an owning instance referencing a
@@ -311,7 +308,7 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
         return tuple(self[i].get_tuple() for i in range(len(self)))
 
 
-class StringSet(Generic[ImplT, SpecT, ElemT], CmpntSet[ImplT, SpecT]):
+class StringSet[ImplT: QubitArray[Any, Any], SpecT, ElemT](CmpntSet[ImplT, SpecT]):
     """A collection of unique strings.
 
     A set-like container of qubit-based strings that may be used to store unique components and

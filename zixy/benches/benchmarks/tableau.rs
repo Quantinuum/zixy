@@ -8,8 +8,8 @@ use zixy::container::traits::MutRefElements;
 use zixy::container::traits::RefElements;
 use zixy::qubit::mode::PauliMatrix::*;
 use zixy::qubit::mode::Qubits;
-use zixy::qubit::pauli::string_major::term::Term;
-use zixy::qubit::pauli::string_major::terms::{AsViewMut, Terms};
+use zixy::qubit::operator::string_major::term::Term;
+use zixy::qubit::operator::string_major::terms::{AsViewMut, Terms};
 use zixy::qubit::traits::PushPaulis;
 
 type PhasedOp = Term<ComplexSign>;

@@ -18,9 +18,9 @@ use zixy::container::utils::DistinctPair;
 use zixy::container::word_iters::set::{AsView as _, AsViewMut as _};
 use zixy::container::word_iters::{self, WordIters};
 use zixy::qubit::mode::Qubits as Qubits_;
-use zixy::qubit::pauli::string_major as pauli;
-use zixy::qubit::pauli::string_major::string_list::StringList;
-use zixy::qubit::pauli::string_major::terms::AsViewMut;
+use zixy::qubit::operator::string_major as operator;
+use zixy::qubit::operator::string_major::string_list::StringList;
+use zixy::qubit::operator::string_major::terms::AsViewMut;
 use zixy::qubit::state;
 use zixy::qubit::traits::{
     DifferentQubits, PauliWordMutRef, PauliWordRef, QubitsBased, QubitsRelabel, QubitsStandardized,
@@ -130,7 +130,7 @@ impl Array {
             PyErr::new::<pyo3::exceptions::PyValueError, _>("missing 'strings' key")
         })?;
         let strings: String = strings_item.extract()?;
-        let strings = zixy::qubit::pauli::springs::Springs::from_str(&strings).to_py_result()?;
+        let strings = zixy::qubit::operator::springs::Springs::from_str(&strings).to_py_result()?;
         Ok(Self(
             StringList::from_springs(qubits.0, &strings)
                 .to_py_result()?
@@ -615,20 +615,20 @@ impl Array {
         out_map: &mut Map,
         out_coeffs: &mut ComplexVec,
     ) -> PyResult<()> {
-        let mut out = pauli::term_set::ViewMut {
+        let mut out = operator::term_set::ViewMut {
             word_iters: &mut out_impl.0,
             coeffs: &mut out_coeffs.0,
             map: &mut out_map.0,
         };
-        let lhs = pauli::terms::View::<f64> {
+        let lhs = operator::terms::View::<f64> {
             word_iters: &lhs_impl.0,
             coeffs: &lhs_coeffs.0,
         };
-        let rhs = pauli::terms::View::<f64> {
+        let rhs = operator::terms::View::<f64> {
             word_iters: &rhs_impl.0,
             coeffs: &rhs_coeffs.0,
         };
-        pauli::lincomb::assign_from_mul(&mut out, &lhs, &rhs).to_py_result()
+        operator::lincomb::assign_from_mul(&mut out, &lhs, &rhs).to_py_result()
     }
 
     /// Mul lhs by rhs and update out with the result
@@ -642,20 +642,20 @@ impl Array {
         out_map: &mut Map,
         out_coeffs: &mut ComplexVec,
     ) -> PyResult<()> {
-        let mut out = pauli::term_set::ViewMut {
+        let mut out = operator::term_set::ViewMut {
             word_iters: &mut out_impl.0,
             coeffs: &mut out_coeffs.0,
             map: &mut out_map.0,
         };
-        let lhs = pauli::terms::View::<Complex64> {
+        let lhs = operator::terms::View::<Complex64> {
             word_iters: &lhs_impl.0,
             coeffs: &lhs_coeffs.0,
         };
-        let rhs = pauli::terms::View::<Complex64> {
+        let rhs = operator::terms::View::<Complex64> {
             word_iters: &rhs_impl.0,
             coeffs: &rhs_coeffs.0,
         };
-        pauli::lincomb::assign_from_mul(&mut out, &lhs, &rhs).to_py_result()
+        operator::lincomb::assign_from_mul(&mut out, &lhs, &rhs).to_py_result()
     }
 
     /// Get a real-valued operator as a complex sparse matrix.
@@ -665,12 +665,12 @@ impl Array {
         coeffs: &RealVec,
         big_endian: bool,
     ) -> PyResult<Py<PyAny>> {
-        use zixy::qubit::pauli::string_major::lincomb::SparseBasis;
-        let lc = pauli::terms::View::<f64> {
+        use zixy::qubit::operator::string_major::lincomb::SparseBasis;
+        let lc = operator::terms::View::<f64> {
             word_iters: &strings.0,
             coeffs: &coeffs.0,
         };
-        let sparse = pauli::lincomb::to_sparse_matrix(&lc, SparseBasis::Full, None, big_endian)
+        let sparse = operator::lincomb::to_sparse_matrix(&lc, SparseBasis::Full, None, big_endian)
             .to_py_result()?;
         to_scipy_sparse(sparse)
     }
@@ -682,12 +682,12 @@ impl Array {
         coeffs: &ComplexVec,
         big_endian: bool,
     ) -> PyResult<Py<PyAny>> {
-        use zixy::qubit::pauli::string_major::lincomb::SparseBasis;
-        let lc = pauli::terms::View::<Complex64> {
+        use zixy::qubit::operator::string_major::lincomb::SparseBasis;
+        let lc = operator::terms::View::<Complex64> {
             word_iters: &strings.0,
             coeffs: &coeffs.0,
         };
-        let sparse = pauli::lincomb::to_sparse_matrix(&lc, SparseBasis::Full, None, big_endian)
+        let sparse = operator::lincomb::to_sparse_matrix(&lc, SparseBasis::Full, None, big_endian)
             .to_py_result()?;
         to_scipy_sparse(sparse)
     }
@@ -699,9 +699,9 @@ impl Array {
         coeffs: &RealVec,
         subspace: &StateArray,
     ) -> PyResult<Py<numpy::PyArray2<f64>>> {
-        use zixy::qubit::pauli::string_major::mat_elem::mat_ortho_projected;
+        use zixy::qubit::operator::string_major::mat_elem::mat_ortho_projected;
         let mat = mat_ortho_projected(
-            &pauli::terms::View::<f64> {
+            &operator::terms::View::<f64> {
                 word_iters: &strings.0,
                 coeffs: &coeffs.0,
             },
@@ -718,9 +718,9 @@ impl Array {
         coeffs: &ComplexVec,
         subspace: &StateArray,
     ) -> PyResult<Py<numpy::PyArray2<Complex64>>> {
-        use zixy::qubit::pauli::string_major::mat_elem::mat_ortho_projected;
+        use zixy::qubit::operator::string_major::mat_elem::mat_ortho_projected;
         let mat = mat_ortho_projected(
-            &pauli::terms::View::<Complex64> {
+            &operator::terms::View::<Complex64> {
                 word_iters: &strings.0,
                 coeffs: &coeffs.0,
             },
@@ -739,7 +739,7 @@ impl Array {
         subspace_maps: Vec<Map>,
         subspace_coeffs: Vec<RealVec>,
     ) -> (Py<numpy::PyArray2<f64>>, Py<numpy::PyArray2<f64>>) {
-        use zixy::qubit::pauli::string_major::mat_elem::mat_nonortho_projected;
+        use zixy::qubit::operator::string_major::mat_elem::mat_nonortho_projected;
         let subspace = izip!(
             subspace_strings.iter(),
             subspace_maps.iter(),
@@ -752,7 +752,7 @@ impl Array {
         })
         .collect::<Vec<_>>();
         let (mat, ovlp) = mat_nonortho_projected(
-            &pauli::terms::View {
+            &operator::terms::View {
                 word_iters: &strings.0,
                 coeffs: &coeffs.0,
             },
@@ -773,7 +773,7 @@ impl Array {
         Py<numpy::PyArray2<Complex64>>,
         Py<numpy::PyArray2<Complex64>>,
     ) {
-        use zixy::qubit::pauli::string_major::mat_elem::mat_nonortho_projected;
+        use zixy::qubit::operator::string_major::mat_elem::mat_nonortho_projected;
         let subspace = izip!(
             subspace_strings.iter(),
             subspace_maps.iter(),
@@ -786,7 +786,7 @@ impl Array {
         })
         .collect::<Vec<_>>();
         let (mat, ovlp) = mat_nonortho_projected(
-            &pauli::terms::View {
+            &operator::terms::View {
                 word_iters: &strings.0,
                 coeffs: &coeffs.0,
             },
@@ -846,8 +846,8 @@ impl Array {
         out_map: &mut Map,
         out_coeffs: &mut ComplexVec,
     ) {
-        use zixy::qubit::pauli::string_major::mat_elem::apply;
-        let op = pauli::terms::View {
+        use zixy::qubit::operator::string_major::mat_elem::apply;
+        let op = operator::terms::View {
             word_iters: &self.0,
             coeffs: &coeffs.0,
         };
@@ -873,8 +873,8 @@ impl Array {
         out_map: &mut Map,
         out_coeffs: &mut ComplexVec,
     ) {
-        use zixy::qubit::pauli::string_major::mat_elem::apply;
-        let op = pauli::terms::View {
+        use zixy::qubit::operator::string_major::mat_elem::apply;
+        let op = operator::terms::View {
             word_iters: &self.0,
             coeffs: &coeffs.0,
         };
@@ -899,8 +899,8 @@ impl Array {
         ket_strings: &StateArray,
         ket_coeffs: &RealVec,
     ) -> f64 {
-        use zixy::qubit::pauli::string_major::mat_elem::mat_elem;
-        let op = pauli::terms::View {
+        use zixy::qubit::operator::string_major::mat_elem::mat_elem;
+        let op = operator::terms::View {
             word_iters: &self.0,
             coeffs: &coeffs.0,
         };
@@ -924,8 +924,8 @@ impl Array {
         ket_strings: &StateArray,
         ket_coeffs: &ComplexVec,
     ) -> Complex64 {
-        use zixy::qubit::pauli::string_major::mat_elem::mat_elem;
-        let op = pauli::terms::View {
+        use zixy::qubit::operator::string_major::mat_elem::mat_elem;
+        let op = operator::terms::View {
             word_iters: &self.0,
             coeffs: &coeffs.0,
         };
@@ -970,7 +970,7 @@ impl Array {
         let tmp_mode_order = self.parse_mode_order(mode_order)?;
         let mut ccoeffs: ComplexSignVec_ =
             ComplexSignVec_::try_represent(&coeffs.0).to_py_result()?;
-        let mut tmp: pauli::terms::ViewMut<ComplexSign_> = pauli::terms::ViewMut {
+        let mut tmp: operator::terms::ViewMut<ComplexSign_> = operator::terms::ViewMut {
             word_iters: &mut self.0,
             coeffs: &mut ccoeffs,
         };
@@ -996,7 +996,7 @@ impl Array {
     ) -> PyResult<Vec<(usize, usize)>> {
         use zixy::container::coeffs::complex_sign::ComplexSign as ComplexSign_;
         let tmp_mode_order = self.parse_mode_order(mode_order)?;
-        let mut tmp: pauli::terms::ViewMut<ComplexSign_> = pauli::terms::ViewMut {
+        let mut tmp: operator::terms::ViewMut<ComplexSign_> = operator::terms::ViewMut {
             word_iters: &mut self.0,
             coeffs: &mut coeffs.0,
         };
@@ -1012,7 +1012,7 @@ impl Array {
         use zixy::container::coeffs::sign::SignVec as SignVec_;
         let mut ccoeffs: ComplexSignVec_ =
             ComplexSignVec_::try_represent(&coeffs.0).to_py_result()?;
-        let mut tmp: pauli::terms::ViewMut<ComplexSign_> = pauli::terms::ViewMut {
+        let mut tmp: operator::terms::ViewMut<ComplexSign_> = operator::terms::ViewMut {
             word_iters: &mut self.0,
             coeffs: &mut ccoeffs,
         };
@@ -1028,7 +1028,7 @@ impl Array {
         coeffs: &mut ComplexSignVec,
     ) -> PyResult<Vec<(usize, usize)>> {
         use zixy::container::coeffs::complex_sign::ComplexSign as ComplexSign_;
-        let mut tmp: pauli::terms::ViewMut<ComplexSign_> = pauli::terms::ViewMut {
+        let mut tmp: operator::terms::ViewMut<ComplexSign_> = operator::terms::ViewMut {
             word_iters: &mut self.0,
             coeffs: &mut coeffs.0,
         };

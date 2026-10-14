@@ -4,19 +4,19 @@ use crate::container::coeffs::traits::NumRepr;
 use crate::container::map::Map;
 use crate::container::word_iters;
 use crate::fermion::mode::Modes;
-use crate::fermion::operator::normal::cmpnt_list::CmpntList;
-use crate::fermion::operator::normal::cmpnt_major::terms::Terms;
+use crate::fermion::operator::normal::string_list::StringList;
+use crate::fermion::operator::normal::string_major::terms::Terms;
 use crate::fermion::traits::ModesBased;
 
-pub type TermSet<C /*: NumRepr*/> = word_iters::term_set::TermSet<CmpntList, C>;
-pub type View<'a, C /*: NumRepr*/> = word_iters::term_set::View<'a, CmpntList, C>;
-pub type ViewMut<'a, C /*: NumRepr*/> = word_iters::term_set::ViewMut<'a, CmpntList, C>;
+pub type TermSet<C /*: NumRepr*/> = word_iters::term_set::TermSet<StringList, C>;
+pub type View<'a, C /*: NumRepr*/> = word_iters::term_set::View<'a, StringList, C>;
+pub type ViewMut<'a, C /*: NumRepr*/> = word_iters::term_set::ViewMut<'a, StringList, C>;
 
 /// Trait for structs that immutably view a [`TermSet`].
-pub trait AsView<C: NumRepr>: word_iters::term_set::AsView<CmpntList, C> {}
+pub trait AsView<C: NumRepr>: word_iters::term_set::AsView<StringList, C> {}
 
 /// Trait for structs that mutably view a [`TermSet`].
-pub trait AsViewMut<C: NumRepr>: word_iters::term_set::AsViewMut<CmpntList, C> {}
+pub trait AsViewMut<C: NumRepr>: word_iters::term_set::AsViewMut<StringList, C> {}
 
 impl<C: NumRepr> AsView<C> for TermSet<C> {}
 impl<'a, C: NumRepr> AsView<C> for View<'a, C> {}

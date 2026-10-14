@@ -96,7 +96,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
 
     def __getitem__(self, i: int) -> bool:
         """Return the bit value of the string at index ``i``."""
-        return self._impl.cmpnt_get_bit(self.index, i)
+        return self._impl.string_get_bit(self.index, i)
 
     def __setitem__(self, i: int, bit: bool | int) -> None:
         """Set the bit value of the string at index ``i``."""
@@ -106,11 +106,11 @@ class String(StringBase[ImplT, SpecT, ElemT]):
             bit = bool(bit)
         elif not isinstance(bit, bool):
             raise TypeError("Bit argument should be bool or 0 or 1")
-        self._impl.cmpnt_set_bit(self.index, i, bit)
+        self._impl.string_set_bit(self.index, i, bit)
 
     def get_set(self) -> set[int]:
         """Get the string as a set of the indices of bits with value 1."""
-        return self._impl.cmpnt_get_set(self.index)
+        return self._impl.string_get_set(self.index)
 
     def set(self, source: SpecT | StringBase[ImplT, SpecT, ElemT]) -> None:
         """Set the value of the string.
@@ -122,7 +122,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
             This method operates in-place.
         """
         if isinstance(source, set):
-            self._impl.cmpnt_set_from_set(self.index, source)
+            self._impl.string_set_from_set(self.index, source)
         else:
             super().set(source)
 
@@ -166,7 +166,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
 
     def imul_get_phase(self, op: PauliString) -> ComplexSign:
         """In-place multiplication of ``self`` by ``op``, returning the phase."""
-        return ComplexSign(self._impl.cmpnt_pauli_string_imul(self.index, op._impl, op.index))
+        return ComplexSign(self._impl.string_pauli_string_imul(self.index, op._impl, op.index))
 
 
 class Strings(StringsBase[ImplT, SpecT, ElemT]):

@@ -11,9 +11,9 @@ use crate::container::word_iters::term_set::AsViewMut;
 use crate::fermion::operator::general::term_set::{
     self as general_term_set, TermSet as GeneralTermSet,
 };
-use crate::fermion::operator::normal::cmpnt::Cmpnt;
-use crate::fermion::operator::normal::cmpnt_major::lincomb::mul as normal_mul;
-use crate::fermion::operator::normal::cmpnt_major::term_set::{
+use crate::fermion::operator::normal::string::String;
+use crate::fermion::operator::normal::string_major::lincomb::mul as normal_mul;
+use crate::fermion::operator::normal::string_major::term_set::{
     self as normal_term_set, TermSet as NormalTermSet,
 };
 use crate::fermion::traits::ModesBased;
@@ -28,7 +28,7 @@ pub fn to_normal_order<C: FieldElem>(terms: &general_term_set::View<C>) -> Norma
         let (modes, adj) = terms.word_iters.get(index);
         let modes_space = terms.word_iters.modes().clone();
         let mut current = NormalTermSet::<C>::new(modes_space.clone());
-        let identity = Cmpnt::new(modes_space.clone());
+        let identity = String::new(modes_space.clone());
         let _ = current
             .borrow_mut()
             .insert_elem_ref_or_update(identity.borrow(), C::ONE);
@@ -41,7 +41,7 @@ pub fn to_normal_order<C: FieldElem>(terms: &general_term_set::View<C>) -> Norma
             } else {
                 ann_set.insert(*mode);
             }
-            let rhs = Cmpnt::from_sets_unchecked(modes_space.clone(), cre_set, ann_set);
+            let rhs = String::from_sets_unchecked(modes_space.clone(), cre_set, ann_set);
             let mut rhs_set = NormalTermSet::<C>::new(modes_space.clone());
             let _ = rhs_set
                 .borrow_mut()
@@ -62,14 +62,14 @@ pub fn to_general<C: FieldElem>(terms: &normal_term_set::View<C>) -> GeneralTerm
     let mut out = GeneralTermSet::<C>::new(max_string_len, terms.to_modes().clone());
     let n_terms = terms.word_iters.len().min(terms.coeffs.len());
     for (i, coeff) in terms.coeffs.iter().take(n_terms).enumerate() {
-        let cmpnt = terms.word_iters.get_elem_ref(i);
+        let string = terms.word_iters.get_elem_ref(i);
         let mut modes = Vec::new();
         let mut adj = Vec::new();
-        for mode in cmpnt.get_cre_part().to_set().into_iter().sorted() {
+        for mode in string.get_cre_part().to_set().into_iter().sorted() {
             modes.push(mode);
             adj.push(true);
         }
-        for mode in cmpnt.get_ann_part().to_set().into_iter().sorted() {
+        for mode in string.get_ann_part().to_set().into_iter().sorted() {
             modes.push(mode);
             adj.push(false);
         }
@@ -87,8 +87,8 @@ mod tests {
     use crate::container::word_iters::term_set::AsView;
     use crate::fermion::mode::Modes;
     use crate::fermion::operator::general::term_set::TermSet as GeneralTermSet;
-    use crate::fermion::operator::normal::cmpnt::Cmpnt;
-    use crate::fermion::operator::normal::cmpnt_major::term_set::TermSet as NormalTermSet;
+    use crate::fermion::operator::normal::string::String;
+    use crate::fermion::operator::normal::string_major::term_set::TermSet as NormalTermSet;
     use std::collections::HashSet;
 
     fn make_general(n_modes: usize, modes: &[usize], adj: &[bool]) -> GeneralTermSet<f64> {
@@ -106,9 +106,9 @@ mod tests {
         coeff: f64,
     ) {
         let modes_space = Modes::from_count(n_modes);
-        let expected_cmpnt = Cmpnt::from_sets_unchecked(modes_space, cre.clone(), ann.clone());
+        let expected_string = String::from_sets_unchecked(modes_space, cre.clone(), ann.clone());
         let found = result.as_terms().iter().any(|t| {
-            t.get_word_iter_ref() == expected_cmpnt.borrow()
+            t.get_word_iter_ref() == expected_string.borrow()
                 && (t.get_coeff() - coeff).abs() < 1e-10
         });
         assert!(
@@ -121,9 +121,9 @@ mod tests {
     fn test_to_general_preserves_order_and_coeffs() {
         let modes = Modes::from_count(4);
         let mut terms = NormalTermSet::<f64>::new(modes.clone());
-        let cmpnt =
-            Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([2]), HashSet::from([0, 1]));
-        scaled_iadd_elem(&mut terms.borrow_mut(), cmpnt.borrow(), 2.0);
+        let string =
+            String::from_sets_unchecked(modes.clone(), HashSet::from([2]), HashSet::from([0, 1]));
+        scaled_iadd_elem(&mut terms.borrow_mut(), string.borrow(), 2.0);
 
         let result = to_general(&terms.borrow());
         assert_eq!(result.terms.word_iters.len(), 1);

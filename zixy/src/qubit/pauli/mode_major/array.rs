@@ -1,4 +1,4 @@
-//! Defines gapless, contiguous lists of Pauli words using a cmpnt-major (mode-minor) symplectic representation.
+//! Defines gapless, contiguous lists of Pauli words using a string-major (mode-minor) symplectic representation.
 //! Assumes a "little-endian" convention whereby the Pauli matrix acting on the first qubit is stored in the least
 //! significant bits of the first u64.
 
@@ -6,7 +6,7 @@ use crate::container::bit_matrix::BitMatrix;
 use crate::container::traits::{Compatible, Elements, EmptyClone};
 use crate::container::word_iters::WordIters;
 use crate::qubit::mode::Qubits;
-use crate::qubit::pauli::cmpnt_major;
+use crate::qubit::pauli::string_major;
 use crate::qubit::traits::QubitsBased;
 use serde::{Deserialize, Serialize};
 
@@ -17,19 +17,21 @@ pub struct Array {
     x_part: BitMatrix,
     /// Z part of the phaseless Pauli tableau transpose
     z_part: BitMatrix,
-    /// Number of components (row size of the binary matrices)
-    n_cmpnt: usize,
+    /// Number of strings (row size of the binary matrices)
+    // Keep the existing Serde field name when renaming the Rust identifier.
+    #[serde(rename = "n_cmpnt")]
+    n_string: usize,
     /// `Qubits` on which the Pauli words are defined (len is the number of rows in the binary matrices)
     qubits: Qubits,
 }
 
 impl Array {
-    /// Create an empty list on the cmpnts and `Qubits` given.
+    /// Create an empty list on the strings and `Qubits` given.
     pub fn new(qubits: Qubits, n_mode: usize) -> Self {
         Self {
             x_part: BitMatrix::new(n_mode),
             z_part: BitMatrix::new(n_mode),
-            n_cmpnt: n_mode,
+            n_string: n_mode,
             qubits,
         }
     }
@@ -68,7 +70,7 @@ impl EmptyClone for Array {
         Self {
             x_part: self.x_part.empty_clone(),
             z_part: self.z_part.empty_clone(),
-            n_cmpnt: self.n_cmpnt,
+            n_string: self.n_string,
             qubits: self.qubits.clone(),
         }
     }
@@ -85,18 +87,18 @@ impl Clone for Array {
         Self {
             x_part: self.x_part.clone(),
             z_part: self.z_part.clone(),
-            n_cmpnt: self.n_cmpnt,
+            n_string: self.n_string,
             qubits: self.qubits.clone(),
         }
     }
 }
 
-impl From<cmpnt_major::cmpnt_list::CmpntList> for Array {
-    fn from(value: cmpnt_major::cmpnt_list::CmpntList) -> Self {
+impl From<string_major::string_list::StringList> for Array {
+    fn from(value: string_major::string_list::StringList) -> Self {
         Self {
             x_part: value.x_part().transpose(),
             z_part: value.z_part().transpose(),
-            n_cmpnt: value.len(),
+            n_string: value.len(),
             qubits: value.to_qubits(),
         }
     }
@@ -135,13 +137,13 @@ mod tests {
     use super::*;
     use crate::qubit::mode::PauliMatrix::*;
     use crate::qubit::mode::Qubits;
-    use crate::qubit::pauli::cmpnt_major;
     use crate::qubit::pauli::mode_major::array::Array;
+    use crate::qubit::pauli::string_major;
     use crate::qubit::traits::PushPaulis;
 
     fn create_test_array() -> Array {
         let qubits = Qubits::from_count(3);
-        let mut standard_strings = cmpnt_major::cmpnt_list::CmpntList::new(qubits);
+        let mut standard_strings = string_major::string_list::StringList::new(qubits);
         let _ = standard_strings.push_pauli_vec([X, Y, Z].into());
         let _ = standard_strings.push_pauli_vec([I, X, I].into());
         let _ = standard_strings.push_pauli_vec([Z, I, X].into());
@@ -152,7 +154,7 @@ mod tests {
     fn test_from_standard() {
         let standard_strings = create_test_array();
         let transposed_strings: Array = standard_strings;
-        assert_eq!(transposed_strings.n_cmpnt, 3);
+        assert_eq!(transposed_strings.n_string, 3);
     }
 
     #[test]

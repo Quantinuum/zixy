@@ -2,7 +2,7 @@
 
 use std::fmt::Display;
 
-use crate::{cmpnt::springs::*, container::traits::Elements};
+use crate::{container::traits::Elements, string::springs::*};
 use itertools::Itertools;
 
 /// Basic storage for a vector of mode indices and the local state indices associated with them.

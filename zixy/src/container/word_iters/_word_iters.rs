@@ -72,8 +72,8 @@ pub trait WordIters: Elements + EmptyClone + Compatible {
     /// Return Some with the Hamming weight if all elements have the same Hamming weight, else return None
     fn hamming_weight(&self) -> Option<usize> {
         let mut out: Option<usize> = None;
-        for i_cmpnt in 0..self.len() {
-            let n = self.elem_hamming_weight(i_cmpnt);
+        for i_string in 0..self.len() {
+            let n = self.elem_hamming_weight(i_string);
             match out {
                 Some(m) => {
                     if m != n {

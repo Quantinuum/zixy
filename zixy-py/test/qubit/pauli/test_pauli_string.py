@@ -33,7 +33,7 @@ def test_strings_mul_pairwise():
     arr2 = QubitPauliArray(qubits, springs2)
 
     # Test the pairwise multiplication
-    result, phases = arr1.cmpnts_mul_pairwise(arr2)
+    result, phases = arr1.strings_mul_pairwise(arr2)
 
     # Expected results:
     # X0 * Y0 = iZ0
@@ -61,4 +61,4 @@ def test_strings_mul_pairwise_different_lengths():
     arr2 = QubitPauliArray(qubits, PauliSprings("Z0"))  # 1 string
 
     with pytest.raises(ValueError, match="Input arrays must have the same length"):
-        arr1.cmpnts_mul_pairwise(arr2)
+        arr1.strings_mul_pairwise(arr2)

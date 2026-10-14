@@ -4,16 +4,16 @@ use std::env;
 use std::path::PathBuf;
 
 use bincode::config;
-use zixy::cmpnt::springs::ModeSettings;
-use zixy::cmpnt::state_springs::BinarySprings;
 use zixy::container::coeffs::traits::NumReprVec;
 use zixy::container::traits::Elements;
 use zixy::qubit::mode::Qubits;
-use zixy::qubit::pauli::cmpnt_major::term_set::TermSet as PauliTermSet;
-use zixy::qubit::pauli::cmpnt_major::terms::Terms as PauliTerms;
 use zixy::qubit::pauli::springs::Springs;
+use zixy::qubit::pauli::string_major::term_set::TermSet as PauliTermSet;
+use zixy::qubit::pauli::string_major::terms::Terms as PauliTerms;
 use zixy::qubit::state::term_set::TermSet as StateTermSet;
 use zixy::qubit::state::terms::Terms as StateTerms;
+use zixy::string::springs::ModeSettings;
+use zixy::string::state_springs::BinarySprings;
 use zixy::utils::io::{file_path_in_crate, BinFileWriter};
 
 fn main() {

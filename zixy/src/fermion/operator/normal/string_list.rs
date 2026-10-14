@@ -18,19 +18,19 @@ use serde::{Deserialize, Serialize};
 
 /// Contiguous and compact storage for vectors of Pauli words.
 #[derive(Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
-pub struct CmpntList {
+pub struct StringList {
     /// creation part of the normal ordered fermion operator list
-    pub cre_part: cre_or_ann::CmpntList,
+    pub cre_part: cre_or_ann::StringList,
     /// annihilation part of the normal ordered fermion operator list
-    pub ann_part: cre_or_ann::CmpntList,
+    pub ann_part: cre_or_ann::StringList,
 }
 
-impl CmpntList {
-    /// Create an empty `CmpntList` on the fermion modes given.
+impl StringList {
+    /// Create an empty `StringList` on the fermion modes given.
     pub fn new(modes: Modes) -> Self {
         Self {
-            cre_part: cre_or_ann::CmpntList::new(modes.clone(), true),
-            ann_part: cre_or_ann::CmpntList::new(modes, false),
+            cre_part: cre_or_ann::StringList::new(modes.clone(), true),
+            ann_part: cre_or_ann::StringList::new(modes, false),
         }
     }
 
@@ -40,17 +40,17 @@ impl CmpntList {
     /// factor. This factor is returned.
     /// Mode bounds are unchecked.
     pub fn push_spring_unchecked(&mut self, springs: &Springs, i: usize) -> ComplexSign {
-        let i_cmpnt: usize = self.len();
+        let i_string: usize = self.len();
         self.push_pauli_identity();
-        self.get_elem_mut_ref(i_cmpnt)
+        self.get_elem_mut_ref(i_string)
             .set_spring_unchecked(springs, i)
     }
 
     /// Append spring.
     pub fn push_spring(&mut self, springs: &Springs, i: usize) -> Result<ComplexSign, ParseError> {
-        let i_cmpnt: usize = self.len();
+        let i_string: usize = self.len();
         self.push_pauli_identity();
-        self.get_elem_mut_ref(i_cmpnt).set_spring(springs, i)
+        self.get_elem_mut_ref(i_string).set_spring(springs, i)
     }
 
     /// Create a new instance from given springs, returning the associated phases as a `TwoBitVec`.
@@ -107,19 +107,19 @@ impl CmpntList {
     }
 }
 
-impl Compatible for CmpntList {
+impl Compatible for StringList {
     fn compatible_with(&self, other: &Self) -> bool {
         self.cre_part.compatible_with(&other.cre_part)
     }
 }
 
-impl Elements for CmpntList {
+impl Elements for StringList {
     fn len(&self) -> usize {
         self.cre_part.len()
     }
 }
 
-impl EmptyClone for CmpntList {
+impl EmptyClone for StringList {
     fn empty_clone(&self) -> Self {
         Self {
             cre_part: self.cre_part.empty_clone(),
@@ -128,13 +128,13 @@ impl EmptyClone for CmpntList {
     }
 }
 
-impl ModesBased for CmpntList {
+impl ModesBased for StringList {
     fn modes(&self) -> &Modes {
         self.cre_part.modes()
     }
 }
 
-impl Display for CmpntList {
+impl Display for StringList {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -146,7 +146,7 @@ impl Display for CmpntList {
     }
 }
 
-impl Clone for CmpntList {
+impl Clone for StringList {
     fn clone(&self) -> Self {
         Self {
             cre_part: self.cre_part.clone(),
@@ -155,7 +155,7 @@ impl Clone for CmpntList {
     }
 }
 
-impl WordIters for CmpntList {
+impl WordIters for StringList {
     fn elem_u64it(&self, i: usize) -> impl Iterator<Item = u64> + Clone {
         self.cre_part
             .elem_u64it(i)
@@ -182,7 +182,7 @@ impl WordIters for CmpntList {
         self.ann_part.resize(n);
     }
 
-    fn fmt_elem(&self, i: usize) -> String {
+    fn fmt_elem(&self, i: usize) -> std::string::String {
         let mut out = self.cre_part.get_elem_ref(i).to_string();
         let ann = self.ann_part.get_elem_ref(i).to_string();
         if !out.is_empty() && !ann.is_empty() {
@@ -193,19 +193,19 @@ impl WordIters for CmpntList {
     }
 }
 
-/// Borrowed immutable handle to a single normal-ordered fermion operator component in a [`CmpntList`].
-pub type CmpntRef<'a> = word_iters::ElemRef<'a, CmpntList>;
-/// Borrowed mutable handle to a single normal-ordered fermion operator component in a [`CmpntList`].
-pub type CmpntMutRef<'a> = word_iters::ElemMutRef<'a, CmpntList>;
+/// Borrowed immutable handle to a single normal-ordered fermion operator component in a [`StringList`].
+pub type StringRef<'a> = word_iters::ElemRef<'a, StringList>;
+/// Borrowed mutable handle to a single normal-ordered fermion operator component in a [`StringList`].
+pub type StringMutRef<'a> = word_iters::ElemMutRef<'a, StringList>;
 
-impl<'a> CmpntRef<'a> {
+impl<'a> StringRef<'a> {
     /// Return cre part.
-    pub fn get_cre_part(&self) -> cre_or_ann::CmpntRef<'_> {
+    pub fn get_cre_part(&self) -> cre_or_ann::StringRef<'_> {
         self.word_iters.cre_part.get_elem_ref(self.get_index())
     }
 
     /// Return ann part.
-    pub fn get_ann_part(&self) -> cre_or_ann::CmpntRef<'_> {
+    pub fn get_ann_part(&self) -> cre_or_ann::StringRef<'_> {
         self.word_iters.ann_part.get_elem_ref(self.get_index())
     }
 
@@ -224,27 +224,27 @@ impl<'a> CmpntRef<'a> {
     }
 }
 
-impl<'a> ModesBased for CmpntRef<'a> {
+impl<'a> ModesBased for StringRef<'a> {
     fn modes(&self) -> &Modes {
         self.word_iters.modes()
     }
 }
 
-impl<'a> CmpntMutRef<'a> {
+impl<'a> StringMutRef<'a> {
     /// Return cre part.
-    pub fn get_cre_part(&mut self) -> cre_or_ann::CmpntMutRef<'_> {
+    pub fn get_cre_part(&mut self) -> cre_or_ann::StringMutRef<'_> {
         let index = self.get_index();
         self.word_iters.cre_part.get_elem_mut_ref(index)
     }
 
     /// Return ann part.
-    pub fn get_ann_part(&mut self) -> cre_or_ann::CmpntMutRef<'_> {
+    pub fn get_ann_part(&mut self) -> cre_or_ann::StringMutRef<'_> {
         let index = self.get_index();
         self.word_iters.ann_part.get_elem_mut_ref(index)
     }
 }
 
-impl<'a> ModesBased for CmpntMutRef<'a> {
+impl<'a> ModesBased for StringMutRef<'a> {
     fn modes(&self) -> &Modes {
         self.word_iters.modes()
     }
@@ -259,14 +259,14 @@ mod tests {
     #[test]
     fn test_empty() {
         {
-            let list = CmpntList::new(Modes::from_pair_count_spin_major(5));
+            let list = StringList::new(Modes::from_pair_count_spin_major(5));
             assert!(list.is_empty());
         }
     }
 
     #[test]
     fn test_to_string() {
-        let mut op = CmpntList::new(Modes::from_pair_count_spin_major(5));
+        let mut op = StringList::new(Modes::from_pair_count_spin_major(5));
         op.push_clear();
         let mut op_ref = op.get_elem_mut_ref(0);
         op_ref.get_cre_part().assign_set_unchecked([3, 4, 6].into());

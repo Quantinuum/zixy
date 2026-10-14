@@ -1,10 +1,10 @@
-//! Extends `CmpntList` with associated coefficients.
+//! Extends `StringList` with associated coefficients.
 
-use crate::cmpnt::parse::ParseError;
-use crate::cmpnt::springs::ModeSettings;
-use crate::cmpnt::state_springs::BinarySprings;
 use crate::container::coeffs::traits::NewUnitsWithLen;
 use crate::container::coeffs::traits::NumReprVec;
+use crate::string::parse::ParseError;
+use crate::string::springs::ModeSettings;
+use crate::string::state_springs::BinarySprings;
 use std::collections::HashSet;
 
 use crate::container::bit_matrix::AsRowMutRef;
@@ -14,18 +14,18 @@ use crate::container::traits::{Elements, MutRefElements};
 use crate::container::word_iters::terms::AsViewMut as _;
 use crate::container::word_iters::{terms, HasWordIters, WordIters};
 use crate::fermion::mode::Modes;
-use crate::fermion::state::cmpnt_list::CmpntList;
+use crate::fermion::state::string_list::StringList;
 use crate::fermion::traits::ModesBased;
 
-/// Stores one coeff for each component of a `CmpntList`.
-pub type Terms<C /*: NumRepr*/> = terms::Terms<CmpntList, C>;
-pub type View<'a, C /*: NumRepr*/> = terms::View<'a, CmpntList, C>;
-pub type ViewMut<'a, C /*: NumRepr*/> = terms::ViewMut<'a, CmpntList, C>;
+/// Stores one coeff for each component of a `StringList`.
+pub type Terms<C /*: NumRepr*/> = terms::Terms<StringList, C>;
+pub type View<'a, C /*: NumRepr*/> = terms::View<'a, StringList, C>;
+pub type ViewMut<'a, C /*: NumRepr*/> = terms::ViewMut<'a, StringList, C>;
 
-pub type TermRef<'a, C /*: NumRepr*/> = terms::TermRef<'a, CmpntList, C>;
-pub type TermMutRef<'a, C /*: NumRepr*/> = terms::TermMutRef<'a, CmpntList, C>;
+pub type TermRef<'a, C /*: NumRepr*/> = terms::TermRef<'a, StringList, C>;
+pub type TermMutRef<'a, C /*: NumRepr*/> = terms::TermMutRef<'a, StringList, C>;
 
-pub trait AsView<C: NumRepr>: terms::AsView<CmpntList, C> {
+pub trait AsView<C: NumRepr>: terms::AsView<StringList, C> {
     /// Return the particle number if all Slater determinants have the same particle number, otherwise return None.
     fn particle_number(&self) -> Option<usize> {
         self.view().word_iters.hamming_weight()
@@ -33,7 +33,7 @@ pub trait AsView<C: NumRepr>: terms::AsView<CmpntList, C> {
 }
 
 /// Trait for structs that mutably view a [`Terms`].
-pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<CmpntList, C> {
+pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<StringList, C> {
     /// Append a Slater determinant from an occupation vector.
     fn push_vec(&mut self, value: Vec<bool>) -> Result<(), OutOfBounds> {
         let mut self_mut_ref = self.view_mut();
@@ -41,10 +41,10 @@ pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<CmpntList, C> {
         if let Some(max_ind) = value.len().checked_sub(1) {
             OutOfBounds::check(max_ind, n_mode, Dimension::Mode)?;
         }
-        let i_cmpnt = self_mut_ref.len();
+        let i_string = self_mut_ref.len();
         self_mut_ref.push_clear();
         self_mut_ref
-            .get_elem_mut_ref(i_cmpnt)
+            .get_elem_mut_ref(i_string)
             .get_word_iter_mut_ref()
             .assign_vec_unchecked(value);
         Ok(())
@@ -57,10 +57,10 @@ pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<CmpntList, C> {
         if let Some(max_ind) = value.iter().max() {
             OutOfBounds::check(*max_ind, n_mode, Dimension::Mode)?;
         }
-        let i_cmpnt = self_mut_ref.len();
+        let i_string = self_mut_ref.len();
         self_mut_ref.push_clear();
         self_mut_ref
-            .get_elem_mut_ref(i_cmpnt)
+            .get_elem_mut_ref(i_string)
             .get_word_iter_mut_ref()
             .assign_set_unchecked(value);
         Ok(())
@@ -115,16 +115,16 @@ impl<C: NumRepr> Terms<C> {
     /// Create a new list of state strings on the given space of modes.
     pub fn new(modes: Modes) -> Self {
         Self {
-            word_iters: CmpntList::new(modes),
+            word_iters: StringList::new(modes),
             coeffs: C::Vector::default(),
         }
     }
 
     /// Create state terms from parsed binary springs on the given mode space, using unit coefficients.
     pub fn from_springs(modes: Modes, springs: &BinarySprings) -> Result<Self, ParseError> {
-        let cmpnts = CmpntList::from_springs(modes, springs)?;
-        let coeffs = C::Vector::new_units_with_len(cmpnts.len());
-        Ok(Self::from((cmpnts, coeffs)))
+        let strings = StringList::from_springs(modes, springs)?;
+        let coeffs = C::Vector::new_units_with_len(strings.len());
+        Ok(Self::from((strings, coeffs)))
     }
 
     /// Create state terms from parsed binary springs, inferring a count-based mode space and using unit coefficients.
@@ -145,7 +145,7 @@ impl<C: NumRepr> Terms<C> {
             coeffs.resize_with_units(springs.len());
         }
         springs.append_empty(coeffs.len().saturating_sub(springs.len()));
-        let list = CmpntList::from_springs(modes, &springs)?;
+        let list = StringList::from_springs(modes, &springs)?;
         Ok(Self::from((list, coeffs)))
     }
 

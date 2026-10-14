@@ -1,10 +1,8 @@
-//! Extends `CmpntList` with a vector of associated coefficients.
+//! Extends `StringList` with a vector of associated coefficients.
 
 use itertools::{chain, Itertools};
 use num_complex::Complex64;
 
-use crate::cmpnt::parse::ParseError;
-use crate::cmpnt::springs::ModeSettings;
 use crate::container::bit_matrix::AsBitMatrix;
 use crate::container::coeffs::traits::{
     ComplexSigned, HasCoeffsMut, IMulResult, NumRepr, NumReprVec, Signed,
@@ -16,20 +14,22 @@ use crate::container::utils::DistinctPair;
 use crate::container::word_iters::{terms, WordIters};
 use crate::qubit::clifford;
 use crate::qubit::mode::{pauli_matrix_product, PauliMatrix, Qubits, SymplecticPart};
-use crate::qubit::pauli::cmpnt_major::cmpnt_list::{CmpntList, CmpntRef};
 use crate::qubit::pauli::springs::Springs;
+use crate::qubit::pauli::string_major::string_list::{StringList, StringRef};
 use crate::qubit::traits::{
     DifferentQubits, PauliWordMutRef, PauliWordRef, PushPaulis, QubitsBased, QubitsRelabel,
     QubitsStandardize, QubitsStandardized,
 };
+use crate::string::parse::ParseError;
+use crate::string::springs::ModeSettings;
 
-/// Stores one coeff for each component of a `CmpntList`.
-pub type Terms<C /*: NumRepr*/> = terms::Terms<CmpntList, C>;
-pub type View<'a, C /*: NumRepr*/> = terms::View<'a, CmpntList, C>;
-pub type ViewMut<'a, C /*: NumRepr*/> = terms::ViewMut<'a, CmpntList, C>;
+/// Stores one coeff for each component of a `StringList`.
+pub type Terms<C /*: NumRepr*/> = terms::Terms<StringList, C>;
+pub type View<'a, C /*: NumRepr*/> = terms::View<'a, StringList, C>;
+pub type ViewMut<'a, C /*: NumRepr*/> = terms::ViewMut<'a, StringList, C>;
 
 /// Trait for structs that immutably view a [`Terms`].
-pub trait AsView<C: NumRepr>: terms::AsView<CmpntList, C> + proj::ToOwned {
+pub trait AsView<C: NumRepr>: terms::AsView<StringList, C> + proj::ToOwned {
     /// Split `self` into the centralizer set and the remainder of the terms.
     fn centralizer_and_remainder(&self) -> (Terms<C>, Terms<C>) {
         self.bipartition(self.view().word_iters.centralizer_members())
@@ -37,7 +37,7 @@ pub trait AsView<C: NumRepr>: terms::AsView<CmpntList, C> + proj::ToOwned {
 }
 
 /// Trait for structs that mutably view a [`Terms`].
-pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<CmpntList, C> {
+pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<StringList, C> {
     /// Multiply the element at i_lhs in-place by the one at i_rhs.
     fn imul(&mut self, i_lhs: usize, i_rhs: usize)
     where
@@ -90,19 +90,19 @@ pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<CmpntList, C> {
         additional_reduces: &Vec<usize>,
     ) -> Result<Vec<(usize, usize)>, OutOfBounds> {
         let mut imul_ops = vec![];
-        let mut pivot_cmpnt = 0;
+        let mut pivot_string = 0;
         let mut self_mut_ref = self.view_mut();
         for (qubit, part) in mode_order {
             let qubit_idx = self_mut_ref.word_iters.qubits().get(*qubit)?;
             match part {
                 SymplecticPart::X => {
-                    for cmp_idx in &to_solve[pivot_cmpnt..] {
+                    for cmp_idx in &to_solve[pivot_string..] {
                         if self_mut_ref
                             .word_iters
                             .x_part()
                             .get_bit(*cmp_idx, qubit_idx)?
                         {
-                            let pivot_idx = to_solve[pivot_cmpnt];
+                            let pivot_idx = to_solve[pivot_string];
                             if let Some(inds) = DistinctPair::new(pivot_idx, *cmp_idx) {
                                 let (mut lhs, rhs) = self_mut_ref.get_semi_mut_refs(inds);
                                 lhs.imul_unchecked(rhs);
@@ -121,19 +121,19 @@ pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<CmpntList, C> {
                                     }
                                 }
                             }
-                            pivot_cmpnt += 1;
+                            pivot_string += 1;
                             break;
                         }
                     }
                 }
                 SymplecticPart::Z => {
-                    for cmp_idx in &to_solve[pivot_cmpnt..] {
+                    for cmp_idx in &to_solve[pivot_string..] {
                         if self_mut_ref
                             .word_iters
                             .z_part()
                             .get_bit(*cmp_idx, qubit_idx)?
                         {
-                            let pivot_idx = to_solve[pivot_cmpnt];
+                            let pivot_idx = to_solve[pivot_string];
                             if let Some(inds) = DistinctPair::new(pivot_idx, *cmp_idx) {
                                 let (mut lhs, rhs) = self_mut_ref.get_semi_mut_refs(inds);
                                 lhs.imul_unchecked(rhs);
@@ -152,7 +152,7 @@ pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<CmpntList, C> {
                                     }
                                 }
                             }
-                            pivot_cmpnt += 1;
+                            pivot_string += 1;
                             break;
                         }
                     }
@@ -186,12 +186,12 @@ impl<'a, C: NumRepr> AsViewMut<C> for ViewMut<'a, C> {}
 impl<C: NumRepr> Terms<C> {
     /// Create a new list of Pauli strings on the given space of qubits.
     pub fn new(qubits: Qubits) -> Self {
-        Self::empty_from(&CmpntList::new(qubits))
+        Self::empty_from(&StringList::new(qubits))
     }
 
     /// Create from the given sparse strings, absorbing any phases into the coefficient if representable, else return error.
     pub fn from_springs(qubits: Qubits, springs: &Springs) -> Result<Self, ParseError> {
-        let pair = CmpntList::from_springs(qubits, springs)?;
+        let pair = StringList::from_springs(qubits, springs)?;
         let coeffs = C::Vector::try_represent(&pair.1)?;
         Ok(Self::from((pair.0, coeffs)))
     }
@@ -215,7 +215,7 @@ impl<C: NumRepr> Terms<C> {
             coeffs.resize_with_units(springs.len());
         }
         springs.append_empty(springs.len().saturating_sub(coeffs.len()));
-        let pair = CmpntList::from_springs(qubits, &springs)?;
+        let pair = StringList::from_springs(qubits, &springs)?;
         let phase_coeffs = C::Vector::try_represent(&pair.1)?;
         Ok(Self::from((pair.0, coeffs.mul_elemwise(&phase_coeffs))))
     }
@@ -231,8 +231,8 @@ impl<C: NumRepr> Terms<C> {
     }
 }
 
-pub type TermRef<'a, C /*: NumRepr*/> = terms::TermRef<'a, CmpntList, C>;
-pub type TermMutRef<'a, C /*: NumRepr*/> = terms::TermMutRef<'a, CmpntList, C>;
+pub type TermRef<'a, C /*: NumRepr*/> = terms::TermRef<'a, StringList, C>;
+pub type TermMutRef<'a, C /*: NumRepr*/> = terms::TermMutRef<'a, StringList, C>;
 
 impl<'a, C: NumRepr> TermRef<'a, C> {
     /// Call the to_sparse method of the `PauliWordRef`, and return the result scaled by the coeff of self.
@@ -252,10 +252,10 @@ impl<'a, C: NumRepr> QubitsBased for TermRef<'a, C> {
 impl<'a, C: NumRepr> TermMutRef<'a, C> {
     /// Try to set the value of this Pauli term from the multiplication of two Pauli strings.
     /// If the phase could not be absorbed, it is returned in the Failure arm of `IMulResult`.
-    pub fn try_assign_mul_cmpnt_refs_unchecked(
+    pub fn try_assign_mul_string_refs_unchecked(
         &mut self,
-        lhs: CmpntRef,
-        rhs: CmpntRef,
+        lhs: StringRef,
+        rhs: StringRef,
     ) -> IMulResult {
         self.get_word_iter_mut_ref()
             .assign_mul_matrices_unchecked(lhs.clone(), rhs.clone());
@@ -265,19 +265,19 @@ impl<'a, C: NumRepr> TermMutRef<'a, C> {
     /// Try to set the value of this Pauli term from the multiplication of two Pauli strings.
     /// If the phase could not be absorbed, it is returned in the Failure arm of `IMulResult`.
     /// If the qubits on which `self`, `lhs`, and `rhs` are based are not all the same, return `DifferentQubits` error.
-    pub fn try_assign_mul_cmpnt_refs(
+    pub fn try_assign_mul_string_refs(
         &mut self,
-        lhs: CmpntRef,
-        rhs: CmpntRef,
+        lhs: StringRef,
+        rhs: StringRef,
     ) -> Result<IMulResult, DifferentQubits> {
         DifferentQubits::check_transitive(self, &lhs, &rhs)?;
-        Ok(self.try_assign_mul_cmpnt_refs_unchecked(lhs, rhs))
+        Ok(self.try_assign_mul_string_refs_unchecked(lhs, rhs))
     }
 
     /// `Set` the value of this Pauli term from the multiplication of two Pauli strings.
     /// This is restricted to coefficient types that can definitely absorb factors of the imag unit.
-    /// For other coeff types, try_assign_mul_cmpnt_refs should be used instead.
-    pub fn assign_mul_cmpnt_refs_unchecked(&mut self, lhs: CmpntRef, rhs: CmpntRef)
+    /// For other coeff types, try_assign_mul_string_refs should be used instead.
+    pub fn assign_mul_string_refs_unchecked(&mut self, lhs: StringRef, rhs: StringRef)
     where
         C: ComplexSigned,
     {
@@ -288,18 +288,18 @@ impl<'a, C: NumRepr> TermMutRef<'a, C> {
 
     /// `Set` the value of this Pauli term from the multiplication of two Pauli strings.
     /// This is restricted to coefficient types that can definitely absorb factors of the imag unit.
-    /// For other coeff types, try_assign_mul_cmpnt_refs should be used instead.
+    /// For other coeff types, try_assign_mul_string_refs should be used instead.
     /// If the qubits on which `self`, `lhs`, and `rhs` are based are not all the same, return `DifferentQubits` error.
-    pub fn assign_mul_cmpnt_refs(
+    pub fn assign_mul_string_refs(
         &mut self,
-        lhs: CmpntRef,
-        rhs: CmpntRef,
+        lhs: StringRef,
+        rhs: StringRef,
     ) -> Result<(), DifferentQubits>
     where
         C: ComplexSigned,
     {
         DifferentQubits::check_transitive(self, &lhs, &rhs)?;
-        self.assign_mul_cmpnt_refs_unchecked(lhs, rhs);
+        self.assign_mul_string_refs_unchecked(lhs, rhs);
         Ok(())
     }
 
@@ -379,37 +379,40 @@ impl<'a, C: NumRepr> TermMutRef<'a, C> {
     }
 
     /// Try to right-multiply self by a Pauli string.
-    pub fn try_imul_by_cmpnt_ref_unchecked(&mut self, rhs: CmpntRef) -> IMulResult {
+    pub fn try_imul_by_string_ref_unchecked(&mut self, rhs: StringRef) -> IMulResult {
         let phase = self.as_ref().get_word_iter_ref().phase_of_mul(rhs.clone());
         self.get_word_iter_mut_ref()
-            .imul_by_cmpnt_ref_matrices_unchecked(rhs);
+            .imul_by_string_ref_matrices_unchecked(rhs);
         self.try_imul_coeff(phase)
     }
 
     /// Try to right-multiply self by a Pauli string.
     /// If the qubits on which `self` and `rhs` are based are not the same, return `DifferentQubits` error.
-    pub fn try_imul_by_cmpnt_ref(&mut self, rhs: CmpntRef) -> Result<IMulResult, DifferentQubits> {
+    pub fn try_imul_by_string_ref(
+        &mut self,
+        rhs: StringRef,
+    ) -> Result<IMulResult, DifferentQubits> {
         DifferentQubits::check(self, &rhs)?;
-        Ok(self.try_imul_by_cmpnt_ref_unchecked(rhs))
+        Ok(self.try_imul_by_string_ref_unchecked(rhs))
     }
 
     /// Right-multiply self by a Pauli string.
-    pub fn imul_by_cmpnt_ref_unchecked(&mut self, rhs: CmpntRef) {
-        let _ = self.try_imul_by_cmpnt_ref(rhs);
+    pub fn imul_by_string_ref_unchecked(&mut self, rhs: StringRef) {
+        let _ = self.try_imul_by_string_ref(rhs);
     }
 
     /// Right-multiply self by a Pauli string.
     /// If the qubits on which `self` and `rhs` are based are not the same, return `DifferentQubits` error.
-    pub fn imul_by_cmpnt_ref(&mut self, rhs: CmpntRef) -> Result<(), DifferentQubits> {
+    pub fn imul_by_string_ref(&mut self, rhs: StringRef) -> Result<(), DifferentQubits> {
         DifferentQubits::check(self, &rhs)?;
-        self.imul_by_cmpnt_ref_unchecked(rhs);
+        self.imul_by_string_ref_unchecked(rhs);
         Ok(())
     }
 
     /// Try to right-multiply self by another term of the same type.
     pub fn try_imul_unchecked(&mut self, rhs: TermRef<C>) -> IMulResult {
         self.imul_coeff(rhs.get_coeff());
-        self.try_imul_by_cmpnt_ref_unchecked(rhs.get_word_iter_ref())
+        self.try_imul_by_string_ref_unchecked(rhs.get_word_iter_ref())
     }
 
     /// Try to right-multiply self by another term of the same type.
@@ -422,7 +425,7 @@ impl<'a, C: NumRepr> TermMutRef<'a, C> {
     /// Right-multiply self by another term of the same type.
     pub fn imul_unchecked(&mut self, rhs: TermRef<C>) {
         self.imul_coeff(rhs.get_coeff());
-        self.imul_by_cmpnt_ref_unchecked(rhs.get_word_iter_ref());
+        self.imul_by_string_ref_unchecked(rhs.get_word_iter_ref());
     }
 
     /// Right-multiply self by another term of the same type.
@@ -522,7 +525,7 @@ mod tests {
     use crate::container::traits::{Elements, RefElements};
     use crate::container::word_iters::terms::AsViewMut as _;
     use crate::qubit::mode::{PauliMatrix, Qubits};
-    use crate::qubit::pauli::cmpnt_major::cmpnt::PauliWord;
+    use crate::qubit::pauli::string_major::string::PauliWord;
     use rstest::rstest;
     use PauliMatrix::*;
 
@@ -606,7 +609,7 @@ mod tests {
         assert_eq!(out.len(), 1);
         assert_eq!(out.word_iters.elem_u64it(0).count(), 2);
         out.get_elem_mut_ref(0)
-            .assign_mul_cmpnt_refs_unchecked(lhs.borrow(), rhs.borrow());
+            .assign_mul_string_refs_unchecked(lhs.borrow(), rhs.borrow());
         assert_eq!(out.get_elem_ref(0).get_word_iter_ref().get_pauli_vec(), ov);
         assert_eq!(out.get_elem_ref(0).get_coeff(), phase);
     }

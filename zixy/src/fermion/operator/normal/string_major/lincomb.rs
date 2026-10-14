@@ -8,12 +8,12 @@ use crate::container::traits::RefElements;
 use crate::container::word_iters::lincomb::{diff, iadd, isub, scaled_iadd, scaled_iadd_elem};
 use crate::container::word_iters::term_set::{AsView, AsViewMut};
 use crate::container::word_iters::terms::AsViewMut as TermsAsViewMut;
-use crate::fermion::operator::normal::cmpnt::Cmpnt;
-use crate::fermion::operator::normal::cmpnt_major::num_ops::num_op_from_inds;
-use crate::fermion::operator::normal::cmpnt_major::term_set::{self, TermSet};
-use crate::fermion::operator::normal::cmpnt_major::terms;
-use crate::fermion::operator::normal::cmpnt_major::terms::Terms;
-use crate::fermion::operator::normal::products::mul_cmpnts;
+use crate::fermion::operator::normal::products::mul_strings;
+use crate::fermion::operator::normal::string::String;
+use crate::fermion::operator::normal::string_major::num_ops::num_op_from_inds;
+use crate::fermion::operator::normal::string_major::term_set::{self, TermSet};
+use crate::fermion::operator::normal::string_major::terms;
+use crate::fermion::operator::normal::string_major::terms::Terms;
 use crate::fermion::traits::{DifferentSpaces, ModesBased};
 use num_complex::Complex64;
 use std::collections::HashSet;
@@ -52,15 +52,15 @@ pub fn assign_from_mul<C: FieldElem>(
     let n_lhs = lhs.word_iters.len().min(lhs.coeffs.len());
     let n_rhs = rhs.word_iters.len().min(rhs.coeffs.len());
     for (i_lhs, lhs_coeff) in lhs.coeffs.iter().take(n_lhs).enumerate() {
-        let lhs_cmpnt = lhs.word_iters.get_elem_ref(i_lhs);
+        let lhs_string = lhs.word_iters.get_elem_ref(i_lhs);
         for (i_rhs, rhs_coeff) in rhs.coeffs.iter().take(n_rhs).enumerate() {
-            let rhs_cmpnt = rhs.word_iters.get_elem_ref(i_rhs);
-            let (result_cmpnts, result_signs) = mul_cmpnts(&lhs_cmpnt, &rhs_cmpnt);
+            let rhs_string = rhs.word_iters.get_elem_ref(i_rhs);
+            let (result_strings, result_signs) = mul_strings(&lhs_string, &rhs_string);
             for (i_res, sign) in result_signs.iter().enumerate() {
-                let result_cmpnt = result_cmpnts.get_elem_ref(i_res);
+                let result_string = result_strings.get_elem_ref(i_res);
                 let c = *lhs_coeff * *rhs_coeff;
                 let c = if sign.0 { -c } else { c };
-                scaled_iadd_elem(out, result_cmpnt, c);
+                scaled_iadd_elem(out, result_string, c);
             }
         }
     }
@@ -158,13 +158,13 @@ pub fn anticommute_default<C: FieldElem>(
 pub fn adjoint<C: FieldElem>(terms: &terms::View<C>) -> terms::Terms<C> {
     let mut out = terms::Terms::new(terms.modes().clone());
     for term in terms.iter() {
-        let (cmpnt, coeff) = term.unpack();
+        let (string, coeff) = term.unpack();
         let coeff_conj = coeff.conj();
-        let cre = cmpnt.get_cre_part().to_set();
-        let ann = cmpnt.get_ann_part().to_set();
-        let cmpnt_adj = Cmpnt::from_sets_unchecked(terms.modes().clone(), ann, cre);
+        let cre = string.get_cre_part().to_set();
+        let ann = string.get_ann_part().to_set();
+        let string_adj = String::from_sets_unchecked(terms.modes().clone(), ann, cre);
         out.borrow_mut()
-            .push_elem_coeff(cmpnt_adj.borrow(), coeff_conj);
+            .push_elem_coeff(string_adj.borrow(), coeff_conj);
     }
     out
 }
@@ -201,8 +201,8 @@ pub fn max_n_body<C: FieldElem>(terms: &terms::View<C>) -> usize {
     terms
         .iter()
         .map(|term| {
-            let (cmpnt, _) = term.unpack();
-            cmpnt.count_n_body()
+            let (string, _) = term.unpack();
+            string.count_n_body()
         })
         .max()
         .unwrap_or(0)
@@ -212,9 +212,9 @@ pub fn max_n_body<C: FieldElem>(terms: &terms::View<C>) -> usize {
 pub fn active_modes<C: FieldElem>(terms: &terms::View<C>) -> HashSet<usize> {
     let mut result: HashSet<usize> = HashSet::new();
     for term in terms.iter() {
-        let (cmpnt, _) = term.unpack();
-        let cre = cmpnt.get_cre_part().to_set();
-        let ann = cmpnt.get_ann_part().to_set();
+        let (string, _) = term.unpack();
+        let cre = string.get_cre_part().to_set();
+        let ann = string.get_ann_part().to_set();
         result.extend(cre);
         result.extend(ann);
     }
@@ -225,9 +225,9 @@ pub fn active_modes<C: FieldElem>(terms: &terms::View<C>) -> HashSet<usize> {
 pub fn truncated<C: FieldElem>(terms: &terms::View<C>, atol: f64) -> Terms<C> {
     let mut result = Terms::<C>::new(terms.modes().clone());
     for term in terms.iter() {
-        let (cmpnt, coeff) = term.unpack();
+        let (string, coeff) = term.unpack();
         if coeff.is_significant(atol) {
-            result.borrow_mut().push_elem_coeff(cmpnt, coeff);
+            result.borrow_mut().push_elem_coeff(string, coeff);
         }
     }
     result
@@ -240,9 +240,9 @@ pub fn is_identity<C: FieldElem + Sub<Output = C>>(terms: &terms::View<C>, atol:
         return false;
     }
     if let Some(term) = terms.iter().next() {
-        let (cmpnt, coeff) = term.unpack();
-        let n_cre = cmpnt.get_cre_part().to_set().len();
-        let n_ann = cmpnt.get_ann_part().to_set().len();
+        let (string, coeff) = term.unpack();
+        let n_cre = string.get_cre_part().to_set().len();
+        let n_ann = string.get_ann_part().to_set().len();
         return n_cre == 0_usize && n_ann == 0_usize && !(coeff - C::ONE).is_significant(atol);
     }
     false
@@ -265,8 +265,8 @@ mod tests {
     use crate::container::word_iters::term_set::AsView;
     use crate::container::word_iters::terms::AsViewMut;
     use crate::fermion::mode::Modes;
-    use crate::fermion::operator::normal::cmpnt::Cmpnt;
-    use crate::fermion::operator::normal::cmpnt_major::terms::Terms;
+    use crate::fermion::operator::normal::string::String;
+    use crate::fermion::operator::normal::string_major::terms::Terms;
     use rstest::rstest;
     use std::collections::HashSet;
 
@@ -298,12 +298,12 @@ mod tests {
 
         // lhs = a_0 annihilate mode 0
         let mut lhs = TermSet::<f64>::new(modes.clone());
-        let a0 = Cmpnt::from_sets_unchecked(modes.clone(), HashSet::new(), HashSet::from([0]));
+        let a0 = String::from_sets_unchecked(modes.clone(), HashSet::new(), HashSet::from([0]));
         scaled_iadd_elem(&mut lhs.borrow_mut(), a0.borrow(), 1.0);
 
         // rhs = a_0^+ create mode 0
         let mut rhs = TermSet::<f64>::new(modes.clone());
-        let a0_dag = Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([0]), HashSet::new());
+        let a0_dag = String::from_sets_unchecked(modes.clone(), HashSet::from([0]), HashSet::new());
         scaled_iadd_elem(&mut rhs.borrow_mut(), a0_dag.borrow(), 1.0);
 
         //a_0 * a_0^+ = 1 - a_0^+ * a_0 -> two terms in the result
@@ -317,12 +317,12 @@ mod tests {
 
         // lhs = a_0 annihilate mode 0
         let mut lhs = TermSet::<f64>::new(modes.clone());
-        let a0 = Cmpnt::from_sets_unchecked(modes.clone(), HashSet::new(), HashSet::from([0]));
+        let a0 = String::from_sets_unchecked(modes.clone(), HashSet::new(), HashSet::from([0]));
         scaled_iadd_elem(&mut lhs.borrow_mut(), a0.borrow(), 1.0);
 
         // rhs = a_0^+ create mode 0
         let mut rhs = TermSet::<f64>::new(modes.clone());
-        let a0_dag = Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([0]), HashSet::new());
+        let a0_dag = String::from_sets_unchecked(modes.clone(), HashSet::from([0]), HashSet::new());
         scaled_iadd_elem(&mut rhs.borrow_mut(), a0_dag.borrow(), 1.0);
 
         // a_0 and a_0^+ neither commute nor anticommute to zero
@@ -336,12 +336,12 @@ mod tests {
 
         // lhs = a_0 annihilate mode 0
         let mut lhs = TermSet::<f64>::new(modes.clone());
-        let a0 = Cmpnt::from_sets_unchecked(modes.clone(), HashSet::new(), HashSet::from([0]));
+        let a0 = String::from_sets_unchecked(modes.clone(), HashSet::new(), HashSet::from([0]));
         scaled_iadd_elem(&mut lhs.borrow_mut(), a0.borrow(), 2.0);
 
         // rhs = a_0^+ create mode 0
         let mut rhs = TermSet::<f64>::new(modes.clone());
-        let a0_dag = Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([0]), HashSet::new());
+        let a0_dag = String::from_sets_unchecked(modes.clone(), HashSet::from([0]), HashSet::new());
         scaled_iadd_elem(&mut rhs.borrow_mut(), a0_dag.borrow(), 3.0);
 
         let result = mul(&lhs.borrow().as_terms(), &rhs.borrow().as_terms()).unwrap();
@@ -355,22 +355,22 @@ mod tests {
     #[case(vec![(HashSet::from([0]), HashSet::from([1]))], vec![(HashSet::from([1]), HashSet::from([0]))])]
     #[case(vec![(HashSet::from([0]), HashSet::from([0]))], vec![(HashSet::from([0]), HashSet::from([0]))])]
     fn test_adjoint(
-        #[case] cmpnts: Vec<(HashSet<usize>, HashSet<usize>)>,
+        #[case] strings: Vec<(HashSet<usize>, HashSet<usize>)>,
         #[case] expected: Vec<(HashSet<usize>, HashSet<usize>)>,
     ) {
         let modes = Modes::from_count(4);
         let mut terms = Terms::<f64>::new(modes.clone());
-        for (cre, ann) in cmpnts {
-            let cmpnt = Cmpnt::from_sets_unchecked(modes.clone(), cre, ann);
-            terms.borrow_mut().push_elem_coeff(cmpnt.borrow(), 1.0);
+        for (cre, ann) in strings {
+            let string = String::from_sets_unchecked(modes.clone(), cre, ann);
+            terms.borrow_mut().push_elem_coeff(string.borrow(), 1.0);
         }
         let result = adjoint(&terms.borrow());
         for (cre_exp, ann_exp) in expected {
-            let cmpnt_exp = Cmpnt::from_sets_unchecked(modes.clone(), cre_exp, ann_exp);
+            let string_exp = String::from_sets_unchecked(modes.clone(), cre_exp, ann_exp);
             assert!(result
                 .borrow()
                 .iter()
-                .any(|term_ref| { term_ref.get_word_iter_ref() == cmpnt_exp.borrow() }));
+                .any(|term_ref| { term_ref.get_word_iter_ref() == string_exp.borrow() }));
         }
     }
 
@@ -379,14 +379,14 @@ mod tests {
     #[case(vec![(HashSet::new(), HashSet::from([0]))], false)] // a_0 is not Hermitian
     #[case(vec![(HashSet::from([0]), HashSet::from([1]))], false)] // a_0^+ a_1 is not Hermitian
     fn test_is_hermitian_and_default(
-        #[case] cmpnts: Vec<(HashSet<usize>, HashSet<usize>)>,
+        #[case] strings: Vec<(HashSet<usize>, HashSet<usize>)>,
         #[case] expected: bool,
     ) {
         let modes = Modes::from_count(4);
         let mut terms = Terms::<f64>::new(modes.clone());
-        for (cre, ann) in cmpnts {
-            let cmpnt = Cmpnt::from_sets_unchecked(modes.clone(), cre, ann);
-            terms.borrow_mut().push_elem_coeff(cmpnt.borrow(), 1.0);
+        for (cre, ann) in strings {
+            let string = String::from_sets_unchecked(modes.clone(), cre, ann);
+            terms.borrow_mut().push_elem_coeff(string.borrow(), 1.0);
         }
         assert_eq!(is_hermitian(&terms.borrow(), 1e-10), expected);
         assert_eq!(is_hermitian_default(&terms.borrow()), expected);
@@ -397,15 +397,15 @@ mod tests {
     #[case(vec![(HashSet::from([0]), HashSet::new())], false)] // a_0^+ does not conserve particle number
     #[case(vec![(HashSet::from([0]), HashSet::from([1]))], true)] // a_0^+ a_1 conserves particle number
     fn test_conserves_particle_number_and_default(
-        #[case] cmpnts: Vec<(HashSet<usize>, HashSet<usize>)>,
+        #[case] strings: Vec<(HashSet<usize>, HashSet<usize>)>,
         #[case] expected: bool,
     ) {
         let modes = Modes::from_count(2);
 
         let mut terms = Terms::<f64>::new(modes.clone());
-        for (cre, ann) in cmpnts {
-            let cmpnt = Cmpnt::from_sets_unchecked(modes.clone(), cre, ann);
-            terms.borrow_mut().push_elem_coeff(cmpnt.borrow(), 1.0);
+        for (cre, ann) in strings {
+            let string = String::from_sets_unchecked(modes.clone(), cre, ann);
+            terms.borrow_mut().push_elem_coeff(string.borrow(), 1.0);
         }
         assert_eq!(conserves_particle_number(&terms.borrow(), 1e-10), expected);
         assert_eq!(conserves_particle_number_default(&terms.borrow()), expected);
@@ -415,14 +415,14 @@ mod tests {
     #[case(vec![(HashSet::from([0]), HashSet::from([1]))],HashSet::from([0, 1]))]
     #[case(vec![(HashSet::from([0, 1]), HashSet::from([2, 3]))], HashSet::from([0, 1, 2, 3]))]
     fn test_active_modes(
-        #[case] cmpnts: Vec<(HashSet<usize>, HashSet<usize>)>,
+        #[case] strings: Vec<(HashSet<usize>, HashSet<usize>)>,
         #[case] expected: HashSet<usize>,
     ) {
         let modes = Modes::from_count(4);
         let mut terms = Terms::<f64>::new(modes.clone());
-        for (cre, ann) in cmpnts {
-            let cmpnt = Cmpnt::from_sets_unchecked(modes.clone(), cre, ann);
-            terms.borrow_mut().push_elem_coeff(cmpnt.borrow(), 1.0);
+        for (cre, ann) in strings {
+            let string = String::from_sets_unchecked(modes.clone(), cre, ann);
+            terms.borrow_mut().push_elem_coeff(string.borrow(), 1.0);
         }
         assert_eq!(active_modes(&terms.borrow()), expected);
     }
@@ -432,13 +432,13 @@ mod tests {
         let modes = Modes::from_count(4);
         let mut terms = Terms::<f64>::new(modes.clone());
 
-        let cmpnt1 =
-            Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([0]), HashSet::from([1]));
-        let cmpnt2 =
-            Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([2]), HashSet::from([3]));
+        let string1 =
+            String::from_sets_unchecked(modes.clone(), HashSet::from([0]), HashSet::from([1]));
+        let string2 =
+            String::from_sets_unchecked(modes.clone(), HashSet::from([2]), HashSet::from([3]));
 
-        terms.borrow_mut().push_elem_coeff(cmpnt1.borrow(), 1.0);
-        terms.borrow_mut().push_elem_coeff(cmpnt2.borrow(), 1e-15);
+        terms.borrow_mut().push_elem_coeff(string1.borrow(), 1.0);
+        terms.borrow_mut().push_elem_coeff(string2.borrow(), 1e-15);
 
         let filtered = truncated(&terms.borrow(), 1e-10);
         assert_eq!(filtered.len(), 1);
@@ -448,14 +448,14 @@ mod tests {
     #[case(vec![(HashSet::new(), HashSet::new(), Complex64::new(1.0, 0.0))], true)] // identity is unitary
     #[case(vec![(HashSet::from([0]), HashSet::from([1]), Complex64::new(2.0, 0.0))], false)] // scaled operator is not unitary
     fn test_is_unitary(
-        #[case] cmpnts: Vec<(HashSet<usize>, HashSet<usize>, Complex64)>,
+        #[case] strings: Vec<(HashSet<usize>, HashSet<usize>, Complex64)>,
         #[case] expected: bool,
     ) {
         let modes = Modes::from_count(2);
         let mut terms = Terms::<Complex64>::new(modes.clone());
-        for (cre, ann, coeff) in cmpnts {
-            let cmpnt = Cmpnt::from_sets_unchecked(modes.clone(), cre, ann);
-            terms.borrow_mut().push_elem_coeff(cmpnt.borrow(), coeff);
+        for (cre, ann, coeff) in strings {
+            let string = String::from_sets_unchecked(modes.clone(), cre, ann);
+            terms.borrow_mut().push_elem_coeff(string.borrow(), coeff);
         }
         assert_eq!(is_unitary(&terms.borrow(), 1e-10), expected);
     }
@@ -465,13 +465,16 @@ mod tests {
         let modes = Modes::from_count(4);
         let mut terms = Terms::<f64>::new(modes.clone());
 
-        let cmpnt1 =
-            Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([0]), HashSet::from([1]));
-        let cmpnt2 =
-            Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([0, 1]), HashSet::from([2, 3]));
+        let string1 =
+            String::from_sets_unchecked(modes.clone(), HashSet::from([0]), HashSet::from([1]));
+        let string2 = String::from_sets_unchecked(
+            modes.clone(),
+            HashSet::from([0, 1]),
+            HashSet::from([2, 3]),
+        );
 
-        terms.borrow_mut().push_elem_coeff(cmpnt1.borrow(), 1.0);
-        terms.borrow_mut().push_elem_coeff(cmpnt2.borrow(), 1.0);
+        terms.borrow_mut().push_elem_coeff(string1.borrow(), 1.0);
+        terms.borrow_mut().push_elem_coeff(string2.borrow(), 1.0);
 
         assert_eq!(max_n_body(&terms.borrow()), 2);
         assert!(max_n_body(&terms.borrow()) <= 2);

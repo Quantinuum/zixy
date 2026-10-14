@@ -7,16 +7,16 @@ use crate::container::word_iters;
 use crate::container::word_iters::terms;
 use crate::container::word_iters::WordIters;
 use crate::fermion::mode::Modes;
-use crate::fermion::operator::general::cmpnt_list::CmpntList;
+use crate::fermion::operator::general::string_list::StringList;
 use crate::fermion::traits::ModesBased;
 
-pub type Terms<C> = terms::Terms<CmpntList, C>;
-pub type TermSet<C> = word_iters::term_set::TermSet<CmpntList, C>;
-pub type View<'a, C> = word_iters::term_set::View<'a, CmpntList, C>;
-pub type ViewMut<'a, C> = word_iters::term_set::ViewMut<'a, CmpntList, C>;
+pub type Terms<C> = terms::Terms<StringList, C>;
+pub type TermSet<C> = word_iters::term_set::TermSet<StringList, C>;
+pub type View<'a, C> = word_iters::term_set::View<'a, StringList, C>;
+pub type ViewMut<'a, C> = word_iters::term_set::ViewMut<'a, StringList, C>;
 
-pub trait AsView<C: NumRepr>: word_iters::term_set::AsView<CmpntList, C> {}
-pub trait AsViewMut<C: NumRepr>: word_iters::term_set::AsViewMut<CmpntList, C> {}
+pub trait AsView<C: NumRepr>: word_iters::term_set::AsView<StringList, C> {}
+pub trait AsViewMut<C: NumRepr>: word_iters::term_set::AsViewMut<StringList, C> {}
 
 impl<C: NumRepr> AsView<C> for TermSet<C> {}
 impl<'a, C: NumRepr> AsView<C> for View<'a, C> {}
@@ -77,7 +77,7 @@ impl<C: NumRepr> ModesBased for TermSet<C> {
 impl<C: NumRepr> Terms<C> {
     pub fn new(max_string_len: usize, modes: Modes) -> Self {
         use crate::container::traits::EmptyFrom;
-        Self::empty_from(&CmpntList::new(max_string_len, modes))
+        Self::empty_from(&StringList::new(max_string_len, modes))
     }
 }
 

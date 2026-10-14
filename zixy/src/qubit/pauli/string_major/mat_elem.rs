@@ -19,13 +19,13 @@ use crate::container::word_iters::term_set::AsView;
 use crate::container::word_iters::terms::AsView as _;
 use crate::container::word_iters::terms::AsViewMut;
 use crate::container::word_iters::WordIters;
-use crate::qubit::pauli::cmpnt_major as pauli;
-use crate::qubit::pauli::cmpnt_major::lincomb;
-use crate::qubit::pauli::cmpnt_major::products::mul_op_state_bits_u64;
-use crate::qubit::pauli::cmpnt_major::products::mul_op_state_phase_u64;
+use crate::qubit::pauli::string_major as pauli;
+use crate::qubit::pauli::string_major::lincomb;
+use crate::qubit::pauli::string_major::products::mul_op_state_bits_u64;
+use crate::qubit::pauli::string_major::products::mul_op_state_phase_u64;
 use crate::qubit::state;
-use crate::qubit::state::cmpnt_list::CmpntList as StateList;
-use crate::qubit::state::cmpnt_list::CmpntRef as StateRef;
+use crate::qubit::state::string_list::StringList as StateList;
+use crate::qubit::state::string_list::StringRef as StateRef;
 use crate::qubit::traits::QubitsBased;
 
 /// Error returned when a state subspace basis contains repeated computational basis vectors or
@@ -61,15 +61,15 @@ pub fn sort_and_map_pauli_op<C: FieldElem>(
     let op = op.view_mut();
     // extract the components and coeffs, then sort them by component value
 
-    QuickSort::<pauli::cmpnt_list::CmpntList, C>::sort_with_coeffs(
+    QuickSort::<pauli::string_list::StringList, C>::sort_with_coeffs(
         &LexicographicSort { ascending: true },
         op.word_iters,
         op.coeffs,
     );
-    // LexicographicSort { ascending: true }.sort_with_coeffs(&mut out_cmpnts, &mut out_coeffs);
+    // LexicographicSort { ascending: true }.sort_with_coeffs(&mut out_strings, &mut out_coeffs);
     // now the components are sorted in order of increasing X part
 
-    // construct a map from an X string to the position in cmpnts at which it first occurs in out_cmpnts
+    // construct a map from an X string to the position in strings at which it first occurs in out_strings
     let mut start_inds_map = HashMap::<u64, usize>::default();
     {
         // keep track of the X string of the previous element.
@@ -89,7 +89,7 @@ pub fn sort_and_map_pauli_op<C: FieldElem>(
 }
 
 /// Get the matrix element of the operator with the given terms and X block map between the computational basis vectors `bra` and `ket`.
-pub fn mat_elem_cmpnts_from_presorted<C: FieldElem>(
+pub fn mat_elem_strings_from_presorted<C: FieldElem>(
     presorted_op: &impl pauli::terms::AsView<C>,
     x_block_map: &HashMap<u64, usize>,
     bra: &StateRef,
@@ -132,10 +132,14 @@ pub fn mat_elem_from_presorted<C: FieldElem>(
     let bra = bra.view();
     let ket = ket.view();
     let mut out = C::ZERO;
-    for (bra_cmpnt, bra_coeff) in bra.word_iters.iter().zip(bra.coeffs.iter()) {
-        for (ket_cmpnt, ket_coeff) in ket.word_iters.iter().zip(ket.coeffs.iter()) {
-            let contrib_sum =
-                mat_elem_cmpnts_from_presorted(&presorted_op, x_block_map, &bra_cmpnt, &ket_cmpnt);
+    for (bra_string, bra_coeff) in bra.word_iters.iter().zip(bra.coeffs.iter()) {
+        for (ket_string, ket_coeff) in ket.word_iters.iter().zip(ket.coeffs.iter()) {
+            let contrib_sum = mat_elem_strings_from_presorted(
+                &presorted_op,
+                x_block_map,
+                &bra_string,
+                &ket_string,
+            );
             out += bra_coeff.complex_conj() * *ket_coeff * contrib_sum;
         }
     }
@@ -208,7 +212,7 @@ pub fn mat_ortho_projected_unchecked<C: FieldElem>(
                 continue;
             }
             let h_elem =
-                mat_elem_cmpnts_from_presorted(&presorted_op.borrow(), &x_block_map, &bra, &ket);
+                mat_elem_strings_from_presorted(&presorted_op.borrow(), &x_block_map, &bra, &ket);
             h_mat[[i_bra, i_ket]] = h_elem;
             if i_ket != i_bra && hermitian {
                 h_mat[[i_ket, i_bra]] = h_elem.conj();
@@ -255,13 +259,13 @@ pub fn apply<C: FieldElem>(
     state: &state::terms::View<C>,
     out: &mut state::term_set::ViewMut<Complex64>,
 ) {
-    use crate::qubit::state::cmpnt::BasisState;
+    use crate::qubit::state::string::BasisState;
     let mut tmp = BasisState::new(state.word_iters.to_qubits());
-    for (op_cmpnt, op_coeff) in op.word_iters.iter().zip(op.coeffs.iter()) {
-        for (state_cmpnt, state_coeff) in state.word_iters.iter().zip(state.coeffs.iter()) {
+    for (op_string, op_coeff) in op.word_iters.iter().zip(op.coeffs.iter()) {
+        for (state_string, state_coeff) in state.word_iters.iter().zip(state.coeffs.iter()) {
             let phase = tmp
                 .borrow_mut()
-                .assign_mul_by_op(op_cmpnt.clone(), state_cmpnt);
+                .assign_mul_by_op(op_string.clone(), state_string);
             let mut c = phase.to_complex();
             c *= op_coeff.to_complex();
             c *= state_coeff.to_complex();

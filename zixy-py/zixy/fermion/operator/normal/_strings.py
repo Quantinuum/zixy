@@ -101,23 +101,23 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
             self._set_copy(source)
         elif isinstance(source, str):
             if not source.strip():
-                self._impl.cmpnt_clear(self.index)
+                self._impl.string_clear(self.index)
                 return
             springs = FermionSprings(source)
             if len(springs) == 0:
-                self._impl.cmpnt_clear(self.index)
+                self._impl.string_clear(self.index)
             elif len(springs) == 1:
-                self._impl.cmpnt_set_from_spring(self.index, springs, 0)
+                self._impl.string_set_from_spring(self.index, springs, 0)
             else:
                 raise ValueError("Input represents more than one string.")
         elif isinstance(source, tuple) and len(source) == 2:
             cre, ann = source
             if all(isinstance(x, bool) for x in cre) and all(isinstance(x, bool) for x in ann):
-                self._impl.cmpnt_set_from_lists(
+                self._impl.string_set_from_lists(
                     self.index, [bool(x) for x in cre], [bool(x) for x in ann]
                 )
             else:
-                self._impl.cmpnt_set_from_sets(self.index, set(cre), set(ann))
+                self._impl.string_set_from_sets(self.index, set(cre), set(ann))
         else:
             self.raise_spec_type_error(source)
 
@@ -128,7 +128,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
 
     def get_sets(self) -> tuple[list[int], list[int]]:
         """Get the creation and annihilation mode sets."""
-        return self._impl.cmpnt_get_sets(self.index)
+        return self._impl.string_get_sets(self.index)
 
     def __getitem__(self, item: LadderOp) -> bool:
         """Return whether an operator is present on a mode.
@@ -141,8 +141,8 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         if not isinstance(is_creation, bool):
             raise KeyError(is_creation)
         if is_creation:
-            return self._impl.cmpnt_get_cre(self.index, mode)
-        return self._impl.cmpnt_get_ann(self.index, mode)
+            return self._impl.string_get_cre(self.index, mode)
+        return self._impl.string_get_ann(self.index, mode)
 
     def __setitem__(self, item: LadderOp, value: bool) -> None:
         """Set whether an operator is present on a mode.
@@ -156,8 +156,8 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         if not isinstance(is_creation, bool):
             raise KeyError(is_creation)
         if is_creation:
-            self._impl.cmpnt_set_cre(self.index, mode, value)
-        self._impl.cmpnt_set_ann(self.index, mode, value)
+            self._impl.string_set_cre(self.index, mode, value)
+        self._impl.string_set_ann(self.index, mode, value)
 
     def dagger(self) -> None:
         """Take the adjoint of ``self`` in-place, ignoring the scalar sign."""
@@ -191,7 +191,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
             return scalar_term_type.from_string_coeff(self, rhs)
         if not isinstance(rhs, String):
             return NotImplemented
-        impl, signs = self._impl.cmpnt_mul(self.index, rhs._impl, rhs.index)
+        impl, signs = self._impl.string_mul(self.index, rhs._impl, rhs.index)
         out = RealTermSum(self.modes)
         for i in range(len(impl)):
             out += RealTermSum.terms_type.term_type.from_string_coeff(

@@ -8,14 +8,14 @@ use crate::container::errors::OutOfBounds;
 use crate::container::traits::proj::{Borrow, BorrowMut};
 use crate::container::word_iters::terms::{self, AsViewMut};
 use crate::qubit::mode::{PauliMatrix, Qubits};
-use crate::qubit::pauli::cmpnt_major::cmpnt_list::CmpntList;
-use crate::qubit::pauli::cmpnt_major::terms::Terms;
+use crate::qubit::pauli::string_major::string_list::StringList;
+use crate::qubit::pauli::string_major::terms::Terms;
 use crate::qubit::traits::{
     QubitsBased, QubitsRelabel, QubitsRelabelled, QubitsStandardize, QubitsStandardized,
 };
 
 /// A single Pauli word with a generically-typed coefficient.
-pub type Term<C /*: NumRepr*/> = terms::Term<CmpntList, C>;
+pub type Term<C /*: NumRepr*/> = terms::Term<StringList, C>;
 
 impl<C: NumRepr> Term<C> {
     /// Create a single Pauli term with unit coefficient on the given qubit space.

@@ -6,13 +6,13 @@ use crate::container::coeffs::traits::NumReprVec;
 use crate::container::traits::{Elements, MutRefElements, RefElements};
 use crate::container::word_iters::{ElemMutRef, ElemRef, WordIters};
 use crate::fermion::mode::Modes;
-use crate::fermion::operator::normal::cmpnt_list::{CmpntList, CmpntRef};
 use crate::fermion::operator::normal::cre_or_ann;
+use crate::fermion::operator::normal::string_list::{StringList, StringRef};
 use crate::fermion::traits::ModesBased;
 
 /// Stores variables to support the recursive computation of normal-ordered fermion operator products.
 struct ProductHelper {
-    cmpnts: CmpntList,
+    strings: StringList,
     signs: SignVec,
     n_lhs_ann: usize,
     n_rhs_ann: usize,
@@ -51,7 +51,7 @@ impl ProductHelper {
     /// Create an empty helper for building products of operators on the given fermionic mode space.
     pub fn new() -> Self {
         Self {
-            cmpnts: CmpntList::new(Modes::from_count(0)),
+            strings: StringList::new(Modes::from_count(0)),
             signs: SignVec::default(),
             n_lhs_ann: 0,
             n_rhs_ann: 0,
@@ -62,7 +62,7 @@ impl ProductHelper {
     }
 
     /// Return whether the product `lhs * rhs` is annihilated by fermionic anticommutation rules.
-    fn destroys(lhs: &CmpntRef, rhs: &CmpntRef) -> bool {
+    fn destroys(lhs: &StringRef, rhs: &StringRef) -> bool {
         /*
          * Fermion operators obey the following anticommutation relations
          *  {i^, j^} = 0   {i_, j_} = 0   {i^, j_} = delta_ij
@@ -87,8 +87,8 @@ impl ProductHelper {
     }
 
     /// Compute and store every branch of the product `lhs * rhs`, including their signs.
-    pub fn set(&mut self, lhs: &CmpntRef, rhs: &CmpntRef) {
-        self.cmpnts = CmpntList::new(lhs.modes().clone());
+    pub fn set(&mut self, lhs: &StringRef, rhs: &StringRef) {
+        self.strings = StringList::new(lhs.modes().clone());
         self.signs.clear();
         if Self::destroys(lhs, rhs) {
             return;
@@ -96,8 +96,8 @@ impl ProductHelper {
         let n_bif = lhs
             .get_ann_part()
             .intersection_hamming_weight(&rhs.get_cre_part());
-        self.cmpnts.resize(1 << n_bif);
-        self.signs.resize(self.cmpnts.len());
+        self.strings.resize(1 << n_bif);
+        self.signs.resize(self.strings.len());
         self.n_lhs_ann = lhs.get_ann_part().hamming_weight();
         self.n_rhs_ann = rhs.get_ann_part().hamming_weight();
         self.n_lhs_cre = lhs.get_cre_part().hamming_weight();
@@ -106,12 +106,12 @@ impl ProductHelper {
             .get_cre_part()
             .intersection_hamming_weight(&lhs.get_ann_part());
         // copy the LHS^ and RHS_ strings to the last element of the result
-        let i_branch_last = self.cmpnts.len().saturating_sub(1);
+        let i_branch_last = self.strings.len().saturating_sub(1);
         // these are the parts that are already in normal order
         self.res_cre_mut(i_branch_last).assign(lhs.get_cre_part());
         self.res_ann_mut(i_branch_last).assign(rhs.get_ann_part());
         self.do_branch(
-            self.cmpnts.len().saturating_sub(1),
+            self.strings.len().saturating_sub(1),
             Indices::default(),
             lhs,
             rhs,
@@ -121,23 +121,23 @@ impl ProductHelper {
     }
 
     /// Return the annihilation-part result component for branch `branch`.
-    fn res_ann(&self, branch: usize) -> ElemRef<'_, cre_or_ann::CmpntList> {
-        self.cmpnts.ann_part.get_elem_ref(branch)
+    fn res_ann(&self, branch: usize) -> ElemRef<'_, cre_or_ann::StringList> {
+        self.strings.ann_part.get_elem_ref(branch)
     }
 
     /// Return mutable access to the annihilation-part result component for branch `branch`.
-    fn res_ann_mut(&mut self, branch: usize) -> ElemMutRef<'_, cre_or_ann::CmpntList> {
-        self.cmpnts.ann_part.get_elem_mut_ref(branch)
+    fn res_ann_mut(&mut self, branch: usize) -> ElemMutRef<'_, cre_or_ann::StringList> {
+        self.strings.ann_part.get_elem_mut_ref(branch)
     }
 
     /// Return the creation-part result component for branch `branch`.
-    fn res_cre(&self, branch: usize) -> ElemRef<'_, cre_or_ann::CmpntList> {
-        self.cmpnts.cre_part.get_elem_ref(branch)
+    fn res_cre(&self, branch: usize) -> ElemRef<'_, cre_or_ann::StringList> {
+        self.strings.cre_part.get_elem_ref(branch)
     }
 
     /// Return mutable access to the creation-part result component for branch `branch`.
-    fn res_cre_mut(&mut self, branch: usize) -> ElemMutRef<'_, cre_or_ann::CmpntList> {
-        self.cmpnts.cre_part.get_elem_mut_ref(branch)
+    fn res_cre_mut(&mut self, branch: usize) -> ElemMutRef<'_, cre_or_ann::StringList> {
+        self.strings.cre_part.get_elem_mut_ref(branch)
     }
 
     /// Handle a branch (recursively) of the normal-ordering product operation.
@@ -159,8 +159,8 @@ impl ProductHelper {
         &mut self,
         i_branch: usize,
         mut inds: Indices,
-        lhs: &CmpntRef,
-        rhs: &CmpntRef,
+        lhs: &StringRef,
+        rhs: &StringRef,
         i_lhs: usize,
         i_rhs: usize,
     ) {
@@ -250,12 +250,12 @@ impl ProductHelper {
                 let mut i_branch_next = i_branch;
                 if is_bif {
                     i_branch_next &= !(1 << self.n_bif.saturating_sub(1 + inds.bif));
-                    assert!(i_branch_next < self.cmpnts.len());
+                    assert!(i_branch_next < self.strings.len());
                     inds.bif += 1;
                     /*
                      * copy the LHS^ and RHS_ strings to the next branch of the result if the views exist
                      */
-                    self.cmpnts.copy(i_branch_next, i_branch);
+                    self.strings.copy(i_branch_next, i_branch);
                 }
 
                 // anti-commute to A
@@ -326,10 +326,10 @@ impl ProductHelper {
 }
 
 // Multiply two fermion components, returning the normal-ordered result terms and their signs.
-pub fn mul_cmpnts(lhs: &CmpntRef, rhs: &CmpntRef) -> (CmpntList, SignVec) {
+pub fn mul_strings(lhs: &StringRef, rhs: &StringRef) -> (StringList, SignVec) {
     let mut helper = ProductHelper::new();
     helper.set(lhs, rhs);
-    (helper.cmpnts, helper.signs)
+    (helper.strings, helper.signs)
 }
 
 /// Compute the number of set bits of `word` at positions strictly below each set bit of `at`, summed together.
@@ -456,7 +456,7 @@ mod tests {
     ) {
         use crate::container::traits::proj::Borrow;
         use crate::container::traits::EmptyClone;
-        use crate::fermion::operator::normal::cmpnt::Cmpnt;
+        use crate::fermion::operator::normal::string::String;
 
         let modes = Modes::from_count(n_mode);
         let (lhs_cre, lhs_ann) = lhs;
@@ -466,26 +466,26 @@ mod tests {
         let rhs_cre = HashSet::from_iter(rhs_cre.into_iter());
         let rhs_ann = HashSet::from_iter(rhs_ann.into_iter());
         let mut helper = ProductHelper::new();
-        let lhs = Cmpnt::from_sets_unchecked(modes.clone(), lhs_cre, lhs_ann);
-        let rhs = Cmpnt::from_sets_unchecked(modes.clone(), rhs_cre, rhs_ann);
+        let lhs = String::from_sets_unchecked(modes.clone(), lhs_cre, lhs_ann);
+        let rhs = String::from_sets_unchecked(modes.clone(), rhs_cre, rhs_ann);
         helper.set(&lhs.borrow(), &rhs.borrow());
-        let mut result_cmpnts = helper.cmpnts.empty_clone();
+        let mut result_strings = helper.strings.empty_clone();
         for (cre, ann) in result_cres.into_iter().zip(result_anns.into_iter()) {
-            let index = result_cmpnts.len();
+            let index = result_strings.len();
             let cre = HashSet::from_iter(cre.into_iter());
             let ann = HashSet::from_iter(ann.into_iter());
-            result_cmpnts.push_clear();
-            result_cmpnts
+            result_strings.push_clear();
+            result_strings
                 .cre_part
                 .get_elem_mut_ref(index)
                 .assign_set_unchecked(cre);
-            result_cmpnts
+            result_strings
                 .ann_part
                 .get_elem_mut_ref(index)
                 .assign_set_unchecked(ann);
         }
         let result_signs = SignVec::from_phases(&result_signs);
-        assert_eq!(helper.cmpnts, result_cmpnts);
+        assert_eq!(helper.strings, result_strings);
         assert_eq!(helper.signs, result_signs);
     }
 

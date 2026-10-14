@@ -4,9 +4,9 @@ use std::collections::HashSet;
 use std::fmt::Display;
 use std::hash::Hash;
 
-pub use crate::cmpnt::mode::*;
 use crate::container::errors::{Dimension, OutOfBounds};
 use crate::container::{coeffs::complex_sign::ComplexSign, traits::Elements};
+pub use crate::string::mode::*;
 use crate::utils::arith::ceil_log2;
 use num_enum::TryFromPrimitive;
 use pluralizer::pluralize;

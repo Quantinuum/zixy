@@ -93,7 +93,7 @@ def _term_sum_from_product(
 ) -> TermSum[Any]:
     """Compute the product of two normal-ordered strings."""
     out = term_type._term_sum_type(modes)
-    impl, signs = lhs._impl.cmpnt_mul(lhs.index, rhs._impl, rhs.index)
+    impl, signs = lhs._impl.string_mul(lhs.index, rhs._impl, rhs.index)
     strings = term_type.strings_type._create(impl)
     for i in range(len(impl)):
         coeff = typesafe_mul(base_coeff, Sign(signs[i]))
@@ -1119,7 +1119,7 @@ class SymbolicTermSum(TermSum[Expr]):
                 assert isinstance(state_term, SymbolicStateTerm)
                 string = state_term.string.clone()
                 assert isinstance(string, StateString)
-                sign = string._impl.cmpnt_operator_string_imul(
+                sign = string._impl.string_operator_string_imul(
                     string.index, op_term.string._impl, op_term.string.index
                 )
                 if sign is not None:

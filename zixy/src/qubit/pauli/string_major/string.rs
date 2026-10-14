@@ -1,28 +1,28 @@
 //! Definitions for a single component.
 
-use crate::cmpnt::parse::ParseError;
-use crate::cmpnt::springs::ModeSettings;
 use crate::container::errors::OutOfBounds;
 use crate::container::traits::proj::BorrowMut;
 use crate::container::word_iters::{Elem, WordIters};
 use crate::qubit::mode::{PauliMatrix, Qubits};
-use crate::qubit::pauli::cmpnt_major::cmpnt_list::{CmpntList, CmpntRef};
 use crate::qubit::pauli::springs::Springs;
+use crate::qubit::pauli::string_major::string_list::{StringList, StringRef};
 use crate::qubit::traits::{
     QubitsBased, QubitsRelabel, QubitsRelabelled, QubitsStandardize, QubitsStandardized,
 };
+use crate::string::parse::ParseError;
+use crate::string::springs::ModeSettings;
 use std::collections::HashMap;
 use std::fmt;
 
-/// A single Pauli word. Note that this should never be used in types like `Vec<Cmpnt>`, which makes a separate
-/// dynamic allocation for each Pauli word. This would forfeit the main advantage of `CmpntList` which stores
+/// A single Pauli word. Note that this should never be used in types like `Vec<String>`, which makes a separate
+/// dynamic allocation for each Pauli word. This would forfeit the main advantage of `StringList` which stores
 /// many Pauli words under a single dynamic allocation.
-/// All functionality which does not pertain to the instantiation of `Cmpnt` is to be accessed via the borrow
+/// All functionality which does not pertain to the instantiation of `String` is to be accessed via the borrow
 /// and borrow_mut functions.
-impl Elem<CmpntList> {
+impl Elem<StringList> {
     /// Create a single identity Pauli word on the given qubit space.
     pub fn new(qubits: Qubits) -> Self {
-        let mut this = Self(CmpntList::new(qubits));
+        let mut this = Self(StringList::new(qubits));
         this.0.push_clear();
         this
     }
@@ -62,16 +62,16 @@ impl Elem<CmpntList> {
         Self::from_map(Qubits::from_count(n_mode), paulis).unwrap()
     }
 
-    /// Create an owned single-word value by copying the contents of `cmpnt_ref`.
-    pub fn from_cmpnt_ref(cmpnt_ref: CmpntRef) -> Self {
-        let mut this = Self::new(cmpnt_ref.to_qubits());
-        this.borrow_mut().assign(cmpnt_ref);
+    /// Create an owned single-word value by copying the contents of `string_ref`.
+    pub fn from_string_ref(string_ref: StringRef) -> Self {
+        let mut this = Self::new(string_ref.to_qubits());
+        this.borrow_mut().assign(string_ref);
         this
     }
 
     /// Create a Pauli word by parsing spring entry `i` on the given qubit space.
     pub fn from_spring(qubits: Qubits, springs: &Springs, i: usize) -> Result<Self, ParseError> {
-        let mut list = CmpntList::new(qubits);
+        let mut list = StringList::new(qubits);
         list.push_spring(springs, i)?;
         Ok(Self(list))
     }
@@ -86,32 +86,32 @@ impl Elem<CmpntList> {
     }
 }
 
-impl QubitsBased for Elem<CmpntList> {
+impl QubitsBased for Elem<StringList> {
     fn qubits(&self) -> &Qubits {
         self.0.qubits()
     }
 }
 
-impl QubitsStandardize for Elem<CmpntList> {
+impl QubitsStandardize for Elem<StringList> {
     fn general_standardize(&mut self, n_qubit: usize) {
         self.0.general_standardize(n_qubit);
     }
 }
 
-impl QubitsStandardized for Elem<CmpntList> {}
+impl QubitsStandardized for Elem<StringList> {}
 
-impl QubitsRelabel for Elem<CmpntList> {
+impl QubitsRelabel for Elem<StringList> {
     fn qubits_mut(&mut self) -> &mut Qubits {
         self.0.qubits_mut()
     }
 }
 
-impl QubitsRelabelled for Elem<CmpntList> {}
+impl QubitsRelabelled for Elem<StringList> {}
 
-impl fmt::Display for Elem<CmpntList> {
+impl fmt::Display for Elem<StringList> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0.fmt_elem(0))
     }
 }
 
-pub type PauliWord = Elem<CmpntList>;
+pub type PauliWord = Elem<StringList>;

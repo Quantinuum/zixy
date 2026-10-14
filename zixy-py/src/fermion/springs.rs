@@ -2,9 +2,9 @@
 
 use pyo3::exceptions::PyValueError;
 use pyo3::{pyclass, pymethods, Bound, PyAny, PyErr, PyResult};
-use zixy::cmpnt::springs::{ModeInd, ModeSettings};
 use zixy::container::traits::Elements;
 use zixy::fermion::operator::normal::springs::Springs as Springs_;
+use zixy::string::springs::{ModeInd, ModeSettings};
 
 use crate::utils::{try_py_index, ToPyResult};
 use crate::{standard_dunders, wrapped_str};

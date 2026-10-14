@@ -66,7 +66,7 @@ pub fn from_dense<C: FieldElem>(
     source: &[C],
     big_endian: bool,
 ) -> term_set::TermSet<C> {
-    let mut out: word_iters::term_set::TermSet<super::cmpnt_list::CmpntList, C> =
+    let mut out: word_iters::term_set::TermSet<super::string_list::StringList, C> =
         term_set::TermSet::<C>::new(qubits);
     assign_from_dense(&mut out.borrow_mut(), source, big_endian);
     out
@@ -76,12 +76,12 @@ pub fn from_dense<C: FieldElem>(
 mod tests {
 
     use super::*;
-    use crate::cmpnt::springs::ModeSettings;
-    use crate::cmpnt::state_springs::BinarySprings;
     use crate::container::bit_matrix::AsRowRef;
     use crate::container::traits::RefElements;
     use crate::container::word_iters::term_set::AsView;
     use crate::qubit::state::terms::Terms;
+    use crate::string::springs::ModeSettings;
+    use crate::string::state_springs::BinarySprings;
 
     #[test]
     fn test_assign_from_dense_endian() {

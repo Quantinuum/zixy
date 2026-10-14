@@ -276,7 +276,7 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         if not isinstance(other, Term):
             return NotImplemented
         result: bool = (
-            self._impl._strings._impl.cmpnts_eq(
+            self._impl._strings._impl.strings_eq(
                 [self.index], other._impl._strings._impl, [other.index]
             )
             and self._impl._coeffs[self.index] == other._impl._coeffs[other.index]
@@ -1206,7 +1206,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         tmp = self._get_working_term("").clone()  # type: ignore[arg-type]
         for i in range(len(self)):
             tmp.coeff = self._impl._coeffs[i]
-            tmp._impl._strings._impl.cmpnt_copy_external(0, self._impl._strings._impl, i)
+            tmp._impl._strings._impl.string_copy_external(0, self._impl._strings._impl, i)
             yield tmp
 
     def _symbolic_vdot(self: TermSet[ImplT, SpecT, Expr], rhs: TermSet[ImplT, SpecT, Expr]) -> Expr:

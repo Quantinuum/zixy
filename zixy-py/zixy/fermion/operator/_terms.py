@@ -16,11 +16,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Self, cast
 
 from sympy import Expr
 
-from zixy.container.coeffs import ComplexSign
+from zixy.container.coeffs import ComplexSign, Sign, convert
 
 if TYPE_CHECKING:
     from zixy._zixy import FermionArray
@@ -28,10 +28,8 @@ if TYPE_CHECKING:
 
 from abc import abstractmethod
 from collections.abc import Callable
-from typing import Any, Self, cast
 
 from zixy._zixy import Qubits
-from zixy.container.coeffs import Sign, convert
 from zixy.fermion._terms import (
     Term as FermionTerm,
     Terms as FermionTerms,

@@ -649,9 +649,6 @@ def convert[C: (float, complex, Sign, ComplexSign, Expr)](source: Coeff, cls: ty
         if isinstance(source, float | complex):
             if source.imag == 0 and int(source.real) == source.real:
                 return cls(source.real)
-        elif isinstance(source, float):
-            if int(source) == source:
-                return cls(source)
         else:
             return cls(source)
     elif issubclass(cls, float):

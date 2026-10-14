@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet, ImplArray
+from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -15,7 +15,7 @@ Mock-up a viewable component list system with classes extending:
 """
 
 
-class StringsImplArray(ImplArray):
+class StringsImplArray:
     def __init__(self):
         self._list = []
 

@@ -16,19 +16,17 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from sympy import Expr
 
-from zixy.container.coeffs import ComplexSign, Sign
+from zixy.container.coeffs import ComplexSign, Sign, get_coeffs_type
 
 if TYPE_CHECKING:
     from zixy._zixy import FermionArray, Modes
     from zixy.container.cmpnts import Cmpnt
 
-from typing import cast
 
-from zixy.container.coeffs import get_coeffs_type
 from zixy.container.data import TermData
 from zixy.container.terms import (
     Term as TermBase,

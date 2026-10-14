@@ -26,8 +26,6 @@ from zixy.utils import slice_single_item
 
 if TYPE_CHECKING:
     from zixy._zixy import ImplArray
-else:
-    ImplArray = object
 
 
 class TermData[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)]:

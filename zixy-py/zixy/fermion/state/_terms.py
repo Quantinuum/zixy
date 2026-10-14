@@ -14,8 +14,7 @@
 
 """Terms containing fermionic occupation-number state strings.
 
-The structure of this module parallels that of :mod:`~zixy.container.terms`, but with components
-that are fermionic occupation-number state strings, as defined in
+This module follows :mod:`~zixy.container.terms`, using strings defined in
 :mod:`~zixy.fermion.state._strings`.
 """
 
@@ -150,7 +149,7 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](FermionTermSet[ImplT
     set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -166,7 +165,7 @@ class TermSum[C: (float, complex, Sign, ComplexSign, Expr)](
     algebraic operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -232,7 +231,7 @@ class SignTermSet(TermSet[Sign]):
     coefficients that may be used to store unique terms and perform set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -300,7 +299,7 @@ class RealTermSet(TermSet[float]):
     store unique terms and perform set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -314,7 +313,7 @@ class RealTermSum(NumericTermSum[FermionStateArray, StringSpec, float], TermSum[
     store unique terms and perform algebraic operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -470,7 +469,7 @@ class ComplexTermSet(TermSet[complex]):
     store unique terms and perform set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -484,7 +483,7 @@ class ComplexTermSum(NumericTermSum[FermionStateArray, StringSpec, complex], Ter
     store unique terms and perform algebraic operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -799,7 +798,7 @@ class SymbolicTermSet(TermSet[Expr]):
     set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -813,7 +812,7 @@ class SymbolicTermSum(TermSum[Expr]):
     algebraic operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 

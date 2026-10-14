@@ -44,7 +44,7 @@ class Term[ImplT: QubitArray[Any, Any], SpecT, C: (float, complex, Sign, Complex
 ):
     """A term consisting of a string and a coefficient.
 
-    A single qubit-based term consisting of a component and a coefficient that may be an owning
+    A single qubit-based term consisting of a string and a coefficient that may be an owning
     instance referencing a single element in a :class:`~zixy.container.data.TermData`
     instance, or a view on an element in another collection.
     """
@@ -70,7 +70,7 @@ class Term[ImplT: QubitArray[Any, Any], SpecT, C: (float, complex, Sign, Complex
 
     @property
     def string(self) -> String[ImplT, SpecT, ElemT]:
-        """The string component of the term."""
+        """The string of the term."""
         return cast("String[ImplT, SpecT, ElemT]", super().string)
 
     @property
@@ -119,7 +119,7 @@ class Terms[
 
     @property
     def strings(self) -> Strings[ImplT, SpecT, ElemT]:
-        """The string components of the terms."""
+        """The strings of the terms."""
         return cast("Strings[ImplT, SpecT, ElemT]", super().strings)
 
     @property
@@ -140,7 +140,7 @@ class TermSet[
     set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -156,7 +156,7 @@ class TermSet[
 
     @property
     def strings(self) -> Strings[ImplT, SpecT, ElemT]:
-        """The string components of the terms."""
+        """The strings of the terms."""
         return cast("Strings[ImplT, SpecT, ElemT]", self._impl._strings)
 
     @property
@@ -174,7 +174,7 @@ class TermSet[
         _check_qubits_compatibility(self.qubits, value.qubits)
 
     def _check_string(self, value: BaseString[ImplT, SpecT]) -> None:
-        """Check whether a component is defined over the same qubits as ``self``."""
+        """Check whether a string is defined over the same qubits as ``self``."""
         if not isinstance(value, self.terms_type.term_type.strings_type.string_type):
             raise TypeError(
                 f"Expected a {self.terms_type.term_type.strings_type.string_type.__name__} "
@@ -196,7 +196,7 @@ class TermSum[
     linear combination operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 

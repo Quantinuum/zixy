@@ -194,10 +194,10 @@ def test_string_mul_with_zero_product():
 
 
 def test_string_from_str_errors():
-    with pytest.raises(ValueError, match="exactly one positive component"):
+    with pytest.raises(ValueError, match="does not normal-order to exactly one positive"):
         String.from_str("F1 F0^", 4)
 
-    with pytest.raises(ValueError, match="exactly one positive component"):
+    with pytest.raises(ValueError, match="does not normal-order to exactly one positive"):
         String.from_str("F0 F0^", 4)
 
 

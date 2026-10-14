@@ -170,5 +170,5 @@ def test_sign_terms_canonicalize():
     assert null.canonicalize_all() == []
 
     empty = SignTerms(3)
-    # the unique tableau with no components is in canonical form, so no imuls
+    # the unique tableau with no strings is in canonical form, so no imuls
     assert empty.canonicalize_all() == []

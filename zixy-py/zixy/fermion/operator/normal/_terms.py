@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Terms containing normal-ordered fermionic strings as components and collections of such terms.
+"""Terms containing normal-ordered fermionic strings and collections of such terms.
 
-The structure of this module parallels that of :mod:`~zixy.container.terms`, but with components
-that are normal-ordered fermionic strings, as defined in
+This module follows :mod:`~zixy.container.terms`, using strings defined in
 :mod:`~zixy.fermion.operator.normal._strings`.
 """
 
@@ -155,7 +154,7 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerm[ImplT, Spe
 
     @property
     def string(self) -> String:
-        """The string component of the term."""
+        """The string of the term."""
         return cast("String", super().string)
 
     def dagger(self) -> None:
@@ -193,7 +192,7 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
     set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -214,7 +213,7 @@ class TermSum[C: (float, complex, Sign, ComplexSign, Expr)](
     linear combination operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -321,7 +320,7 @@ class SignTermSet(TermSet[Sign]):
     coefficients that may be used to store unique terms and perform set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -423,7 +422,7 @@ class RealTermSet(TermSet[float]):
     store unique terms and perform set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -437,7 +436,7 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
     store unique terms and perform algebraic operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -702,7 +701,7 @@ class ComplexTermSet(TermSet[complex]):
     store unique terms and perform set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -718,7 +717,7 @@ class ComplexTermSum(
     store unique terms and perform algebraic operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -1033,7 +1032,7 @@ class SymbolicTermSet(TermSet[Expr]):
     set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -1071,7 +1070,7 @@ class SymbolicTermSum(TermSum[Expr]):
     algebraic operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 

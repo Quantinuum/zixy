@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Base fermionic mode-based string components and collections of such strings."""
+"""Base fermionic mode-based strings and collections of such strings."""
 
 from __future__ import annotations
 
@@ -143,7 +143,7 @@ class Strings[ImplT: FermionArray, SpecT, ElemT](BaseStrings[ImplT, SpecT]):
 class StringSet[ImplT: FermionArray, SpecT, ElemT](BaseStringSet[ImplT, SpecT]):
     """A collection of unique fermionic strings.
 
-    A set-like container of mode-based strings that may be used to store unique components and
+    A set-like container of mode-based strings that may be used to store unique strings and
     perform set-like operations on them.
     """
 

@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 
 class TermData[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)]:
-    """Data for terms, consisting of an array of components and a vector of coefficients."""
+    """Data for terms, consisting of an array of strings and a vector of coefficients."""
 
     _coeffs: Coeffs[C]
     _strings: Strings[ImplT, SpecT]
@@ -38,7 +38,7 @@ class TermData[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, E
         """Initialize the data.
 
         Args:
-            strings: The component array.
+            strings: The string array.
             coeffs: The coefficient vector.
         """
         if not isinstance(strings, Strings):
@@ -50,7 +50,7 @@ class TermData[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, E
 
     @property
     def strings(self) -> Strings[ImplT, SpecT]:
-        """The components of ``self``."""
+        """The strings of ``self``."""
         return self._strings
 
     @property
@@ -60,12 +60,12 @@ class TermData[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, E
 
     @property
     def strings_type(self) -> type[Strings[ImplT, SpecT]]:
-        """The component container type of ``self``."""
+        """The string container type of ``self``."""
         return type(self._strings)
 
     @property
     def string_type(self) -> type[String[ImplT, SpecT]]:
-        """The component type of ``self``."""
+        """The string type of ``self``."""
         return self._strings.string_type
 
     @property

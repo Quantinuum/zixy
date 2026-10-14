@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Base qubit-based string components and collections of such strings."""
+"""Base qubit-based strings and collections of such strings."""
 
 from __future__ import annotations
 
@@ -137,7 +137,7 @@ class String[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseString[ImplT, SpecT]
             elif len(springs) == 1:
                 self._impl.cmpnt_set_from_spring(self.index, springs, 0)
             else:
-                raise ValueError("String input has more than one component.")
+                raise ValueError("Input represents more than one string.")
         else:
             raise TypeError("Source object is of an unsupported type.")
 
@@ -314,7 +314,7 @@ class Strings[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseStrings[ImplT, Spec
 class StringSet[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseStringSet[ImplT, SpecT]):
     """A collection of unique strings.
 
-    A set-like container of qubit-based strings that may be used to store unique components and
+    A set-like container of qubit-based strings that may be used to store unique strings and
     perform set-like operations on them.
     """
 

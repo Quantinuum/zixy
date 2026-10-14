@@ -8,8 +8,8 @@ use crate::container::errors::OutOfBounds;
 use crate::container::traits::proj::{Borrow, BorrowMut};
 use crate::container::word_iters::terms::{self, AsViewMut};
 use crate::qubit::mode::{PauliMatrix, Qubits};
-use crate::qubit::pauli::string_major::string_list::StringList;
-use crate::qubit::pauli::string_major::terms::Terms;
+use crate::qubit::operator::string_major::string_list::StringList;
+use crate::qubit::operator::string_major::terms::Terms;
 use crate::qubit::traits::{
     QubitsBased, QubitsRelabel, QubitsRelabelled, QubitsStandardize, QubitsStandardized,
 };

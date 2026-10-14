@@ -10,14 +10,14 @@ use zixy::mappings::jw::JordanWignerMapper as JordanWignerMapper_;
 use zixy::mappings::paraparticular::ParaparticularMapper as ParaparticularMapper_;
 use zixy::mappings::parity::ParityMapper as ParityMapper_;
 use zixy::mappings::Mapper;
-use zixy::qubit::pauli::string_major::term_set;
+use zixy::qubit::operator::string_major::term_set;
 use zixy::qubit::state::string_list::StringList as QubitStateStringList;
 
 use crate::container::coeffs::{ComplexVec, RealVec};
 use crate::container::map::Map;
 use crate::fermion::state::Array as FermionStateArray;
 use crate::qubit::mode::Qubits;
-use crate::qubit::pauli::Array;
+use crate::qubit::operator::Array;
 use crate::qubit::state::Array as QubitStateArray;
 
 fn apply_complex<M>(

@@ -15,7 +15,7 @@ use zixy::qubit::traits::{DifferentQubits, QubitsBased, QubitsRelabel, QubitsSta
 use crate::container::coeffs::{ComplexSign, ComplexVec, RealVec};
 use crate::container::map::Map;
 use crate::qubit::mode::Qubits;
-use crate::qubit::pauli::Array as PauliArray;
+use crate::qubit::operator::Array as PauliArray;
 use crate::string::state_springs::BinarySprings;
 use crate::utils::{string_to_string, try_py_index, try_py_indices, ToPyResult};
 

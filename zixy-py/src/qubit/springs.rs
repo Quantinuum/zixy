@@ -14,7 +14,7 @@ use crate::{standard_dunders, wrapped_str};
 #[pyo3(name = "ManyPartPauliSprings")]
 #[repr(transparent)]
 #[derive(PartialEq, Eq, Hash, Clone)]
-pub struct ManyPartPauliSprings(pub Vec<zixy::qubit::pauli::springs::Springs>);
+pub struct ManyPartPauliSprings(pub Vec<zixy::qubit::operator::springs::Springs>);
 
 #[pymethods]
 impl ManyPartPauliSprings {
@@ -23,7 +23,7 @@ impl ManyPartPauliSprings {
     pub fn __init__(s: Option<String>) -> PyResult<Self> {
         let s: String = s.unwrap_or_default();
         Ok(Self(
-            zixy::qubit::pauli::springs::Springs::all_parts_from_str(&s).to_py_result()?,
+            zixy::qubit::operator::springs::Springs::all_parts_from_str(&s).to_py_result()?,
         ))
     }
 
@@ -57,7 +57,7 @@ impl ManyPartPauliSprings {
 #[pyo3(name = "PauliSprings")]
 #[repr(transparent)]
 #[derive(Default, PartialEq, Eq, Hash, Clone)]
-pub struct PauliSprings(pub zixy::qubit::pauli::springs::Springs);
+pub struct PauliSprings(pub zixy::qubit::operator::springs::Springs);
 
 #[pymethods]
 impl PauliSprings {

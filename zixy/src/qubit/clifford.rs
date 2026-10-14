@@ -9,7 +9,7 @@ use crate::container::traits::proj::Borrow;
 use crate::container::traits::proj::BorrowMut;
 use crate::container::utils::DistinctPair;
 use crate::qubit::mode::Qubits;
-use crate::qubit::pauli::string_major::string::PauliWord;
+use crate::qubit::operator::string_major::string::PauliWord;
 use crate::qubit::traits::{PauliWordMutRef, PauliWordRef};
 
 /// Enum with a variant for each kind of Clifford gate implemented
@@ -195,7 +195,7 @@ mod tests {
         for big_endian in [true, false] {
             use crate::{
                 container::coeffs::{complex_sign::ComplexSign, sign::Sign, traits::NumRepr},
-                qubit::{pauli::string_major::term::Term, traits::PauliWordRef},
+                qubit::{operator::string_major::term::Term, traits::PauliWordRef},
             };
 
             let mut string =

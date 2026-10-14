@@ -1,11 +1,11 @@
-//! Definitions for a single component.
+//! Definitions for a single Pauli string.
 
 use crate::container::errors::OutOfBounds;
 use crate::container::traits::proj::BorrowMut;
 use crate::container::word_iters::{Elem, WordIters};
 use crate::qubit::mode::{PauliMatrix, Qubits};
-use crate::qubit::pauli::springs::Springs;
-use crate::qubit::pauli::string_major::string_list::{StringList, StringRef};
+use crate::qubit::operator::springs::Springs;
+use crate::qubit::operator::string_major::string_list::{StringList, StringRef};
 use crate::qubit::traits::{
     QubitsBased, QubitsRelabel, QubitsRelabelled, QubitsStandardize, QubitsStandardized,
 };

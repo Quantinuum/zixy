@@ -64,7 +64,7 @@ class Term[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
 
     @property
     def string(self) -> OperatorString[ImplT, SpecT, ElemT]:
-        """The string component of the term."""
+        """The string of the term."""
         return cast("OperatorString[ImplT, SpecT, ElemT]", super().string)
 
     @abstractmethod
@@ -87,7 +87,7 @@ class Terms[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, E
 
     @property
     def strings(self) -> OperatorStrings[ImplT, SpecT, ElemT]:
-        """The string components of the terms."""
+        """The strings of the terms."""
         return cast("OperatorStrings[ImplT, SpecT, ElemT]", super().strings)
 
 
@@ -100,7 +100,7 @@ class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign,
 
     @property
     def strings(self) -> OperatorStrings[ImplT, SpecT, ElemT]:
-        """The string components of the terms."""
+        """The strings of the terms."""
         return cast("OperatorStrings[ImplT, SpecT, ElemT]", self._impl._strings)
 
     @property

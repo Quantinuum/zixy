@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Terms containing raw fermionic strings as components and collections of such terms.
+"""Terms containing raw fermionic strings and collections of such terms.
 
-The structure of this module parallels that of :mod:`~zixy.container.terms`, but with components
-that are raw fermionic strings, as defined in
+This module follows :mod:`~zixy.container.terms`, using strings defined in
 :mod:`~zixy.fermion.operator.general._strings`.
 """
 
@@ -170,7 +169,7 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerm[ImplT, Spe
 
     @property
     def string(self) -> String:
-        """The string component of the term."""
+        """The string of the term."""
         return cast("String", super().string)
 
     @property
@@ -216,7 +215,7 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerms[ImplT, S
 
     @property
     def strings(self) -> Strings:
-        """The string components of the terms."""
+        """The strings of the terms."""
         return cast("Strings", super().strings)
 
     @property
@@ -270,7 +269,7 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
     set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -287,7 +286,7 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
 
     @property
     def strings(self) -> Strings:
-        """The string components of the terms."""
+        """The strings of the terms."""
         return cast("Strings", self._impl._strings)
 
     @property
@@ -345,7 +344,7 @@ class TermSum[C: (float, complex, Sign, ComplexSign, Expr)](
     linear combination operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -489,7 +488,7 @@ class RealTermSet(TermSet[float]):
     store unique terms and perform set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -503,7 +502,7 @@ class RealTermSum(NumericTermSum[GeneralFermionOperatorArray, StringSpec, float]
     store unique terms and perform algebraic operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -638,7 +637,7 @@ class ComplexTermSet(TermSet[complex]):
     store unique terms and perform set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -654,7 +653,7 @@ class ComplexTermSum(
     store unique terms and perform algebraic operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -843,7 +842,7 @@ class SymbolicTermSet(TermSet[Expr]):
     set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -881,7 +880,7 @@ class SymbolicTermSum(TermSum[Expr]):
     algebraic operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 

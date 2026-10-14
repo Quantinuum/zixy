@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Raw fermionic ladder-operator string components and collections of such strings.
+"""Raw fermionic ladder-operator strings and collections of such strings.
 
-Raw fermionic strings are components representing ordered products of creation and annihilation
+Raw fermionic strings represent ordered products of creation and annihilation
 operators, acting on a register of fermionic modes.
 
 The structure of this module parallels that of :mod:`~zixy.container.strings`.
@@ -153,7 +153,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
             elif len(springs) == 1:
                 self._impl.cmpnt_set_from_spring(self.index, springs, 0)
             else:
-                raise ValueError("String input has more than one component.")
+                raise ValueError("Input represents more than one string.")
         else:
             ops = list(source)
             mode_inds, adj = zip(*ops, strict=True) if ops else ((), ())

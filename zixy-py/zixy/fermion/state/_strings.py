@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Fermionic occupation-number state string components and collections of such strings.
+"""Fermionic occupation-number state strings and collections of such strings.
 
 State strings are occupation-number basis vectors, represented as bit strings, defined over a
 space of fermionic modes.
@@ -135,7 +135,7 @@ class String(FermionString[ImplT, SpecT, ElemT]):
             elif len(springs) == 1:
                 self._impl.cmpnt_set_from_spring(self.index, springs, 0)
             else:
-                raise ValueError("String input has more than one component.")
+                raise ValueError("Input represents more than one string.")
         else:
             self.raise_spec_type_error(source)
 
@@ -248,7 +248,7 @@ class Strings(FermionStrings[ImplT, SpecT, ElemT]):
 class StringSet(FermionStringSet[ImplT, SpecT, ElemT]):
     """A collection of unique fermionic occupation-number state strings.
 
-    A set-like container of mode-based state strings that may be used to store unique components
+    A set-like container of mode-based state strings that may be used to store unique strings
     and perform set-like operations on them.
     """
 

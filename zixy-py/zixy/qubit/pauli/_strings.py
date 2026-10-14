@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Pauli string components and collections of such strings.
+"""Pauli strings and collections of such strings.
 
-Pauli strings are components representing tensor products of single-qubit Pauli matrices, acting
+Pauli strings represent tensor products of single-qubit Pauli matrices, acting
 on a register of qubits.
 
 The structure of this module parallels that of :mod:`~zixy.container.strings` and
@@ -341,7 +341,7 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
 class StringSet(StringSetBase[ImplT, SpecT, ElemT]):
     """A collection of unique Pauli strings.
 
-    A set-like container of qubit-based Pauli strings that may be used to store unique components
+    A set-like container of qubit-based Pauli strings that may be used to store unique strings
     and perform set-like operations on them.
     """
 

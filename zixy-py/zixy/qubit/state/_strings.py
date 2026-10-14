@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""State string components and collections of such strings.
+"""State strings and collections of such strings.
 
 State strings are computational basis vectors, represented as bit strings, defined in a space of
 qubits.
@@ -240,7 +240,7 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
 class StringSet(StringSetBase[ImplT, SpecT, ElemT]):
     """A collection of unique state strings.
 
-    A set-like container of qubit-based Pauli strings that may be used to store unique components
+    A set-like container of qubit-based Pauli strings that may be used to store unique strings
     and perform set-like operations on them.
     """
 

@@ -485,7 +485,7 @@ class Strings[ImplT: ImplArray, SpecT](
         """Create a new one-element instance from a single string.
 
         Args:
-            string: Component to copy into the new instance.
+            string: String to copy into the new instance.
 
         Returns:
             New owning instance containing only ``string``.

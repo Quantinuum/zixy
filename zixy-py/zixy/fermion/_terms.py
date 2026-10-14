@@ -70,7 +70,7 @@ class Term[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
 
     @property
     def string(self) -> String[ImplT, SpecT, ElemT]:
-        """The string component of the term."""
+        """The string of the term."""
         return cast("String[ImplT, SpecT, ElemT]", super().string)
 
     @property
@@ -104,7 +104,7 @@ class Terms[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, E
 
     @property
     def strings(self) -> Strings[ImplT, SpecT, ElemT]:
-        """The string components of the terms."""
+        """The strings of the terms."""
         return cast("Strings[ImplT, SpecT, ElemT]", super().strings)
 
     @property
@@ -122,7 +122,7 @@ class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign,
     set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -138,7 +138,7 @@ class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign,
 
     @property
     def strings(self) -> Strings[ImplT, SpecT, ElemT]:
-        """The string components of the terms."""
+        """The strings of the terms."""
         return cast("Strings[ImplT, SpecT, ElemT]", self._impl._strings)
 
     @property
@@ -156,7 +156,7 @@ class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign,
         _check_modes_compatibility(self.modes, value.modes)
 
     def _check_string(self, value: BaseString[ImplT, SpecT]) -> None:
-        """Hook to check whether a component is valid for insertion into ``self``."""
+        """Hook to check whether a string is valid for insertion into ``self``."""
         if not isinstance(value, self.terms_type.term_type.strings_type.string_type):
             raise TypeError(
                 f"Expected a {self.terms_type.term_type.strings_type.string_type.__name__} "
@@ -175,7 +175,7 @@ class TermSum[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign,
     linear combination operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 

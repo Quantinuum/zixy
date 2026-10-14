@@ -51,20 +51,20 @@ Implementations of these base classes may narrow their implementation depending 
 
 These general building blocks are sufficient to define many different quantum algebraic objects.
 An example of one such specification of the objects in Zixy is Pauli strings.
-These are made available in the `zixy.qubit.pauli` submodule,
+These are made available in the `zixy.qubit.operator` submodule,
 with the qubits forming a basis for their definition available in `zixy.qubit`.
 
 ```python
 import zixy.qubit as zq
-import zixy.qubit.pauli as zqp
+import zixy.qubit.operator as zqo
 
 qubits = zq.Qubits.from_count(4)
 print(len(qubits))  # 4
 
-strings = zqp.Strings.from_str("X0 Y1 Z3", qubits)
+strings = zqo.Strings.from_str("X0 Y1 Z3", qubits)
 print(str(strings))  # X0 Y1 Z3
 
-terms = zqp.RealTerms.from_str("X0 Y1 Z3")
+terms = zqo.RealTerms.from_str("X0 Y1 Z3")
 print(str(terms))  # (1, X0 Y1 Z3)
 ```
 

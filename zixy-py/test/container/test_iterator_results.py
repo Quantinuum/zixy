@@ -1,17 +1,19 @@
 import pytest
 
-from zixy.fermion import state as fermion_state
-from zixy.fermion.operator import general, normal
-from zixy.qubit import pauli, state as qubit_state
+import zixy.fermion.operator.general as zfog
+import zixy.fermion.operator.normal as zfon
+import zixy.fermion.state as zfs
+import zixy.qubit.operator as zqo
+import zixy.qubit.state as zqs
 
 
 @pytest.fixture(
     params=[
-        (pauli, ["X0", "Y0", "Z0"], {}),
-        (qubit_state, ["[0, 0]", "[1, 0]", "[0, 1]"], {}),
-        (general, ["F0", "F1", "F0^ F1"], {"max_string_len": 2}),
-        (normal, ["F0", "F1", "F0^ F1"], {}),
-        (fermion_state, ["[0, 0]", "[1, 0]", "[0, 1]"], {}),
+        (zqo, ["X0", "Y0", "Z0"], {}),
+        (zqs, ["[0, 0]", "[1, 0]", "[0, 1]"], {}),
+        (zfog, ["F0", "F1", "F0^ F1"], {"max_string_len": 2}),
+        (zfon, ["F0", "F1", "F0^ F1"], {}),
+        (zfs, ["[0, 0]", "[1, 0]", "[0, 1]"], {}),
     ],
     ids=["qubit-operator", "qubit-state", "general-fermion", "normal-fermion", "fermion-state"],
 )

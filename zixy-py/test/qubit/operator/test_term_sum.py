@@ -1,7 +1,7 @@
 import pytest
 from sympy import sympify
 
-from zixy.qubit.pauli import (
+from zixy.qubit.operator import (
     ComplexTermSum,
     I,
     RealTerm,

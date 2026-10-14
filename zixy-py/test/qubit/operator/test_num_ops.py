@@ -1,9 +1,9 @@
-from zixy.qubit.pauli import (
+from zixy.qubit.operator import (
     ComplexTermSum,
     RealTermSum,
     SymbolicTermSum,
 )
-from zixy.qubit.pauli.num_ops import create_num_op
+from zixy.qubit.operator.num_ops import create_num_op
 
 
 def test_create_num_op():

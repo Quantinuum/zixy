@@ -38,20 +38,20 @@ maturin develop
 
 zixy is written in Rust, with Python bindings enabled via [PyO3](https://github.com/pyo3/pyo3).
 Pauli strings, one of the quantum algebraic objects built on top of Zixy's general containers, are
-available in the `zixy.qubit.pauli` subpackage, with the qubits forming a basis for their definition
+available in the `zixy.qubit.operator` subpackage, with the qubits forming a basis for their definition
 available in `zixy.qubit`.
 
 ```{code-cell} ipython3
 import zixy.qubit as zq
-import zixy.qubit.pauli as zqp
+import zixy.qubit.operator as zqo
 
 qubits = zq.Qubits.from_count(4)
 print(len(qubits))
 
-strings = zqp.Strings.from_str("X0 Y1 Z3", qubits)
+strings = zqo.Strings.from_str("X0 Y1 Z3", qubits)
 print(str(strings))
 
-terms = zqp.RealTerms.from_str("X0 Y1 Z3")
+terms = zqo.RealTerms.from_str("X0 Y1 Z3")
 print(str(terms))
 ```
 

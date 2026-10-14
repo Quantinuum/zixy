@@ -5,7 +5,7 @@ from typing import assert_type
 import pytest
 from sympy import Expr, I, Symbol, symbols
 
-from zixy.qubit.pauli import (
+from zixy.qubit.operator import (
     ComplexTermSum,
     RealTermSum,
     SymbolicTermSum,

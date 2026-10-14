@@ -8,7 +8,7 @@ from zixy.container.coeffs import (
     RealCoeffs,
     SignCoeffs,
 )
-from zixy.qubit.pauli import (
+from zixy.qubit.operator import (
     ComplexTerms as PauliComplexTerms,
     ComplexTermSet as PauliComplexTermSet,
     ComplexTermSum as PauliComplexTermSum,

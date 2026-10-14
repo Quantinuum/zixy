@@ -1,7 +1,7 @@
 import pytest
 
 from zixy.container.coeffs import ComplexSign, Sign
-from zixy.qubit.pauli import ComplexSignTerm, ComplexSignTerms, I, X, Y, Z
+from zixy.qubit.operator import ComplexSignTerm, ComplexSignTerms, I, X, Y, Z
 
 
 def test_term():

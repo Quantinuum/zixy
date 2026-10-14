@@ -7,7 +7,7 @@ use crate::mappings::operators::OperatorMapper;
 use crate::mappings::traits::UpdateParityRho;
 use crate::mappings::Mapper;
 use crate::qubit::mode::Qubits;
-use crate::qubit::pauli::string_major::term_set;
+use crate::qubit::operator::string_major::term_set;
 use crate::qubit::state::string::BasisState;
 
 /// Jordan--Wigner mapper from fermionic ladder-operator products to Pauli term sums.

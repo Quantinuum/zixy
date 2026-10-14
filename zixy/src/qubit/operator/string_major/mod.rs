@@ -1,4 +1,4 @@
-//! Qubit pauli module where the storage buffer is component (string) major.
+//! Qubit operators stored in string-major order.
 
 pub mod encoding;
 pub mod lincomb;

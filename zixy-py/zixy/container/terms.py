@@ -45,7 +45,6 @@ from zixy.container.base import (
     ViewableSequence,
     requires_ownership,
 )
-from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet
 from zixy.container.coeffs import (
     Coeff,
     Coeffs,
@@ -63,6 +62,7 @@ from zixy.container.coeffs import (
     zero,
 )
 from zixy.container.data import TermData
+from zixy.container.strings import String, Strings, StringSet
 from zixy.utils import DEFAULT_ATOL, DEFAULT_RTOL, slice_index_gen, slice_of_slice, split_top_level
 
 if TYPE_CHECKING:
@@ -73,7 +73,7 @@ if TYPE_CHECKING:
 
 
 type TermSpecT[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)] = (
-    Cmpnt[ImplT, SpecT] | SpecT | tuple[SpecT | Cmpnt[ImplT, SpecT], C | None]
+    String[ImplT, SpecT] | SpecT | tuple[SpecT | String[ImplT, SpecT], C | None]
 )
 
 
@@ -93,43 +93,43 @@ def _parse_term_str(source: str) -> tuple[str | None, str]:
 
     # Separate the coefficient and component parts
     items_coeff: list[str] = []
-    items_cmpnt: list[str] = []
+    items_string: list[str] = []
     for item in items:
         if not item.startswith("(") or not item.endswith(")"):
-            items_cmpnt.append(item)
+            items_string.append(item)
             continue
         subitems = split_top_level(item[1:-1], ",", keep_empty=True)
         if len(subitems) == 1:
-            items_cmpnt.append(subitems[0])
+            items_string.append(subitems[0])
         elif len(subitems) == 2:
             items_coeff.append(subitems[0])
-            items_cmpnt.append(subitems[1])
+            items_string.append(subitems[1])
         else:
             raise ValueError(f"Invalid item '{item}' in string '{source}'.")
 
     # Join the coefficient and component parts into independently parsable strings
-    source_cmpnt = ", ".join(items_cmpnt)
-    if len(items_coeff) != 0 and len(items_coeff) != len(items_cmpnt):
+    source_string = ", ".join(items_string)
+    if len(items_coeff) != 0 and len(items_coeff) != len(items_string):
         raise ValueError(f"Inconsistent coefficient and component counts in string '{source}'.")
     source_coeff = ", ".join(items_coeff) if items_coeff else None
 
-    return source_coeff, source_cmpnt
+    return source_coeff, source_string
 
 
 def _coeffs_from_str[C: (float, complex, Sign, ComplexSign, Expr)](
-    source_coeff: str | None, coeff_type: type[C], n_cmpnt: int
+    source_coeff: str | None, coeff_type: type[C], n_string: int
 ) -> Coeffs[C]:
     """Construct coefficient data from parsed coefficient text."""
     coeffs_type = get_coeffs_type(coeff_type)
     coeffs = (
-        coeffs_type.from_size(n_cmpnt)
+        coeffs_type.from_size(n_string)
         if source_coeff is None
         else coeffs_type.from_str(source_coeff)
     )
-    if len(coeffs) != n_cmpnt:
+    if len(coeffs) != n_string:
         raise ValueError(
             f"Length of coefficients ({len(coeffs)}) does not match length of components "
-            f"({n_cmpnt})."
+            f"({n_string})."
         )
     return coeffs
 
@@ -146,7 +146,7 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
     """
 
     coeff_type: type[C]
-    cmpnts_type: type[Cmpnts[ImplT, SpecT]]
+    strings_type: type[Strings[ImplT, SpecT]]
 
     _impl: TermData[ImplT, SpecT, C]
     _index: int | None
@@ -158,10 +158,10 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
             data: Raw term data object, of which ``self`` views one.
             indexer: Index of the term within ``data`` that ``self`` views.
         """
-        if data.cmpnts_type is not self.cmpnts_type:
+        if data.strings_type is not self.strings_type:
             raise TypeError(
-                f"Term data cmpnts type {data.cmpnts_type} does not match "
-                f"the cmpnts type {self.cmpnts_type} of this {type(self)}."
+                f"Term data strings type {data.strings_type} does not match "
+                f"the strings type {self.strings_type} of this {type(self)}."
             )
         if data.coeff_type is not self.coeff_type:
             raise TypeError(
@@ -177,9 +177,9 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         return self._impl
 
     @property
-    def cmpnt_type(self) -> type[Cmpnt[ImplT, SpecT]]:
+    def string_type(self) -> type[String[ImplT, SpecT]]:
         """The component type of ``self``."""
-        return self.cmpnts_type.cmpnt_type
+        return self.strings_type.string_type
 
     @property
     def coeffs_type(self) -> type[Coeffs[C]]:
@@ -203,20 +203,20 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         return out
 
     @classmethod
-    def from_cmpnt_coeff(cls, cmpnt: Cmpnt[ImplT, SpecT], coeff: C) -> Self:
+    def from_string_coeff(cls, string: String[ImplT, SpecT], coeff: C) -> Self:
         """Factory to make an instance of ``cls`` from a component and a coefficient.
 
         Args:
-            cmpnt: Component to copy from.
-            coeff: Coefficient scaling the ``cmpnt`` in the new instance.
+            string: Component to copy from.
+            coeff: Coefficient scaling the ``string`` in the new instance.
 
         Returns:
             An instance of ``cls`` with the given component and coefficient.
         """
-        cmpnts = cls.cmpnts_type.from_cmpnt(cmpnt)
+        strings = cls.strings_type.from_string(string)
         coeffs = get_coeffs_type(cls.coeff_type)()
         coeffs.append(coeff)
-        return cls._create(TermData(cmpnts, coeffs))
+        return cls._create(TermData(strings, coeffs))
 
     @classmethod
     def from_str(cls, source: str, *args: Any, **kwargs: Any) -> Self:
@@ -230,10 +230,10 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         Returns:
             An instance of ``cls`` parsed from ``source``.
         """
-        source_coeff, source_cmpnt = _parse_term_str(source)
-        cmpnts = cls.cmpnts_type.from_str(source_cmpnt, *args, **kwargs)
-        coeffs = _coeffs_from_str(source_coeff, cls.coeff_type, len(cmpnts))
-        data = TermData(cmpnts, coeffs)
+        source_coeff, source_string = _parse_term_str(source)
+        strings = cls.strings_type.from_str(source_string, *args, **kwargs)
+        coeffs = _coeffs_from_str(source_coeff, cls.coeff_type, len(strings))
+        data = TermData(strings, coeffs)
         if len(data) != 1:
             raise ValueError(
                 f"There should be exactly one Term string in the input, not {len(data)}."
@@ -245,9 +245,9 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         return type(self)._create(self._impl.clone(self.index))
 
     @property
-    def cmpnt(self) -> Cmpnt[ImplT, SpecT]:
+    def string(self) -> String[ImplT, SpecT]:
         """A view of the component of ``self``."""
-        return self._data.cmpnts[self.index]
+        return self._data.strings[self.index]
 
     @property
     def coeff(self) -> C:
@@ -270,15 +270,15 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         """Determine whether ``self`` is a view of the same component as ``other``."""
         if type(self) is not type(other):
             return False
-        return self.cmpnt.aliases(other.cmpnt)
+        return self.string.aliases(other.string)
 
     def __eq__(self, other: object) -> bool:
         """Return whether ``self`` and ``other`` are equal."""
         if not isinstance(other, Term):
             return NotImplemented
         result: bool = (
-            self._impl._cmpnts._impl.cmpnts_eq(
-                [self.index], other._impl._cmpnts._impl, [other.index]
+            self._impl._strings._impl.cmpnts_eq(
+                [self.index], other._impl._strings._impl, [other.index]
             )
             and self._impl._coeffs[self.index] == other._impl._coeffs[other.index]
         )
@@ -294,21 +294,21 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
             This method operates in-place.
         """
         try:
-            # first, attempt to set just the cmpnt
-            self.cmpnt.set(cast("SpecT | Cmpnt[ImplT, SpecT]", source))
+            # first, attempt to set just the string
+            self.string.set(cast("SpecT | String[ImplT, SpecT]", source))
             self.coeff = unit(self.coeff_type)
             return
         except (TypeError, ValueError):
             pass
         if isinstance(source, type(self)):
-            self.cmpnt.set(source.cmpnt)
+            self.string.set(source.string)
             self.coeff = source.coeff
             return
         if isinstance(source, tuple) and len(source) == 2:
-            cmpnt, coeff = source
+            string, coeff = source
         else:
-            cmpnt, coeff = source, None
-        self.cmpnt.set(cmpnt)
+            string, coeff = source, None
+        self.string.set(string)
         self.coeff = coeff if coeff is not None else unit(self.coeff_type)
 
     def clear(self) -> None:
@@ -323,7 +323,7 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         """Return a string representation of ``self``."""
         coeff = repr(self.coeff)
         coeff = coeff.replace("-0j", "+0j")
-        return f"({coeff}, {self.cmpnt})"
+        return f"({coeff}, {self.string})"
 
     def __pos__(self) -> Self:
         """Return ``self``."""
@@ -404,19 +404,19 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         return self._impl.coeff_type
 
     @property
-    def cmpnts_type(self) -> type[Cmpnts[ImplT, SpecT]]:
+    def strings_type(self) -> type[Strings[ImplT, SpecT]]:
         """The component container type of ``self``."""
-        return self._data.cmpnts_type
+        return self._data.strings_type
 
     @property
-    def cmpnt_type(self) -> type[Cmpnt[ImplT, SpecT]]:
+    def string_type(self) -> type[String[ImplT, SpecT]]:
         """The component type of ``self``."""
-        return self._impl.cmpnt_type
+        return self._impl.string_type
 
     @property
-    def cmpnts(self) -> Cmpnts[ImplT, SpecT]:
+    def strings(self) -> Strings[ImplT, SpecT]:
         """The components of ``self``."""
-        return self._data.cmpnts[self.slice]
+        return self._data.strings[self.slice]
 
     @property
     def coeffs(self) -> Coeffs[C]:
@@ -477,7 +477,7 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         """
         if isinstance(indexer, slice):
             if isinstance(source, Terms):
-                self.cmpnts[indexer] = source.cmpnts
+                self.strings[indexer] = source.strings
                 self.coeffs[indexer] = source.coeffs
             else:
                 # write the same term value to each element of the slice.
@@ -687,7 +687,7 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         """Convert ``self`` to a :class:`~pandas.DataFrame`."""
         return pd.DataFrame(
             {
-                "Component": (str(c) for c in self.cmpnts),
+                "Component": (str(c) for c in self.strings),
                 "Coefficient": (str(c) for c in self.coeffs),
             }
         )
@@ -727,10 +727,10 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         """
         if not source.strip():
             return cls(*args, **kwargs)
-        source_coeff, source_cmpnts = _parse_term_str(source)
-        cmpnts = cls.term_type.cmpnts_type.from_str(source_cmpnts, *args, **kwargs)
-        coeffs = _coeffs_from_str(source_coeff, cls.term_type.coeff_type, len(cmpnts))
-        return cls._create(TermData(cmpnts, coeffs))
+        source_coeff, source_strings = _parse_term_str(source)
+        strings = cls.term_type.strings_type.from_str(source_strings, *args, **kwargs)
+        coeffs = _coeffs_from_str(source_coeff, cls.term_type.coeff_type, len(strings))
+        return cls._create(TermData(strings, coeffs))
 
 
 class NumericTerms[ImplT: ImplArray, SpecT, C: (float, complex)](Terms[ImplT, SpecT, C]):
@@ -756,7 +756,7 @@ class NumericTerms[ImplT: ImplArray, SpecT, C: (float, complex)](Terms[ImplT, Sp
             This method operates by comparing the NumPy arrays returned by
             :attr:`~zixy.container.coeffs.Coeffs.np_array`.
         """
-        out: bool = self.cmpnts == other.cmpnts and self.coeffs.allclose(other.coeffs, rtol, atol)
+        out: bool = self.strings == other.strings and self.coeffs.allclose(other.coeffs, rtol, atol)
         return out
 
 
@@ -776,7 +776,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
     terms_type: type[Terms[ImplT, SpecT, C]]
 
     _impl: TermData[ImplT, SpecT, C]
-    _cmpnt_set: CmpntSet[ImplT, SpecT]
+    _string_set: StringSet[ImplT, SpecT]
     _working_term: Term[ImplT, SpecT, C]
 
     def __init__(self, terms: Terms[ImplT, SpecT, C]):
@@ -791,11 +791,11 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
                 ``self``.
         """
         self._impl = terms._empty_clone()._impl
-        cmpnt_set_type = terms.cmpnts_type._set_type
-        self._cmpnt_set = cmpnt_set_type.__new__(cmpnt_set_type)
-        CmpntSet.__init__(self._cmpnt_set, self._impl._cmpnts._impl)
-        # data and set should point at the same cmpnts
-        self._impl._cmpnts._impl = self._cmpnt_set._impl
+        string_set_type = terms.strings_type._set_type
+        self._string_set = string_set_type.__new__(string_set_type)
+        StringSet.__init__(self._string_set, self._impl._strings._impl)
+        # data and set should point at the same strings
+        self._impl._strings._impl = self._string_set._impl
         self._working_term = terms.new_clear_term()
         if isinstance(terms._impl._coeffs, RealCoeffs | ComplexCoeffs):
             self._collect_terms(terms, sum_duplicates=False)
@@ -806,11 +806,11 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         """Collect numeric terms in Rust, normalizing sliced inputs first."""
         if (
             not terms.is_owning()
-            or not terms._impl._cmpnts.is_owning()
+            or not terms._impl._strings.is_owning()
             or not terms._impl._coeffs.is_owning()
         ):
             terms = terms.clone()
-        source = terms._impl._cmpnts._impl
+        source = terms._impl._strings._impl
         coeffs = terms._impl._coeffs
         out_coeffs = self._impl._coeffs
         if isinstance(coeffs, RealCoeffs):
@@ -824,9 +824,9 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
                 coeffs._impl, sum_duplicates
             )
             out_coeffs._impl = complex_values
-        self._impl._cmpnts._impl = array
-        self._cmpnt_set._impl = array
-        self._cmpnt_set._map = mapping
+        self._impl._strings._impl = array
+        self._string_set._impl = array
+        self._string_set._map = mapping
 
     @property
     def _data(self) -> TermData[ImplT, SpecT, C]:
@@ -844,14 +844,14 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         return self._data.coeff_type
 
     @property
-    def cmpnts_type(self) -> type[Cmpnts[ImplT, SpecT]]:
+    def strings_type(self) -> type[Strings[ImplT, SpecT]]:
         """The component container type of ``self``."""
-        return self._impl.cmpnts_type
+        return self._impl.strings_type
 
     @property
-    def cmpnt_type(self) -> type[Cmpnt[ImplT, SpecT]]:
+    def string_type(self) -> type[String[ImplT, SpecT]]:
         """The component type of ``self``."""
-        return self._data.cmpnt_type
+        return self._data.string_type
 
     @classmethod
     def _create(cls, data: TermData[ImplT, SpecT, C], map_: Map | None = None) -> Self:
@@ -870,15 +870,15 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         else:
             assert len(data) == len(map_)
             out._impl = data
-            cmpnt_set_type = data.cmpnts_type._set_type
-            out._cmpnt_set = cmpnt_set_type._create(data._cmpnts._impl, map_)
+            string_set_type = data.strings_type._set_type
+            out._string_set = string_set_type._create(data._strings._impl, map_)
             out._working_term = cls.terms_type._create(data).new_clear_term()
         return out
 
     def _empty_clone(self) -> Self:
         """Get an empty (owning, contiguous) clone of ``self``."""
         return self._create(
-            TermData(self._impl._cmpnts._empty_clone(), self._impl._coeffs._empty_clone())
+            TermData(self._impl._strings._empty_clone(), self._impl._coeffs._empty_clone())
         )
 
     def clone(self) -> Self:
@@ -896,18 +896,20 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         out_coeffs = out._impl._coeffs
         if isinstance(coeffs, RealCoeffs):
             assert isinstance(out_coeffs, RealCoeffs)
-            array, mapping, values = self._impl._cmpnts._impl.copy_terms_real(coeffs._impl, nonzero)
+            array, mapping, values = self._impl._strings._impl.copy_terms_real(
+                coeffs._impl, nonzero
+            )
             out_coeffs._impl = values
         else:
             assert isinstance(coeffs, ComplexCoeffs)
             assert isinstance(out_coeffs, ComplexCoeffs)
-            array, mapping, complex_values = self._impl._cmpnts._impl.copy_terms_complex(
+            array, mapping, complex_values = self._impl._strings._impl.copy_terms_complex(
                 coeffs._impl, nonzero
             )
             out_coeffs._impl = complex_values
-        out._impl._cmpnts._impl = array
-        out._cmpnt_set._impl = array
-        out._cmpnt_set._map = mapping
+        out._impl._strings._impl = array
+        out._string_set._impl = array
+        out._string_set._map = mapping
         return out
 
     def to_terms(self) -> Terms[ImplT, SpecT, C]:
@@ -962,9 +964,9 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         if issubclass(t, TermSet):
             coeff_type = t.terms_type.term_type.coeff_type
             coeffs_type = get_coeffs_type(coeff_type)
-            cmpnts = self._impl.cmpnts
+            strings = self._impl.strings
             coeffs = convert_vec(self._impl.coeffs, coeffs_type)
-            return t._create(TermData(cmpnts, coeffs))
+            return t._create(TermData(strings, coeffs))
         try:
             return self.to_terms().into(t)
         except (TypeError, ValueError) as e:
@@ -986,7 +988,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         """Hook to check whether a term is valid for insertion into ``self``."""
         pass
 
-    def _check_cmpnt(self, value: Cmpnt[ImplT, SpecT]) -> None:
+    def _check_string(self, value: String[ImplT, SpecT]) -> None:
         """Hook to check whether a component is valid for insertion into ``self``."""
         pass
 
@@ -1011,26 +1013,26 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         self._check_term(term)
         return term
 
-    def _get_working_cmpnt(self, value: Cmpnt[ImplT, SpecT] | SpecT) -> Cmpnt[ImplT, SpecT]:
+    def _get_working_string(self, value: String[ImplT, SpecT] | SpecT) -> String[ImplT, SpecT]:
         """Get a component that contains the data specified by ``value``.
 
         Args:
             value: Component or component specifier required.
 
         Returns:
-            If ``value`` is an instance of :class:`~zixy.container.cmpnts.Cmpnt`, return
+            If ``value`` is an instance of :class:`~zixy.container.strings.String`, return
             it. Otherwise, set the component of the internally-allocated working term to the data
             specified by ``value`` and return that component.
         """
-        cmpnt_type = self._impl.cmpnt_type
-        assert issubclass(cmpnt_type, Cmpnt)
-        if isinstance(value, cmpnt_type):
-            cmpnt = value
+        string_type = self._impl.string_type
+        assert issubclass(string_type, String)
+        if isinstance(value, string_type):
+            string = value
         else:
-            self._working_term.cmpnt.set(value)
-            cmpnt = self._working_term.cmpnt
-        self._check_cmpnt(cmpnt)
-        return cmpnt
+            self._working_term.string.set(value)
+            string = self._working_term.string
+        self._check_string(string)
+        return string
 
     def insert(self, key: Term[ImplT, SpecT, C] | TermSpecT[ImplT, SpecT, C]) -> int:
         """Try to insert the given term.
@@ -1046,8 +1048,8 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             This method operates in-place.
         """
         term = self._get_working_term(key)
-        index = self._cmpnt_set.insert(term.cmpnt)
-        self._impl._coeffs.resize(len(self._impl._cmpnts))
+        index = self._string_set.insert(term.string)
+        self._impl._coeffs.resize(len(self._impl._strings))
         self._impl._coeffs[index] = term.coeff
         return index
 
@@ -1092,7 +1094,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             self.insert(item)
 
     def lookup_index(
-        self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, C]
+        self, value: SpecT | String[ImplT, SpecT] | Term[ImplT, SpecT, C]
     ) -> int | None:
         """Try to find the index of the component specified by ``value`` in ``self``.
 
@@ -1104,9 +1106,9 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             ``self``, and ``None`` otherwise.
         """
         value = self._get_working_term(value)
-        return self._cmpnt_set.lookup(value.cmpnt)
+        return self._string_set.lookup(value.string)
 
-    def lookup_coeff(self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, C]) -> C | None:
+    def lookup_coeff(self, value: SpecT | String[ImplT, SpecT] | Term[ImplT, SpecT, C]) -> C | None:
         """Try to find the coefficient of the term specified by ``value`` in ``self``.
 
         Args:
@@ -1122,7 +1124,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         return self._impl._coeffs[index]
 
     def lookup(
-        self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, C]
+        self, value: SpecT | String[ImplT, SpecT] | Term[ImplT, SpecT, C]
     ) -> tuple[int, C] | None:
         """Try to find the index and coefficient of the component specified by ``value``.
 
@@ -1137,7 +1139,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             return None
         return index, self._impl._coeffs[index]
 
-    def contains(self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, C]) -> bool:
+    def contains(self, value: SpecT | String[ImplT, SpecT] | Term[ImplT, SpecT, C]) -> bool:
         """Check whether the component specified by ``value`` is stored in ``self``.
 
         Args:
@@ -1148,7 +1150,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         """
         return self.lookup(value) is not None
 
-    def remove(self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, C]) -> int:
+    def remove(self, value: SpecT | String[ImplT, SpecT] | Term[ImplT, SpecT, C]) -> int:
         """Try to remove the component specified by ``value`` from ``self``.
 
         If the component is found, removal proceeds via swap-remove.
@@ -1163,13 +1165,13 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             KeyError: The component was not found.
         """
         value = self._get_working_term(value)
-        i = self._cmpnt_set.remove(value.cmpnt)
+        i = self._string_set.remove(value.string)
         if i is None:
             raise KeyError(f"Value {value} not found in {self.__class__}.")
         self._impl._coeffs.swap_remove(i)
         return i
 
-    def __getitem__(self, value: SpecT | Cmpnt[ImplT, SpecT] | Term[ImplT, SpecT, C]) -> C:
+    def __getitem__(self, value: SpecT | String[ImplT, SpecT] | Term[ImplT, SpecT, C]) -> C:
         """Get the coefficient of the term with component specified by ``value``.
 
         Args:
@@ -1194,9 +1196,9 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         """Return whether ``self`` and ``other`` are equal."""
         if not isinstance(other, type(self)):
             return NotImplemented
-        if self._cmpnt_set != other._cmpnt_set:
+        if self._string_set != other._string_set:
             return False
-        return all(self.lookup_coeff(term.cmpnt) == term.coeff for term in other)
+        return all(self.lookup_coeff(term.string) == term.coeff for term in other)
 
     def __iter__(self) -> Iterator[Term[ImplT, SpecT, C]]:
         """Iterate over the elements of ``self``."""
@@ -1205,14 +1207,14 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         tmp = self._get_working_term("").clone()  # type: ignore[arg-type]
         for i in range(len(self)):
             tmp.coeff = self._impl._coeffs[i]
-            tmp._impl._cmpnts._impl.cmpnt_copy_external(0, self._impl._cmpnts._impl, i)
+            tmp._impl._strings._impl.cmpnt_copy_external(0, self._impl._strings._impl, i)
             yield tmp
 
     def _symbolic_vdot(self: TermSet[ImplT, SpecT, Expr], rhs: TermSet[ImplT, SpecT, Expr]) -> Expr:
         """Compute a sparse symbolic inner product between compatible term sets."""
         result = sympify(0)
         for term in rhs:
-            lhs_coeff = self.lookup_coeff(term.cmpnt)
+            lhs_coeff = self.lookup_coeff(term.string)
             if lhs_coeff is not None:
                 conjugated = lhs_coeff.conjugate() if hasattr(lhs_coeff, "conjugate") else lhs_coeff
                 result += conjugated * term.coeff
@@ -1291,13 +1293,13 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         if isinstance(self._impl._coeffs, RealCoeffs | ComplexCoeffs):
             return self._copy_terms(nonzero=True)
         out = self._empty_clone()
-        cmpnts = out._cmpnt_set
+        strings = out._string_set
         coeffs = out._impl._coeffs
         # Components are already unique: copy them without constructing term views
         # or repeating coefficient conversion and component compatibility checks.
         for index, coeff in enumerate(self._impl._coeffs):
             if coeff != 0:
-                cmpnts._impl.mapped_insert(cmpnts._map, self._impl._cmpnts._impl, index)
+                strings._impl.mapped_insert(strings._map, self._impl._strings._impl, index)
                 coeffs.append(coeff)
         return out
 
@@ -1337,13 +1339,13 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
                 rhs = rhs.clone()
             coeffs = self._impl._coeffs
             rhs_coeffs = rhs._impl._coeffs
-            array = self._impl._cmpnts._impl
+            array = self._impl._strings._impl
             if isinstance(coeffs, RealCoeffs):
                 assert isinstance(rhs_coeffs, RealCoeffs)
                 array.scaled_iadd_real(
                     coeffs._impl,
-                    self._cmpnt_set._map,
-                    rhs._impl._cmpnts._impl,
+                    self._string_set._map,
+                    rhs._impl._strings._impl,
                     rhs_coeffs._impl,
                     convert(scalar, float),
                 )
@@ -1351,8 +1353,8 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
                 assert isinstance(rhs_coeffs, ComplexCoeffs)
                 array.scaled_iadd_complex(
                     coeffs._impl,
-                    self._cmpnt_set._map,
-                    rhs._impl._cmpnts._impl,
+                    self._string_set._map,
+                    rhs._impl._strings._impl,
                     rhs_coeffs._impl,
                     convert(scalar, complex),
                 )
@@ -1361,7 +1363,7 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
                     self._scaled_iadd(term, scalar)
             filtered = self.filter_nonzero()
             self._impl = filtered._impl
-            self._cmpnt_set = filtered._cmpnt_set
+            self._string_set = filtered._string_set
             self._working_term = filtered._working_term
 
     def __iadd__(self, rhs: Term[ImplT, SpecT, C] | Self) -> Self:

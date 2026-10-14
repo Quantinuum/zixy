@@ -33,7 +33,7 @@ def test_string_modification():
 
 
 @pytest.mark.parametrize(
-    ("cmpnt_type", "source", "modes", "expected"),
+    ("string_type", "source", "modes", "expected"),
     (
         (String, "[1, 0, 1]", 3, "[1, 0, 1]"),
         (String, " [ 1 , 0 , 1 ] ", 3, "[1, 0, 1]"),
@@ -56,12 +56,12 @@ def test_string_modification():
         (StringSet, "", 3, ""),
     ),
 )
-def test_from_str(cmpnt_type, source, modes, expected):
-    parsed = cmpnt_type.from_str(source, modes)
+def test_from_str(string_type, source, modes, expected):
+    parsed = string_type.from_str(source, modes)
     assert str(parsed) == expected
 
-    if cmpnt_type is StringSet:
-        assert parsed == StringSet.from_cmpnts(Strings.from_str(source, modes))
+    if string_type is StringSet:
+        assert parsed == StringSet.from_strings(Strings.from_str(source, modes))
 
 
 def test_string_from_str_errors():
@@ -120,7 +120,7 @@ def test_string_array_from_str():
 
 def test_string_set():
     strings = Strings.from_str("[1, 0], [0, 1], [1, 0]", 2)
-    string_set = StringSet.from_cmpnts(strings)
+    string_set = StringSet.from_strings(strings)
 
     assert len(string_set) == 2
     assert String(2, {0}) in string_set

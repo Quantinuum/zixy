@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet
+from zixy.container.strings import (
+    String as BaseString,
+    Strings as BaseStrings,
+    StringSet as BaseStringSet,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -10,8 +14,8 @@ if TYPE_CHECKING:
 """
 Mock-up a viewable component list system with classes extending:
     - basic array storage implementation (ImplArray)
-    - single cmpnt view / owning object (Cmpnt)
-    - multiple cmpnt view / owning object (Cmpnts)
+    - single string view / owning object (String)
+    - multiple string view / owning object (Strings)
 """
 
 
@@ -150,15 +154,15 @@ class StringsImplArray:
         return all(self.mapped_lookup(map, other, i) is not None for i in range(len(other)))
 
 
-CmpntSpecT = str
+StringSpecT = str
 
 
-class String(Cmpnt[StringsImplArray, CmpntSpecT]):
+class String(BaseString[StringsImplArray, StringSpecT]):
     impl_type = StringsImplArray
 
     _clear_spec = ""
 
-    def __init__(self, source: CmpntSpecT):
+    def __init__(self, source: StringSpecT):
         impl = self.impl_type()
         impl.resize(1)
         super().__init__(impl)
@@ -191,8 +195,8 @@ class String(Cmpnt[StringsImplArray, CmpntSpecT]):
             String.raise_spec_type_error(source)
 
 
-class Strings(Cmpnts[StringsImplArray, CmpntSpecT]):
-    cmpnt_type = String
+class Strings(BaseStrings[StringsImplArray, StringSpecT]):
+    string_type = String
 
     def __init__(self, n: int = 0):
         super().__init__(StringsImplArray.from_len(n))
@@ -210,8 +214,8 @@ class Strings(Cmpnts[StringsImplArray, CmpntSpecT]):
         return cls.from_iterable(source.split(", "))
 
 
-class StringSet(CmpntSet[StringsImplArray, CmpntSpecT]):
-    cmpnts_type = Strings
+class StringSet(BaseStringSet[StringsImplArray, StringSpecT]):
+    strings_type = Strings
     map_type = dict
 
     def __init__(self):

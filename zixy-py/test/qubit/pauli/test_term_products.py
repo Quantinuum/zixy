@@ -103,7 +103,7 @@ def test_sign_term_products():
     assert type(prod) is SignTerm
     assert str(prod) == "(-1, Y0 Y1)"
 
-    prod = SignTerm(2, (X, X)).cmpnt * SignTerm(2, (Z, Z)).cmpnt
+    prod = SignTerm(2, (X, X)).string * SignTerm(2, (Z, Z)).string
     assert type(prod) is ComplexSignTerm
     assert str(prod) == "(-1, Y0 Y1)"
 

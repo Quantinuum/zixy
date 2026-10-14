@@ -25,7 +25,7 @@ from zixy.container.coeffs import ComplexSign, Sign, get_coeffs_type
 
 if TYPE_CHECKING:
     from zixy._zixy import QubitArray
-    from zixy.container.cmpnts import Cmpnt
+    from zixy.container.strings import String as BaseString
 
 
 from zixy.container.data import TermData
@@ -49,7 +49,7 @@ class Term[ImplT: QubitArray[Any, Any], SpecT, C: (float, complex, Sign, Complex
     instance, or a view on an element in another collection.
     """
 
-    cmpnts_type: type[Strings[ImplT, SpecT, ElemT]]
+    strings_type: type[Strings[ImplT, SpecT, ElemT]]
 
     def __init__(
         self,
@@ -62,16 +62,16 @@ class Term[ImplT: QubitArray[Any, Any], SpecT, C: (float, complex, Sign, Complex
             qubits: The qubit register or qubit count.
             source: The term specifier to use for default qubits and initial value.
         """
-        cmpnts = self.cmpnts_type(qubits, 1)
+        strings = self.strings_type(qubits, 1)
         coeffs = get_coeffs_type(self.coeff_type).from_size(1)
-        data = TermData(cmpnts, coeffs)
+        data = TermData(strings, coeffs)
         TermBase.__init__(self, data)
         self.set(source)
 
     @property
     def string(self) -> String[ImplT, SpecT, ElemT]:
         """The string component of the term."""
-        return cast("String[ImplT, SpecT, ElemT]", self.cmpnt)
+        return cast("String[ImplT, SpecT, ElemT]", super().string)
 
     @property
     def qubits(self) -> Qubits:
@@ -112,15 +112,15 @@ class Terms[
             qubits: The qubit register or qubit count.
             n: The number of items to initialize the array with.
         """
-        cmpnts = self.term_type.cmpnts_type(qubits, n)
+        strings = self.term_type.strings_type(qubits, n)
         coeffs = get_coeffs_type(self.term_type.coeff_type).from_size(n)
-        data = TermData(cmpnts, coeffs)
+        data = TermData(strings, coeffs)
         TermsBase.__init__(self, data)
 
     @property
     def strings(self) -> Strings[ImplT, SpecT, ElemT]:
         """The string components of the terms."""
-        return cast("Strings[ImplT, SpecT, ElemT]", self.cmpnts)
+        return cast("Strings[ImplT, SpecT, ElemT]", super().strings)
 
     @property
     def qubits(self) -> Qubits:
@@ -157,7 +157,7 @@ class TermSet[
     @property
     def strings(self) -> Strings[ImplT, SpecT, ElemT]:
         """The string components of the terms."""
-        return cast("Strings[ImplT, SpecT, ElemT]", self._impl._cmpnts)
+        return cast("Strings[ImplT, SpecT, ElemT]", self._impl._strings)
 
     @property
     def qubits(self) -> Qubits:
@@ -173,11 +173,12 @@ class TermSet[
             )
         _check_qubits_compatibility(self.qubits, value.qubits)
 
-    def _check_cmpnt(self, value: Cmpnt[ImplT, SpecT]) -> None:
+    def _check_string(self, value: BaseString[ImplT, SpecT]) -> None:
         """Check whether a component is defined over the same qubits as ``self``."""
-        if not isinstance(value, self.terms_type.term_type.cmpnts_type.cmpnt_type):
+        if not isinstance(value, self.terms_type.term_type.strings_type.string_type):
             raise TypeError(
-                f"Expected a {self.terms_type.term_type.cmpnts_type.cmpnt_type.__name__} instance, "
+                f"Expected a {self.terms_type.term_type.strings_type.string_type.__name__} "
+                "instance, "
                 f"got {type(value).__name__}."
             )
         _check_qubits_compatibility(self.qubits, value.qubits)

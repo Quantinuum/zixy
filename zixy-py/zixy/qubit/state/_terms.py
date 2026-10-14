@@ -72,7 +72,7 @@ def _mul[
     if not isinstance(rhs, Coeff):
         return NotImplemented
     scalar_product = lhs.coeff * rhs
-    return get_term_type(type(scalar_product)).from_cmpnt_coeff(lhs.string, scalar_product)
+    return get_term_type(type(scalar_product)).from_string_coeff(lhs.string, scalar_product)
 
 
 def _rmul[
@@ -93,13 +93,13 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](
     instance, or a view on an element in another collection.
     """
 
-    cmpnts_type = Strings
+    strings_type = Strings
     coeff_type: type[C]
 
     @property
     def string(self) -> String:
         """The string component of the term."""
-        return cast("String", self.cmpnt)
+        return cast("String", super().string)
 
     def __imul__(self, rhs: Coeff | String | Term[C]) -> Self:
         """In-place multiplication of ``self`` by ``rhs``."""
@@ -157,7 +157,7 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](
     @property
     def strings(self) -> Strings:
         """The string components of ``self``."""
-        return cast("Strings", self.cmpnts)
+        return cast("Strings", super().strings)
 
 
 class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
@@ -435,8 +435,8 @@ class RealTermSum(NumericTermSum[QubitStateArray, StringSpec, float], TermSum[fl
             qubits = Qubits.from_count(qubits)
         out = cls(qubits)
         assert isinstance(out._impl._coeffs, RealCoeffs)  # TODO: resolve
-        out._impl._cmpnts._impl.from_dense_real(
-            out._cmpnt_set._map, out._impl._coeffs._impl, list(source), big_endian
+        out._impl._strings._impl.from_dense_real(
+            out._string_set._map, out._impl._coeffs._impl, list(source), big_endian
         )
         return out
 
@@ -453,7 +453,7 @@ class RealTermSum(NumericTermSum[QubitStateArray, StringSpec, float], TermSum[fl
             The dense vector.
         """
         assert isinstance(self._impl._coeffs, RealCoeffs)  # TODO: resolve
-        return self._impl._cmpnts._impl.to_dense_real(self._impl._coeffs._impl, big_endian)
+        return self._impl._strings._impl.to_dense_real(self._impl._coeffs._impl, big_endian)
 
     def vdot(self, rhs: RealTermSum) -> float:
         """Compute the inner product of ``self`` with ``rhs``."""
@@ -461,10 +461,10 @@ class RealTermSum(NumericTermSum[QubitStateArray, StringSpec, float], TermSum[fl
         assert isinstance(self._impl._coeffs, RealCoeffs)  # TODO: resolve
         assert isinstance(rhs._impl._coeffs, RealCoeffs)  # TODO: resolve
         return float(
-            self._impl._cmpnts._impl.vdot_real(
-                self._cmpnt_set._map,
+            self._impl._strings._impl.vdot_real(
+                self._string_set._map,
                 self._impl._coeffs._impl,
-                rhs._impl._cmpnts._impl,
+                rhs._impl._strings._impl,
                 rhs._impl._coeffs._impl,
             )
         )
@@ -578,8 +578,8 @@ class ComplexTermSum(NumericTermSum[QubitStateArray, StringSpec, complex], TermS
             qubits = Qubits.from_count(qubits)
         out = cls(qubits)
         assert isinstance(out._impl._coeffs, ComplexCoeffs)  # TODO: resolve
-        out._impl._cmpnts._impl.from_dense_complex(
-            out._cmpnt_set._map, out._impl._coeffs._impl, list(source), big_endian
+        out._impl._strings._impl.from_dense_complex(
+            out._string_set._map, out._impl._coeffs._impl, list(source), big_endian
         )
         return out
 
@@ -587,14 +587,14 @@ class ComplexTermSum(NumericTermSum[QubitStateArray, StringSpec, complex], TermS
     def real_part(self) -> RealTermSum:
         """The real part of ``self``."""
         assert isinstance(self._data.coeffs, ComplexCoeffs)  # TODO: resolve
-        data = TermData(self._data.cmpnts.clone(), self._data.coeffs.real_part)
+        data = TermData(self._data.strings.clone(), self._data.coeffs.real_part)
         return RealTermSum._create(data)
 
     @property
     def imag_part(self) -> RealTermSum:
         """The imaginary part of ``self``."""
         assert isinstance(self._data.coeffs, ComplexCoeffs)  # TODO: resolve
-        data = TermData(self._data.cmpnts.clone(), self._data.coeffs.imag_part)
+        data = TermData(self._data.strings.clone(), self._data.coeffs.imag_part)
         return RealTermSum._create(data)
 
     def to_dense(self, big_endian: bool = False) -> NDArray[np.complex128]:
@@ -610,7 +610,7 @@ class ComplexTermSum(NumericTermSum[QubitStateArray, StringSpec, complex], TermS
             The dense vector.
         """
         assert isinstance(self._impl._coeffs, ComplexCoeffs)  # TODO: resolve
-        return self._impl._cmpnts._impl.to_dense_complex(self._impl._coeffs._impl, big_endian)
+        return self._impl._strings._impl.to_dense_complex(self._impl._coeffs._impl, big_endian)
 
     def vdot(self, rhs: ComplexTermSum) -> complex:
         """Compute the inner product of ``self`` with ``rhs``."""
@@ -618,10 +618,10 @@ class ComplexTermSum(NumericTermSum[QubitStateArray, StringSpec, complex], TermS
         assert isinstance(self._impl._coeffs, ComplexCoeffs)  # TODO: resolve
         assert isinstance(rhs._impl._coeffs, ComplexCoeffs)  # TODO: resolve
         return complex(
-            self._impl._cmpnts._impl.vdot_complex(
-                self._cmpnt_set._map,
+            self._impl._strings._impl.vdot_complex(
+                self._string_set._map,
                 self._impl._coeffs._impl,
-                rhs._impl._cmpnts._impl,
+                rhs._impl._strings._impl,
                 rhs._impl._coeffs._impl,
             )
         )
@@ -708,9 +708,9 @@ class SymbolicTerm(Term[Expr]):
         See Also:
             :meth:`~zixy.container.coeffs.SymbolicCoeffs.try_to_real`
         """
-        cmpnts = RealTerm.cmpnts_type.from_cmpnt(self.string.clone())
+        strings = RealTerm.strings_type.from_string(self.string.clone())
         coeffs = get_coeffs_type(RealTerm.coeff_type).from_scalar(float(self.coeff.evalf()))
-        return RealTerm._create(TermData(cmpnts, coeffs))
+        return RealTerm._create(TermData(strings, coeffs))
 
     def try_to_complex(self) -> ComplexTerm:
         """Try to evaluate ``self`` as a term containing a complex coefficient.
@@ -725,9 +725,9 @@ class SymbolicTerm(Term[Expr]):
         See Also:
             :meth:`~zixy.container.coeffs.SymbolicCoeffs.try_to_complex`
         """
-        cmpnts = ComplexTerm.cmpnts_type.from_cmpnt(self.string.clone())
+        strings = ComplexTerm.strings_type.from_string(self.string.clone())
         coeffs = get_coeffs_type(ComplexTerm.coeff_type).from_scalar(complex(self.coeff.evalf()))
-        return ComplexTerm._create(TermData(cmpnts, coeffs))
+        return ComplexTerm._create(TermData(strings, coeffs))
 
 
 class SymbolicTerms(Terms[Expr]):

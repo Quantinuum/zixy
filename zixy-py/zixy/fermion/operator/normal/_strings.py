@@ -17,7 +17,7 @@
 Normal-ordered fermionic strings are components representing products of creation operators
 followed by annihilation operators, acting on a register of fermionic modes.
 
-The structure of this module parallels that of :mod:`~zixy.container.cmpnts`.
+The structure of this module parallels that of :mod:`~zixy.container.strings`.
 """
 
 from __future__ import annotations
@@ -188,13 +188,13 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
 
         if isinstance(rhs, Coeff):
             scalar_term_type = get_term_type(type(rhs))
-            return scalar_term_type.from_cmpnt_coeff(self, rhs)
+            return scalar_term_type.from_string_coeff(self, rhs)
         if not isinstance(rhs, String):
             return NotImplemented
         impl, signs = self._impl.cmpnt_mul(self.index, rhs._impl, rhs.index)
         out = RealTermSum(self.modes)
         for i in range(len(impl)):
-            out += RealTermSum.terms_type.term_type.from_cmpnt_coeff(
+            out += RealTermSum.terms_type.term_type.from_string_coeff(
                 Strings._create(impl)[i], float(int(Sign(signs[i])))
             )
         return out
@@ -208,7 +208,7 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
     in another collection.
     """
 
-    cmpnt_type = String
+    string_type = String
     _set_type: type[StringSet]
 
     @classmethod
@@ -229,7 +229,7 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
             out = cls(modes or 0)
             out.resize(0)
             return out
-        return cls._create(cls.cmpnt_type.impl_type(modes, FermionSprings(source)))
+        return cls._create(cls.string_type.impl_type(modes, FermionSprings(source)))
 
     @overload
     def __getitem__(self, indexer: int) -> String: ...
@@ -254,7 +254,7 @@ class StringSet(OperatorStringSet[ImplT, SpecT, ElemT]):
     unique strings and perform set-like operations on them.
     """
 
-    cmpnts_type = Strings
+    strings_type = Strings
 
 
 Strings._set_type = StringSet

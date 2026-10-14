@@ -75,15 +75,15 @@ class ParaparticularMapper(Mapper):
             return QubitStateString._create(self._impl.apply_state(value._impl, value.index))
         if isinstance(value, FermionOperatorString):
             if real:
-                real_cmpnts, real_coeffs, map_ = self._impl.apply_real(value.get_ops())
+                real_strings, real_coeffs, map_ = self._impl.apply_real(value.get_ops())
                 return PauliRealTermSum._create(
-                    TermData(PauliStrings._create(real_cmpnts), RealCoeffs._create(real_coeffs)),
+                    TermData(PauliStrings._create(real_strings), RealCoeffs._create(real_coeffs)),
                     map_,
                 )
-            complex_cmpnts, complex_coeffs, map_ = self._impl.apply_complex(value.get_ops())
+            complex_strings, complex_coeffs, map_ = self._impl.apply_complex(value.get_ops())
             return PauliComplexTermSum._create(
                 TermData(
-                    PauliStrings._create(complex_cmpnts), ComplexCoeffs._create(complex_coeffs)
+                    PauliStrings._create(complex_strings), ComplexCoeffs._create(complex_coeffs)
                 ),
                 map_,
             )

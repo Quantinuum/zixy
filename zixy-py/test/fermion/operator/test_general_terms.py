@@ -287,7 +287,7 @@ def test_real_term_add_iterable():
 
 def test_term_sum_rejects_term_over_different_modes():
     term_sum = RealTermSum(max_string_len=4)
-    term = RealTerm.from_cmpnt_coeff(String(4, "F0^ F0"), 1.0)
+    term = RealTerm.from_string_coeff(String(4, "F0^ F0"), 1.0)
 
     with pytest.raises(ValueError, match="different modes"):
         term_sum += term
@@ -307,17 +307,17 @@ def test_term_set_check_term():
         term_set._check_term(NormalRealTerm.from_str("F0^ F1", 3))
 
 
-def test_term_set_check_cmpnt():
+def test_term_set_check_string():
     term_set = RealTermSet(3, max_string_len=2)
     string = String(3, "F0^ F1")
 
-    term_set._check_cmpnt(string)
+    term_set._check_string(string)
 
     with pytest.raises(ValueError, match="different modes"):
-        term_set._check_cmpnt(String(4, "F0^ F1"))
+        term_set._check_string(String(4, "F0^ F1"))
 
     with pytest.raises(TypeError, match="Expected a String instance"):
-        term_set._check_cmpnt(NormalString(3, "F0^ F1"))
+        term_set._check_string(NormalString(3, "F0^ F1"))
 
 
 def test_real_term_into_other_types():

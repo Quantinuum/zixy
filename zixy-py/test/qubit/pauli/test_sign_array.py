@@ -8,7 +8,7 @@ from zixy.qubit.pauli import ComplexSignTerm, I, SignTerm, SignTerms, SignTermSe
 def test_term():
     term = SignTerm(6)
     assert len(term._impl) == 1
-    assert len(term._impl._cmpnts) == 1
+    assert len(term._impl._strings) == 1
     assert len(term._impl._coeffs) == 1
     assert str(term.string) == ""
     assert str(term.coeff) == "+1"
@@ -95,7 +95,7 @@ def test_append_iterable():
     assert a[::-1][1].string.get_tuple() == (X, Y, Z, Z, Y, X)
 
 
-def test_sign_term_set_cmpnts_only():
+def test_sign_term_set_strings_only():
     n_qubit = 6
     tuples = (
         (X, Y, Z, Z, Y, X),
@@ -124,20 +124,20 @@ def test_sign_term_set():
     )
     a = SignTermSet(n_qubit)
     a.insert_iterable(tuples)
-    assert len(a._impl._cmpnts) == len(a._impl._coeffs)
-    assert len(a._impl._cmpnts) == len(tuples)
+    assert len(a._impl._strings) == len(a._impl._coeffs)
+    assert len(a._impl._strings) == len(tuples)
     for i in range(len(tuples)):
         assert a.contains(tuples[i][0])
     for i in range(len(tuples)):
         assert a.insert(tuples[i]) == i
-    assert len(a._impl._cmpnts) == len(a._impl._coeffs)
+    assert len(a._impl._strings) == len(a._impl._coeffs)
     assert (
         str(a)
         == "(-1, X0 Y1 Z2 Z3 Y4 X5), (+1, Y0 Z1 Z2 X4 Z5), (+1, Y0 X1 X2 X4 Z5), (-1, X0 X1 X3 Z4 X5)"
     )
     a.remove(tuples[1][0])
     assert str(a) == "(-1, X0 Y1 Z2 Z3 Y4 X5), (-1, X0 X1 X3 Z4 X5), (+1, Y0 X1 X2 X4 Z5)"
-    assert len(a._impl._cmpnts) == len(a._impl._coeffs)
+    assert len(a._impl._strings) == len(a._impl._coeffs)
     assert a.lookup_index(tuples[1][0]) is None
     assert a.lookup_index(tuples[0][0]) == 0
     assert a.lookup_index(tuples[2][0]) == 2

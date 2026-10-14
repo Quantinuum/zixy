@@ -37,8 +37,8 @@ The base containers in the Python interface are defined in a general fashion.
 The user-facing API separates these objects into three important classes:
 
 - `Coeff`: a **coefficient**, defining a scalar value of varying types.
-- `Cmpnt`: a **component**, defining a basic algebraic building block.
-- `Term`: a **term**, consisting of a `Cmpnt` scaled by a `Coeff`.
+- `String`: a **string**, defining a basic algebraic building block.
+- `Term`: a **term**, consisting of a `String` scaled by a `Coeff`.
 
 Coefficients are separated into built-in Python types such as `float` or `complex`, symbolic `sympy` expressions,
 and roots of unity such as `Sign` and `ComplexSign`,

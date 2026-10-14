@@ -44,8 +44,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Sequence
 
     from zixy._zixy import ImplArray
-else:
-    ImplArray = object
 
 
 class Cmpnt[ImplT: ImplArray, SpecT](ViewableItem[ImplT], StringRepresentable):

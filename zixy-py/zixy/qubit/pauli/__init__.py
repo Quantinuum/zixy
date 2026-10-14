@@ -41,9 +41,9 @@ from zixy.qubit.pauli._terms import (
 from zixy._zixy import PauliMatrix, PauliSprings, SymplecticPart
 
 I = PauliMatrix.I  # noqa: E741
-X = PauliMatrix.X  # noqa: E741
-Y = PauliMatrix.Y  # noqa: E741
-Z = PauliMatrix.Z  # noqa: E741
+X = PauliMatrix.X
+Y = PauliMatrix.Y
+Z = PauliMatrix.Z
 
 __all__ = [
     "PauliMatrix",

@@ -14,15 +14,15 @@
 
 """Terms and collections of terms.
 
-Terms (:class:`Term`) are algebraic objects composed of a component and a coefficient. They
-encapsulate a :class:`~zixy.container.data.TermData` object which wraps the component and
+Terms (:class:`Term`) are algebraic objects composed of a string and a coefficient. They
+encapsulate a :class:`~zixy.container.data.TermData` object which wraps the string and
 coefficient either as single owning instances or views of elements in another collection.
 
 Terms are stored in collections of terms (:class:`Terms`), which are array-like containers that
 similarly encapsulate a :class:`~zixy.container.data.TermData` object which wraps the
-components and coefficients either as owning instances or views of slices of another collection.
+strings and coefficients either as owning instances or views of slices of another collection.
 
-Sets of terms (:class:`TermSet`) are set-like containers of terms, storing unique components and
+Sets of terms (:class:`TermSet`) are set-like containers of terms, storing unique strings and
 their coefficients, and allowing set-like operations on them. They are implemented using a hash
 map.
 
@@ -78,11 +78,11 @@ type TermSpecT[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, E
 
 
 def _parse_term_str(source: str) -> tuple[str | None, str]:
-    """Parse a string representation of a term into its coefficient and component parts.
+    """Parse a string representation of a term into its coefficient and string parts.
 
     Note:
         The string representation of terms is assumed to be a comma-separated parenthesis-enclosed
-        pair of the coefficient and component. It may also be simply comma-separated components, in
+        pair of the coefficient and string. It may also be simply comma-separated strings, in
         which case the coefficient part is returned as ``None``.
     """
     # Remove any whitespace
@@ -91,7 +91,7 @@ def _parse_term_str(source: str) -> tuple[str | None, str]:
     # Remove any parentheses and whitespace from each element
     items = [item.strip() for item in split_top_level(string, ",")]
 
-    # Separate the coefficient and component parts
+    # Separate the coefficient and string parts
     items_coeff: list[str] = []
     items_string: list[str] = []
     for item in items:
@@ -107,10 +107,10 @@ def _parse_term_str(source: str) -> tuple[str | None, str]:
         else:
             raise ValueError(f"Invalid item '{item}' in string '{source}'.")
 
-    # Join the coefficient and component parts into independently parsable strings
+    # Join the coefficient and string parts into independently parsable strings
     source_string = ", ".join(items_string)
     if len(items_coeff) != 0 and len(items_coeff) != len(items_string):
-        raise ValueError(f"Inconsistent coefficient and component counts in string '{source}'.")
+        raise ValueError(f"Inconsistent coefficient and string counts in string '{source}'.")
     source_coeff = ", ".join(items_coeff) if items_coeff else None
 
     return source_coeff, source_string
@@ -128,8 +128,7 @@ def _coeffs_from_str[C: (float, complex, Sign, ComplexSign, Expr)](
     )
     if len(coeffs) != n_string:
         raise ValueError(
-            f"Length of coefficients ({len(coeffs)}) does not match length of components "
-            f"({n_string})."
+            f"Length of coefficients ({len(coeffs)}) does not match length of strings ({n_string})."
         )
     return coeffs
 
@@ -138,9 +137,9 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
     ViewableItem[TermData[ImplT, SpecT, C]],
     StringRepresentable,
 ):
-    """A term consisting of a component and a coefficient.
+    """A term consisting of a string and a coefficient.
 
-    A single term consisting of a component and a coefficient that may be an owning instance
+    A single term consisting of a string and a coefficient that may be an owning instance
     referencing the sole element in an owned :class:`~zixy.container.data.TermData` instance, or
     a view on an element in another collection.
     """
@@ -178,7 +177,7 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
 
     @property
     def string_type(self) -> type[String[ImplT, SpecT]]:
-        """The component type of ``self``."""
+        """The string type of ``self``."""
         return self.strings_type.string_type
 
     @property
@@ -204,14 +203,14 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
 
     @classmethod
     def from_string_coeff(cls, string: String[ImplT, SpecT], coeff: C) -> Self:
-        """Factory to make an instance of ``cls`` from a component and a coefficient.
+        """Factory to make an instance of ``cls`` from a string and a coefficient.
 
         Args:
-            string: Component to copy from.
+            string: String to copy from.
             coeff: Coefficient scaling the ``string`` in the new instance.
 
         Returns:
-            An instance of ``cls`` with the given component and coefficient.
+            An instance of ``cls`` with the given string and coefficient.
         """
         strings = cls.strings_type.from_string(string)
         coeffs = get_coeffs_type(cls.coeff_type)()
@@ -224,8 +223,8 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
 
         Args:
             source: String to parse.
-            *args: Positional arguments to forward to the component constructor.
-            **kwargs: Keyword arguments to forward to the component constructor.
+            *args: Positional arguments to forward to the string constructor.
+            **kwargs: Keyword arguments to forward to the string constructor.
 
         Returns:
             An instance of ``cls`` parsed from ``source``.
@@ -246,7 +245,7 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
 
     @property
     def string(self) -> String[ImplT, SpecT]:
-        """A view of the component of ``self``."""
+        """A view of the string of ``self``."""
         return self._data.strings[self.index]
 
     @property
@@ -267,7 +266,7 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         self._data.coeffs[self.index] = convert(value, self._data.coeff_type)
 
     def aliases(self, other: Term[Any, Any, Any]) -> bool:
-        """Determine whether ``self`` is a view of the same component as ``other``."""
+        """Determine whether ``self`` is a view of the same string as ``other``."""
         if type(self) is not type(other):
             return False
         return self.string.aliases(other.string)
@@ -312,7 +311,7 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         self.coeff = coeff if coeff is not None else unit(self.coeff_type)
 
     def clear(self) -> None:
-        """Set the value of the component to zero and the coefficient to unity.
+        """Set the value of the string to zero and the coefficient to unity.
 
         Note:
             This method operates in-place.
@@ -340,9 +339,9 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
     ViewableSequence[Term[ImplT, SpecT, C], TermData[ImplT, SpecT, C]],
     StringRepresentable,
 ):
-    """A collection of terms consisting of components and coefficients.
+    """A collection of terms consisting of strings and coefficients.
 
-    An array-like container of terms consisting of components and coefficients that may be an
+    An array-like container of terms consisting of strings and coefficients that may be an
     owning instance referencing a :class:`~zixy.container.data.TermData` instance, or a view on
     a slice of the elements in another collection.
     """
@@ -405,17 +404,17 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
 
     @property
     def strings_type(self) -> type[Strings[ImplT, SpecT]]:
-        """The component container type of ``self``."""
+        """The string container type of ``self``."""
         return self._data.strings_type
 
     @property
     def string_type(self) -> type[String[ImplT, SpecT]]:
-        """The component type of ``self``."""
+        """The string type of ``self``."""
         return self._impl.string_type
 
     @property
     def strings(self) -> Strings[ImplT, SpecT]:
-        """The components of ``self``."""
+        """The strings of ``self``."""
         return self._data.strings[self.slice]
 
     @property
@@ -472,7 +471,7 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
 
         Args:
             indexer: Index of the string or slice of strings within ``self`` to assign.
-            source: Value specifying the term or a view of many components to assign at
+            source: Value specifying the term or a view of many strings to assign at
                 ``indexer``.
         """
         if isinstance(indexer, slice):
@@ -577,10 +576,10 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         return out
 
     def new_clear_term(self) -> Term[ImplT, SpecT, C]:
-        """Factory to make a new term with a zero component and a unit coefficient.
+        """Factory to make a new term with a zero string and a unit coefficient.
 
         Returns:
-            A new owing term with the component and coefficient type of ``self``.
+            A new owing term with the string and coefficient type of ``self``.
         """
         try:
             tmp = self[0].clone()
@@ -594,7 +593,7 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
     def iter_filter_map(
         self, f: Callable[[Term[ImplT, SpecT, C]], bool]
     ) -> Iterator[Term[ImplT, SpecT, C]]:
-        """Lazily evaluate a filter-map operation over the components of ``self``.
+        """Lazily evaluate a filter-map operation over the strings of ``self``.
 
         Args:
             f: Function which may mutate copies of the terms of ``self``, returning ``True`` if
@@ -624,7 +623,7 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
                 should take a single :class:`Term` instance as an argument, and return a boolean.
 
         Returns:
-            New instance containing the occurrences of selected (and possibly mutated) components
+            New instance containing the occurrences of selected (and possibly mutated) strings
             of ``self`` according to ``f``.
         """
         out = self._empty_clone()
@@ -687,7 +686,7 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         """Convert ``self`` to a :class:`~pandas.DataFrame`."""
         return pd.DataFrame(
             {
-                "Component": (str(c) for c in self.strings),
+                "String": (str(c) for c in self.strings),
                 "Coefficient": (str(c) for c in self.coeffs),
             }
         )
@@ -719,8 +718,8 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
 
         Args:
             source: String to parse.
-            *args: Positional arguments to forward to the component constructor.
-            **kwargs: Keyword arguments to forward to the component constructor.
+            *args: Positional arguments to forward to the string constructor.
+            **kwargs: Keyword arguments to forward to the string constructor.
 
         Returns:
             An instance of ``cls`` parsed from ``source``.
@@ -734,9 +733,9 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
 
 
 class NumericTerms[ImplT: ImplArray, SpecT, C: (float, complex)](Terms[ImplT, SpecT, C]):
-    """A collection of terms consisting of components and numeric coefficients.
+    """A collection of terms consisting of strings and numeric coefficients.
 
-    An array-like container of terms consisting of components and coefficients that may be an
+    An array-like container of terms consisting of strings and coefficients that may be an
     owning instance referencing a :class:`~zixy.container.data.TermData` instance, or a view on
     a slice of the elements in another collection.
     """
@@ -763,13 +762,13 @@ class NumericTerms[ImplT: ImplArray, SpecT, C: (float, complex)](Terms[ImplT, Sp
 class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
     StringRepresentable
 ):
-    """A collection of unique terms consisting of components and coefficients.
+    """A collection of unique terms consisting of strings and coefficients.
 
     A set-like container of terms that may be used to store unique terms and perform set-like
     operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -783,11 +782,11 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         """Initialize the term set.
 
         Args:
-            terms: Terms-derived object from which to construct the set of components and their
+            terms: Terms-derived object from which to construct the set of strings and their
                 coefficients.
 
         Note:
-            Components which appear multiple times in ``terms`` will appear only once in
+            Strings which appear multiple times in ``terms`` will appear only once in
                 ``self``.
         """
         self._impl = terms._empty_clone()._impl
@@ -845,12 +844,12 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
 
     @property
     def strings_type(self) -> type[Strings[ImplT, SpecT]]:
-        """The component container type of ``self``."""
+        """The string container type of ``self``."""
         return self._impl.strings_type
 
     @property
     def string_type(self) -> type[String[ImplT, SpecT]]:
-        """The component type of ``self``."""
+        """The string type of ``self``."""
         return self._data.string_type
 
     @classmethod
@@ -859,7 +858,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
 
         Args:
             data: Raw term data object.
-            map_: Populated component lookup map for ``data``. If supplied, adopt both directly.
+            map_: Populated string lookup map for ``data``. If supplied, adopt both directly.
 
         Returns:
             A new instance of ``cls``.
@@ -936,8 +935,8 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
 
         Args:
             source: String to parse.
-            *args: Positional arguments to forward to the component constructor.
-            **kwargs: Keyword arguments to forward to the component constructor.
+            *args: Positional arguments to forward to the string constructor.
+            **kwargs: Keyword arguments to forward to the string constructor.
 
         Returns:
             An instance of ``cls`` parsed from ``source``.
@@ -989,7 +988,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         pass
 
     def _check_string(self, value: String[ImplT, SpecT]) -> None:
-        """Hook to check whether a component is valid for insertion into ``self``."""
+        """Hook to check whether a string is valid for insertion into ``self``."""
         pass
 
     def _get_working_term(
@@ -1014,15 +1013,15 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         return term
 
     def _get_working_string(self, value: String[ImplT, SpecT] | SpecT) -> String[ImplT, SpecT]:
-        """Get a component that contains the data specified by ``value``.
+        """Get a string that contains the data specified by ``value``.
 
         Args:
-            value: Component or component specifier required.
+            value: String or string specifier required.
 
         Returns:
             If ``value`` is an instance of :class:`~zixy.container.strings.String`, return
-            it. Otherwise, set the component of the internally-allocated working term to the data
-            specified by ``value`` and return that component.
+            it. Otherwise, set the string of the internally-allocated working term to the data
+            specified by ``value`` and return that string.
         """
         string_type = self._impl.string_type
         assert issubclass(string_type, String)
@@ -1059,14 +1058,14 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         """Insertion method which does not overwrite coefficient values.
 
         Operates similarly to :meth:`insert`, but does not overwrite coefficient values if the
-        component specified by ``key`` is already present in ``self``.
+        string specified by ``key`` is already present in ``self``.
 
         Args:
             key: The term specifier.
 
         Returns:
             Index at which the term was inserted or found, and a boolean indicating whether
-            insertion was successful (i.e. whether the component specified by ``key`` was not
+            insertion was successful (i.e. whether the string specified by ``key`` was not
             already present in ``self``).
 
         Note:
@@ -1096,13 +1095,13 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
     def lookup_index(
         self, value: SpecT | String[ImplT, SpecT] | Term[ImplT, SpecT, C]
     ) -> int | None:
-        """Try to find the index of the component specified by ``value`` in ``self``.
+        """Try to find the index of the string specified by ``value`` in ``self``.
 
         Args:
-            value: The component or term specifier.
+            value: The string or term specifier.
 
         Returns:
-            The index of the component specified by ``value`` if it is present in
+            The index of the string specified by ``value`` if it is present in
             ``self``, and ``None`` otherwise.
         """
         value = self._get_working_term(value)
@@ -1112,7 +1111,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         """Try to find the coefficient of the term specified by ``value`` in ``self``.
 
         Args:
-            value: The component or term specifier.
+            value: The string or term specifier.
 
         Returns:
             The coefficient of the term specified by ``value`` if it is present in
@@ -1126,10 +1125,10 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
     def lookup(
         self, value: SpecT | String[ImplT, SpecT] | Term[ImplT, SpecT, C]
     ) -> tuple[int, C] | None:
-        """Try to find the index and coefficient of the component specified by ``value``.
+        """Try to find the index and coefficient of the string specified by ``value``.
 
         Args:
-            value: The component or term specifier.
+            value: The string or term specifier.
 
         Returns:
             The index at which the value was inserted, or ``None`` if the value was not found.
@@ -1140,10 +1139,10 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         return index, self._impl._coeffs[index]
 
     def contains(self, value: SpecT | String[ImplT, SpecT] | Term[ImplT, SpecT, C]) -> bool:
-        """Check whether the component specified by ``value`` is stored in ``self``.
+        """Check whether the string specified by ``value`` is stored in ``self``.
 
         Args:
-            value: The component specifier.
+            value: The string specifier.
 
         Returns:
             Whether the lookup of ``value`` was successful.
@@ -1151,18 +1150,18 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         return self.lookup(value) is not None
 
     def remove(self, value: SpecT | String[ImplT, SpecT] | Term[ImplT, SpecT, C]) -> int:
-        """Try to remove the component specified by ``value`` from ``self``.
+        """Try to remove the string specified by ``value`` from ``self``.
 
-        If the component is found, removal proceeds via swap-remove.
+        If the string is found, removal proceeds via swap-remove.
 
         Args:
-            value: The component specifier.
+            value: The string specifier.
 
         Returns:
-            The index at which the component was removed.
+            The index at which the string was removed.
 
         Raises:
-            KeyError: The component was not found.
+            KeyError: The string was not found.
         """
         value = self._get_working_term(value)
         i = self._string_set.remove(value.string)
@@ -1172,16 +1171,16 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         return i
 
     def __getitem__(self, value: SpecT | String[ImplT, SpecT] | Term[ImplT, SpecT, C]) -> C:
-        """Get the coefficient of the term with component specified by ``value``.
+        """Get the coefficient of the term with string specified by ``value``.
 
         Args:
-            value: The component or term specifier.
+            value: The string or term specifier.
 
         Returns:
-            The coefficient of the term with component specified by ``value``.
+            The coefficient of the term with string specified by ``value``.
 
         Raises:
-            KeyError: The component specified by ``value`` was not found in ``self``.
+            KeyError: The string specified by ``value`` was not found in ``self``.
         """
         out = self.lookup_coeff(value)
         if out is None:
@@ -1189,7 +1188,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         return out
 
     def __setitem__(self, key: SpecT | Term[ImplT, SpecT, C], coeff: C) -> None:
-        """Set the coefficient of the term with component specified by ``key``."""
+        """Set the coefficient of the term with string specified by ``key``."""
         self._impl._coeffs[self.insert(key)] = coeff
 
     def __eq__(self, other: object) -> bool:
@@ -1237,11 +1236,11 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
                 should take a single :class:`Term` instance as an argument, and return a boolean.
 
         Returns:
-            Iterator over the selected (and possibly mutated) components of ``self`` according
+            Iterator over the selected (and possibly mutated) strings of ``self`` according
             to ``f``.
 
         Note:
-            The resulting generator does not enforce uniqueness of components.
+            The resulting generator does not enforce uniqueness of strings.
         """
         return (term for term in self if f(term))
 
@@ -1254,12 +1253,12 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
                 should take a single :class:`Term` instance as an argument, and return a boolean.
 
         Returns:
-            New instance containing the occurrences of selected (and possibly mutated) components
+            New instance containing the occurrences of selected (and possibly mutated) strings
             of ``self`` according to ``f``.
 
         Note:
-            The resulting generator enforces uniqueness of components by overwriting coefficients of
-            duplicate components.
+            The resulting generator enforces uniqueness of strings by overwriting coefficients of
+            duplicate strings.
         """
         return self._from_generator(self.iter_filter_map(f))
 
@@ -1295,8 +1294,8 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         out = self._empty_clone()
         strings = out._string_set
         coeffs = out._impl._coeffs
-        # Components are already unique: copy them without constructing term views
-        # or repeating coefficient conversion and component compatibility checks.
+        # Strings are already unique: copy them without constructing term views
+        # or repeating coefficient conversion and string compatibility checks.
         for index, coeff in enumerate(self._impl._coeffs):
             if coeff != 0:
                 strings._impl.mapped_insert(strings._map, self._impl._strings._impl, index)
@@ -1307,13 +1306,13 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
 class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
     TermSet[ImplT, SpecT, C]
 ):
-    """A sum of terms consisting of components and coefficients.
+    """A sum of terms consisting of strings and coefficients.
 
     A set-like container of terms that may be used to store unique terms and perform algebraic
     operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -1446,8 +1445,8 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
 
         Args:
             source: String to parse.
-            *args: Positional arguments to forward to the component constructor.
-            **kwargs: Keyword arguments to forward to the component constructor.
+            *args: Positional arguments to forward to the string constructor.
+            **kwargs: Keyword arguments to forward to the string constructor.
 
         Returns:
             An instance of ``cls`` parsed from ``source``.
@@ -1502,13 +1501,13 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
 
 
 class NumericTermSum[ImplT: ImplArray, SpecT, C: (float, complex)](TermSum[ImplT, SpecT, C]):
-    """A sum of terms consisting of components and numeric coefficients.
+    """A sum of terms consisting of strings and numeric coefficients.
 
     A set-like container of terms that may be used to store unique terms and perform algebraic
     operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 

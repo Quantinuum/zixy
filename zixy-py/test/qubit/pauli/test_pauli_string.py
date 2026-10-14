@@ -13,7 +13,7 @@ def test_from_str():
     assert str(string) == source
     with pytest.raises(ValueError) as err:
         string.set("Y0, X1 Y3")
-    assert str(err.value) == "String input has more than one component."
+    assert str(err.value) == "Input represents more than one string."
     assert str(string) == source
     # infer the qubits value from the highest mode index in the source
     assert String(source=source) == string

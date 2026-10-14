@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Base fermionic ladder-operator string components and collections of such strings.
+"""Base fermionic ladder-operator strings and collections of such strings.
 
-Ladder-operator strings are components representing products of creation and annihilation
+Ladder-operator strings represent products of creation and annihilation
 operators, acting on a register of fermionic modes.
 """
 

@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Normal-ordered fermionic ladder-operator string components and collections of such strings.
+"""Normal-ordered fermionic ladder-operator strings and collections of such strings.
 
-Normal-ordered fermionic strings are components representing products of creation operators
+Normal-ordered fermionic strings represent products of creation operators
 followed by annihilation operators, acting on a register of fermionic modes.
 
 The structure of this module parallels that of :mod:`~zixy.container.strings`.
@@ -109,7 +109,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
             elif len(springs) == 1:
                 self._impl.cmpnt_set_from_spring(self.index, springs, 0)
             else:
-                raise ValueError("String input has more than one component.")
+                raise ValueError("Input represents more than one string.")
         elif isinstance(source, tuple) and len(source) == 2:
             cre, ann = source
             if all(isinstance(x, bool) for x in cre) and all(isinstance(x, bool) for x in ann):

@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 """
-Mock-up a viewable component list system with classes extending:
+Mock-up a viewable string list system with classes extending:
     - basic array storage implementation (ImplArray)
     - single string view / owning object (String)
     - multiple string view / owning object (Strings)

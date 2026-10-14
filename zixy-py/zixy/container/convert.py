@@ -51,7 +51,7 @@ def into[T](source: ViewableBase[Any, Any], t: type[T]) -> T:
         An owning clone represented as ``t``.
 
     Raises:
-        TypeError: If the source-target pair is unsupported or has incompatible component types.
+        TypeError: If the source-target pair is unsupported or has incompatible string types.
         ValueError: If a coefficient value cannot be represented by the target coefficient type.
     """
     if not isinstance(t, type):
@@ -72,11 +72,11 @@ def into[T](source: ViewableBase[Any, Any], t: type[T]) -> T:
 def _check_string_compatibility[ImplT: ImplArray, SpecT, TargetSpecT](
     source_type: type[String[ImplT, SpecT]], target_type: type[String[ImplT, TargetSpecT]]
 ) -> None:
-    """Check that source and target component types are compatible for conversion."""
+    """Check that source and target string types are compatible for conversion."""
     if source_type.impl_type is not target_type.impl_type:
         raise TypeError(
-            f"Cannot convert a container with component implementation type "
-            f"{source_type.impl_type} into one with component implementation type "
+            f"Cannot convert a container with string implementation type "
+            f"{source_type.impl_type} into one with string implementation type "
             f"{target_type.impl_type}."
         )
 
@@ -127,7 +127,7 @@ def _clone_coeffs_as[
 def _clone_strings_as[ImplT: ImplArray, SpecT, TargetSpecT](
     source: Strings[ImplT, SpecT], target_type: type[Strings[ImplT, TargetSpecT]]
 ) -> Strings[ImplT, TargetSpecT]:
-    """Clone component data from ``source`` as ``target_type``."""
+    """Clone string data from ``source`` as ``target_type``."""
     _check_string_compatibility(source.string_type, target_type.string_type)
     return target_type._create(source.clone()._impl)
 
@@ -135,7 +135,7 @@ def _clone_strings_as[ImplT: ImplArray, SpecT, TargetSpecT](
 def _clone_string_as[ImplT: ImplArray, SpecT, TargetSpecT](
     source: String[ImplT, SpecT], target_type: type[String[ImplT, TargetSpecT]]
 ) -> String[ImplT, TargetSpecT]:
-    """Clone component data from ``source`` as ``target_type``."""
+    """Clone string data from ``source`` as ``target_type``."""
     _check_string_compatibility(type(source), target_type)
     return target_type._create(source.clone()._impl)
 
@@ -143,7 +143,7 @@ def _clone_string_as[ImplT: ImplArray, SpecT, TargetSpecT](
 def _into_string[ImplT: ImplArray, SpecT](
     source: object, t: type[String[ImplT, SpecT]]
 ) -> String[ImplT, SpecT]:
-    """Convert to a single component."""
+    """Convert to a single string."""
     if isinstance(source, String):
         return _clone_string_as(source, t)
     if isinstance(source, Strings):
@@ -156,13 +156,13 @@ def _into_string[ImplT: ImplArray, SpecT](
     if isinstance(source, Terms):
         _require_single_item(source, t)
         return _into_string(source[0], t)
-    raise TypeError(f"Cannot convert {type(source)} into component type {t}.")
+    raise TypeError(f"Cannot convert {type(source)} into string type {t}.")
 
 
 def _into_strings[ImplT: ImplArray, SpecT](
     source: object, t: type[Strings[ImplT, SpecT]]
 ) -> Strings[ImplT, SpecT]:
-    """Convert to a component sequence."""
+    """Convert to a string sequence."""
     if isinstance(source, String):
         _check_string_compatibility(type(source), t.string_type)
         return t._create(source.clone()._impl)
@@ -175,7 +175,7 @@ def _into_strings[ImplT: ImplArray, SpecT](
     if isinstance(source, Terms):
         _require_unit_coeffs(source, t)
         return _clone_strings_as(source.strings, t)
-    raise TypeError(f"Cannot convert {type(source)} into component collection type {t}.")
+    raise TypeError(f"Cannot convert {type(source)} into string collection type {t}.")
 
 
 def _into_term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](

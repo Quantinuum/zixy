@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Terms containing Pauli strings as components and collections of such terms.
+"""Terms containing Pauli strings and collections of such terms.
 
 The structure of this module parallels that of :mod:`~zixy.container.terms` and
-:mod:`~zixy.qubit._terms`, but with components that are Pauli strings, as defined in
+:mod:`~zixy.qubit._terms`, using Pauli strings defined in
 :mod:`~zixy.qubit.pauli._strings`.
 """
 
@@ -142,7 +142,7 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](
 
     @property
     def string(self) -> String:
-        """The string component of the term."""
+        """The string of the term."""
         return cast("String", super().string)
 
     def __imul__(self, rhs: Coeff | String | Term[C]) -> Self:
@@ -210,7 +210,7 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](
 
     @property
     def strings(self) -> Strings:
-        """The components of ``self``."""
+        """The strings of ``self``."""
         return cast("Strings", super().strings)
 
     def lexicographic_sort(self, ascending: bool = False) -> None:
@@ -332,11 +332,11 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](
 
         Args:
             mode_order: The order of binary entries to try reducing to at most one non-zero entry.
-            to_solve: The subset of the components to canonicalize over (e.g. if some partial
-                canonicalization has already been done, skip those components).
-            additional_reduces: Components outside of ``to_solve`` to include in the reduction step
+            to_solve: The subset of the strings to canonicalize over (e.g. if some partial
+                canonicalization has already been done, skip those strings).
+            additional_reduces: Strings outside of ``to_solve`` to include in the reduction step
                 (e.g. if some partial canonicalization has already been done, reduce the
-                components that already have leading entries).
+                strings that already have leading entries).
 
         Returns:
             The sequence of imul operations as pairs ``(lhs_written, rhs_read)``.
@@ -380,7 +380,7 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
     set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -396,7 +396,7 @@ class TermSum[C: (float, complex, Sign, ComplexSign, Expr)](
     linear combination operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -556,7 +556,7 @@ class SignTermSet(TermSet[Sign]):
     coefficients that may be used to store unique terms and perform set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -653,7 +653,7 @@ class ComplexSignTermSet(TermSet[ComplexSign]):
     terms and perform set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -768,7 +768,7 @@ class RealTermSet(TermSet[float]):
     store unique terms and perform set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -782,7 +782,7 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
     store unique terms and perform algebraic operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -1107,7 +1107,7 @@ class ComplexTermSet(TermSet[complex]):
     store unique terms and perform set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -1121,7 +1121,7 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
     store unique terms and perform algebraic operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -1534,7 +1534,7 @@ class SymbolicTermSet(TermSet[Expr]):
     set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -1548,7 +1548,7 @@ class SymbolicTermSum(TermSum[Expr]):
     algebraic operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 

@@ -70,8 +70,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Sequence
 
     from zixy._zixy import ImplArray, Map
-else:
-    ImplArray = object
 
 
 type TermSpecT[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)] = (

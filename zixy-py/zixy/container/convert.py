@@ -38,8 +38,6 @@ if TYPE_CHECKING:
 
     from zixy._zixy import ImplArray
     from zixy.container.base import ViewableBase
-else:
-    ImplArray = object
 
 
 def into[T](source: ViewableBase[Any, Any], t: type[T]) -> T:

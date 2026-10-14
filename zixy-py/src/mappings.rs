@@ -4,14 +4,14 @@ use num_complex::Complex64;
 use pyo3::{pyclass, pymethods};
 use zixy::container::traits::RefElements;
 use zixy::container::word_iters::Elem;
-use zixy::fermion::state::cmpnt_list::CmpntRef as FermionStateRef;
+use zixy::fermion::state::string_list::StringRef as FermionStateRef;
 use zixy::mappings::bk::BravyiKitaevMapper as BravyiKitaevMapper_;
 use zixy::mappings::jw::JordanWignerMapper as JordanWignerMapper_;
 use zixy::mappings::paraparticular::ParaparticularMapper as ParaparticularMapper_;
 use zixy::mappings::parity::ParityMapper as ParityMapper_;
 use zixy::mappings::Mapper;
-use zixy::qubit::pauli::cmpnt_major::term_set;
-use zixy::qubit::state::cmpnt_list::CmpntList as QubitStateCmpntList;
+use zixy::qubit::pauli::string_major::term_set;
+use zixy::qubit::state::string_list::StringList as QubitStateStringList;
 
 use crate::container::coeffs::{ComplexVec, RealVec};
 use crate::container::map::Map;
@@ -49,7 +49,7 @@ where
 
 fn apply_state<M>(mapper: &mut M, state: &FermionStateArray, index: usize) -> QubitStateArray
 where
-    for<'a> M: Mapper<FermionStateRef<'a>, Elem<QubitStateCmpntList>>,
+    for<'a> M: Mapper<FermionStateRef<'a>, Elem<QubitStateStringList>>,
 {
     let output = mapper.apply(state.0.get_elem_ref(index));
     QubitStateArray(output.0)

@@ -6,8 +6,8 @@ use crate::container::coeffs::traits::FieldElem;
 use crate::container::errors::OutOfBounds;
 use crate::container::traits::proj::BorrowMut;
 use crate::qubit::mode::{PauliMatrix, Qubits};
-use crate::qubit::pauli::cmpnt_major::lincomb::add_from_pauli_map;
-use crate::qubit::pauli::cmpnt_major::term_set::TermSet;
+use crate::qubit::pauli::string_major::lincomb::add_from_pauli_map;
+use crate::qubit::pauli::string_major::term_set::TermSet;
 
 /// Create a number operator over the given set of mode indices.
 pub fn num_op_inds<C: FieldElem>(
@@ -55,8 +55,8 @@ mod tests {
     use crate::container::traits::proj::Borrow;
     use crate::container::word_iters::term_set::AsView;
     use crate::qubit::mode::{PauliMatrix, Qubits};
-    use crate::qubit::pauli::cmpnt_major::lincomb::from_vec_coeff_pairs;
-    use crate::qubit::pauli::cmpnt_major::num_ops::num_op;
+    use crate::qubit::pauli::string_major::lincomb::from_vec_coeff_pairs;
+    use crate::qubit::pauli::string_major::num_ops::num_op;
     use num_complex::Complex64;
 
     #[test]

@@ -371,11 +371,11 @@ pub trait NumReprVec:
     }
 
     /// Try to create an instance of `Self` from a string, which can be in one of two formats:
-    /// - coefficient, component pairs "(coeff0, cmpnt0), (coeff1, cmpnt1), ..."
+    /// - coefficient, component pairs "(coeff0, string0), (coeff1, string1), ..."
     /// - comma-separated list of coeffs "coeff0, coeff1, ..."
     fn try_parse(s: &str) -> Result<Self, Unrepresentable> {
         if s.trim().starts_with("(") {
-            // extract the coeffs from (coeff, cmpnt) pairs
+            // extract the coeffs from (coeff, string) pairs
             Self::try_from_parsed(
                 s.trim()
                     .trim_start_matches("(")
@@ -649,10 +649,10 @@ impl IsFloat for f64 {
     }
 }
 
-/// Classification of an input string as coefficients only, components only, or `(coeff, cmpnt)` pairs.
+/// Classification of an input string as coefficients only, components only, or `(coeff, string)` pairs.
 pub enum StringKind {
     CoeffsOnly,
-    CmpntsOnly,
+    StringsOnly,
     Both,
 }
 
@@ -664,7 +664,7 @@ impl From<&str> for StringKind {
             // Every numrepr string is parsable as complex
             Self::CoeffsOnly
         } else {
-            Self::CmpntsOnly
+            Self::StringsOnly
         }
     }
 }

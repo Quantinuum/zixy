@@ -6,17 +6,17 @@ use crate::container::map::Map;
 use crate::container::traits::proj::Borrow;
 use crate::container::word_iters;
 use crate::qubit::mode::{PauliMatrix, Qubits};
-use crate::qubit::pauli::cmpnt_major::cmpnt::PauliWord;
-use crate::qubit::pauli::cmpnt_major::cmpnt_list::CmpntList;
-use crate::qubit::pauli::cmpnt_major::terms::Terms;
+use crate::qubit::pauli::string_major::string::PauliWord;
+use crate::qubit::pauli::string_major::string_list::StringList;
+use crate::qubit::pauli::string_major::terms::Terms;
 use crate::qubit::traits::QubitsBased;
 
-pub type TermSet<C /*: NumRepr*/> = word_iters::term_set::TermSet<CmpntList, C>;
-pub type View<'a, C /*: NumRepr*/> = word_iters::term_set::View<'a, CmpntList, C>;
-pub type ViewMut<'a, C /*: NumRepr*/> = word_iters::term_set::ViewMut<'a, CmpntList, C>;
+pub type TermSet<C /*: NumRepr*/> = word_iters::term_set::TermSet<StringList, C>;
+pub type View<'a, C /*: NumRepr*/> = word_iters::term_set::View<'a, StringList, C>;
+pub type ViewMut<'a, C /*: NumRepr*/> = word_iters::term_set::ViewMut<'a, StringList, C>;
 
 /// Trait for structs that immutably view a [`TermSet`].
-pub trait AsView<C: NumRepr>: word_iters::term_set::AsView<CmpntList, C> {
+pub trait AsView<C: NumRepr>: word_iters::term_set::AsView<StringList, C> {
     /// Lookup the given vector of Paulis.
     fn lookup_coeff_pauli_vec(&self, paulis: Vec<PauliMatrix>) -> Result<Option<C>, OutOfBounds> {
         let self_ref = self.view();
@@ -27,7 +27,7 @@ pub trait AsView<C: NumRepr>: word_iters::term_set::AsView<CmpntList, C> {
 }
 
 /// Trait for structs that mutably view a [`TermSet`].
-pub trait AsViewMut<C: NumRepr>: word_iters::term_set::AsViewMut<CmpntList, C> {}
+pub trait AsViewMut<C: NumRepr>: word_iters::term_set::AsViewMut<StringList, C> {}
 
 impl<C: NumRepr> AsView<C> for TermSet<C> {}
 impl<'a, C: NumRepr> AsView<C> for View<'a, C> {}
@@ -67,7 +67,6 @@ impl<'a, C: NumRepr> QubitsBased for ViewMut<'a, C> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cmpnt::springs::ModeSettings;
     use crate::container::coeffs::unity::Unity;
     use crate::container::quicksort::{LexicographicSort, QuickSortNoCoeffs};
     use crate::container::traits::proj::BorrowMut;
@@ -76,6 +75,7 @@ mod tests {
     use crate::qubit::mode::PauliMatrix;
     use crate::qubit::pauli::springs::Springs;
     use crate::qubit::test::HEHP_STO3G_HAM_JW_INPUT;
+    use crate::string::springs::ModeSettings;
 
     use bincode::config;
     use PauliMatrix::*;
@@ -137,7 +137,7 @@ mod tests {
         let springs = Springs::from_str(HEHP_STO3G_HAM_JW_INPUT);
         assert!(springs.is_ok());
         let springs = springs.unwrap();
-        let list = CmpntList::from_springs_default(&springs).0;
+        let list = StringList::from_springs_default(&springs).0;
         let set = TermSet::<Unity>::from(list.clone());
         let encoded = bincode::serde::encode_to_vec(&set, config::standard()).unwrap();
         let (decoded, len): (TermSet<Unity>, usize) =

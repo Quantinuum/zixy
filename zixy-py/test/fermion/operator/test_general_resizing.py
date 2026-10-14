@@ -175,9 +175,9 @@ def test_invalid_assignment_and_warning_error_are_atomic():
         with pytest.raises(ValueError, match="bounds"):
             string.set("F0 F2")
         with pytest.raises(ValueError, match="same length"):
-            string._impl.cmpnt_set_from_ops(0, [0, 1], [False])
+            string._impl.string_set_from_ops(0, [0, 1], [False])
         with pytest.raises(IndexError):
-            string._impl.cmpnt_set_from_ops(3, [0, 1], [False, True])
+            string._impl.string_set_from_ops(3, [0, 1], [False, True])
     assert str(string) == "F0"
     assert string.max_string_len == 1
 
@@ -194,10 +194,10 @@ def test_binding_growth_and_silent_initial_allocation():
     array = GeneralFermionOperatorArray(Modes.from_count(2))
     array.resize(2)
     with pytest.warns(UserWarning):
-        array.cmpnt_set_from_ops(1, [0, 1], [False, True])
+        array.string_set_from_ops(1, [0, 1], [False, True])
     assert array.max_string_len == 2
-    assert array.cmpnt_get_ops(0) == ([], [])
-    assert array.cmpnt_get_ops(1) == ([0, 1], [False, True])
+    assert array.string_get_ops(0) == ([], [])
+    assert array.string_get_ops(1) == ([0, 1], [False, True])
 
 
 def test_product_preallocation_is_silent():

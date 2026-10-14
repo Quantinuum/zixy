@@ -9,22 +9,22 @@ use zixy::container::utils::DistinctPair;
 use zixy::container::word_iters::set::{AsView as _, AsViewMut as _};
 use zixy::container::word_iters::{self, WordIters};
 use zixy::qubit::state;
-use zixy::qubit::state::cmpnt_list::CmpntList;
+use zixy::qubit::state::string_list::StringList;
 use zixy::qubit::traits::{DifferentQubits, QubitsBased, QubitsRelabel, QubitsStandardized};
 
-use crate::cmpnt::state_springs::BinarySprings;
 use crate::container::coeffs::{ComplexSign, ComplexVec, RealVec};
 use crate::container::map::Map;
 use crate::qubit::mode::Qubits;
 use crate::qubit::pauli::Array as PauliArray;
-use crate::utils::{cmpnt_to_string, try_py_index, try_py_indices, ToPyResult};
+use crate::string::state_springs::BinarySprings;
+use crate::utils::{string_to_string, try_py_index, try_py_indices, ToPyResult};
 
 /// A list of computational basis state strings
 #[pyclass(subclass)]
 #[pyo3(name = "QubitStateArray")]
 #[repr(transparent)]
 #[derive(Clone)]
-pub struct Array(pub CmpntList);
+pub struct Array(pub StringList);
 
 crate::container::terms::numeric_terms!(Array, |out, source, i| {
     out.push_elem_ref(source.get_elem_ref(i));
@@ -54,8 +54,8 @@ impl Array {
     pub fn new(qubits: Option<Qubits>, springs: Option<BinarySprings>) -> PyResult<Self> {
         let springs = springs.unwrap_or_default();
         Ok(Self(match qubits {
-            Some(qubits) => CmpntList::from_springs(qubits.0, &springs.0).to_py_result()?,
-            None => CmpntList::from_springs_default(&springs.0),
+            Some(qubits) => StringList::from_springs(qubits.0, &springs.0).to_py_result()?,
+            None => StringList::from_springs_default(&springs.0),
         }))
     }
 }
@@ -111,48 +111,48 @@ impl Array {
         self.0.push_clear();
     }
 
-    /// Set the indexed cmpnt to the identity string.
-    pub fn cmpnt_clear(&mut self, i: isize) -> PyResult<()> {
+    /// Set the indexed string to the identity string.
+    pub fn string_clear(&mut self, i: isize) -> PyResult<()> {
         let i = try_py_index(i, self.len())?;
         self.0.get_elem_mut_ref(i).clear();
         Ok(())
     }
 
     /// Set the Pauli matrix on a single qubit.
-    pub fn cmpnt_set_bit(&mut self, i_cmpnt: isize, i_qubit: isize, bit: bool) -> PyResult<()> {
+    pub fn string_set_bit(&mut self, i_string: isize, i_qubit: isize, bit: bool) -> PyResult<()> {
         let n_qubit = self.get_qubits().0.len();
         self.0
-            .get_elem_mut_ref(try_py_index(i_cmpnt, self.len())?)
+            .get_elem_mut_ref(try_py_index(i_string, self.len())?)
             .set_bit(try_py_index(i_qubit, n_qubit)?, bit)
             .to_py_result()
     }
 
     /// Get the Pauli matrix on a single qubit.
-    pub fn cmpnt_get_bit(&mut self, i_cmpnt: isize, i_qubit: isize) -> PyResult<bool> {
+    pub fn string_get_bit(&mut self, i_string: isize, i_qubit: isize) -> PyResult<bool> {
         let n_qubit = self.get_qubits().0.len();
         self.0
-            .get_elem_ref(try_py_index(i_cmpnt, self.len())?)
+            .get_elem_ref(try_py_index(i_string, self.len())?)
             .get(try_py_index(i_qubit, n_qubit)?)
             .to_py_result()
     }
 
-    /// Set the indexed cmpnt to the given sequence of bools.
+    /// Set the indexed string to the given sequence of bools.
     /// Errors if length of `bits` is greater than the number of qubits,
     /// and pads the upper indices with 0 in the case that the length of `bits` is smaller.
-    pub fn cmpnt_set_from_list(&mut self, i: isize, bits: Vec<bool>) -> PyResult<()> {
+    pub fn string_set_from_list(&mut self, i: isize, bits: Vec<bool>) -> PyResult<()> {
         let i = try_py_index(i, self.len())?;
         self.0.get_elem_mut_ref(i).assign_vec(bits).to_py_result()
     }
 
-    /// Set the indexed cmpnt with the given dict mapping qubit indices to pauli matrices.
+    /// Set the indexed string with the given dict mapping qubit indices to pauli matrices.
     /// All qubit indices which do not appear in the key set of `bits` is set to 0.
-    pub fn cmpnt_set_from_set(&mut self, i: isize, bits: HashSet<usize>) -> PyResult<()> {
+    pub fn string_set_from_set(&mut self, i: isize, bits: HashSet<usize>) -> PyResult<()> {
         let i = try_py_index(i, self.len())?;
         self.0.get_elem_mut_ref(i).assign_set(bits).to_py_result()
     }
 
-    /// Set the indexed cmpnt with the indexed spring.
-    pub fn cmpnt_set_from_spring(
+    /// Set the indexed string with the indexed spring.
+    pub fn string_set_from_spring(
         &mut self,
         i: isize,
         src: &BinarySprings,
@@ -166,20 +166,20 @@ impl Array {
         Ok(())
     }
 
-    /// Get the indexed cmpnt as a list of bits.
-    pub fn cmpnt_get_list(&self, i: isize) -> PyResult<Vec<bool>> {
+    /// Get the indexed string as a list of bits.
+    pub fn string_get_list(&self, i: isize) -> PyResult<Vec<bool>> {
         let i = try_py_index(i, self.len())?;
         Ok(self.0.get_elem_ref(i).to_vec())
     }
 
-    /// Get the indexed cmpnt as a dict from qubit indices to set mode indices matrices.
-    pub fn cmpnt_get_set(&self, i: isize) -> PyResult<HashSet<usize>> {
+    /// Get the indexed string as a dict from qubit indices to set mode indices matrices.
+    pub fn string_get_set(&self, i: isize) -> PyResult<HashSet<usize>> {
         let i = try_py_index(i, self.len())?;
         Ok(self.0.get_elem_ref(i).to_set())
     }
 
-    /// Perform a copy from the `i_src` cmpnt into the `i_dst` cmpnt of `self`.
-    pub fn cmpnt_copy_internal(&mut self, i_dst: isize, i_src: isize) -> PyResult<()> {
+    /// Perform a copy from the `i_src` string into the `i_dst` string of `self`.
+    pub fn string_copy_internal(&mut self, i_dst: isize, i_src: isize) -> PyResult<()> {
         let i_dst = try_py_index(i_dst, self.len())?;
         let i_src = try_py_index(i_src, self.len())?;
         if let Some(inds) = DistinctPair::new(i_dst, i_src) {
@@ -189,8 +189,8 @@ impl Array {
         Ok(())
     }
 
-    /// Perform a copy from the `i_src` cmpnt of `src` into the `i_dst` cmpnt of `self`.
-    pub fn cmpnt_copy_external(&mut self, i_dst: isize, src: &Self, i_src: isize) -> PyResult<()> {
+    /// Perform a copy from the `i_src` string of `src` into the `i_dst` string of `self`.
+    pub fn string_copy_external(&mut self, i_dst: isize, src: &Self, i_src: isize) -> PyResult<()> {
         DifferentQubits::check(&self.0, &src.0).to_py_result()?;
         let i_dst = try_py_index(i_dst, self.len())?;
         let i_src = try_py_index(i_src, src.len())?;
@@ -201,7 +201,7 @@ impl Array {
     }
 
     /// Multiply in-place by a Pauli string and return the associated ComplexSign phase.
-    pub fn cmpnt_pauli_string_imul(
+    pub fn string_pauli_string_imul(
         &mut self,
         index: isize,
         paulis: &PauliArray,
@@ -215,27 +215,27 @@ impl Array {
         Ok(state.imul_by_op(pauli).into())
     }
 
-    /// Return whether the two referenced cmpnts are equal.
-    pub fn cmpnt_equal(&self, i_lhs: isize, rhs: &Self, i_rhs: isize) -> PyResult<bool> {
+    /// Return whether the two referenced strings are equal.
+    pub fn string_equal(&self, i_lhs: isize, rhs: &Self, i_rhs: isize) -> PyResult<bool> {
         let i_lhs = try_py_index(i_lhs, self.len())?;
         let i_rhs = try_py_index(i_rhs, rhs.len())?;
         Ok(self.0.compatible_with(&rhs.0)
             && self.0.get_elem_ref(i_lhs) == rhs.0.get_elem_ref(i_rhs))
     }
 
-    /// Get the number of occurrences of `bit` in the indexed cmpnt.
-    pub fn cmpnt_count(&self, i: isize, bit: bool) -> PyResult<usize> {
+    /// Get the number of occurrences of `bit` in the indexed string.
+    pub fn string_count(&self, i: isize, bit: bool) -> PyResult<usize> {
         let i = try_py_index(i, self.len())?;
         Ok(self.0.get_elem_ref(i).count(bit))
     }
 
-    /// Get the string representation of the indexed cmpnt.
-    pub fn cmpnt_to_string(&self, i: isize) -> PyResult<String> {
-        cmpnt_to_string(&self.0, i)
+    /// Get the string representation of the indexed string.
+    pub fn string_to_string(&self, i: isize) -> PyResult<String> {
+        string_to_string(&self.0, i)
     }
 
-    /// Take the indexed cmpnts of `self` and write them contiguously to a new instance.
-    pub fn cmpnts_clone(&self, indices: Option<Vec<isize>>) -> PyResult<Self> {
+    /// Take the indexed strings of `self` and write them contiguously to a new instance.
+    pub fn strings_clone(&self, indices: Option<Vec<isize>>) -> PyResult<Self> {
         Ok(match indices {
             Some(indices) => {
                 let indices = try_py_indices(indices, self.len())?;
@@ -250,7 +250,7 @@ impl Array {
     }
 
     /// Determine equality of the two slices.
-    pub fn cmpnts_eq(
+    pub fn strings_eq(
         &self,
         indices: Option<Vec<isize>>,
         other: &Self,
@@ -303,7 +303,7 @@ impl Array {
         Ok(tmp.insert_or_get_index(other.0.get_elem_ref(index)).0)
     }
 
-    /// Find the index in `self` corresponding to the cmpnt indexed in `other` if it exists, else return None.
+    /// Find the index in `self` corresponding to the string indexed in `other` if it exists, else return None.
     pub fn mapped_lookup(&self, map: &Map, other: &Self, index: isize) -> PyResult<Option<usize>> {
         DifferentQubits::check(&self.0, &other.0).to_py_result()?;
         let index = try_py_index(index, other.len())?;
@@ -417,7 +417,7 @@ impl Array {
         &self,
         map: &Map,
         coeffs: &RealVec,
-        rhs_cmpnts: &Self,
+        rhs_strings: &Self,
         rhs_coeffs: &RealVec,
     ) -> f64 {
         let lhs = state::term_set::View {
@@ -426,7 +426,7 @@ impl Array {
             coeffs: &coeffs.0,
         };
         let rhs = state::terms::View {
-            word_iters: &rhs_cmpnts.0,
+            word_iters: &rhs_strings.0,
             coeffs: &rhs_coeffs.0,
         };
         state::lincomb::vdot(&lhs, &rhs)
@@ -437,7 +437,7 @@ impl Array {
         &self,
         map: &Map,
         coeffs: &ComplexVec,
-        rhs_cmpnts: &Self,
+        rhs_strings: &Self,
         rhs_coeffs: &ComplexVec,
     ) -> Complex64 {
         let lhs = state::term_set::View {
@@ -446,7 +446,7 @@ impl Array {
             coeffs: &coeffs.0,
         };
         let rhs = state::terms::View {
-            word_iters: &rhs_cmpnts.0,
+            word_iters: &rhs_strings.0,
             coeffs: &rhs_coeffs.0,
         };
         state::lincomb::vdot(&lhs, &rhs)

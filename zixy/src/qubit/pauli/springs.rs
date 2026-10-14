@@ -3,10 +3,10 @@
 use itertools::Itertools;
 use std::fmt::Display;
 
-use crate::cmpnt::springs::*;
 use crate::container::traits::Elements;
 use crate::container::two_bit_vec::TwoBitVec;
 use crate::qubit::mode::PauliMatrix;
+use crate::string::springs::*;
 
 /// Basic storage for a vector of mode indices and the Pauli matrices associated with them.
 #[derive(Default, PartialEq, Eq, Hash, Clone)]
@@ -19,12 +19,12 @@ pub struct Springs {
 }
 
 impl Springs {
-    /// Convert the `(byte, mode index)` output of `cmpnt::ModeSettings::get_iter` into an iterator over Pauli matrices and mode indices.
+    /// Convert the `(byte, mode index)` output of `string::ModeSettings::get_iter` into an iterator over Pauli matrices and mode indices.
     pub fn get_pauli_iter(
         &self,
-        i_cmpnt: usize,
+        i_string: usize,
     ) -> impl Iterator<Item = (PauliMatrix, ModeInd)> + use<'_> {
-        self.get_iter(i_cmpnt).map(|(k, i_mode)| {
+        self.get_iter(i_string).map(|(k, i_mode)| {
             (
                 match k {
                     0 => PauliMatrix::I,
@@ -88,8 +88,8 @@ impl ModeSettings for Springs {
         Ok(())
     }
 
-    fn to_string_ind(&self, i_cmpnt: usize) -> String {
-        self.get_pauli_iter(i_cmpnt)
+    fn to_string_ind(&self, i_string: usize) -> String {
+        self.get_pauli_iter(i_string)
             .map(|(p, i)| format!("{p}{i}"))
             .join(" ")
     }

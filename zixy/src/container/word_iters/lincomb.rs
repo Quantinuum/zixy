@@ -109,7 +109,7 @@ mod tests {
     use crate::container::coeffs::traits::HasCoeffs;
     use crate::container::traits::proj::{Borrow, BorrowMut};
     use crate::container::traits::{Elements, EmptyFrom};
-    use crate::container::word_iters::term_set::test_defs::StringCmpnts;
+    use crate::container::word_iters::term_set::test_defs::StringStrings;
     use crate::container::word_iters::term_set::AsView;
     use crate::container::word_iters::HasWordIters;
     use crate::container::word_iters::{term_set, Elem};
@@ -117,19 +117,19 @@ mod tests {
     use super::*;
 
     fn add_from_str<'a, C: FieldElem>(
-        lhs: &mut term_set::ViewMut<'a, StringCmpnts, C>,
+        lhs: &mut term_set::ViewMut<'a, StringStrings, C>,
         key: &str,
         scalar: C,
     ) {
-        let mut tmp = Elem::<StringCmpnts>::from(lhs.get_word_iters());
+        let mut tmp = Elem::<StringStrings>::from(lhs.get_word_iters());
         tmp.borrow_mut().assign_from_str(key);
         crate::container::word_iters::lincomb::scaled_iadd_elem(lhs, tmp.borrow(), scalar);
     }
 
-    impl<'a, C: FieldElem> term_set::View<'a, StringCmpnts, C> {
+    impl<'a, C: FieldElem> term_set::View<'a, StringStrings, C> {
         /// Return coeff associated with `key` if `key` is to be found in `self`, otherwise `None`.
         fn get_coeff_of_str(&self, key: &str) -> Option<C> {
-            let mut tmp = Elem::<StringCmpnts>::from(self.get_word_iters());
+            let mut tmp = Elem::<StringStrings>::from(self.get_word_iters());
             tmp.borrow_mut().assign_from_str(key);
             self.lookup_coeff_elem_ref(tmp.borrow())
         }
@@ -138,7 +138,7 @@ mod tests {
     #[test]
     fn test_real_lin_comb() {
         const N_CHAR_MAX: usize = 20;
-        let mut lc = term_set::TermSet::<_, f64>::empty_from(&StringCmpnts::new(N_CHAR_MAX));
+        let mut lc = term_set::TermSet::<_, f64>::empty_from(&StringStrings::new(N_CHAR_MAX));
         add_from_str(&mut lc.borrow_mut(), "red", 0.0);
         // adding zero should not result in a new entry
         assert_eq!(lc.len(), 0);
@@ -161,7 +161,7 @@ mod tests {
     #[test]
     fn test_complex_lin_comb() {
         const N_CHAR_MAX: usize = 20;
-        let mut lc = term_set::TermSet::<_, Complex64>::empty_from(&StringCmpnts::new(N_CHAR_MAX));
+        let mut lc = term_set::TermSet::<_, Complex64>::empty_from(&StringStrings::new(N_CHAR_MAX));
         add_from_str(&mut lc.borrow_mut(), "red", Complex64::new(1.0, 1.0));
         add_from_str(&mut lc.borrow_mut(), "red", Complex64::new(0.5, -0.5));
         assert_eq!(lc.len(), 1);
@@ -178,9 +178,9 @@ mod tests {
             lc.to_string(),
             "(1.5+0.5i, red), (1+2i, blue), (3+1i, green)"
         );
-        let lc_re: term_set::TermSet<StringCmpnts, f64> = lc.real_part();
+        let lc_re: term_set::TermSet<StringStrings, f64> = lc.real_part();
         assert_eq!(lc_re.to_string(), "(1.5, red), (1, blue), (3, green)");
-        let lc_im: term_set::TermSet<StringCmpnts, f64> = lc.imag_part();
+        let lc_im: term_set::TermSet<StringStrings, f64> = lc.imag_part();
         assert_eq!(lc_im.to_string(), "(0.5, red), (2, blue), (1, green)");
     }
 }

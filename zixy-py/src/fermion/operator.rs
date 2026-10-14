@@ -6,7 +6,6 @@ use itertools::Itertools;
 use num_complex::Complex64;
 use pyo3::exceptions::{PyUserWarning, PyValueError};
 use pyo3::{pyclass, pymethods, PyErr, PyResult, Python};
-use zixy::cmpnt::springs::ModeSettings;
 use zixy::container::bit_matrix::{AsRowMutRef, AsRowRef};
 use zixy::container::map::Map as CoreMap;
 use zixy::container::traits::{Compatible, Elements, EmptyClone, MutRefElements, RefElements};
@@ -17,6 +16,7 @@ use zixy::fermion::mode::Modes as Modes_;
 use zixy::fermion::operator::general;
 use zixy::fermion::operator::normal;
 use zixy::fermion::traits::{DifferentSpaces, ModesBased};
+use zixy::string::springs::ModeSettings;
 
 use crate::container::coeffs::{ComplexVec, RealVec, SignVec};
 use crate::container::map::Map;
@@ -30,7 +30,7 @@ use crate::utils::{try_py_index, try_py_indices, ToPyResult};
 #[pyo3(name = "NormalFermionOperatorArray")]
 #[repr(transparent)]
 #[derive(Clone)]
-pub struct NormalArray(pub normal::cmpnt_list::CmpntList);
+pub struct NormalArray(pub normal::string_list::StringList);
 
 crate::container::terms::numeric_terms!(NormalArray, |out, source, i| {
     out.push_elem_ref(source.get_elem_ref(i));
@@ -51,56 +51,56 @@ impl EmptyClone for NormalArray {
 
 impl Default for NormalArray {
     fn default() -> Self {
-        Self(normal::cmpnt_list::CmpntList::new(Modes_::from_count(0)))
+        Self(normal::string_list::StringList::new(Modes_::from_count(0)))
     }
 }
 
 fn normal_terms_real<'a>(
-    cmpnts: &'a NormalArray,
+    strings: &'a NormalArray,
     coeffs: &'a RealVec,
-) -> normal::cmpnt_major::terms::View<'a, f64> {
-    normal::cmpnt_major::terms::View {
-        word_iters: &cmpnts.0,
+) -> normal::string_major::terms::View<'a, f64> {
+    normal::string_major::terms::View {
+        word_iters: &strings.0,
         coeffs: &coeffs.0,
     }
 }
 
 fn normal_terms_complex<'a>(
-    cmpnts: &'a NormalArray,
+    strings: &'a NormalArray,
     coeffs: &'a ComplexVec,
-) -> normal::cmpnt_major::terms::View<'a, Complex64> {
-    normal::cmpnt_major::terms::View {
-        word_iters: &cmpnts.0,
+) -> normal::string_major::terms::View<'a, Complex64> {
+    normal::string_major::terms::View {
+        word_iters: &strings.0,
         coeffs: &coeffs.0,
     }
 }
 
 fn normal_set_real<'a>(
-    cmpnts: &'a NormalArray,
+    strings: &'a NormalArray,
     map: &'a Map,
     coeffs: &'a RealVec,
-) -> normal::cmpnt_major::term_set::View<'a, f64> {
-    normal::cmpnt_major::term_set::View {
-        word_iters: &cmpnts.0,
+) -> normal::string_major::term_set::View<'a, f64> {
+    normal::string_major::term_set::View {
+        word_iters: &strings.0,
         coeffs: &coeffs.0,
         map: &map.0,
     }
 }
 
 fn normal_set_complex<'a>(
-    cmpnts: &'a NormalArray,
+    strings: &'a NormalArray,
     map: &'a Map,
     coeffs: &'a ComplexVec,
-) -> normal::cmpnt_major::term_set::View<'a, Complex64> {
-    normal::cmpnt_major::term_set::View {
-        word_iters: &cmpnts.0,
+) -> normal::string_major::term_set::View<'a, Complex64> {
+    normal::string_major::term_set::View {
+        word_iters: &strings.0,
         coeffs: &coeffs.0,
         map: &map.0,
     }
 }
 
 fn normal_set_to_py_complex(
-    term_set: normal::cmpnt_major::term_set::TermSet<Complex64>,
+    term_set: normal::string_major::term_set::TermSet<Complex64>,
 ) -> (NormalArray, ComplexVec) {
     (
         NormalArray(term_set.terms.word_iters),
@@ -109,7 +109,7 @@ fn normal_set_to_py_complex(
 }
 
 fn normal_set_to_py_real(
-    term_set: normal::cmpnt_major::term_set::TermSet<f64>,
+    term_set: normal::string_major::term_set::TermSet<f64>,
 ) -> (NormalArray, RealVec) {
     (
         NormalArray(term_set.terms.word_iters),
@@ -118,13 +118,13 @@ fn normal_set_to_py_real(
 }
 
 fn normal_terms_to_py_real(
-    terms: normal::cmpnt_major::terms::Terms<f64>,
+    terms: normal::string_major::terms::Terms<f64>,
 ) -> (NormalArray, RealVec) {
     (NormalArray(terms.word_iters), RealVec(terms.coeffs))
 }
 
 fn normal_terms_to_py_complex(
-    terms: normal::cmpnt_major::terms::Terms<Complex64>,
+    terms: normal::string_major::terms::Terms<Complex64>,
 ) -> (NormalArray, ComplexVec) {
     (
         NormalArray(terms.word_iters),
@@ -169,20 +169,20 @@ impl NormalArray {
                 springs.0.get_mode_inds().default_n_mode() as usize,
             ))
         });
-        let mut out = Self(normal::cmpnt_list::CmpntList::new(modes.0.clone()));
+        let mut out = Self(normal::string_list::StringList::new(modes.0.clone()));
         for i in 0..springs.0.len() {
             let ops = springs
                 .0
                 .get_ladder_op_iter(i)
                 .map(|(is_cre, mode)| (usize::from(mode), is_cre))
                 .collect();
-            let (cmpnts, coeffs) = normal_order_product(modes.0.clone(), ops)?;
-            if cmpnts.0.len() != 1 || coeffs.0.len() != 1 || coeffs.0[0] != 1.0 {
+            let (strings, coeffs) = normal_order_product(modes.0.clone(), ops)?;
+            if strings.0.len() != 1 || coeffs.0.len() != 1 || coeffs.0[0] != 1.0 {
                 return Err(PyErr::new::<PyValueError, _>(
                     "Fermion string does not normal-order to exactly one positive component",
                 ));
             }
-            out.0.push_elem_ref(cmpnts.0.get_elem_ref(0));
+            out.0.push_elem_ref(strings.0.get_elem_ref(0));
         }
         Ok(out)
     }
@@ -218,13 +218,13 @@ impl NormalArray {
         self.0.push_clear();
     }
 
-    fn cmpnt_clear(&mut self, i: isize) -> PyResult<()> {
+    fn string_clear(&mut self, i: isize) -> PyResult<()> {
         let i = try_py_index(i, self.len())?;
         self.0.get_elem_mut_ref(i).clear();
         Ok(())
     }
 
-    fn cmpnt_set_from_sets(
+    fn string_set_from_sets(
         &mut self,
         i: isize,
         cre: HashSet<usize>,
@@ -237,7 +237,7 @@ impl NormalArray {
         elem.get_ann_part().assign_set(ann).to_py_result()
     }
 
-    fn cmpnt_set_from_lists(&mut self, i: isize, cre: Vec<bool>, ann: Vec<bool>) -> PyResult<()> {
+    fn string_set_from_lists(&mut self, i: isize, cre: Vec<bool>, ann: Vec<bool>) -> PyResult<()> {
         let i = try_py_index(i, self.len())?;
         let mut elem = self.0.get_elem_mut_ref(i);
         elem.clear();
@@ -245,9 +245,9 @@ impl NormalArray {
         elem.get_ann_part().assign_vec(ann).to_py_result()
     }
 
-    fn cmpnt_set_from_spring(
+    fn string_set_from_spring(
         &mut self,
-        i_cmpnt: isize,
+        i_string: isize,
         src: &FermionSprings,
         i_src: isize,
     ) -> PyResult<()> {
@@ -257,20 +257,20 @@ impl NormalArray {
             .get_ladder_op_iter(i_src)
             .map(|(is_cre, mode)| (usize::from(mode), is_cre))
             .collect();
-        let (cmpnts, coeffs) = normal_order_product(self.0.modes().clone(), ops)?;
-        if cmpnts.0.len() != 1 || coeffs.0.len() != 1 || coeffs.0[0] != 1.0 {
+        let (strings, coeffs) = normal_order_product(self.0.modes().clone(), ops)?;
+        if strings.0.len() != 1 || coeffs.0.len() != 1 || coeffs.0[0] != 1.0 {
             return Err(PyErr::new::<PyValueError, _>(
                 "Fermion string does not normal-order to exactly one positive component",
             ));
         }
-        let i_cmpnt = try_py_index(i_cmpnt, self.len())?;
+        let i_string = try_py_index(i_string, self.len())?;
         self.0
-            .get_elem_mut_ref(i_cmpnt)
-            .assign(cmpnts.0.get_elem_ref(0));
+            .get_elem_mut_ref(i_string)
+            .assign(strings.0.get_elem_ref(0));
         Ok(())
     }
 
-    fn cmpnt_get_sets(&self, i: isize) -> PyResult<(Vec<usize>, Vec<usize>)> {
+    fn string_get_sets(&self, i: isize) -> PyResult<(Vec<usize>, Vec<usize>)> {
         let i = try_py_index(i, self.len())?;
         let elem = self.0.get_elem_ref(i);
         Ok((
@@ -279,57 +279,57 @@ impl NormalArray {
         ))
     }
 
-    fn cmpnt_set_cre(&mut self, i_cmpnt: isize, i_mode: isize, value: bool) -> PyResult<()> {
-        let i_cmpnt = try_py_index(i_cmpnt, self.len())?;
+    fn string_set_cre(&mut self, i_string: isize, i_mode: isize, value: bool) -> PyResult<()> {
+        let i_string = try_py_index(i_string, self.len())?;
         let i_mode = try_py_index(i_mode, self.0.modes().len())?;
         self.0
-            .get_elem_mut_ref(i_cmpnt)
+            .get_elem_mut_ref(i_string)
             .get_cre_part()
             .set_bit(i_mode, value)
             .to_py_result()
     }
 
-    fn cmpnt_set_ann(&mut self, i_cmpnt: isize, i_mode: isize, value: bool) -> PyResult<()> {
-        let i_cmpnt = try_py_index(i_cmpnt, self.len())?;
+    fn string_set_ann(&mut self, i_string: isize, i_mode: isize, value: bool) -> PyResult<()> {
+        let i_string = try_py_index(i_string, self.len())?;
         let i_mode = try_py_index(i_mode, self.0.modes().len())?;
         self.0
-            .get_elem_mut_ref(i_cmpnt)
+            .get_elem_mut_ref(i_string)
             .get_ann_part()
             .set_bit(i_mode, value)
             .to_py_result()
     }
 
-    fn cmpnt_get_cre(&self, i_cmpnt: isize, i_mode: isize) -> PyResult<bool> {
-        let i_cmpnt = try_py_index(i_cmpnt, self.len())?;
+    fn string_get_cre(&self, i_string: isize, i_mode: isize) -> PyResult<bool> {
+        let i_string = try_py_index(i_string, self.len())?;
         let i_mode = try_py_index(i_mode, self.0.modes().len())?;
         Ok(self
             .0
-            .get_elem_ref(i_cmpnt)
+            .get_elem_ref(i_string)
             .get_cre_part()
             .get_bit_unchecked(i_mode))
     }
 
-    fn cmpnt_get_ann(&self, i_cmpnt: isize, i_mode: isize) -> PyResult<bool> {
-        let i_cmpnt = try_py_index(i_cmpnt, self.len())?;
+    fn string_get_ann(&self, i_string: isize, i_mode: isize) -> PyResult<bool> {
+        let i_string = try_py_index(i_string, self.len())?;
         let i_mode = try_py_index(i_mode, self.0.modes().len())?;
         Ok(self
             .0
-            .get_elem_ref(i_cmpnt)
+            .get_elem_ref(i_string)
             .get_ann_part()
             .get_bit_unchecked(i_mode))
     }
 
-    fn cmpnt_to_string(&self, i: isize) -> PyResult<String> {
+    fn string_to_string(&self, i: isize) -> PyResult<String> {
         let i = try_py_index(i, self.len())?;
         Ok(self.0.get_elem_ref(i).to_string())
     }
 
-    fn cmpnt_count_n_body(&self, i: isize) -> PyResult<usize> {
+    fn string_count_n_body(&self, i: isize) -> PyResult<usize> {
         let i = try_py_index(i, self.len())?;
         Ok(self.0.get_elem_ref(i).count_n_body())
     }
 
-    fn cmpnt_particle_number_change(&self, i: isize) -> PyResult<isize> {
+    fn string_particle_number_change(&self, i: isize) -> PyResult<isize> {
         let i = try_py_index(i, self.len())?;
         Ok(self.0.get_elem_ref(i).particle_number_change())
     }
@@ -338,7 +338,7 @@ impl NormalArray {
         SignVec(self.0.dagger_get_signs())
     }
 
-    fn cmpnt_copy_internal(&mut self, i_dst: isize, i_src: isize) -> PyResult<()> {
+    fn string_copy_internal(&mut self, i_dst: isize, i_src: isize) -> PyResult<()> {
         let i_dst = try_py_index(i_dst, self.len())?;
         let i_src = try_py_index(i_src, self.len())?;
         if let Some(inds) = DistinctPair::new(i_dst, i_src) {
@@ -348,7 +348,7 @@ impl NormalArray {
         Ok(())
     }
 
-    fn cmpnt_copy_external(&mut self, i_dst: isize, src: &Self, i_src: isize) -> PyResult<()> {
+    fn string_copy_external(&mut self, i_dst: isize, src: &Self, i_src: isize) -> PyResult<()> {
         DifferentSpaces::check(&self.0, &src.0).to_py_result()?;
         let i_dst = try_py_index(i_dst, self.len())?;
         let i_src = try_py_index(i_src, src.len())?;
@@ -358,23 +358,23 @@ impl NormalArray {
         Ok(())
     }
 
-    fn cmpnt_equal(&self, i_lhs: isize, rhs: &Self, i_rhs: isize) -> PyResult<bool> {
+    fn string_equal(&self, i_lhs: isize, rhs: &Self, i_rhs: isize) -> PyResult<bool> {
         let i_lhs = try_py_index(i_lhs, self.len())?;
         let i_rhs = try_py_index(i_rhs, rhs.len())?;
         Ok(self.0.compatible_with(&rhs.0)
             && self.0.get_elem_ref(i_lhs) == rhs.0.get_elem_ref(i_rhs))
     }
 
-    fn cmpnt_mul(&self, i_lhs: isize, rhs: &Self, i_rhs: isize) -> PyResult<(Self, SignVec)> {
+    fn string_mul(&self, i_lhs: isize, rhs: &Self, i_rhs: isize) -> PyResult<(Self, SignVec)> {
         DifferentSpaces::check(&self.0, &rhs.0).to_py_result()?;
         let i_lhs = try_py_index(i_lhs, self.len())?;
         let i_rhs = try_py_index(i_rhs, rhs.len())?;
-        let (cmpnts, signs) =
-            normal::products::mul_cmpnts(&self.0.get_elem_ref(i_lhs), &rhs.0.get_elem_ref(i_rhs));
-        Ok((Self(cmpnts), SignVec(signs)))
+        let (strings, signs) =
+            normal::products::mul_strings(&self.0.get_elem_ref(i_lhs), &rhs.0.get_elem_ref(i_rhs));
+        Ok((Self(strings), SignVec(signs)))
     }
 
-    fn cmpnts_clone(&self, indices: Option<Vec<isize>>) -> PyResult<Self> {
+    fn strings_clone(&self, indices: Option<Vec<isize>>) -> PyResult<Self> {
         Ok(match indices {
             Some(indices) => {
                 let indices = try_py_indices(indices, self.len())?;
@@ -388,7 +388,7 @@ impl NormalArray {
         })
     }
 
-    fn cmpnts_eq(
+    fn strings_eq(
         &self,
         indices: Option<Vec<isize>>,
         other: &Self,
@@ -490,7 +490,7 @@ impl NormalArray {
         rhs_impl: &Self,
         rhs_coeffs: &RealVec,
     ) -> PyResult<(Self, RealVec)> {
-        let out = normal::cmpnt_major::lincomb::mul(
+        let out = normal::string_major::lincomb::mul(
             &normal_terms_real(lhs_impl, lhs_coeffs),
             &normal_terms_real(rhs_impl, rhs_coeffs),
         )
@@ -505,7 +505,7 @@ impl NormalArray {
         rhs_impl: &Self,
         rhs_coeffs: &ComplexVec,
     ) -> PyResult<(Self, ComplexVec)> {
-        let out = normal::cmpnt_major::lincomb::mul(
+        let out = normal::string_major::lincomb::mul(
             &normal_terms_complex(lhs_impl, lhs_coeffs),
             &normal_terms_complex(rhs_impl, rhs_coeffs),
         )
@@ -520,7 +520,7 @@ impl NormalArray {
         rhs_impl: &Self,
         rhs_coeffs: &RealVec,
     ) -> PyResult<(Self, RealVec)> {
-        let out = normal::cmpnt_major::lincomb::commutator(
+        let out = normal::string_major::lincomb::commutator(
             &normal_terms_real(lhs_impl, lhs_coeffs),
             &normal_terms_real(rhs_impl, rhs_coeffs),
         )
@@ -535,7 +535,7 @@ impl NormalArray {
         rhs_impl: &Self,
         rhs_coeffs: &RealVec,
     ) -> PyResult<(Self, RealVec)> {
-        let out = normal::cmpnt_major::lincomb::anticommutator(
+        let out = normal::string_major::lincomb::anticommutator(
             &normal_terms_real(lhs_impl, lhs_coeffs),
             &normal_terms_real(rhs_impl, rhs_coeffs),
         )
@@ -550,7 +550,7 @@ impl NormalArray {
         rhs_impl: &Self,
         rhs_coeffs: &ComplexVec,
     ) -> PyResult<(Self, ComplexVec)> {
-        let out = normal::cmpnt_major::lincomb::commutator(
+        let out = normal::string_major::lincomb::commutator(
             &normal_terms_complex(lhs_impl, lhs_coeffs),
             &normal_terms_complex(rhs_impl, rhs_coeffs),
         )
@@ -565,7 +565,7 @@ impl NormalArray {
         rhs_impl: &Self,
         rhs_coeffs: &ComplexVec,
     ) -> PyResult<(Self, ComplexVec)> {
-        let out = normal::cmpnt_major::lincomb::anticommutator(
+        let out = normal::string_major::lincomb::anticommutator(
             &normal_terms_complex(lhs_impl, lhs_coeffs),
             &normal_terms_complex(rhs_impl, rhs_coeffs),
         )
@@ -574,88 +574,88 @@ impl NormalArray {
     }
 
     #[staticmethod]
-    fn lincomb_adjoint_real(cmpnts: &Self, coeffs: &RealVec) -> (Self, RealVec) {
-        normal_terms_to_py_real(normal::cmpnt_major::lincomb::adjoint(&normal_terms_real(
-            cmpnts, coeffs,
+    fn lincomb_adjoint_real(strings: &Self, coeffs: &RealVec) -> (Self, RealVec) {
+        normal_terms_to_py_real(normal::string_major::lincomb::adjoint(&normal_terms_real(
+            strings, coeffs,
         )))
     }
 
     #[staticmethod]
-    fn lincomb_adjoint_complex(cmpnts: &Self, coeffs: &ComplexVec) -> (Self, ComplexVec) {
-        normal_terms_to_py_complex(normal::cmpnt_major::lincomb::adjoint(
-            &normal_terms_complex(cmpnts, coeffs),
+    fn lincomb_adjoint_complex(strings: &Self, coeffs: &ComplexVec) -> (Self, ComplexVec) {
+        normal_terms_to_py_complex(normal::string_major::lincomb::adjoint(
+            &normal_terms_complex(strings, coeffs),
         ))
     }
 
     #[staticmethod]
-    fn lincomb_is_hermitian_real(cmpnts: &Self, coeffs: &RealVec, atol: f64) -> bool {
-        normal::cmpnt_major::lincomb::is_hermitian(&normal_terms_real(cmpnts, coeffs), atol)
+    fn lincomb_is_hermitian_real(strings: &Self, coeffs: &RealVec, atol: f64) -> bool {
+        normal::string_major::lincomb::is_hermitian(&normal_terms_real(strings, coeffs), atol)
     }
 
     #[staticmethod]
-    fn lincomb_is_hermitian_complex(cmpnts: &Self, coeffs: &ComplexVec, atol: f64) -> bool {
-        normal::cmpnt_major::lincomb::is_hermitian(&normal_terms_complex(cmpnts, coeffs), atol)
+    fn lincomb_is_hermitian_complex(strings: &Self, coeffs: &ComplexVec, atol: f64) -> bool {
+        normal::string_major::lincomb::is_hermitian(&normal_terms_complex(strings, coeffs), atol)
     }
 
     #[staticmethod]
-    fn lincomb_conserves_particle_number_real(cmpnts: &Self, coeffs: &RealVec, atol: f64) -> bool {
-        normal::cmpnt_major::lincomb::conserves_particle_number(
-            &normal_terms_real(cmpnts, coeffs),
+    fn lincomb_conserves_particle_number_real(strings: &Self, coeffs: &RealVec, atol: f64) -> bool {
+        normal::string_major::lincomb::conserves_particle_number(
+            &normal_terms_real(strings, coeffs),
             atol,
         )
     }
 
     #[staticmethod]
     fn lincomb_conserves_particle_number_complex(
-        cmpnts: &Self,
+        strings: &Self,
         coeffs: &ComplexVec,
         atol: f64,
     ) -> bool {
-        normal::cmpnt_major::lincomb::conserves_particle_number(
-            &normal_terms_complex(cmpnts, coeffs),
+        normal::string_major::lincomb::conserves_particle_number(
+            &normal_terms_complex(strings, coeffs),
             atol,
         )
     }
 
     #[staticmethod]
-    fn lincomb_max_n_body_real(cmpnts: &Self, coeffs: &RealVec) -> usize {
-        normal::cmpnt_major::lincomb::max_n_body(&normal_terms_real(cmpnts, coeffs))
+    fn lincomb_max_n_body_real(strings: &Self, coeffs: &RealVec) -> usize {
+        normal::string_major::lincomb::max_n_body(&normal_terms_real(strings, coeffs))
     }
 
     #[staticmethod]
-    fn lincomb_max_n_body_complex(cmpnts: &Self, coeffs: &ComplexVec) -> usize {
-        normal::cmpnt_major::lincomb::max_n_body(&normal_terms_complex(cmpnts, coeffs))
+    fn lincomb_max_n_body_complex(strings: &Self, coeffs: &ComplexVec) -> usize {
+        normal::string_major::lincomb::max_n_body(&normal_terms_complex(strings, coeffs))
     }
 
     #[staticmethod]
-    fn lincomb_active_modes_real(cmpnts: &Self, coeffs: &RealVec) -> HashSet<usize> {
-        normal::cmpnt_major::lincomb::active_modes(&normal_terms_real(cmpnts, coeffs))
+    fn lincomb_active_modes_real(strings: &Self, coeffs: &RealVec) -> HashSet<usize> {
+        normal::string_major::lincomb::active_modes(&normal_terms_real(strings, coeffs))
     }
 
     #[staticmethod]
-    fn lincomb_active_modes_complex(cmpnts: &Self, coeffs: &ComplexVec) -> HashSet<usize> {
-        normal::cmpnt_major::lincomb::active_modes(&normal_terms_complex(cmpnts, coeffs))
+    fn lincomb_active_modes_complex(strings: &Self, coeffs: &ComplexVec) -> HashSet<usize> {
+        normal::string_major::lincomb::active_modes(&normal_terms_complex(strings, coeffs))
     }
 
     #[staticmethod]
     fn lincomb_to_general_real(
-        cmpnts: &Self,
+        strings: &Self,
         map: &Map,
         coeffs: &RealVec,
     ) -> (GeneralArray, RealVec) {
         let out =
-            zixy::fermion::operator::lincomb::to_general(&normal_set_real(cmpnts, map, coeffs));
+            zixy::fermion::operator::lincomb::to_general(&normal_set_real(strings, map, coeffs));
         general_set_to_py_real(out)
     }
 
     #[staticmethod]
     fn lincomb_to_general_complex(
-        cmpnts: &Self,
+        strings: &Self,
         map: &Map,
         coeffs: &ComplexVec,
     ) -> (GeneralArray, ComplexVec) {
         let out =
-            zixy::fermion::operator::lincomb::to_general(&normal_set_complex(cmpnts, map, coeffs));
+            zixy::fermion::operator::lincomb::to_general(&normal_set_complex(strings, map, coeffs));
         general_set_to_py_complex(out)
     }
 
@@ -663,24 +663,24 @@ impl NormalArray {
     fn apply_to_state_real(
         &self,
         coeffs: &RealVec,
-        state_cmpnts: &StateArray,
+        state_strings: &StateArray,
         state_coeffs: &RealVec,
-        out_cmpnts: &mut StateArray,
+        out_strings: &mut StateArray,
         out_map: &mut Map,
         out_coeffs: &mut RealVec,
     ) {
-        use zixy::fermion::operator::normal::cmpnt_major::mat_elem::apply;
+        use zixy::fermion::operator::normal::string_major::mat_elem::apply;
         use zixy::fermion::state;
-        let op = normal::cmpnt_major::terms::View {
+        let op = normal::string_major::terms::View {
             word_iters: &self.0,
             coeffs: &coeffs.0,
         };
         let state = state::terms::View {
-            word_iters: &state_cmpnts.0,
+            word_iters: &state_strings.0,
             coeffs: &state_coeffs.0,
         };
         let mut out = state::term_set::ViewMut {
-            word_iters: &mut out_cmpnts.0,
+            word_iters: &mut out_strings.0,
             map: &mut out_map.0,
             coeffs: &mut out_coeffs.0,
         };
@@ -691,24 +691,24 @@ impl NormalArray {
     fn apply_to_state_complex(
         &self,
         coeffs: &ComplexVec,
-        state_cmpnts: &StateArray,
+        state_strings: &StateArray,
         state_coeffs: &ComplexVec,
-        out_cmpnts: &mut StateArray,
+        out_strings: &mut StateArray,
         out_map: &mut Map,
         out_coeffs: &mut ComplexVec,
     ) {
-        use zixy::fermion::operator::normal::cmpnt_major::mat_elem::apply;
+        use zixy::fermion::operator::normal::string_major::mat_elem::apply;
         use zixy::fermion::state;
-        let op = normal::cmpnt_major::terms::View {
+        let op = normal::string_major::terms::View {
             word_iters: &self.0,
             coeffs: &coeffs.0,
         };
         let state = state::terms::View {
-            word_iters: &state_cmpnts.0,
+            word_iters: &state_strings.0,
             coeffs: &state_coeffs.0,
         };
         let mut out = state::term_set::ViewMut {
-            word_iters: &mut out_cmpnts.0,
+            word_iters: &mut out_strings.0,
             map: &mut out_map.0,
             coeffs: &mut out_coeffs.0,
         };
@@ -719,23 +719,23 @@ impl NormalArray {
     fn mat_elem_real(
         &self,
         coeffs: &RealVec,
-        bra_cmpnts: &StateArray,
+        bra_strings: &StateArray,
         bra_coeffs: &RealVec,
-        ket_cmpnts: &StateArray,
+        ket_strings: &StateArray,
         ket_coeffs: &RealVec,
     ) -> f64 {
-        use zixy::fermion::operator::normal::cmpnt_major::mat_elem::mat_elem;
+        use zixy::fermion::operator::normal::string_major::mat_elem::mat_elem;
         use zixy::fermion::state;
-        let op = normal::cmpnt_major::terms::View {
+        let op = normal::string_major::terms::View {
             word_iters: &self.0,
             coeffs: &coeffs.0,
         };
         let bra = state::terms::View {
-            word_iters: &bra_cmpnts.0,
+            word_iters: &bra_strings.0,
             coeffs: &bra_coeffs.0,
         };
         let ket = state::terms::View {
-            word_iters: &ket_cmpnts.0,
+            word_iters: &ket_strings.0,
             coeffs: &ket_coeffs.0,
         };
         mat_elem(&op, &bra, &ket)
@@ -745,23 +745,23 @@ impl NormalArray {
     fn mat_elem_complex(
         &self,
         coeffs: &ComplexVec,
-        bra_cmpnts: &StateArray,
+        bra_strings: &StateArray,
         bra_coeffs: &ComplexVec,
-        ket_cmpnts: &StateArray,
+        ket_strings: &StateArray,
         ket_coeffs: &ComplexVec,
     ) -> Complex64 {
-        use zixy::fermion::operator::normal::cmpnt_major::mat_elem::mat_elem;
+        use zixy::fermion::operator::normal::string_major::mat_elem::mat_elem;
         use zixy::fermion::state;
-        let op = normal::cmpnt_major::terms::View {
+        let op = normal::string_major::terms::View {
             word_iters: &self.0,
             coeffs: &coeffs.0,
         };
         let bra = state::terms::View {
-            word_iters: &bra_cmpnts.0,
+            word_iters: &bra_strings.0,
             coeffs: &bra_coeffs.0,
         };
         let ket = state::terms::View {
-            word_iters: &ket_cmpnts.0,
+            word_iters: &ket_strings.0,
             coeffs: &ket_coeffs.0,
         };
         mat_elem(&op, &bra, &ket)
@@ -773,7 +773,7 @@ impl NormalArray {
 #[pyo3(name = "GeneralFermionOperatorArray")]
 #[repr(transparent)]
 #[derive(Clone)]
-pub struct GeneralArray(pub general::cmpnt_list::CmpntList);
+pub struct GeneralArray(pub general::string_list::StringList);
 
 crate::container::terms::numeric_terms!(GeneralArray, |out, source, i| {
     let (modes, adj) = source.get(i);
@@ -799,24 +799,24 @@ impl EmptyClone for GeneralArray {
 }
 
 fn general_terms_real<'a>(
-    cmpnts: &'a GeneralArray,
+    strings: &'a GeneralArray,
     map: &'a CoreMap,
     coeffs: &'a RealVec,
 ) -> general::term_set::View<'a, f64> {
     general::term_set::View {
-        word_iters: &cmpnts.0,
+        word_iters: &strings.0,
         coeffs: &coeffs.0,
         map,
     }
 }
 
 fn general_terms_complex<'a>(
-    cmpnts: &'a GeneralArray,
+    strings: &'a GeneralArray,
     map: &'a CoreMap,
     coeffs: &'a ComplexVec,
 ) -> general::term_set::View<'a, Complex64> {
     general::term_set::View {
-        word_iters: &cmpnts.0,
+        word_iters: &strings.0,
         coeffs: &coeffs.0,
         map,
     }
@@ -870,7 +870,10 @@ impl GeneralArray {
             .max()
             .unwrap_or(0);
         let max_string_len = max_string_len.unwrap_or(0).max(inferred_max_string_len);
-        let mut out = Self(general::cmpnt_list::CmpntList::new(max_string_len, modes.0));
+        let mut out = Self(general::string_list::StringList::new(
+            max_string_len,
+            modes.0,
+        ));
         for i in 0..springs.0.len() {
             let (mode_inds, adj): (Vec<_>, Vec<_>) = springs
                 .0
@@ -933,11 +936,11 @@ impl GeneralArray {
         self.0.push(&[], &[]);
     }
 
-    fn cmpnt_clear(&mut self, i: isize) -> PyResult<()> {
-        self.cmpnt_set_from_ops(i, Vec::new(), Vec::new())
+    fn string_clear(&mut self, i: isize) -> PyResult<()> {
+        self.string_set_from_ops(i, Vec::new(), Vec::new())
     }
 
-    fn cmpnt_set_from_ops(
+    fn string_set_from_ops(
         &mut self,
         i: isize,
         mode_inds: Vec<usize>,
@@ -950,9 +953,9 @@ impl GeneralArray {
         Ok(())
     }
 
-    fn cmpnt_set_from_spring(
+    fn string_set_from_spring(
         &mut self,
-        i_cmpnt: isize,
+        i_string: isize,
         src: &FermionSprings,
         i_src: isize,
     ) -> PyResult<()> {
@@ -962,41 +965,41 @@ impl GeneralArray {
             .get_ladder_op_iter(i_src)
             .map(|(is_cre, mode)| (usize::from(mode), is_cre))
             .unzip();
-        self.cmpnt_set_from_ops(i_cmpnt, mode_inds, adj)
+        self.string_set_from_ops(i_string, mode_inds, adj)
     }
 
-    fn cmpnt_get_ops(&self, i: isize) -> PyResult<(Vec<usize>, Vec<bool>)> {
+    fn string_get_ops(&self, i: isize) -> PyResult<(Vec<usize>, Vec<bool>)> {
         let i = try_py_index(i, self.len())?;
         Ok(self.0.get(i))
     }
 
-    fn cmpnt_to_string(&self, i: isize) -> PyResult<String> {
+    fn string_to_string(&self, i: isize) -> PyResult<String> {
         let i = try_py_index(i, self.len())?;
         Ok(self.0.fmt_elem(i))
     }
 
-    fn cmpnt_copy_internal(&mut self, i_dst: isize, i_src: isize) -> PyResult<()> {
+    fn string_copy_internal(&mut self, i_dst: isize, i_src: isize) -> PyResult<()> {
         let i_dst = try_py_index(i_dst, self.len())?;
         let i_src = try_py_index(i_src, self.len())?;
         let (modes, adj) = self.0.get(i_src);
-        self.cmpnt_set_from_ops(i_dst as isize, modes, adj)
+        self.string_set_from_ops(i_dst as isize, modes, adj)
     }
 
-    fn cmpnt_copy_external(&mut self, i_dst: isize, src: &Self, i_src: isize) -> PyResult<()> {
+    fn string_copy_external(&mut self, i_dst: isize, src: &Self, i_src: isize) -> PyResult<()> {
         DifferentSpaces::check(&self.0, &src.0).to_py_result()?;
         let i_dst = try_py_index(i_dst, self.len())?;
         let i_src = try_py_index(i_src, src.len())?;
         let (modes, adj) = src.0.get(i_src);
-        self.cmpnt_set_from_ops(i_dst as isize, modes, adj)
+        self.string_set_from_ops(i_dst as isize, modes, adj)
     }
 
-    fn cmpnt_equal(&self, i_lhs: isize, rhs: &Self, i_rhs: isize) -> PyResult<bool> {
+    fn string_equal(&self, i_lhs: isize, rhs: &Self, i_rhs: isize) -> PyResult<bool> {
         let i_lhs = try_py_index(i_lhs, self.len())?;
         let i_rhs = try_py_index(i_rhs, rhs.len())?;
         Ok(self.0.compatible_with(&rhs.0) && self.0.get(i_lhs) == rhs.0.get(i_rhs))
     }
 
-    fn cmpnts_clone(&self, indices: Option<Vec<isize>>) -> PyResult<Self> {
+    fn strings_clone(&self, indices: Option<Vec<isize>>) -> PyResult<Self> {
         let mut out = self.0.empty_clone();
         match indices {
             Some(indices) => {
@@ -1015,7 +1018,7 @@ impl GeneralArray {
         Ok(Self(out))
     }
 
-    fn cmpnts_eq(
+    fn strings_eq(
         &self,
         indices: Option<Vec<isize>>,
         other: &Self,
@@ -1108,7 +1111,7 @@ impl GeneralArray {
     fn from_ladder_product(modes: Modes, ops: Vec<(usize, bool)>) -> PyResult<Self> {
         let (mode_inds, adj): (Vec<_>, Vec<_>) = ops.into_iter().unzip();
         check_general_ops(&modes.0, &mode_inds, &adj)?;
-        let mut out = general::cmpnt_list::CmpntList::new(mode_inds.len(), modes.0);
+        let mut out = general::string_list::StringList::new(mode_inds.len(), modes.0);
         out.push(&mode_inds, &adj);
         Ok(Self(out))
     }
@@ -1148,21 +1151,21 @@ impl GeneralArray {
     }
 
     #[staticmethod]
-    fn lincomb_to_normal_order_real(cmpnts: &Self, coeffs: &RealVec) -> (NormalArray, RealVec) {
+    fn lincomb_to_normal_order_real(strings: &Self, coeffs: &RealVec) -> (NormalArray, RealVec) {
         let map = CoreMap::default();
         normal_set_to_py_real(zixy::fermion::operator::lincomb::to_normal_order(
-            &general_terms_real(cmpnts, &map, coeffs),
+            &general_terms_real(strings, &map, coeffs),
         ))
     }
 
     #[staticmethod]
     fn lincomb_to_normal_order_complex(
-        cmpnts: &Self,
+        strings: &Self,
         coeffs: &ComplexVec,
     ) -> (NormalArray, ComplexVec) {
         let map = CoreMap::default();
         normal_set_to_py_complex(zixy::fermion::operator::lincomb::to_normal_order(
-            &general_terms_complex(cmpnts, &map, coeffs),
+            &general_terms_complex(strings, &map, coeffs),
         ))
     }
 }

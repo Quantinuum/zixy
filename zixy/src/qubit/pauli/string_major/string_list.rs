@@ -1,4 +1,4 @@
-//! Defines gapless, contiguous lists of Pauli words using a cmpnt-major (mode-minor) symplectic representation.
+//! Defines gapless, contiguous lists of Pauli words using a string-major (mode-minor) symplectic representation.
 //! Assumes a "little-endian" convention whereby the Pauli matrix acting on the first qubit is stored in the least
 //! significant bits of the first u64.
 
@@ -6,8 +6,6 @@ use std::collections::HashMap;
 use std::fmt::Display;
 
 use super::products::*;
-use crate::cmpnt::parse::ParseError;
-use crate::cmpnt::springs::ModeSettings;
 use crate::container::bit_matrix::{AsBitMatrix, BitMatrix};
 use crate::container::coeffs::complex_sign::{ComplexSign, ComplexSignVec};
 use crate::container::coeffs::traits::{NewUnitsWithLen, NumReprVec};
@@ -17,21 +15,23 @@ use crate::container::traits::{
 };
 use crate::container::word_iters::{self, WordIters};
 use crate::qubit::mode::{PauliMatrix, Qubits};
-use crate::qubit::pauli::cmpnt_major::encoding;
 use crate::qubit::pauli::mode_major;
 use crate::qubit::pauli::mode_major::array::Array;
 use crate::qubit::pauli::springs::Springs;
+use crate::qubit::pauli::string_major::encoding;
 use crate::qubit::traits::{
     DifferentQubits, PauliWordMutRef, PauliWordRef, PushPaulis, QubitsBased, QubitsRelabel,
     QubitsStandardize, QubitsStandardized,
 };
+use crate::string::parse::ParseError;
+use crate::string::springs::ModeSettings;
 use crate::utils::arith::divceil;
 use itertools::{izip, Itertools};
 use serde::{Deserialize, Serialize};
 
 /// Contiguous and compact storage for vectors of Pauli words.
 #[derive(Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
-pub struct CmpntList {
+pub struct StringList {
     /// X part of the phaseless Pauli tableau
     x_part: BitMatrix,
     /// Z part of the phaseless Pauli tableau
@@ -40,8 +40,8 @@ pub struct CmpntList {
     qubits: Qubits,
 }
 
-impl CmpntList {
-    /// Create an empty `CmpntList` on the `Qubits` given.
+impl StringList {
+    /// Create an empty `StringList` on the `Qubits` given.
     pub fn new(qubits: Qubits) -> Self {
         Self {
             x_part: BitMatrix::new(qubits.len()),
@@ -65,17 +65,17 @@ impl CmpntList {
     /// factor. This factor is returned.
     /// Mode bounds are unchecked.
     pub fn push_spring_unchecked(&mut self, springs: &Springs, i: usize) -> ComplexSign {
-        let i_cmpnt: usize = self.len();
+        let i_string: usize = self.len();
         self.push_pauli_identity();
-        self.get_elem_mut_ref(i_cmpnt)
+        self.get_elem_mut_ref(i_string)
             .set_spring_unchecked(springs, i)
     }
 
     /// Append spring entry `i`, checking mode bounds and returning any accumulated phase factor.
     pub fn push_spring(&mut self, springs: &Springs, i: usize) -> Result<ComplexSign, ParseError> {
-        let i_cmpnt: usize = self.len();
+        let i_string: usize = self.len();
         self.push_pauli_identity();
-        self.get_elem_mut_ref(i_cmpnt).set_spring(springs, i)
+        self.get_elem_mut_ref(i_string).set_spring(springs, i)
     }
 
     /// Create a new instance from given springs, returning the associated phases as a `TwoBitVec`.
@@ -130,8 +130,8 @@ impl CmpntList {
 
     /// Return whether the indexed component is an element of the centralizer set of this list.
     /// i.e. whether the component commutes with all others in the list.
-    pub fn belongs_to_centralizer(&self, i_cmpnt: usize) -> bool {
-        let row_ref = self.get_elem_ref(i_cmpnt);
+    pub fn belongs_to_centralizer(&self, i_string: usize) -> bool {
+        let row_ref = self.get_elem_ref(i_string);
         for i_row in 0..self.len() {
             if row_ref.anticommutes_with(self.get_elem_ref(i_row)) {
                 return false;
@@ -148,7 +148,7 @@ impl CmpntList {
     /// Multiply each Pauli string in `self` by the corresponding Pauli string in `rhs`
     /// Computes the element-wise product of two equally-sized QubitPauliArray instances,
     /// returning the result QubitPauliArray and a ComplexSignVec of phases.
-    pub fn cmpnts_mul_pairwise(
+    pub fn strings_mul_pairwise(
         &self,
         rhs: &Self,
     ) -> Result<(Self, ComplexSignVec), Box<dyn std::error::Error>> {
@@ -188,19 +188,19 @@ impl CmpntList {
     }
 }
 
-impl Compatible for CmpntList {
+impl Compatible for StringList {
     fn compatible_with(&self, other: &Self) -> bool {
         self.qubits == other.qubits
     }
 }
 
-impl Elements for CmpntList {
+impl Elements for StringList {
     fn len(&self) -> usize {
         self.x_part.len()
     }
 }
 
-impl EmptyClone for CmpntList {
+impl EmptyClone for StringList {
     fn empty_clone(&self) -> Self {
         Self {
             x_part: self.x_part().empty_clone(),
@@ -210,13 +210,13 @@ impl EmptyClone for CmpntList {
     }
 }
 
-impl QubitsBased for CmpntList {
+impl QubitsBased for StringList {
     fn qubits(&self) -> &Qubits {
         &self.qubits
     }
 }
 
-impl QubitsStandardized for CmpntList {
+impl QubitsStandardized for StringList {
     fn general_standardized(&self, n_qubit: usize) -> Self::OwnedType {
         let mut out = Self::new(Qubits::from_count(n_qubit));
         out.resize(self.len());
@@ -230,7 +230,7 @@ impl QubitsStandardized for CmpntList {
     }
 }
 
-impl QubitsStandardize for CmpntList {
+impl QubitsStandardize for StringList {
     fn general_standardize(&mut self, n_qubit: usize) {
         *self = self.general_standardized(n_qubit)
     }
@@ -242,13 +242,13 @@ impl QubitsStandardize for CmpntList {
     }
 }
 
-impl QubitsRelabel for CmpntList {
+impl QubitsRelabel for StringList {
     fn qubits_mut(&mut self) -> &mut Qubits {
         &mut self.qubits
     }
 }
 
-impl PushPaulis for CmpntList {
+impl PushPaulis for StringList {
     fn push_pauli_iter(
         &mut self,
         iter: impl Iterator<Item = (usize, PauliMatrix)>,
@@ -256,13 +256,13 @@ impl PushPaulis for CmpntList {
         self.x_part.push_clear();
         self.z_part.push_clear();
         for (i, p) in iter {
-            if let Err(x) = OutOfBounds::check(i, self.qubits.len(), Dimension::Cmpnt) {
+            if let Err(x) = OutOfBounds::check(i, self.qubits.len(), Dimension::String) {
                 self.x_part.pop();
                 self.z_part.pop();
                 return Err(x);
             }
             let index = self.len().saturating_sub(1);
-            CmpntMutRef {
+            StringMutRef {
                 word_iters: self,
                 index,
             }
@@ -272,7 +272,7 @@ impl PushPaulis for CmpntList {
     }
 }
 
-impl Display for CmpntList {
+impl Display for StringList {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -284,7 +284,7 @@ impl Display for CmpntList {
     }
 }
 
-impl Clone for CmpntList {
+impl Clone for StringList {
     fn clone(&self) -> Self {
         Self {
             x_part: self.x_part.clone(),
@@ -294,7 +294,7 @@ impl Clone for CmpntList {
     }
 }
 
-impl From<mode_major::array::Array> for CmpntList {
+impl From<mode_major::array::Array> for StringList {
     fn from(value: Array) -> Self {
         Self {
             x_part: value.x_part().transpose(),
@@ -304,7 +304,7 @@ impl From<mode_major::array::Array> for CmpntList {
     }
 }
 
-impl WordIters for CmpntList {
+impl WordIters for StringList {
     fn elem_u64it(&self, i: usize) -> impl Iterator<Item = u64> + Clone {
         self.x_part[i]
             .iter()
@@ -330,7 +330,7 @@ impl WordIters for CmpntList {
         self.z_part.resize(n);
     }
 
-    fn fmt_elem(&self, i: usize) -> String {
+    fn fmt_elem(&self, i: usize) -> std::string::String {
         (0..self.qubits().len())
             .filter_map(|i_qubit| {
                 let pauli = self.get_elem_ref(i).get_pauli_unchecked(i_qubit);
@@ -341,15 +341,15 @@ impl WordIters for CmpntList {
                     PauliMatrix::Z => Some(format!("Z{i_qubit}").to_string()),
                 }
             })
-            .collect::<Vec<String>>()
+            .collect::<Vec<std::string::String>>()
             .join(" ")
     }
 }
 
-pub type CmpntRef<'a> = word_iters::ElemRef<'a, CmpntList>;
-pub type CmpntMutRef<'a> = word_iters::ElemMutRef<'a, CmpntList>;
+pub type StringRef<'a> = word_iters::ElemRef<'a, StringList>;
+pub type StringMutRef<'a> = word_iters::ElemMutRef<'a, StringList>;
 
-impl<'a> CmpntRef<'a> {
+impl<'a> StringRef<'a> {
     /// Return the raw `u64` words of the referenced component's X part.
     pub fn get_x_part_slice(&self) -> &[u64] {
         &self.word_iters.x_part[self.get_index()]
@@ -396,14 +396,14 @@ impl<'a> CmpntRef<'a> {
     }
 }
 
-impl<'a> QubitsBased for CmpntRef<'a> {
+impl<'a> QubitsBased for StringRef<'a> {
     fn qubits(&self) -> &Qubits {
         &self.word_iters.qubits
     }
 }
 
-impl<'a> PauliWordRef for CmpntRef<'a> {
-    type T = CmpntList;
+impl<'a> PauliWordRef for StringRef<'a> {
+    type T = StringList;
 
     fn get_container(&self) -> &Self::T {
         self.word_iters
@@ -437,7 +437,7 @@ impl<'a> PauliWordRef for CmpntRef<'a> {
     }
 }
 
-impl<'a> CmpntMutRef<'a> {
+impl<'a> StringMutRef<'a> {
     /// Return mutable access to the raw `u64` words of the referenced component's X part.
     pub fn get_x_part_slice_mut(&mut self) -> &mut [u64] {
         let index = self.get_index();
@@ -509,7 +509,7 @@ impl<'a> CmpntMutRef<'a> {
     }
 
     /// `Set` the value of this referenced Pauli word from the multiplication of two others, ignoring phase.
-    pub fn assign_mul_matrices_unchecked(&mut self, lhs: CmpntRef, rhs: CmpntRef) {
+    pub fn assign_mul_matrices_unchecked(&mut self, lhs: StringRef, rhs: StringRef) {
         let (lx, lz) = lhs.get_part_iters();
         let (rx, rz) = rhs.get_part_iters();
         let (ox, oz) = self.get_part_iters_mut();
@@ -520,8 +520,8 @@ impl<'a> CmpntMutRef<'a> {
     /// `DifferentQubits` error is returned if the `lhs` or `rhs` is based on different qubits from those of `self`.
     pub fn assign_mul_matrices(
         &mut self,
-        lhs: CmpntRef,
-        rhs: CmpntRef,
+        lhs: StringRef,
+        rhs: StringRef,
     ) -> Result<(), DifferentQubits> {
         DifferentQubits::check_transitive(self, &lhs, &rhs)?;
         self.assign_mul_matrices_unchecked(lhs, rhs);
@@ -529,7 +529,7 @@ impl<'a> CmpntMutRef<'a> {
     }
 
     /// `Set` the value of this referenced Pauli word from the multiplication of two others, and return the associated phase.
-    pub fn assign_mul_unchecked(&mut self, lhs: CmpntRef, rhs: CmpntRef) -> ComplexSign {
+    pub fn assign_mul_unchecked(&mut self, lhs: StringRef, rhs: StringRef) -> ComplexSign {
         self.assign_mul_matrices_unchecked(lhs.clone(), rhs.clone());
         lhs.phase_of_mul(rhs)
     }
@@ -538,15 +538,15 @@ impl<'a> CmpntMutRef<'a> {
     /// `DifferentQubits` error is returned if the `lhs` or `rhs` is based on different qubits from those of `self`.
     pub fn assign_mul(
         &mut self,
-        lhs: CmpntRef,
-        rhs: CmpntRef,
+        lhs: StringRef,
+        rhs: StringRef,
     ) -> Result<ComplexSign, DifferentQubits> {
         DifferentQubits::check_transitive(self, &lhs, &rhs)?;
         Ok(self.assign_mul_unchecked(lhs, rhs))
     }
 
     /// Multiply by rhs in-place, ignoring phase.
-    pub fn imul_by_cmpnt_ref_matrices_unchecked(&mut self, rhs: CmpntRef) {
+    pub fn imul_by_string_ref_matrices_unchecked(&mut self, rhs: StringRef) {
         let (lx, lz) = self.get_part_iters_mut();
         let (rx, rz) = rhs.get_part_iters();
         imul_op_op_matrices(lx, lz, rx, rz)
@@ -554,14 +554,14 @@ impl<'a> CmpntMutRef<'a> {
 
     /// Multiply by rhs in-place, ignoring phase.
     /// `DifferentQubits` error is returned if the `rhs` is based on different qubits from those of `self`.
-    pub fn imul_by_cmpnt_ref_matrices(&mut self, rhs: CmpntRef) -> Result<(), DifferentQubits> {
+    pub fn imul_by_string_ref_matrices(&mut self, rhs: StringRef) -> Result<(), DifferentQubits> {
         DifferentQubits::check(self, &rhs)?;
-        self.imul_by_cmpnt_ref_matrices_unchecked(rhs);
+        self.imul_by_string_ref_matrices_unchecked(rhs);
         Ok(())
     }
 
     /// Multiply by rhs in-place, returning phase.
-    pub fn imul_by_cmpnt_ref_unchecked(&mut self, rhs: CmpntRef) -> ComplexSign {
+    pub fn imul_by_string_ref_unchecked(&mut self, rhs: StringRef) -> ComplexSign {
         let (lx, lz) = self.get_part_iters_mut();
         let (rx, rz) = rhs.get_part_iters();
         imul_op_op(lx, lz, rx, rz)
@@ -569,19 +569,19 @@ impl<'a> CmpntMutRef<'a> {
 
     /// Multiply by rhs in-place, returning phase.
     /// `DifferentQubits` error is returned if the `rhs` is based on different qubits from those of `self`.
-    pub fn imul_by_cmpnt_ref(&mut self, rhs: CmpntRef) -> Result<ComplexSign, DifferentQubits> {
+    pub fn imul_by_string_ref(&mut self, rhs: StringRef) -> Result<ComplexSign, DifferentQubits> {
         DifferentQubits::check(self, &rhs)?;
-        Ok(self.imul_by_cmpnt_ref_unchecked(rhs))
+        Ok(self.imul_by_string_ref_unchecked(rhs))
     }
 }
 
-impl<'a> QubitsBased for CmpntMutRef<'a> {
+impl<'a> QubitsBased for StringMutRef<'a> {
     fn qubits(&self) -> &Qubits {
         self.word_iters.qubits()
     }
 }
 
-impl<'a> PauliWordMutRef for CmpntMutRef<'a> {
+impl<'a> PauliWordMutRef for StringMutRef<'a> {
     fn set_pauli_unchecked(&mut self, i_mode: usize, pauli: PauliMatrix) {
         let parts = self.elem_part_slices_mut();
         encoding::set_qubit(parts.0, parts.1, i_mode, pauli);
@@ -598,7 +598,7 @@ mod tests {
     use crate::container::traits::proj::{Borrow, BorrowMut};
     use crate::qubit::mode::pauli_matrix_product as pmp;
     use crate::qubit::mode::{PauliMatrix, Qubits};
-    use crate::qubit::pauli::cmpnt_major::cmpnt::PauliWord;
+    use crate::qubit::pauli::string_major::string::PauliWord;
     use crate::qubit::test::HEHP_STO3G_HAM_JW_INPUT;
     use bincode::config;
     use num_complex::Complex64;
@@ -608,7 +608,7 @@ mod tests {
     #[test]
     fn test_empty() {
         {
-            let list = CmpntList::new(Qubits::from_count(4));
+            let list = StringList::new(Qubits::from_count(4));
             assert!(list.is_empty());
         }
     }
@@ -718,7 +718,7 @@ mod tests {
         #[case] ov: Vec<u8>,
         #[case] phase: ComplexSign,
     ) {
-        use crate::{cmpnt::bitset_cmpnt_list::AsCmpntRef, qubit::state::cmpnt::BasisState};
+        use crate::{string::bitset_string_list::AsStringRef, qubit::state::string::BasisState};
 
         let lhs = PauliWord::from_vec_default(lv);
         let rhs = BasisState::from_vec_default(rv.iter().map(|x| *x != 0).collect());
@@ -745,7 +745,7 @@ mod tests {
         let springs = Springs::from_str(input);
         assert!(springs.is_ok());
         let springs = springs.unwrap();
-        let (op_vec, phases) = CmpntList::from_springs_default(&springs);
+        let (op_vec, phases) = StringList::from_springs_default(&springs);
         assert_eq!(op_vec.len(), phases.len());
         assert_eq!(format!("{op_vec}"), output);
         assert_eq!(phases.0.as_bytes().collect_vec(), chk_phases);
@@ -867,23 +867,23 @@ mod tests {
         let springs = Springs::from_str(HEHP_STO3G_HAM_JW_INPUT);
         assert!(springs.is_ok());
         let springs = springs.unwrap();
-        let op_vec = CmpntList::from_springs_default(&springs).0;
+        let op_vec = StringList::from_springs_default(&springs).0;
         let encoded: Vec<u8> = bincode::serde::encode_to_vec(&op_vec, config::standard()).unwrap();
-        let (decoded, len): (CmpntList, usize) =
+        let (decoded, len): (StringList, usize) =
             bincode::serde::decode_from_slice(&encoded[..], config::standard()).unwrap();
         assert_eq!(len, encoded.len());
         assert_eq!(op_vec, decoded);
     }
 
     #[test]
-    fn test_cmpnts_mul_pairwise_single_element() {
-        let mut arr1 = CmpntList::new(Qubits::from_count(4));
-        let mut arr2 = CmpntList::new(Qubits::from_count(4));
+    fn test_strings_mul_pairwise_single_element() {
+        let mut arr1 = StringList::new(Qubits::from_count(4));
+        let mut arr2 = StringList::new(Qubits::from_count(4));
 
         arr1.push_pauli_vec(vec![X, Y, I, Z]).unwrap();
         arr2.push_pauli_vec(vec![I, Z, I, Z]).unwrap();
 
-        let (result_arr, phases) = arr1.cmpnts_mul_pairwise(&arr2).unwrap();
+        let (result_arr, phases) = arr1.strings_mul_pairwise(&arr2).unwrap();
 
         // Check output array length
         assert_eq!(result_arr.len(), 1);
@@ -893,9 +893,9 @@ mod tests {
     }
 
     #[test]
-    fn test_cmpnts_mul_pairwise_multiple_elements() {
-        let mut arr1 = CmpntList::new(Qubits::from_count(4));
-        let mut arr2 = CmpntList::new(Qubits::from_count(4));
+    fn test_strings_mul_pairwise_multiple_elements() {
+        let mut arr1 = StringList::new(Qubits::from_count(4));
+        let mut arr2 = StringList::new(Qubits::from_count(4));
 
         // Add two elements to each
         arr1.push_pauli_vec(vec![X, Y, I, Z]).unwrap();
@@ -904,7 +904,7 @@ mod tests {
         arr2.push_pauli_vec(vec![I, Z, I, Z]).unwrap();
         arr2.push_pauli_vec(vec![X, Y, I, Z]).unwrap();
 
-        let (result_arr, phases) = arr1.cmpnts_mul_pairwise(&arr2).unwrap();
+        let (result_arr, phases) = arr1.strings_mul_pairwise(&arr2).unwrap();
 
         // Check output array length matches input
         assert_eq!(result_arr.len(), 2);
@@ -914,11 +914,11 @@ mod tests {
     }
 
     #[test]
-    fn test_cmpnts_mul_pairwise_different_qubits_error() {
-        let arr1 = CmpntList::new(Qubits::from_count(4));
-        let arr2 = CmpntList::new(Qubits::from_count(5));
+    fn test_strings_mul_pairwise_different_qubits_error() {
+        let arr1 = StringList::new(Qubits::from_count(4));
+        let arr2 = StringList::new(Qubits::from_count(5));
 
-        let result = arr1.cmpnts_mul_pairwise(&arr2);
+        let result = arr1.strings_mul_pairwise(&arr2);
         assert!(result.is_err());
     }
 }

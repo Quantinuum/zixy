@@ -369,7 +369,7 @@ def test_complex_terms():
     assert terms[0].string.get_tuple() == (X,) * 6
     assert type(terms[0].into(RealTerm)) is RealTerm
     assert terms[0].into(RealTerm).coeff == 1.23
-    assert terms[0].into(RealTerm).cmpnt.get_tuple() == (X,) * 6
+    assert terms[0].into(RealTerm).string.get_tuple() == (X,) * 6
     assert type(terms.into(RealTerms)) is RealTerms
     assert type(terms.into(RealTerms).strings) is type(terms.strings)
     assert terms.into(RealTerms).strings is not terms.strings
@@ -385,11 +385,11 @@ def test_symbolic_terms():
     assert sum(terms.coeffs) == 10
     assert len(terms) == 10
     terms.append()
-    assert len(terms._impl._cmpnts) == len(terms._impl._coeffs)
+    assert len(terms._impl._strings) == len(terms._impl._coeffs)
     assert sum(terms.coeffs) == 11
     assert len(terms) == 11
     terms.resize(10)
-    assert len(terms._impl._cmpnts) == len(terms._impl._coeffs)
+    assert len(terms._impl._strings) == len(terms._impl._coeffs)
     assert sum(terms.coeffs) == 10
     assert len(terms) == 10
     assert terms[0].string.is_identity()

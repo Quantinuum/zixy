@@ -29,7 +29,6 @@ from sympy import Expr, Symbol
 from zixy._zixy import FermionSprings, GeneralFermionOperatorArray, Modes
 from zixy.container import terms
 from zixy.container.base import requires_ownership
-from zixy.container.cmpnts import Cmpnt
 from zixy.container.coeffs import (
     Coeff,
     Coeffs,
@@ -42,6 +41,7 @@ from zixy.container.coeffs import (
     get_coeffs_type,
 )
 from zixy.container.data import TermData
+from zixy.container.strings import String as BaseString
 from zixy.container.terms import (
     NumericTerms,
     NumericTermSum,
@@ -92,8 +92,8 @@ def _max_string_len_from_source[C: (float, complex, Sign, ComplexSign, Expr)](
     ):
         return _max_string_len_from_source(source[0])
     if isinstance(source, TermBase):
-        return _string_length(source.cmpnt)
-    if isinstance(source, Cmpnt):
+        return _string_length(source.string)
+    if isinstance(source, BaseString):
         return _string_length(source)
     if isinstance(source, str):
         if not source.strip():
@@ -110,15 +110,15 @@ def _mul[
     """Driver for multiplication of a term with another term, a string, or a coefficient."""
     if isinstance(rhs, Coeff):
         scalar_product = lhs.coeff * rhs
-        return get_term_type(type(scalar_product)).from_cmpnt_coeff(lhs.string, scalar_product)
+        return get_term_type(type(scalar_product)).from_string_coeff(lhs.string, scalar_product)
     if isinstance(rhs, String):
         _check_modes_compatibility(lhs.modes, rhs.modes)
         string = String(lhs.modes, lhs.string.get_ops() + rhs.get_ops())
-        return get_term_type(type(lhs.coeff)).from_cmpnt_coeff(string, lhs.coeff)
+        return get_term_type(type(lhs.coeff)).from_string_coeff(string, lhs.coeff)
     _check_modes_compatibility(lhs.modes, rhs.modes)
     coeff = lhs.coeff * rhs.coeff
     string = String(lhs.modes, lhs.string.get_ops() + rhs.string.get_ops())
-    return get_term_type(type(coeff)).from_cmpnt_coeff(string, coeff)
+    return get_term_type(type(coeff)).from_string_coeff(string, coeff)
 
 
 def _rmul[
@@ -131,11 +131,11 @@ def _rmul[
     if isinstance(lhs, String):
         _check_modes_compatibility(lhs.modes, rhs.modes)
         string = String(rhs.modes, lhs.get_ops() + rhs.string.get_ops())
-        return get_term_type(type(rhs.coeff)).from_cmpnt_coeff(string, rhs.coeff)
+        return get_term_type(type(rhs.coeff)).from_string_coeff(string, rhs.coeff)
     _check_modes_compatibility(lhs.modes, rhs.modes)
     coeff = lhs.coeff * rhs.coeff
     string = String(rhs.modes, lhs.string.get_ops() + rhs.string.get_ops())
-    return get_term_type(type(coeff)).from_cmpnt_coeff(string, coeff)
+    return get_term_type(type(coeff)).from_string_coeff(string, coeff)
 
 
 class Term[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerm[ImplT, SpecT, C, ElemT]):
@@ -146,7 +146,7 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerm[ImplT, Spe
     :class:`~zixy.container.data.TermData` instance, or a view on an element in another collection.
     """
 
-    cmpnts_type = Strings
+    strings_type = Strings
     coeff_type: type[C]
 
     def __init__(
@@ -162,16 +162,16 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerm[ImplT, Spe
             source: The term specifier to use for initial value.
             max_string_len: Maximum number of operators per string.
         """
-        cmpnts = self.cmpnts_type(modes, 1, max_string_len)
-        cmpnts._impl._reserve_string_length(_max_string_len_from_source(source), warn=False)
+        strings = self.strings_type(modes, 1, max_string_len)
+        strings._impl._reserve_string_length(_max_string_len_from_source(source), warn=False)
         coeffs = get_coeffs_type(self.coeff_type).from_size(1)
-        TermBase.__init__(self, TermData(cmpnts, coeffs))
+        TermBase.__init__(self, TermData(strings, coeffs))
         self.set(source)
 
     @property
     def string(self) -> String:
         """The string component of the term."""
-        return cast("String", self.cmpnt)
+        return cast("String", super().string)
 
     @property
     def max_string_len(self) -> int:
@@ -210,14 +210,14 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerms[ImplT, S
             n: The number of items to initialize the array with.
             max_string_len: Maximum number of operators per string.
         """
-        cmpnts = self.term_type.cmpnts_type(modes, n, max_string_len)
+        strings = self.term_type.strings_type(modes, n, max_string_len)
         coeffs = get_coeffs_type(self.term_type.coeff_type).from_size(n)
-        TermsBase.__init__(self, TermData(cmpnts, coeffs))
+        TermsBase.__init__(self, TermData(strings, coeffs))
 
     @property
     def strings(self) -> Strings:
         """The string components of the terms."""
-        return cast("Strings", self.cmpnts)
+        return cast("Strings", super().strings)
 
     @property
     def max_string_len(self) -> int:
@@ -288,7 +288,7 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
     @property
     def strings(self) -> Strings:
         """The string components of the terms."""
-        return cast("Strings", self._impl._cmpnts)
+        return cast("Strings", self._impl._strings)
 
     @property
     def coeffs(self) -> Any:
@@ -305,16 +305,18 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
         value: terms.TermSpecT[ImplT, SpecT, C] | TermBase[ImplT, SpecT, C],
     ) -> TermBase[ImplT, SpecT, C]:
         """Prepare a term without warning about temporary storage."""
-        self._working_term.cmpnt._impl._reserve_string_length(
+        self._working_term.string._impl._reserve_string_length(
             _max_string_len_from_source(value),
             warn=False,
         )
         return TermSetBase._get_working_term(self, value)
 
-    def _get_working_cmpnt(self, value: Cmpnt[ImplT, SpecT] | SpecT) -> Cmpnt[ImplT, SpecT]:
+    def _get_working_string(
+        self, value: BaseString[ImplT, SpecT] | SpecT
+    ) -> BaseString[ImplT, SpecT]:
         """Prepare a lookup string without warning about temporary storage."""
-        self._working_term.cmpnt._impl._reserve_string_length(_string_length(value), warn=False)
-        return super()._get_working_cmpnt(value)
+        self._working_term.string._impl._reserve_string_length(_string_length(value), warn=False)
+        return super()._get_working_string(value)
 
     @classmethod
     def from_iterable(
@@ -383,7 +385,7 @@ class TermSum[C: (float, complex, Sign, ComplexSign, Expr)](
         out = self.clone()
         if required > out.max_string_len:
             out.strings._impl._reserve_string_length(required, warn=False)
-            out.strings._impl.refresh_map(out._cmpnt_set._map)
+            out.strings._impl.refresh_map(out._string_set._map)
         terms.TermSum[ImplT, SpecT, C]._scaled_iadd(out, rhs, scalar)
         return out
 
@@ -524,9 +526,9 @@ class RealTermSum(NumericTermSum[GeneralFermionOperatorArray, StringSpec, float]
             return NotImplemented
         assert isinstance(self._impl._coeffs, RealCoeffs)
         assert isinstance(rhs._impl._coeffs, RealCoeffs)
-        lhs_impl = self._impl._cmpnts._impl
+        lhs_impl = self._impl._strings._impl
         lhs_coeffs = self._impl._coeffs._impl
-        rhs_impl = rhs._impl._cmpnts._impl
+        rhs_impl = rhs._impl._strings._impl
         rhs_coeffs = rhs._impl._coeffs._impl
         # TODO: support output by reference
         impl, coeffs = lhs_impl.lincomb_mul_real(lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs)
@@ -675,9 +677,9 @@ class ComplexTermSum(
             return NotImplemented
         assert isinstance(self._impl._coeffs, ComplexCoeffs)
         assert isinstance(rhs._impl._coeffs, ComplexCoeffs)
-        lhs_impl = self._impl._cmpnts._impl
+        lhs_impl = self._impl._strings._impl
         lhs_coeffs = self._impl._coeffs._impl
-        rhs_impl = rhs._impl._cmpnts._impl
+        rhs_impl = rhs._impl._strings._impl
         rhs_coeffs = rhs._impl._coeffs._impl
         # TODO: support output by reference
         impl, coeffs = lhs_impl.lincomb_mul_complex(lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs)

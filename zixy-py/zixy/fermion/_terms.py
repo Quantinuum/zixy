@@ -25,7 +25,7 @@ from zixy.container.coeffs import ComplexSign, Sign, get_coeffs_type
 
 if TYPE_CHECKING:
     from zixy._zixy import FermionArray
-    from zixy.container.cmpnts import Cmpnt
+    from zixy.container.strings import String as BaseString
 
 
 from zixy.container.data import TermData
@@ -49,7 +49,7 @@ class Term[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
     instance, or a view on an element in another collection.
     """
 
-    cmpnts_type: type[Strings[ImplT, SpecT, ElemT]]
+    strings_type: type[Strings[ImplT, SpecT, ElemT]]
 
     def __init__(
         self,
@@ -62,16 +62,16 @@ class Term[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             modes: The mode space or number of modes.
             source: The term specifier to use for initial value.
         """
-        cmpnts = self.cmpnts_type(modes, 1)
+        strings = self.strings_type(modes, 1)
         coeffs = get_coeffs_type(self.coeff_type).from_size(1)
-        data = TermData(cmpnts, coeffs)
+        data = TermData(strings, coeffs)
         TermBase.__init__(self, data)
         self.set(source)
 
     @property
     def string(self) -> String[ImplT, SpecT, ElemT]:
         """The string component of the term."""
-        return cast("String[ImplT, SpecT, ElemT]", self.cmpnt)
+        return cast("String[ImplT, SpecT, ElemT]", super().string)
 
     @property
     def modes(self) -> Modes:
@@ -98,14 +98,14 @@ class Terms[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, E
             modes: The mode space or number of modes.
             n: The number of items to initialize the array with.
         """
-        cmpnts = self.term_type.cmpnts_type(modes, n)
+        strings = self.term_type.strings_type(modes, n)
         coeffs = get_coeffs_type(self.term_type.coeff_type).from_size(n)
-        TermsBase.__init__(self, TermData(cmpnts, coeffs))
+        TermsBase.__init__(self, TermData(strings, coeffs))
 
     @property
     def strings(self) -> Strings[ImplT, SpecT, ElemT]:
         """The string components of the terms."""
-        return cast("Strings[ImplT, SpecT, ElemT]", self.cmpnts)
+        return cast("Strings[ImplT, SpecT, ElemT]", super().strings)
 
     @property
     def modes(self) -> Modes:
@@ -139,7 +139,7 @@ class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign,
     @property
     def strings(self) -> Strings[ImplT, SpecT, ElemT]:
         """The string components of the terms."""
-        return cast("Strings[ImplT, SpecT, ElemT]", self._impl._cmpnts)
+        return cast("Strings[ImplT, SpecT, ElemT]", self._impl._strings)
 
     @property
     def modes(self) -> Modes:
@@ -155,11 +155,12 @@ class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign,
             )
         _check_modes_compatibility(self.modes, value.modes)
 
-    def _check_cmpnt(self, value: Cmpnt[ImplT, SpecT]) -> None:
+    def _check_string(self, value: BaseString[ImplT, SpecT]) -> None:
         """Hook to check whether a component is valid for insertion into ``self``."""
-        if not isinstance(value, self.terms_type.term_type.cmpnts_type.cmpnt_type):
+        if not isinstance(value, self.terms_type.term_type.strings_type.string_type):
             raise TypeError(
-                f"Expected a {self.terms_type.term_type.cmpnts_type.cmpnt_type.__name__} instance, "
+                f"Expected a {self.terms_type.term_type.strings_type.string_type.__name__} "
+                "instance, "
                 f"got {type(value).__name__}."
             )
         _check_modes_compatibility(self.modes, value.modes)

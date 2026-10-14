@@ -10,13 +10,13 @@ from zixy.qubit.pauli import ComplexTermSet, ComplexTermSum, RealTermSet, RealTe
 @pytest.mark.parametrize("nonzero", (False, True))
 def test_copy_terms(cls, values, nonzero):
     source = cls.from_iterable([(f"X{i}", c) for i, c in enumerate(values)], 4)
-    before = [(str(t.cmpnt), t.coeff) for t in source]
+    before = [(str(t.string), t.coeff) for t in source]
 
     copied = source.filter_nonzero() if nonzero else source.clone()
 
     expected = [(key, c) for key, c in before if not nonzero or c != 0]
     assert type(copied) is cls
-    assert [(str(t.cmpnt), t.coeff) for t in copied] == expected
+    assert [(str(t.string), t.coeff) for t in copied] == expected
     for key, c in expected:
         assert copied.lookup_coeff(key) == c
     if expected:
@@ -27,7 +27,7 @@ def test_copy_terms(cls, values, nonzero):
     copied.insert(("Z3", 2))
     assert copied.lookup_coeff("Z3") == 2
     assert not source.contains("Z3")
-    assert [(str(t.cmpnt), t.coeff) for t in source] == before
+    assert [(str(t.string), t.coeff) for t in source] == before
 
 
 def test_filter_complex_imaginary_and_nonfinite():

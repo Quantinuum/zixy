@@ -20,8 +20,8 @@ from typing import TYPE_CHECKING, Self
 
 from sympy import Expr
 
-from zixy.container.cmpnts import Cmpnt, Cmpnts
 from zixy.container.coeffs import Coeffs, ComplexSign, Sign
+from zixy.container.strings import String, Strings
 from zixy.utils import slice_single_item
 
 if TYPE_CHECKING:
@@ -32,26 +32,26 @@ class TermData[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, E
     """Data for terms, consisting of an array of components and a vector of coefficients."""
 
     _coeffs: Coeffs[C]
-    _cmpnts: Cmpnts[ImplT, SpecT]
+    _strings: Strings[ImplT, SpecT]
 
-    def __init__(self, cmpnts: Cmpnts[ImplT, SpecT], coeffs: Coeffs[C]):
+    def __init__(self, strings: Strings[ImplT, SpecT], coeffs: Coeffs[C]):
         """Initialize the data.
 
         Args:
-            cmpnts: The component array.
+            strings: The component array.
             coeffs: The coefficient vector.
         """
-        if not isinstance(cmpnts, Cmpnts):
-            raise TypeError(f"cmpnts must be a Cmpnts, got {type(cmpnts)}")
+        if not isinstance(strings, Strings):
+            raise TypeError(f"strings must be a Strings, got {type(strings)}")
         if not isinstance(coeffs, Coeffs):
             raise TypeError(f"coeffs must be a Coeffs, got {type(coeffs)}")
         self._coeffs = coeffs
-        self._cmpnts = cmpnts
+        self._strings = strings
 
     @property
-    def cmpnts(self) -> Cmpnts[ImplT, SpecT]:
+    def strings(self) -> Strings[ImplT, SpecT]:
         """The components of ``self``."""
-        return self._cmpnts
+        return self._strings
 
     @property
     def coeffs(self) -> Coeffs[C]:
@@ -59,14 +59,14 @@ class TermData[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, E
         return self._coeffs
 
     @property
-    def cmpnts_type(self) -> type[Cmpnts[ImplT, SpecT]]:
+    def strings_type(self) -> type[Strings[ImplT, SpecT]]:
         """The component container type of ``self``."""
-        return type(self._cmpnts)
+        return type(self._strings)
 
     @property
-    def cmpnt_type(self) -> type[Cmpnt[ImplT, SpecT]]:
+    def string_type(self) -> type[String[ImplT, SpecT]]:
         """The component type of ``self``."""
-        return self._cmpnts.cmpnt_type
+        return self._strings.string_type
 
     @property
     def coeffs_type(self) -> type[Coeffs[C]]:
@@ -80,22 +80,22 @@ class TermData[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, E
 
     def __len__(self) -> int:
         """Get the number of elements in ``self``."""
-        assert len(self.coeffs) == len(self.cmpnts)
+        assert len(self.coeffs) == len(self.strings)
         return len(self.coeffs)
 
     def __eq__(self, other: object) -> bool:
         """Return whether ``self`` and ``other`` are equal."""
         if not isinstance(other, type(self)):
             return NotImplemented
-        return self.cmpnts == other.cmpnts and self.coeffs == other.coeffs
+        return self.strings == other.strings and self.coeffs == other.coeffs
 
     def __repr__(self) -> str:
         """Return a string representation of ``self``."""
-        return ", ".join(f"({c}, {s})" for s, c in zip(self.cmpnts, self.coeffs, strict=False))
+        return ", ".join(f"({c}, {s})" for s, c in zip(self.strings, self.coeffs, strict=False))
 
     def _empty_clone(self) -> Self:
         """Get an empty (owning, contiguous) clone of ``self``."""
-        return type(self)(self.cmpnts._empty_clone(), self.coeffs._empty_clone())
+        return type(self)(self.strings._empty_clone(), self.coeffs._empty_clone())
 
     def clone(self, s: int | slice = slice(None)) -> Self:
         """Return a deep copy of ``self``.
@@ -109,9 +109,9 @@ class TermData[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, E
         if isinstance(s, int):
             return self.clone(slice_single_item(slice(None), s, len(self)))
         cls = type(self)
-        cmpnts = self.cmpnts[s].clone()
+        strings = self.strings[s].clone()
         coeffs = self.coeffs_type.from_view(self.coeffs[s])
-        return cls(cmpnts, coeffs)
+        return cls(strings, coeffs)
 
     def resize(self, n: int) -> None:
         """Resize the underlying containers.
@@ -125,5 +125,5 @@ class TermData[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, E
         Note:
             This method operates in-place.
         """
-        self.cmpnts.resize(n)
+        self.strings.resize(n)
         self.coeffs.resize(n)

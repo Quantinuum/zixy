@@ -30,7 +30,7 @@ from zixy.mappings import (
     ParaparticularMapper,
     ParityMapper,
 )
-from zixy.qubit.pauli import (
+from zixy.qubit.operator import (
     ComplexTermSum as PauliComplexTermSum,
     RealTermSum as PauliRealTermSum,
 )

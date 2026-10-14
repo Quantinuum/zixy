@@ -4,7 +4,7 @@ import pytest
 from sympy import Expr, I as imaginary_unit, S, symbols
 
 from zixy.container.coeffs import Sign
-from zixy.qubit.pauli import I, RealTerm as PauliRealTerm, String as PauliString, X
+from zixy.qubit.operator import I, RealTerm as PauliRealTerm, String as PauliString, X
 from zixy.qubit.state import (
     ComplexSignTerm,
     ComplexSignTerms,

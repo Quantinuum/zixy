@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Submodule for qubit-based Pauli strings."""
+"""Qubit operators represented by Pauli strings and coefficient-weighted terms."""
 
 from __future__ import annotations
 
-from zixy.qubit.pauli._strings import String, StringSet, Strings, StringSpec
-from zixy.qubit.pauli._terms import (
+from zixy.qubit.operator._strings import String, StringSet, Strings, StringSpec
+from zixy.qubit.operator._terms import (
     SignTerm,
     SignTerms,
     SignTermSet,

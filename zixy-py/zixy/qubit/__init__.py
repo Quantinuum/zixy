@@ -15,6 +15,6 @@
 """Submodule for objects defined on qubit registers."""
 
 from zixy._zixy import Qubits
-from zixy.qubit import pauli, state
+from zixy.qubit import operator, state
 
-__all__ = ["Qubits", "pauli", "state"]
+__all__ = ["Qubits", "operator", "state"]

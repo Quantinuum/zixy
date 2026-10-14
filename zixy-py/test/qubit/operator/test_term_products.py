@@ -2,7 +2,7 @@ import pytest
 from sympy import sympify
 
 from zixy.container.coeffs import ComplexSign, Sign
-from zixy.qubit.pauli import (
+from zixy.qubit.operator import (
     ComplexSignTerm,
     ComplexTerm,
     I,

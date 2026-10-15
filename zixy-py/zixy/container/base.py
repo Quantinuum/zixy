@@ -24,10 +24,8 @@ from functools import wraps
 from typing import (
     Any,
     Concatenate,
-    Generic,
     Protocol,
     Self,
-    TypeVar,
     cast,
     overload,
 )

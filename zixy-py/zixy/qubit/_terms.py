@@ -20,10 +20,11 @@ from typing import TYPE_CHECKING, Any, cast
 
 from sympy import Expr
 
+from zixy._zixy import Qubits  # noqa: TC001
 from zixy.container.coeffs import ComplexSign, Sign, get_coeffs_type
 
 if TYPE_CHECKING:
-    from zixy._zixy import QubitArray, Qubits
+    from zixy._zixy import QubitArray
     from zixy.container.cmpnts import Cmpnt
 
 

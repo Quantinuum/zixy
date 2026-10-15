@@ -114,7 +114,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
 
     def __getitem__(self, i: int) -> PauliMatrix:
         """Return the element of the string at index ``i``."""
-        return self._impl.cmpnt_get_pauli(self.index, i)
+        return self._impl.string_get_pauli(self.index, i)
 
     def __setitem__(self, i: int, pauli: PauliMatrix | str) -> None:
         """Set the element of the string at index ``i``."""
@@ -129,11 +129,11 @@ class String(StringBase[ImplT, SpecT, ElemT]):
                 pauli = PauliMatrix.Z
             else:
                 raise ValueError(f'String "{pauli}" cannot be interpreted as a Pauli matrix.')
-        self._impl.cmpnt_set_pauli(self.index, i, pauli)
+        self._impl.string_set_pauli(self.index, i, pauli)
 
     def get_dict(self) -> dict[int, PauliMatrix]:
         """Get the string as a dictionary of its elements."""
-        return self._impl.cmpnt_get_dict(self.index)
+        return self._impl.string_get_dict(self.index)
 
     def set(self, source: SpecT | StringBase[ImplT, SpecT, ElemT]) -> None:
         """Set the value of the string.
@@ -145,7 +145,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
             This method operates in-place.
         """
         if isinstance(source, dict):
-            self._impl.cmpnt_set_from_dict(self.index, source)
+            self._impl.string_set_from_dict(self.index, source)
         else:
             super().set(source)
 
@@ -171,7 +171,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         from zixy.qubit.pauli._terms import ComplexSignTerm, get_term_type  # noqa: PLC0415
 
         if isinstance(rhs, String):
-            product, phase = self._impl.cmpnt_mul(self.index, rhs._impl, rhs.index)
+            product, phase = self._impl.string_mul(self.index, rhs._impl, rhs.index)
             phases = ComplexSignCoeffs.from_scalar(ComplexSign(phase))
             return ComplexSignTerm._create(TermData(Strings._create(product), phases))
         return get_term_type(type(rhs)).from_string_coeff(self, rhs)
@@ -197,7 +197,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
 
     def phase_of_mul(self, rhs: String) -> ComplexSign:
         """Get the phase resulting from the multiplication of ``self`` and ``rhs``."""
-        return ComplexSign(self._impl.cmpnt_phase_of_mul(self.index, rhs._impl, rhs.index))
+        return ComplexSign(self._impl.string_phase_of_mul(self.index, rhs._impl, rhs.index))
 
     def imul_ignore_phase(self, rhs: String) -> None:
         """In-place multiplication of ``self`` by ``rhs``, ignoring the scalar phase."""
@@ -213,9 +213,9 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         elif not isinstance(rhs, String):
             raise TypeError(f"Cannot right-multiply String in-place by type {type(rhs)}")
         if self._impl.same_as(rhs._impl):
-            self._impl.cmpnt_matrices_imul_internal(self.index, rhs.index)
+            self._impl.string_matrices_imul_internal(self.index, rhs.index)
         else:
-            self._impl.cmpnt_matrices_imul_external(self.index, rhs._impl, rhs.index)
+            self._impl.string_matrices_imul_external(self.index, rhs._impl, rhs.index)
 
     def imul_get_phase(self, rhs: String) -> ComplexSign:
         """In-place multiplication of ``self`` by ``rhs``, returning the phase.
@@ -227,9 +227,9 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         if type(rhs) is not String:
             raise TypeError(f"Cannot right-multiply String in-place by type {type(rhs)}")
         if self._impl.same_as(rhs._impl):
-            phase = self._impl.cmpnt_imul_internal(self.index, rhs.index)
+            phase = self._impl.string_imul_internal(self.index, rhs.index)
         else:
-            phase = self._impl.cmpnt_imul_external(self.index, rhs._impl, rhs.index)
+            phase = self._impl.string_imul_external(self.index, rhs._impl, rhs.index)
         return ComplexSign(phase)
 
     def set_mul(self, lhs: String, rhs: String) -> ComplexSign:
@@ -247,7 +247,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
 
     def commutes_with(self, rhs: String) -> bool:
         """Check whether ``self`` commutes with ``rhs``."""
-        return self._impl.cmpnt_commutes_with(self.index, rhs._impl, rhs.index)
+        return self._impl.string_commutes_with(self.index, rhs._impl, rhs.index)
 
 
 class Strings(StringsBase[ImplT, SpecT, ElemT]):

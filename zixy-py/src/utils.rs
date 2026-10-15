@@ -9,16 +9,16 @@ use pyo3::{
     types::{PyAnyMethods, PyModule, PyModuleMethods, PySequence},
     Bound, PyAny, PyResult, Python,
 };
-use zixy::cmpnt::parse::ParseError;
-use zixy::cmpnt::springs::BadParse;
 use zixy::container::coeffs::traits::Unrepresentable;
 use zixy::container::errors::IndistinctError;
 use zixy::container::errors::OutOfBounds;
 use zixy::container::word_iters::WordIters;
 use zixy::fermion::traits::DifferentSpaces;
 use zixy::qubit::mode::{BasisError, CoincidentIndex, DifferentModeCounts};
-use zixy::qubit::pauli::cmpnt_major::mat_elem::SubspaceNonorthogonal;
+use zixy::qubit::pauli::string_major::mat_elem::SubspaceNonorthogonal;
 use zixy::qubit::traits::DifferentQubits;
+use zixy::string::parse::ParseError;
+use zixy::string::springs::BadParse;
 
 #[allow(dead_code)]
 pub(crate) fn add_submodule(
@@ -158,7 +158,7 @@ pub fn try_py_indices(indices: Vec<isize>, len: usize) -> PyResult<Vec<usize>> {
 }
 
 /// Format the indexed component of a `WordIters` container as a string.
-pub fn cmpnt_to_string<T: WordIters>(src: &T, index: isize) -> PyResult<String> {
+pub fn string_to_string<T: WordIters>(src: &T, index: isize) -> PyResult<String> {
     let index = try_py_index(index, src.len())?;
     Ok(src.fmt_elem(index))
 }

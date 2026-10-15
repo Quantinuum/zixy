@@ -2,13 +2,13 @@
 
 use num_complex::Complex64;
 
-use crate::fermion::state::cmpnt_list::CmpntRef as FermionStateRef;
+use crate::fermion::state::string_list::StringRef as FermionStateRef;
 use crate::mappings::operators::OperatorMapper;
 use crate::mappings::traits::UpdateParityRho;
 use crate::mappings::Mapper;
 use crate::qubit::mode::Qubits;
-use crate::qubit::pauli::cmpnt_major::term_set;
-use crate::qubit::state::cmpnt::BasisState;
+use crate::qubit::pauli::string_major::term_set;
+use crate::qubit::state::string::BasisState;
 
 /// Paraparticular mapper from fermionic ladder-operator products to Pauli term sums.
 #[derive(Clone)]

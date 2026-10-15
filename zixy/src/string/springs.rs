@@ -137,7 +137,7 @@ pub trait ModeSettings: Default + Elements {
     }
 
     /// Get a string representation of the settings and mode indices at index i.
-    fn to_string_ind(&self, i_cmpnt: usize) -> String;
+    fn to_string_ind(&self, i_string: usize) -> String;
 
     /// Parse and append only the `i_part`-th `*`-delimited factor from each comma-delimited entry in `s`.
     fn append_str_part(&mut self, s: &str, i_part: usize) -> Result<(), BadParse> {
@@ -171,10 +171,10 @@ pub trait ModeSettings: Default + Elements {
     /// Split each comma-delimited entry in `s` into `*`-delimited parts and build one collection per part position.
     fn all_parts_from_str(s: &str) -> Result<Vec<Self>, BadParse> {
         let mut parts = Vec::<Self>::default();
-        for (i_cmpnt, s) in CommaSplitter::trimmed_validated(s)?.enumerate() {
+        for (i_string, s) in CommaSplitter::trimmed_validated(s)?.enumerate() {
             if let Some(s) = extract_after_coeff(s) {
                 for (i_part, s) in s.split('*').enumerate() {
-                    let part = get_part(&mut parts, i_part, i_cmpnt);
+                    let part = get_part(&mut parts, i_part, i_string);
                     part.push_str(s)?;
                 }
             } else {

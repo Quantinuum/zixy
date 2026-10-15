@@ -36,7 +36,7 @@ mod tests {
 
     use crate::container::traits::proj::{Borrow, BorrowMut};
     use crate::container::traits::EmptyFrom;
-    use crate::container::word_iters::term_set::test_defs::StringCmpnts;
+    use crate::container::word_iters::term_set::test_defs::StringStrings;
     use crate::container::word_iters::term_set::AsView;
     use crate::container::word_iters::HasWordIters;
     use crate::container::word_iters::{term_set, Elem};
@@ -46,18 +46,18 @@ mod tests {
     const N_CHAR_MAX: usize = 8;
 
     fn add_from_str<C: FieldElem>(
-        lhs: &mut term_set::ViewMut<'_, StringCmpnts, C>,
+        lhs: &mut term_set::ViewMut<'_, StringStrings, C>,
         key: &str,
         scalar: C,
     ) {
-        let mut tmp = Elem::<StringCmpnts>::from(lhs.get_word_iters());
+        let mut tmp = Elem::<StringStrings>::from(lhs.get_word_iters());
         tmp.borrow_mut().assign_from_str(key);
         crate::container::word_iters::lincomb::scaled_iadd_elem(lhs, tmp.borrow(), scalar);
     }
 
-    fn build_term_set<C: FieldElem>(entries: &[(&str, C)]) -> term_set::TermSet<StringCmpnts, C> {
+    fn build_term_set<C: FieldElem>(entries: &[(&str, C)]) -> term_set::TermSet<StringStrings, C> {
         let mut ts =
-            term_set::TermSet::<StringCmpnts, C>::empty_from(&StringCmpnts::new(N_CHAR_MAX));
+            term_set::TermSet::<StringStrings, C>::empty_from(&StringStrings::new(N_CHAR_MAX));
         for (key, coeff) in entries {
             add_from_str(&mut ts.borrow_mut(), key, *coeff);
         }

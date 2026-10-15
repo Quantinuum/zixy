@@ -5,7 +5,6 @@ use std::fmt::Display;
 
 use num_complex::Complex64;
 
-use crate::cmpnt::parse::ParseError;
 use crate::container::coeffs::complex_sign::ComplexSign;
 use crate::container::coeffs::sign::Sign;
 use crate::container::coeffs::traits::NumRepr;
@@ -16,6 +15,7 @@ use crate::qubit::mode::{
     pauli_matrix_product, BasisError, DifferentModeCounts, PauliMatrix, Qubits,
 };
 use crate::qubit::pauli::springs::Springs;
+use crate::string::parse::ParseError;
 
 /// Trait for containers that can append Pauli words from sparse or dense specifications of Pauli matrix content.
 pub trait PushPaulis: Elements {
@@ -218,7 +218,7 @@ pub trait PauliWordRef: QubitsBased + Display {
     /// Count how many qubit positions currently store matrix `pauli`.
     fn count(&self, pauli: PauliMatrix) -> usize;
 
-    /// Return whether the cmpnt is purely diagonal (all I and Z matrices).
+    /// Return whether the string is purely diagonal (all I and Z matrices).
     fn is_diagonal(&self) -> bool {
         self.count(PauliMatrix::X) + self.count(PauliMatrix::Y) == 0
     }
@@ -228,7 +228,7 @@ pub trait PauliWordRef: QubitsBased + Display {
         (0..self.qubits().len()).map(|i| self.get_pauli_unchecked(i))
     }
 
-    /// Return whether the cmpnt is identity (all I matrices).
+    /// Return whether the string is identity (all I matrices).
     fn is_identity(&self) -> bool {
         self.count(PauliMatrix::I) == self.qubits().len()
     }

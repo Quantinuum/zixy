@@ -1,25 +1,25 @@
-//! Extends  fermion `CmpntList` fermion with associated coefficients.
+//! Extends  fermion `StringList` fermion with associated coefficients.
 
 use crate::container::coeffs::traits::NumRepr;
 use crate::container::word_iters::terms;
 use crate::fermion::mode::Modes;
-use crate::fermion::operator::normal::cmpnt_list::CmpntList;
+use crate::fermion::operator::normal::string_list::StringList;
 use crate::fermion::traits::ModesBased;
 
-/// A Fermion `CmpntList` paired with one coefficient per component, plus
+/// A Fermion `StringList` paired with one coefficient per component, plus
 // immutable and mutable views into one.
-pub type Terms<C /*: NumRepr*/> = terms::Terms<CmpntList, C>;
-pub type View<'a, C /*: NumRepr*/> = terms::View<'a, CmpntList, C>;
-pub type ViewMut<'a, C /*: NumRepr*/> = terms::ViewMut<'a, CmpntList, C>;
+pub type Terms<C /*: NumRepr*/> = terms::Terms<StringList, C>;
+pub type View<'a, C /*: NumRepr*/> = terms::View<'a, StringList, C>;
+pub type ViewMut<'a, C /*: NumRepr*/> = terms::ViewMut<'a, StringList, C>;
 
 //Borrowed handles to a single fermion term inside a `Terms` container.
-pub type TermRef<'a, C /*: NumRepr*/> = terms::TermRef<'a, CmpntList, C>;
-pub type TermMutRef<'a, C /*: NumRepr*/> = terms::TermMutRef<'a, CmpntList, C>;
+pub type TermRef<'a, C /*: NumRepr*/> = terms::TermRef<'a, StringList, C>;
+pub type TermMutRef<'a, C /*: NumRepr*/> = terms::TermMutRef<'a, StringList, C>;
 
 /// Trait for structs that immutably view a fermion [`Terms`].
 /// Currently unused, but may be useful for future extensions.
-pub trait AsView<C: NumRepr>: terms::AsView<CmpntList, C> {}
-pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<CmpntList, C> {}
+pub trait AsView<C: NumRepr>: terms::AsView<StringList, C> {}
+pub trait AsViewMut<C: NumRepr>: terms::AsViewMut<StringList, C> {}
 
 impl<C: NumRepr> AsView<C> for Terms<C> {}
 impl<'a, C: NumRepr> AsView<C> for View<'a, C> {}
@@ -31,7 +31,7 @@ impl<C: NumRepr> Terms<C> {
     /// Create a new  (empty) list of fermion terms on the given mode space.
     pub fn new(modes: Modes) -> Self {
         use crate::container::traits::EmptyFrom;
-        Self::empty_from(&CmpntList::new(modes))
+        Self::empty_from(&StringList::new(modes))
     }
 }
 

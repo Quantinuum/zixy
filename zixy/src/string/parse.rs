@@ -2,9 +2,9 @@
 
 use std::fmt::Display;
 
-use crate::cmpnt::springs::BadParse;
 use crate::container::coeffs::traits::Unrepresentable;
 use crate::container::errors::OutOfBounds;
+use crate::string::springs::BadParse;
 
 /// Any of the errors that can result from a failed attempt to parse.
 #[must_use]

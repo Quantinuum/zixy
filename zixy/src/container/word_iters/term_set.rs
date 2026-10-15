@@ -641,7 +641,7 @@ pub mod test_defs {
 
     /// Test helper `WordIters` implementation that stores fixed-width strings in a `Table`.
     #[derive(Default, Serialize, Deserialize)]
-    pub struct StringCmpnts {
+    pub struct StringStrings {
         pub n_char_max: usize,
         pub table: Table,
     }
@@ -674,13 +674,13 @@ pub mod test_defs {
         String::from_utf8(str_bytes).unwrap()
     }
 
-    impl Elements for StringCmpnts {
+    impl Elements for StringStrings {
         fn len(&self) -> usize {
             self.table.len()
         }
     }
 
-    impl Clone for StringCmpnts {
+    impl Clone for StringStrings {
         fn clone(&self) -> Self {
             Self {
                 n_char_max: self.n_char_max,
@@ -689,7 +689,7 @@ pub mod test_defs {
         }
     }
 
-    impl EmptyClone for StringCmpnts {
+    impl EmptyClone for StringStrings {
         fn empty_clone(&self) -> Self {
             Self {
                 n_char_max: self.n_char_max,
@@ -698,7 +698,7 @@ pub mod test_defs {
         }
     }
 
-    impl WordIters for StringCmpnts {
+    impl WordIters for StringStrings {
         fn elem_u64it(&self, i: usize) -> impl Iterator<Item = u64> + Clone {
             self.table[i].iter().copied()
         }
@@ -724,13 +724,13 @@ pub mod test_defs {
         }
     }
 
-    impl Compatible for StringCmpnts {
+    impl Compatible for StringStrings {
         fn compatible_with(&self, other: &Self) -> bool {
             self.n_char_max == other.n_char_max
         }
     }
 
-    impl StringCmpnts {
+    impl StringStrings {
         /// Create a string-backed `WordIters` helper with capacity for strings up to `n_char_max` bytes.
         pub fn new(n_char_max: usize) -> Self {
             Self {
@@ -740,7 +740,7 @@ pub mod test_defs {
         }
     }
 
-    impl<'a> ElemMutRef<'a, StringCmpnts> {
+    impl<'a> ElemMutRef<'a, StringStrings> {
         /// Overwrite the referenced string element with the contents of `s`, truncated or padded as needed.
         pub fn assign_from_str(&mut self, s: &str) {
             let n_char_max = self.as_ref().word_iters.n_char_max;
@@ -750,10 +750,10 @@ pub mod test_defs {
         }
     }
 
-    impl<'a> set::ViewMut<'a, StringCmpnts> {
+    impl<'a> set::ViewMut<'a, StringStrings> {
         /// Insert the string `s`, or return the existing index if an equal string is already present.
         pub fn insert_or_get_from_str(&mut self, s: &str) -> (usize, bool) {
-            let mut tmp = Elem::<StringCmpnts>::from(&*self.word_iters);
+            let mut tmp = Elem::<StringStrings>::from(&*self.word_iters);
             tmp.borrow_mut().assign_from_str(s);
             self.insert_or_get_index(tmp.borrow())
         }
@@ -762,7 +762,7 @@ pub mod test_defs {
 
 #[cfg(test)]
 mod tests {
-    use super::test_defs::StringCmpnts;
+    use super::test_defs::StringStrings;
     use crate::container::{
         traits::EmptyFrom,
         word_iters::{
@@ -774,44 +774,44 @@ mod tests {
     #[test]
     fn test_keys() {
         const N_CHAR_MAX: usize = 20;
-        let mut cmpnts = set::Set::empty_from(&StringCmpnts::new(N_CHAR_MAX));
-        assert_eq!(cmpnts.borrow().get_word_iters().u64it_size(), 3);
+        let mut strings = set::Set::empty_from(&StringStrings::new(N_CHAR_MAX));
+        assert_eq!(strings.borrow().get_word_iters().u64it_size(), 3);
         assert_eq!(
-            cmpnts.borrow_mut().insert_or_get_from_str("Hello, "),
+            strings.borrow_mut().insert_or_get_from_str("Hello, "),
             (0, true)
         );
         assert_eq!(
-            cmpnts.borrow_mut().insert_or_get_from_str("World!"),
+            strings.borrow_mut().insert_or_get_from_str("World!"),
             (1, true)
         );
         assert_eq!(
-            cmpnts.borrow_mut().insert_or_get_from_str("World!"),
+            strings.borrow_mut().insert_or_get_from_str("World!"),
             (1, false)
         );
         assert_eq!(
-            cmpnts.borrow_mut().insert_or_get_from_str("Hello, "),
+            strings.borrow_mut().insert_or_get_from_str("Hello, "),
             (0, false)
         );
-        assert_eq!(cmpnts.borrow().get_word_iters().fmt_elem(0), "Hello, ");
-        assert_eq!(cmpnts.borrow().get_word_iters().fmt_elem(1), "World!");
+        assert_eq!(strings.borrow().get_word_iters().fmt_elem(0), "Hello, ");
+        assert_eq!(strings.borrow().get_word_iters().fmt_elem(1), "World!");
         assert_eq!(
-            cmpnts
+            strings
                 .borrow_mut()
                 .insert_or_get_from_str("This is a long string that will be truncated!"),
             (2, true)
         );
         assert_eq!(
-            cmpnts.borrow().get_word_iters().fmt_elem(2),
+            strings.borrow().get_word_iters().fmt_elem(2),
             "This is a long strin"
         );
         assert_eq!(
-            cmpnts
+            strings
                 .borrow_mut()
                 .insert_or_get_from_str("This is a long string that will be truncated!"),
             (2, false)
         );
         assert_eq!(
-            cmpnts
+            strings
                 .borrow_mut()
                 .insert_or_get_from_str("This is a long strin"),
             (2, false)

@@ -9,8 +9,8 @@ use crate::container::traits::Elements;
 use crate::container::word_iters::term_set::AsViewMut;
 use crate::container::word_iters::terms::AsViewMut as TermsAsViewMut;
 use crate::fermion::mode::Modes;
-use crate::fermion::operator::normal::cmpnt::Cmpnt;
-use crate::fermion::operator::normal::cmpnt_major::term_set::TermSet;
+use crate::fermion::operator::normal::string::String;
+use crate::fermion::operator::normal::string_major::term_set::TermSet;
 
 /// Create a number operator over the given set of mode indices.
 pub fn num_op_from_inds<C: FieldElem>(
@@ -19,8 +19,8 @@ pub fn num_op_from_inds<C: FieldElem>(
 ) -> Result<TermSet<C>, OutOfBounds> {
     let mut out = TermSet::<C>::new(modes.clone());
     for i in inds.into_iter() {
-        let cmpnt = Cmpnt::from_sets(modes.clone(), HashSet::from([i]), HashSet::from([i]))?;
-        out.as_terms_mut().push_elem_coeff(cmpnt.borrow(), C::ONE);
+        let string = String::from_sets(modes.clone(), HashSet::from([i]), HashSet::from([i]))?;
+        out.as_terms_mut().push_elem_coeff(string.borrow(), C::ONE);
     }
 
     Ok(out)
@@ -47,7 +47,7 @@ mod tests {
     use crate::container::traits::{Elements, RefElements};
     use crate::container::word_iters::term_set::AsView;
     use crate::fermion::mode::Modes;
-    use crate::fermion::operator::normal::cmpnt::Cmpnt;
+    use crate::fermion::operator::normal::string::String;
     use std::collections::HashSet;
 
     #[test]
@@ -56,15 +56,15 @@ mod tests {
         let inds = HashSet::from([1, 3]);
         let num_op = num_op_from_inds::<f64>(modes.clone(), inds).unwrap();
         assert_eq!(num_op.as_terms().len(), 2);
-        let expected_cmpnts = vec![
-            Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([1]), HashSet::from([1])),
-            Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([3]), HashSet::from([3])),
+        let expected_strings = vec![
+            String::from_sets_unchecked(modes.clone(), HashSet::from([1]), HashSet::from([1])),
+            String::from_sets_unchecked(modes.clone(), HashSet::from([3]), HashSet::from([3])),
         ];
-        for cmpnt in expected_cmpnts {
+        for string in expected_strings {
             assert!(num_op
                 .as_terms()
                 .iter()
-                .any(|term_ref| { term_ref.get_word_iter_ref() == cmpnt.borrow() }));
+                .any(|term_ref| { term_ref.get_word_iter_ref() == string.borrow() }));
         }
     }
 }

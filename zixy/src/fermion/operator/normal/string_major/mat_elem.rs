@@ -8,14 +8,14 @@ use crate::container::word_iters::term_set::AsView as TermSetAsView;
 use crate::container::word_iters::terms::AsView;
 use crate::container::word_iters::terms::AsViewMut;
 use crate::container::word_iters::WordIters;
-use crate::fermion::operator::normal::cmpnt_major as fermion_op;
-use crate::fermion::operator::normal::cmpnt_major::lincomb;
 use crate::fermion::operator::normal::products::apply_op_ket_u64;
 use crate::fermion::operator::normal::products::ApplyResult;
+use crate::fermion::operator::normal::string_major as fermion_op;
+use crate::fermion::operator::normal::string_major::lincomb;
 use crate::fermion::state;
-use crate::fermion::state::cmpnt_list::AssignResult;
-use crate::fermion::state::cmpnt_list::CmpntList as StateList;
-use crate::fermion::state::cmpnt_list::CmpntRef as StateRef;
+use crate::fermion::state::string_list::AssignResult;
+use crate::fermion::state::string_list::StringList as StateList;
+use crate::fermion::state::string_list::StringRef as StateRef;
 use crate::fermion::traits::ModesBased;
 use ndarray::Array2 as Matrix;
 
@@ -36,7 +36,7 @@ impl std::error::Error for SubspaceNonorthogonal {}
 
 /// Evaluate the matrix element of a normal-ordered fermion operator between the Slater determinants `bra` and
 /// `ket`. Assumes the mode space fits within a single `u64` word.
-pub fn mat_elem_cmpnts<C: FieldElem>(
+pub fn mat_elem_strings<C: FieldElem>(
     op: &impl fermion_op::terms::AsView<C>,
     bra: &StateRef,
     ket: &StateRef,
@@ -46,13 +46,13 @@ pub fn mat_elem_cmpnts<C: FieldElem>(
     let bra_word = bra.get_u64it().next().expect("bra state has zero modes");
     let ket_word = ket.get_u64it().next().expect("ket state has zero modes");
     let mut contrib_sum = C::ZERO;
-    for (op_cmpnt, op_coeff) in op.word_iters.iter().zip(op.coeffs.iter()) {
-        let cre = op_cmpnt
+    for (op_string, op_coeff) in op.word_iters.iter().zip(op.coeffs.iter()) {
+        let cre = op_string
             .get_cre_part()
             .get_u64it()
             .next()
             .expect("operator has zero creation operators");
-        let ann = op_cmpnt
+        let ann = op_string
             .get_ann_part()
             .get_u64it()
             .next()
@@ -83,9 +83,9 @@ pub fn mat_elem<C: FieldElem>(
     assert_eq!(op.view().to_modes(), bra.to_modes());
     assert_eq!(op.view().to_modes(), ket.to_modes());
     let mut out = C::ZERO;
-    for (bra_cmpnt, bra_coeff) in bra.word_iters.iter().zip(bra.coeffs.iter()) {
-        for (ket_cmpnt, ket_coeff) in ket.word_iters.iter().zip(ket.coeffs.iter()) {
-            let contrib_sum = mat_elem_cmpnts(op, &bra_cmpnt, &ket_cmpnt);
+    for (bra_string, bra_coeff) in bra.word_iters.iter().zip(bra.coeffs.iter()) {
+        for (ket_string, ket_coeff) in ket.word_iters.iter().zip(ket.coeffs.iter()) {
+            let contrib_sum = mat_elem_strings(op, &bra_string, &ket_string);
             out += bra_coeff.complex_conj() * *ket_coeff * contrib_sum;
         }
     }
@@ -138,7 +138,7 @@ pub fn mat_ortho_projected_unchecked<C: FieldElem>(
             if hermitian && i_ket > i_bra {
                 continue;
             }
-            let h_elem = mat_elem_cmpnts(op, &bra, &ket);
+            let h_elem = mat_elem_strings(op, &bra, &ket);
             h_mat[[i_bra, i_ket]] = h_elem;
             if i_ket != i_bra && hermitian {
                 h_mat[[i_ket, i_bra]] = h_elem.conj();
@@ -215,11 +215,11 @@ pub fn apply<C: FieldElem>(
         "fermion operator application supports at most 64 modes"
     );
     let mut tmp = word_iters::Elem::<StateList>::new(state.word_iters.to_modes());
-    for (op_cmpnt, op_coeff) in op.word_iters.iter().zip(op.coeffs.iter()) {
-        for (state_cmpnt, state_coeff) in state.word_iters.iter().zip(state.coeffs.iter()) {
+    for (op_string, op_coeff) in op.word_iters.iter().zip(op.coeffs.iter()) {
+        for (state_string, state_coeff) in state.word_iters.iter().zip(state.coeffs.iter()) {
             let sign = match tmp
                 .borrow_mut()
-                .assign_mul_by_op(op_cmpnt.clone(), state_cmpnt)
+                .assign_mul_by_op(op_string.clone(), state_string)
             {
                 AssignResult::Applied(sign) => sign,
                 AssignResult::Zero => continue,
@@ -243,8 +243,8 @@ mod tests {
     use crate::container::traits::MutRefElements;
     use crate::container::word_iters::lincomb::scaled_iadd_elem;
     use crate::fermion::mode::Modes;
-    use crate::fermion::operator::normal::cmpnt::Cmpnt;
-    use crate::fermion::operator::normal::cmpnt_major::term_set::TermSet as OpTermSet;
+    use crate::fermion::operator::normal::string::String;
+    use crate::fermion::operator::normal::string_major::term_set::TermSet as OpTermSet;
     use crate::fermion::state::term_set::TermSet as StateTermSet;
     use crate::fermion::state::terms::AsViewMut;
     use std::collections::HashSet;
@@ -253,8 +253,8 @@ mod tests {
     fn build_hopping_op(modes: Modes) -> OpTermSet<f64> {
         let mut op = OpTermSet::<f64>::new(modes.clone());
         let hop_01 =
-            Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([1]), HashSet::from([0]));
-        let hop_10 = Cmpnt::from_sets_unchecked(modes, HashSet::from([0]), HashSet::from([1]));
+            String::from_sets_unchecked(modes.clone(), HashSet::from([1]), HashSet::from([0]));
+        let hop_10 = String::from_sets_unchecked(modes, HashSet::from([0]), HashSet::from([1]));
         scaled_iadd_elem(&mut op.borrow_mut(), hop_01.borrow(), 1.0);
         scaled_iadd_elem(&mut op.borrow_mut(), hop_10.borrow(), 1.0);
         op
@@ -313,7 +313,7 @@ mod tests {
         // The number operator n_0 = c_0^+ c_0 has |1_0> as an eigenfunction with eigenvalue 1.
         let modes = Modes::from_count(1);
         let mut op = OpTermSet::<f64>::new(modes.clone());
-        let n0 = Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([0]), HashSet::from([0]));
+        let n0 = String::from_sets_unchecked(modes.clone(), HashSet::from([0]), HashSet::from([0]));
         scaled_iadd_elem(&mut op.borrow_mut(), n0.borrow(), 1.0);
 
         let state = build_basis_state(modes, HashSet::from([0]));

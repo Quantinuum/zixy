@@ -5,8 +5,6 @@ use std::collections::HashMap;
 use indexmap::IndexSet;
 use num_complex::Complex64;
 
-use crate::cmpnt::parse::ParseError;
-use crate::cmpnt::springs::ModeSettings;
 use crate::container::coeffs::complex_sign::ComplexSign;
 use crate::container::coeffs::traits::{
     ComplexSigned, FieldElem, FieldElemVec, HasCoeffs, NumRepr,
@@ -18,12 +16,14 @@ use crate::container::two_bit_vec::ODD_BIT_MASK;
 use crate::container::word_iters::lincomb::{iadd, isub, scaled_iadd_elem};
 use crate::container::word_iters::term_set::AsViewMut;
 use crate::qubit::mode::{PauliMatrix, Qubits};
-use crate::qubit::pauli::cmpnt_major::cmpnt::PauliWord;
-use crate::qubit::pauli::cmpnt_major::num_ops::{num_op, num_op_odd_pos};
-use crate::qubit::pauli::cmpnt_major::term_set::{self, TermSet};
-use crate::qubit::pauli::cmpnt_major::terms::{self, Terms};
 use crate::qubit::pauli::springs::Springs;
+use crate::qubit::pauli::string_major::num_ops::{num_op, num_op_odd_pos};
+use crate::qubit::pauli::string_major::string::PauliWord;
+use crate::qubit::pauli::string_major::term_set::{self, TermSet};
+use crate::qubit::pauli::string_major::terms::{self, Terms};
 use crate::qubit::traits::{DifferentQubits, PauliWordMutRef, QubitsBased};
+use crate::string::parse::ParseError;
+use crate::string::springs::ModeSettings;
 use crate::utils::arith::invert_endian;
 
 pub fn assign_from_mul<C: FieldElem>(
@@ -38,12 +38,12 @@ pub fn assign_from_mul<C: FieldElem>(
     let n_lhs = lhs.word_iters.len().min(lhs.coeffs.len());
     let n_rhs = rhs.word_iters.len().min(rhs.coeffs.len());
     for (i_lhs, lhs_coeff) in lhs.coeffs.iter().take(n_lhs).enumerate() {
-        let lhs_cmpnt = lhs.word_iters.get_elem_ref(i_lhs);
+        let lhs_string = lhs.word_iters.get_elem_ref(i_lhs);
         for (i_rhs, rhs_coeff) in rhs.coeffs.iter().take(n_rhs).enumerate() {
-            let rhs_cmpnt = rhs.word_iters.get_elem_ref(i_rhs);
+            let rhs_string = rhs.word_iters.get_elem_ref(i_rhs);
             let phase = work
                 .borrow_mut()
-                .assign_mul_unchecked(lhs_cmpnt.clone(), rhs_cmpnt);
+                .assign_mul_unchecked(lhs_string.clone(), rhs_string);
             let c = phase.to_complex();
             let c = lhs_coeff.scaled_complex(c);
             let c = rhs_coeff.scaled_complex(c);
@@ -226,8 +226,8 @@ pub fn to_sparse_matrix<C: FieldElem>(
             ket
         };
         // ket is in little-endian
-        for (cmpnt, coeff) in terms.word_iters.iter().zip(terms.coeffs.iter()) {
-            let (bra, phase) = cmpnt.mul_state_u64(ket);
+        for (string, coeff) in terms.word_iters.iter().zip(terms.coeffs.iter()) {
+            let (bra, phase) = string.mul_state_u64(ket);
             // bra is in little-endian
             if hw_consrv && ket.count_ones() != bra.count_ones() {
                 // self conserves Hamming weight, but this contribution does not, so skip.
@@ -485,19 +485,19 @@ mod tests {
     use std::f64::consts::PI;
 
     use super::*;
-    use crate::cmpnt::springs::ModeSettings;
     use crate::container::coeffs::traits::NumReprVec;
     use crate::container::traits::{Elements, RefElements};
     use crate::container::word_iters::lincomb::{scaled, sum};
     use crate::container::word_iters::term_set::AsView;
     use crate::container::word_iters::terms::Terms;
     use crate::qubit::mode::{PauliMatrix, Qubits};
-    use crate::qubit::pauli::cmpnt_major;
-    use crate::qubit::pauli::cmpnt_major::cmpnt_list::CmpntList;
-    use crate::qubit::pauli::cmpnt_major::term_set::AsView as _;
     use crate::qubit::pauli::springs::Springs;
+    use crate::qubit::pauli::string_major;
+    use crate::qubit::pauli::string_major::string_list::StringList;
+    use crate::qubit::pauli::string_major::term_set::AsView as _;
     use crate::qubit::test::{HEHP_STO3G_HAM_JW_INPUT, HEHP_STO3G_HF_ENERGY};
     use crate::qubit::traits::PauliWordRef;
+    use crate::string::springs::ModeSettings;
     use bincode::config;
     use num_complex::Complex64;
     use PauliMatrix::*;
@@ -505,19 +505,19 @@ mod tests {
     #[test]
     fn test_contains() {
         let qubits = Qubits::from_count(4);
-        let make_cmpnt = |v: Vec<PauliMatrix>| PauliWord::from_vec(qubits.clone(), v).unwrap();
+        let make_string = |v: Vec<PauliMatrix>| PauliWord::from_vec(qubits.clone(), v).unwrap();
         let mut sum = TermSet::<f64>::new(qubits.clone());
         assert_eq!(sum.len(), 0);
         assert!(sum.is_empty());
         scaled_iadd_elem(
             &mut sum.borrow_mut(),
-            make_cmpnt(vec![I, X, Y, Z]).borrow(),
+            make_string(vec![I, X, Y, Z]).borrow(),
             PI,
         );
         assert_eq!(sum.len(), 1);
         assert!(sum
             .borrow()
-            .lookup_coeff_elem_ref(make_cmpnt(vec![I, X, Y, Z]).borrow())
+            .lookup_coeff_elem_ref(make_string(vec![I, X, Y, Z]).borrow())
             .is_some_and(|x| x == PI));
     }
 
@@ -530,7 +530,7 @@ mod tests {
         let coeffs = Vec::<f64>::try_parse(input);
         assert!(coeffs.is_ok());
         let terms = Terms {
-            word_iters: CmpntList::from_springs_default(&springs).0,
+            word_iters: StringList::from_springs_default(&springs).0,
             coeffs: coeffs.unwrap(),
         };
         let sum = TermSet::<f64>::from(terms);
@@ -604,8 +604,8 @@ mod tests {
         assert!(springs.is_ok());
         let springs = springs.unwrap();
         assert_eq!(springs.len(), 27);
-        let ham =
-            cmpnt_major::terms::Terms::<f64>::from_springs_coeffs_default(springs, coeffs).unwrap();
+        let ham = string_major::terms::Terms::<f64>::from_springs_coeffs_default(springs, coeffs)
+            .unwrap();
         let ham = TermSet::from(ham);
         // check selected components
         assert!(ham
@@ -643,8 +643,8 @@ mod tests {
         let springs = Springs::from_str(input);
         assert!(springs.is_ok());
         let springs = springs.unwrap();
-        let ham =
-            cmpnt_major::terms::Terms::<f64>::from_springs_coeffs_default(springs, coeffs).unwrap();
+        let ham = string_major::terms::Terms::<f64>::from_springs_coeffs_default(springs, coeffs)
+            .unwrap();
         for big_endian in [true, false] {
             // use the reference configuration as the sole element of the basis set
             let ref_state = SparseBasis::Partial(vec![if big_endian { 0b1100 } else { 0b0011 }]);
@@ -660,8 +660,8 @@ mod tests {
             // this should be equivalent to summing over the to_sparse results of the individual Pauli words
             let mut sparse_chk = sprs::CsMat::<Complex64>::zero(sparse.shape());
             for term in ham.iter() {
-                let (cmpnt, coeff) = term.unpack();
-                let mut tmp = cmpnt.to_sparse_matrix(big_endian);
+                let (string, coeff) = term.unpack();
+                let mut tmp = string.to_sparse_matrix(big_endian);
                 tmp.scale(Complex64::new(coeff, 0.0));
                 sparse_chk = &sparse_chk + &tmp;
             }
@@ -672,7 +672,7 @@ mod tests {
 
     #[test]
     fn test_to_sparse_error_too_many_qubits() {
-        let ham = cmpnt_major::terms::Terms::<f64>::new(Qubits::from_count(65));
+        let ham = string_major::terms::Terms::<f64>::new(Qubits::from_count(65));
         let result = to_sparse_matrix(&ham.borrow(), SparseBasis::Full, None, false);
         assert!(result.is_err());
     }
@@ -687,8 +687,8 @@ mod tests {
         assert!(springs.is_ok());
         let springs = springs.unwrap();
         assert_eq!(springs.len(), 27);
-        let ham =
-            cmpnt_major::terms::Terms::<f64>::from_springs_coeffs_default(springs, coeffs).unwrap();
+        let ham = string_major::terms::Terms::<f64>::from_springs_coeffs_default(springs, coeffs)
+            .unwrap();
 
         let encoded = bincode::serde::encode_to_vec(&ham, config::standard()).unwrap();
         assert_eq!(encoded.len(), 281);

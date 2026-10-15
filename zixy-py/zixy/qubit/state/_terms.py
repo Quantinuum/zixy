@@ -37,12 +37,6 @@ from zixy.container.coeffs import (
     RealCoeffs,
     Sign,
     SymbolicCoeffs,
-    _is_complex,
-    _is_complex_sign,
-    _is_expr,
-    _is_float,
-    _is_int,
-    _is_sign,
     get_coeffs_type,
     typesafe_mul,
 )
@@ -865,16 +859,23 @@ class SymbolicTermSum(TermSum[Expr]):
 def get_term_type[C: (float, complex, Sign, ComplexSign, Expr)](
     coeff_type: type[C],
 ) -> type[Term[C]]:
-    """Get the term type corresponding to ``coeff_type``."""
-    if _is_int(coeff_type) or _is_float(coeff_type):
-        return cast(type[Term[C]], RealTerm)
-    elif _is_complex(coeff_type):
-        return cast(type[Term[C]], ComplexTerm)
-    elif _is_sign(coeff_type):
-        return cast(type[Term[C]], SignTerm)
-    elif _is_complex_sign(coeff_type):
-        return cast(type[Term[C]], ComplexSignTerm)
-    elif _is_expr(coeff_type):
-        return cast(type[Term[C]], SymbolicTerm)
+    """Get the term type corresponding to a given coefficient type.
+
+    Args:
+        coeff_type: The coefficient type for which to get the corresponding term type.
+
+    Returns:
+        The term type corresponding to ``coeff_type``.
+    """
+    if issubclass(coeff_type, Sign):
+        return SignTerm
+    elif issubclass(coeff_type, ComplexSign):
+        return ComplexSignTerm
+    if not issubclass(coeff_type, complex) and issubclass(coeff_type, float | int):
+        return RealTerm
+    if not issubclass(coeff_type, float | int) and issubclass(coeff_type, complex):
+        return ComplexTerm
+    elif issubclass(coeff_type, Expr):
+        return SymbolicTerm
     else:
-        raise TypeError(f"Unsupported coefficient type {coeff_type} for term type lookup.")
+        raise TypeError(f"Unsupported coefficient type {coeff_type}.")

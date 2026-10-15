@@ -34,7 +34,6 @@ from typing import TYPE_CHECKING, Any, Self, TypeAlias, overload
 import numpy as np
 from numpy.typing import NDArray
 from sympy import Expr, Float, I, Integer, Symbol, diff, sympify
-from typing_extensions import TypeIs
 
 from zixy import _zixy
 from zixy.container.base import StringRepresentable, ViewableSequence, requires_ownership
@@ -48,7 +47,7 @@ from zixy.utils import (
     split_top_level,
 )
 
-Number: TypeAlias = int | float | complex  # noqa: UP040
+Number: TypeAlias = int | float | complex
 
 
 def _imul_factor_error(lhs: Any, rhs: Any, factor: Any) -> ValueError:
@@ -556,8 +555,8 @@ class ComplexSign(RootOfUnity):
         return complex(self)
 
 
-Scalar: TypeAlias = Number | Sign | ComplexSign  # noqa: UP040
-Coeff: TypeAlias = Scalar | Expr  # noqa: UP040
+Scalar: TypeAlias = Number | Sign | ComplexSign
+Coeff: TypeAlias = Scalar | Expr
 
 
 def zero[C: (float, complex, Sign, ComplexSign, Expr)](coeff_type: type[C]) -> C:
@@ -628,36 +627,6 @@ def _convert_symbolic[C: (float, complex, Sign, ComplexSign, Expr)](source: Expr
     raise _convert_error(source, t)
 
 
-def _is_int(cls: type[Coeff]) -> TypeIs[type[int]]:
-    """Whether ``cls`` is of type ``int``."""
-    return cls is int
-
-
-def _is_float(cls: type[Coeff]) -> TypeIs[type[float]]:
-    """Whether ``cls`` is of type ``float``."""
-    return cls is float
-
-
-def _is_complex(cls: type[Coeff]) -> TypeIs[type[complex]]:
-    """Whether ``cls`` is of type ``complex``."""
-    return cls is complex
-
-
-def _is_expr(cls: type[Coeff]) -> TypeIs[type[Expr]]:
-    """Whether ``cls`` is of type :class:`~sympy.Expr`."""
-    return issubclass(cls, Expr)
-
-
-def _is_sign(cls: type[Coeff]) -> TypeIs[type[Sign]]:
-    """Whether ``cls`` is of type :class:`Sign`."""
-    return issubclass(cls, Sign)
-
-
-def _is_complex_sign(cls: type[Coeff]) -> TypeIs[type[ComplexSign]]:
-    """Whether ``cls`` is of type :class:`ComplexSign`."""
-    return issubclass(cls, ComplexSign)
-
-
 def convert[C: (float, complex, Sign, ComplexSign, Expr)](source: Coeff, cls: type[C]) -> C:
     """Convert the coefficient ``source`` to a coefficient of type ``cls``.
 
@@ -677,7 +646,7 @@ def convert[C: (float, complex, Sign, ComplexSign, Expr)](source: Coeff, cls: ty
         return source
     elif isinstance(source, Expr):
         return _convert_symbolic(source, cls)
-    elif _is_int(cls):
+    elif issubclass(cls, int):
         if isinstance(source, float | complex):
             if source.imag == 0 and int(source.real) == source.real:
                 return cls(source.real)
@@ -686,22 +655,22 @@ def convert[C: (float, complex, Sign, ComplexSign, Expr)](source: Coeff, cls: ty
                 return cls(source)
         else:
             return cls(source)
-    elif _is_float(cls):
+    elif issubclass(cls, float):
         if isinstance(source, complex):
             if source.imag == 0:
                 return cls(source.real)
         else:
             return cls(source)
-    elif _is_complex(cls):
+    elif issubclass(cls, complex):
         return cls(source)
-    elif _is_expr(cls):
+    elif issubclass(cls, Expr):
         if isinstance(source, RootOfUnity):
             return source.to_symbolic()
         else:
             return sympify(source)
-    elif _is_sign(cls):
+    elif issubclass(cls, Sign):
         return Sign.from_int(convert(source, int))
-    elif _is_complex_sign(cls):
+    elif issubclass(cls, ComplexSign):
         return ComplexSign.from_complex(complex(source))
     raise _convert_error(source, cls)
 
@@ -880,7 +849,7 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
             return type(self)._create(
                 self._impl, slice_of_slice(self.slice, indexer, len(self._impl))
             )
-        if _is_sign(self.coeff_type) or _is_complex_sign(self.coeff_type):
+        if issubclass(self.coeff_type, Sign) or issubclass(self.coeff_type, ComplexSign):
             coeff = self.coeff_type(self._impl[self.map_index(indexer)].to_phase())
         else:
             coeff = self._impl[self.map_index(indexer)]
@@ -899,7 +868,7 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
             # None indicates the default value (i.e. unity)
             self[index] = unit(self.coeff_type)
             return
-        if _is_sign(self.coeff_type) or _is_complex_sign(self.coeff_type):
+        if issubclass(self.coeff_type, Sign) or issubclass(self.coeff_type, ComplexSign):
             data = value._impl
         else:
             data = value
@@ -1026,7 +995,7 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
             This method operates in-place.
         """
         for _ in range(n):
-            if _is_sign(self.coeff_type) or _is_complex_sign(self.coeff_type):
+            if issubclass(self.coeff_type, Sign) or issubclass(self.coeff_type, ComplexSign):
                 self._impl.append(value._impl)
             else:
                 self._impl.append(value)
@@ -1727,27 +1696,29 @@ def convert_vec[C: (float, complex, Sign, ComplexSign, Expr)](
     return out
 
 
-def get_coeffs_type[C: (float, complex, Sign, ComplexSign, Expr)](t: type[C]) -> type[Coeffs[C]]:
+def get_coeffs_type[C: (float, complex, Sign, ComplexSign, Expr)](
+    coeff_type: type[C],
+) -> type[Coeffs[C]]:
     """Get the coefficient vector type corresponding to a given coefficient type.
 
     Args:
-        t: The coefficient type for which to get the corresponding vector type.
+        coeff_type: The coefficient type for which to get the corresponding vector type.
 
     Returns:
-        The coefficient vector type corresponding to ``t``.
+        The coefficient vector type corresponding to ``coeff_type``.
     """
-    if _is_sign(t):
+    if issubclass(coeff_type, Sign):
         return SignCoeffs
-    elif _is_complex_sign(t):
+    elif issubclass(coeff_type, ComplexSign):
         return ComplexSignCoeffs
-    elif _is_int(t) or _is_float(t):
+    elif not issubclass(coeff_type, complex) and issubclass(coeff_type, float | int):
         return RealCoeffs
-    elif _is_complex(t):
+    elif not issubclass(coeff_type, float | int) and issubclass(coeff_type, complex):
         return ComplexCoeffs
-    elif _is_expr(t):
+    elif issubclass(coeff_type, Expr):
         return SymbolicCoeffs
     else:
-        raise TypeError(f"Unsupported coefficient type {t}.")
+        raise TypeError(f"Unsupported coefficient type {coeff_type}.")
 
 
 __all__ = [

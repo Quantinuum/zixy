@@ -2,7 +2,7 @@ import pytest
 
 from zixy._zixy import PauliSprings, QubitPauliArray
 from zixy.qubit import Qubits
-from zixy.qubit.pauli import I, String, X, Y, Z
+from zixy.qubit.operator import I, String, X, Y, Z
 
 
 def test_from_str():

@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from zixy.container.coeffs import ComplexSign
-from zixy.qubit.pauli import I, String, Strings, StringSet, X, Y, Z
+from zixy.qubit.operator import I, String, Strings, StringSet, X, Y, Z
 
 
 def test_array_sizing():

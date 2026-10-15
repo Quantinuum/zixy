@@ -1,7 +1,7 @@
 import pytest
 
 from zixy.container.coeffs import ComplexSign
-from zixy.qubit.pauli import I, String as PauliString, X, Y
+from zixy.qubit.operator import I, String as PauliString, X, Y
 from zixy.qubit.state import String, StringSet
 
 

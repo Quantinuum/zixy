@@ -2,7 +2,7 @@
 
 import pytest
 
-from zixy.qubit.pauli import ComplexTermSet, ComplexTermSum, RealTermSet, RealTermSum
+from zixy.qubit.operator import ComplexTermSet, ComplexTermSum, RealTermSet, RealTermSum
 
 
 @pytest.mark.parametrize("cls", (RealTermSet, RealTermSum, ComplexTermSet, ComplexTermSum))

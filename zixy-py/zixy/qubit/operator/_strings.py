@@ -55,7 +55,7 @@ if TYPE_CHECKING:
     import numpy as np
     from numpy.typing import NDArray
 
-    from zixy.qubit.pauli._terms import ComplexSignTerm, Term
+    from zixy.qubit.operator._terms import ComplexSignTerm, Term
 
 type StringSpec = Sequence[PauliMatrix] | dict[int, PauliMatrix] | str
 ElemT = PauliMatrix
@@ -168,7 +168,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         """Multiplication of ``self`` by ``rhs``."""
         if not isinstance(rhs, Coeff | String):
             return NotImplemented
-        from zixy.qubit.pauli._terms import ComplexSignTerm, get_term_type  # noqa: PLC0415
+        from zixy.qubit.operator._terms import ComplexSignTerm, get_term_type  # noqa: PLC0415
 
         if isinstance(rhs, String):
             product, phase = self._impl.string_mul(self.index, rhs._impl, rhs.index)
@@ -180,7 +180,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         """Return the product of ``lhs`` and ``self``."""
         if not isinstance(lhs, Coeff):
             return NotImplemented
-        from zixy.qubit.pauli._terms import get_term_type  # noqa: PLC0415
+        from zixy.qubit.operator._terms import get_term_type  # noqa: PLC0415
 
         term_type = get_term_type(type(lhs))
         return term_type.from_string_coeff(self, lhs)
@@ -201,7 +201,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
 
     def imul_ignore_phase(self, rhs: String) -> None:
         """In-place multiplication of ``self`` by ``rhs``, ignoring the scalar phase."""
-        from zixy.qubit.pauli._terms import Term  # noqa: PLC0415
+        from zixy.qubit.operator._terms import Term  # noqa: PLC0415
 
         if isinstance(rhs, Term):
             if rhs.coeff == unit(type(rhs.coeff)):
@@ -221,7 +221,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         """In-place multiplication of ``self`` by ``rhs``, returning the phase.
 
         See Also:
-            :meth:`~zixy.qubit.pauli._strings.String.imul_ignore_phase` for in-place
+            :meth:`~zixy.qubit.operator._strings.String.imul_ignore_phase` for in-place
             multiplication that ignores the phase.
         """
         if type(rhs) is not String:
@@ -332,7 +332,7 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
 
         Returns:
             The centralizer and remainder as a pair of
-            :class:`~zixy.qubit.pauli._strings.Strings` instances.
+            :class:`~zixy.qubit.operator._strings.Strings` instances.
         """
         c, r = self._impl.centralizer_and_remainder()
         return Strings._create(c), Strings._create(r)

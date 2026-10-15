@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from zixy.container.coeffs import ComplexSign, Sign
-from zixy.qubit.pauli import ComplexSignTerm, I, SignTerm, SignTerms, SignTermSet, X, Y, Z
+from zixy.qubit.operator import ComplexSignTerm, I, SignTerm, SignTerms, SignTermSet, X, Y, Z
 
 
 def test_term():

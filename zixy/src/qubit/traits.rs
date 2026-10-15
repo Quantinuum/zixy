@@ -14,7 +14,7 @@ use crate::qubit::clifford;
 use crate::qubit::mode::{
     pauli_matrix_product, BasisError, DifferentModeCounts, PauliMatrix, Qubits,
 };
-use crate::qubit::pauli::springs::Springs;
+use crate::qubit::operator::springs::Springs;
 use crate::string::parse::ParseError;
 
 /// Trait for containers that can append Pauli words from sparse or dense specifications of Pauli matrix content.

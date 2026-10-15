@@ -15,7 +15,7 @@ use zixy::container::errors::OutOfBounds;
 use zixy::container::word_iters::WordIters;
 use zixy::fermion::traits::DifferentSpaces;
 use zixy::qubit::mode::{BasisError, CoincidentIndex, DifferentModeCounts};
-use zixy::qubit::pauli::string_major::mat_elem::SubspaceNonorthogonal;
+use zixy::qubit::operator::string_major::mat_elem::SubspaceNonorthogonal;
 use zixy::qubit::traits::DifferentQubits;
 use zixy::string::parse::ParseError;
 use zixy::string::springs::BadParse;

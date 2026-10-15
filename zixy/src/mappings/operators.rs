@@ -14,8 +14,8 @@ use crate::mappings::traits::UpdateParityRho;
 use crate::mappings::Mapper;
 use crate::qubit::mode::PauliMatrix::{X, Y, Z};
 use crate::qubit::mode::Qubits;
-use crate::qubit::pauli::string_major::string_list::StringList;
-use crate::qubit::pauli::string_major::{term_set, terms};
+use crate::qubit::operator::string_major::string_list::StringList;
+use crate::qubit::operator::string_major::{term_set, terms};
 use crate::qubit::state::string::BasisState;
 use crate::qubit::traits::{PauliWordMutRef, PauliWordRef, QubitsBased};
 

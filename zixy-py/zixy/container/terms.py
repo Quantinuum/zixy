@@ -37,6 +37,7 @@ from collections.abc import Callable, Iterable, Iterator, Sequence
 from typing import (
     Any,
     Generic,
+    Self,
     TypeAlias,
     TypeVar,
     cast,
@@ -46,7 +47,6 @@ from typing import (
 import numpy as np
 import pandas as pd
 from sympy import Expr, simplify, sympify
-from typing_extensions import Self
 
 from zixy._zixy import Map
 from zixy.container.base import (

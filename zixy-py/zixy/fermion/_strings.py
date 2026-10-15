@@ -17,9 +17,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Generic, TypeVar, overload
-
-from typing_extensions import Self
+from typing import TYPE_CHECKING, Generic, Self, TypeVar, overload
 
 from zixy._zixy import Modes
 from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet, SpecT

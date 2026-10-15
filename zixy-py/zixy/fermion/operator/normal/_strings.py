@@ -23,9 +23,7 @@ The structure of this module parallels that of :mod:`~zixy.container.cmpnts`.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, TypeAlias, overload
-
-from typing_extensions import Self
+from typing import TYPE_CHECKING, Self, TypeAlias, overload
 
 from zixy._zixy import FermionSprings, Modes, NormalFermionOperatorArray
 from zixy.container.coeffs import Coeff, CoeffT, Sign

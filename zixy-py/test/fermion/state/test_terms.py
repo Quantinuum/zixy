@@ -1,7 +1,8 @@
+from typing import assert_type
+
 import numpy as np
 import pytest
 from sympy import Expr, I as imaginary_unit, S, symbols
-from typing_extensions import assert_type
 
 from zixy.fermion.operator.normal import (
     ComplexTermSum as ComplexOperator,

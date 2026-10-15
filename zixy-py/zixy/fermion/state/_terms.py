@@ -22,7 +22,7 @@ that are fermionic occupation-number state strings, as defined in
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from typing import Any, Protocol, Self, TypeAlias, cast, overload
+from typing import Any, Protocol, Self, cast, overload
 
 import numpy as np
 from numpy.typing import NDArray
@@ -67,7 +67,9 @@ from zixy.qubit.state._terms import (
     SymbolicTermSum as QubitSymbolicTermSum,
 )
 
-TermSpec: TypeAlias = String | StringSpec | tuple[StringSpec | String, CoeffT | None]
+type TermSpec[C: (float, complex, Sign, ComplexSign, Expr)] = (
+    String | StringSpec | tuple[StringSpec | String, C | None]
+)
 ElemT = bool
 SpecT = StringSpec
 ImplT = FermionStateArray
@@ -85,7 +87,7 @@ class _StateMapperProtocol(Protocol):
         ...
 
 
-StateMapperType: TypeAlias = Callable[[int | Qubits], _StateMapperProtocol]
+type StateMapperType = Callable[[int | Qubits], _StateMapperProtocol]
 
 
 def _make_state_mapper(

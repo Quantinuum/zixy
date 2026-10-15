@@ -23,7 +23,7 @@ The structure of this module parallels that of :mod:`~zixy.container.cmpnts`.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Self, TypeAlias, overload
+from typing import TYPE_CHECKING, Self, overload
 
 from zixy._zixy import FermionSprings, Modes, NormalFermionOperatorArray
 from zixy.container.coeffs import Coeff, CoeffT, Sign
@@ -37,7 +37,7 @@ from zixy.fermion.operator._strings import (
 if TYPE_CHECKING:
     from zixy.fermion.operator.normal._terms import RealTermSum, Term
 
-StringSpec: TypeAlias = str | tuple[Sequence[int] | Sequence[bool], Sequence[int] | Sequence[bool]]
+type StringSpec = str | tuple[Sequence[int] | Sequence[bool], Sequence[int] | Sequence[bool]]
 ElemT = tuple[list[int], list[int]]
 SpecT = StringSpec
 ImplT = NormalFermionOperatorArray

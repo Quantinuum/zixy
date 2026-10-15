@@ -4,8 +4,11 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+import sys
 from datetime import datetime
 from typing import Any
+
+from sphinx import addnodes
 
 # Alias needed here to prevent naming clash with something else sphinx is doing.
 from importlib.metadata import version as check_version
@@ -45,7 +48,7 @@ napoleon_use_rtype = False  # don't show return types in description (they're in
 typehints_use_signature = True  # show parameter types in signature
 typehints_use_signature_return = True  # show return type in signature
 typehints_document_rtype = False
-typehints_fully_qualified = False
+typehints_fully_qualified = True
 
 autosummary_generate = True
 autosummary_ignore_module_all = False  # Respect __all__ if specified
@@ -88,3 +91,24 @@ intersphinx_mapping = {
     "scipy": ("https://docs.scipy.org/doc/scipy/", None),
     "sympy": ("https://docs.sympy.org/latest/", None),
 }
+
+
+def resolve_imported_types(app, doctree):
+    """Resolve short type references using the documenting module's imports."""
+    for node in doctree.findall(addnodes.pending_xref):
+        target = node.get("reftarget", "")
+        if node.get("refdomain") != "py" or "." in target:
+            continue
+        module = sys.modules.get(node.get("py:module"))
+        obj = getattr(module, target, None)
+        if (
+            isinstance(obj, type)
+            and obj.__module__.startswith("zixy.")
+            and obj.__module__ != getattr(module, "__name__", None)
+        ):
+            node["reftarget"] = f"{obj.__module__}.{obj.__qualname__}"
+
+
+def setup(app):
+    """Resolve imported types before Sphinx searches for cross-reference targets."""
+    app.connect("doctree-read", resolve_imported_types)

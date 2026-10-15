@@ -7,7 +7,7 @@ from zixy.qubit.pauli import ComplexSignTerm, ComplexSignTerms, I, X, Y, Z
 def test_term():
     term = ComplexSignTerm(6)
     assert len(term._impl) == 1
-    assert len(term._impl._cmpnts) == 1
+    assert len(term._impl._strings) == 1
     assert len(term._impl._coeffs) == 1
     assert str(term.string) == ""
     assert str(term.coeff) == "+1"

@@ -108,7 +108,7 @@ def test_string_set_validates_mode_bounds():
 
 
 @pytest.mark.parametrize(
-    ("cmpnt_type", "source", "modes", "expected"),
+    ("string_type", "source", "modes", "expected"),
     (
         (String, "F0^ F1", None, "F0^ F1"),
         (String, "  F0^   F1  ", None, "F0^ F1"),
@@ -134,13 +134,13 @@ def test_string_set_validates_mode_bounds():
         (StringSet, "", 3, ""),
     ),
 )
-def test_from_str(cmpnt_type, source, modes, expected):
+def test_from_str(string_type, source, modes, expected):
     args = () if modes is None else (modes,)
-    parsed = cmpnt_type.from_str(source, *args)
+    parsed = string_type.from_str(source, *args)
     assert str(parsed) == expected
 
-    if cmpnt_type is StringSet:
-        assert parsed == StringSet.from_cmpnts(Strings.from_str(source, *args))
+    if string_type is StringSet:
+        assert parsed == StringSet.from_strings(Strings.from_str(source, *args))
 
     with pytest.raises(ValueError, match="mode index out of bounds"):
         String.from_str("F2", 2)
@@ -194,10 +194,10 @@ def test_string_mul_with_zero_product():
 
 
 def test_string_from_str_errors():
-    with pytest.raises(ValueError, match="exactly one positive component"):
+    with pytest.raises(ValueError, match="does not normal-order to exactly one positive"):
         String.from_str("F1 F0^", 4)
 
-    with pytest.raises(ValueError, match="exactly one positive component"):
+    with pytest.raises(ValueError, match="does not normal-order to exactly one positive"):
         String.from_str("F0 F0^", 4)
 
 
@@ -261,7 +261,7 @@ def test_in_place_products():
 
 def test_string_set():
     strings = Strings.from_str("F0^ F1, F2^, F0^ F1", 4)
-    string_set = StringSet.from_cmpnts(strings)
+    string_set = StringSet.from_strings(strings)
 
     assert len(string_set) == 2
     assert String(4, "F0^ F1") in string_set
@@ -340,4 +340,4 @@ def test_string_set_from_iterable():
     string_set = StringSet.from_iterable(specs, 4)
     assert len(string_set) == 4
     assert StringSet.from_iterable(reversed(specs), 4) == string_set
-    assert StringSet.from_cmpnts(string_set.to_cmpnts()).to_cmpnts() == string_set.to_cmpnts()
+    assert StringSet.from_strings(string_set.to_strings()).to_strings() == string_set.to_strings()

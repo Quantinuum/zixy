@@ -13,14 +13,14 @@ def test_from_str():
     assert str(string) == source
     with pytest.raises(ValueError) as err:
         string.set("Y0, X1 Y3")
-    assert str(err.value) == "String input has more than one component."
+    assert str(err.value) == "Input represents more than one string."
     assert str(string) == source
     # infer the qubits value from the highest mode index in the source
     assert String(source=source) == string
     assert String(9, source=source) != string
 
 
-def test_cmpnts_mul_pairwise():
+def test_strings_mul_pairwise():
     # Create a 2-qubit system
     qubits = Qubits.from_count(2)
 
@@ -53,7 +53,7 @@ def test_cmpnts_mul_pairwise():
     assert str(phases[2]) == "+i"
 
 
-def test_cmpnts_mul_pairwise_different_lengths():
+def test_strings_mul_pairwise_different_lengths():
     # Test error handling for arrays of different lengths
     qubits = Qubits.from_count(2)
 

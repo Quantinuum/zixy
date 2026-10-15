@@ -19,7 +19,7 @@ DOMAINS = (
 
 
 def snapshot(terms):
-    return [(str(term.cmpnt), term.coeff) for term in terms]
+    return [(str(term.string), term.coeff) for term in terms]
 
 
 @pytest.mark.parametrize("domain,keys,kwargs", DOMAINS)
@@ -160,8 +160,8 @@ def test_required_numeric_bulk_api(domain, keys, kwargs, name, monkeypatch):
     copied = cls.from_terms(array[::-1])
     assert copied.lookup_coeff(keys[0]) == 1
     assert copied.lookup_coeff(keys[1]) == 2
-    # Component and coefficient views can also be nested inside an owning Terms.
-    nested = cls.terms_type._create(TermData(array.cmpnts[::-1], array.coeffs[::-1]))
+    # String and coefficient views can also be nested inside an owning Terms.
+    nested = cls.terms_type._create(TermData(array.strings[::-1], array.coeffs[::-1]))
     assert snapshot(cls.from_terms(nested)) == snapshot(copied)
     lhs += rhs
     assert lhs.lookup_coeff(keys[0]) is None

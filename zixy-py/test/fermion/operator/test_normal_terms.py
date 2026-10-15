@@ -510,17 +510,17 @@ def test_term_set_check_term():
         term_set._check_term(GeneralRealTerm.from_str("F0^ F1", 3))
 
 
-def test_term_set_check_cmpnt():
+def test_term_set_check_string():
     term_set = RealTermSet(3)
     string = String(3, "F0^ F1")
 
-    term_set._check_cmpnt(string)
+    term_set._check_string(string)
 
     with pytest.raises(ValueError, match="different modes"):
-        term_set._check_cmpnt(String(4, "F0^ F1"))
+        term_set._check_string(String(4, "F0^ F1"))
 
     with pytest.raises(TypeError, match="Expected a String instance"):
-        term_set._check_cmpnt(GeneralString(3, "F0^ F1"))
+        term_set._check_string(GeneralString(3, "F0^ F1"))
 
 
 def test_real_term_product():

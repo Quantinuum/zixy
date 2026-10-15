@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Fermionic occupation-number state string components and collections of such strings.
+"""Fermionic occupation-number state strings and collections of such strings.
 
 State strings are occupation-number basis vectors, represented as bit strings, defined over a
 space of fermionic modes.
 
-The structure of this module parallels that of :mod:`~zixy.container.cmpnts`.
+The structure of this module parallels that of :mod:`~zixy.container.strings`.
 """
 
 from __future__ import annotations
@@ -135,7 +135,7 @@ class String(FermionString[ImplT, SpecT, ElemT]):
             elif len(springs) == 1:
                 self._impl.cmpnt_set_from_spring(self.index, springs, 0)
             else:
-                raise ValueError("String input has more than one component.")
+                raise ValueError("Input represents more than one string.")
         else:
             self.raise_spec_type_error(source)
 
@@ -165,7 +165,7 @@ class String(FermionString[ImplT, SpecT, ElemT]):
         from zixy.fermion.state._terms import get_term_type  # noqa: PLC0415
 
         term_type = get_term_type(type(rhs))
-        return term_type.from_cmpnt_coeff(self, rhs)
+        return term_type.from_string_coeff(self, rhs)
 
     def __rmul__[C: (float, complex, Sign, ComplexSign, Expr)](self, lhs: C) -> Term[C]:
         """Return the product of ``lhs`` and ``self``."""
@@ -174,7 +174,7 @@ class String(FermionString[ImplT, SpecT, ElemT]):
         from zixy.fermion.state._terms import get_term_type  # noqa: PLC0415
 
         term_type = get_term_type(type(lhs))
-        return term_type.from_cmpnt_coeff(self, lhs)
+        return term_type.from_string_coeff(self, lhs)
 
     def vdot(self, other: String) -> int:
         """Compute the inner product of this string with another."""
@@ -190,7 +190,7 @@ class Strings(FermionStrings[ImplT, SpecT, ElemT]):
     collection.
     """
 
-    cmpnt_type = String
+    string_type = String
     _set_type: type[StringSet]
 
     @classmethod
@@ -223,7 +223,7 @@ class Strings(FermionStrings[ImplT, SpecT, ElemT]):
             out = cls(modes)
             out.resize(0)
             return out
-        return cls._create(cls.cmpnt_type.impl_type(modes, BinarySprings(source)))
+        return cls._create(cls.string_type.impl_type(modes, BinarySprings(source)))
 
     @overload
     def __getitem__(self, indexer: int) -> String: ...
@@ -248,11 +248,11 @@ class Strings(FermionStrings[ImplT, SpecT, ElemT]):
 class StringSet(FermionStringSet[ImplT, SpecT, ElemT]):
     """A collection of unique fermionic occupation-number state strings.
 
-    A set-like container of mode-based state strings that may be used to store unique components
+    A set-like container of mode-based state strings that may be used to store unique strings
     and perform set-like operations on them.
     """
 
-    cmpnts_type = Strings
+    strings_type = Strings
 
 
 Strings._set_type = StringSet

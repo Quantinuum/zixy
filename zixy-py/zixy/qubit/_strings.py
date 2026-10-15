@@ -12,16 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Base qubit-based string components and collections of such strings."""
+"""Base qubit-based strings and collections of such strings."""
 
 from __future__ import annotations
 
-import warnings
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Self, cast, overload
 
 from zixy._zixy import Qubits
-from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet
+from zixy.container.strings import (
+    String as BaseString,
+    Strings as BaseStrings,
+    StringSet as BaseStringSet,
+)
 
 if TYPE_CHECKING:
     from zixy._zixy import QubitArray, Springs
@@ -41,7 +44,7 @@ def _check_qubits_compatibility(*qubits: Qubits) -> None:
         raise ValueError("Objects are defined over different qubits.")
 
 
-class String[ImplT: QubitArray[Any, Any], SpecT, ElemT](Cmpnt[ImplT, SpecT]):
+class String[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseString[ImplT, SpecT]):
     """A string.
 
     A single qubit-based string that may be an owning instance referencing a single element in a
@@ -134,7 +137,7 @@ class String[ImplT: QubitArray[Any, Any], SpecT, ElemT](Cmpnt[ImplT, SpecT]):
             elif len(springs) == 1:
                 self._impl.cmpnt_set_from_spring(self.index, springs, 0)
             else:
-                raise ValueError("String input has more than one component.")
+                raise ValueError("Input represents more than one string.")
         else:
             raise TypeError("Source object is of an unsupported type.")
 
@@ -161,14 +164,14 @@ class String[ImplT: QubitArray[Any, Any], SpecT, ElemT](Cmpnt[ImplT, SpecT]):
         return self._impl.cmpnt_to_sparse_matrix(self.index, big_endian)  # type: ignore[attr-defined]
 
 
-class Strings[ImplT: QubitArray[Any, Any], SpecT, ElemT](Cmpnts[ImplT, SpecT]):
+class Strings[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseStrings[ImplT, SpecT]):
     """A collection of strings.
 
     An array-like container of qubit-based strings that may be an owning instance referencing a
     contiguous Rust-bound data object, or a view on a slice of the elements in another collection.
     """
 
-    cmpnt_type: type[String[ImplT, SpecT, ElemT]]
+    string_type: type[String[ImplT, SpecT, ElemT]]
     _springs_type: type[Springs]
 
     def __init__(self, qubits: int | Qubits = 0, n: int = 0):
@@ -179,7 +182,7 @@ class Strings[ImplT: QubitArray[Any, Any], SpecT, ElemT](Cmpnts[ImplT, SpecT]):
             n: Number of default elements with which to create the instance.
         """
         super().__init__(
-            self.cmpnt_type.impl_type(
+            self.string_type.impl_type(
                 qubits if isinstance(qubits, Qubits) else Qubits.from_count(qubits)
             )
         )
@@ -200,11 +203,11 @@ class Strings[ImplT: QubitArray[Any, Any], SpecT, ElemT](Cmpnts[ImplT, SpecT]):
         if isinstance(qubits, int):
             qubits = Qubits.from_count(qubits)
         if not source.strip():
-            out = cls._create(cls.cmpnt_type.impl_type(qubits if qubits is not None else None))
+            out = cls._create(cls.string_type.impl_type(qubits if qubits is not None else None))
             out.resize(0)
             return out
         return cls._create(
-            cls.cmpnt_type.impl_type(
+            cls.string_type.impl_type(
                 qubits if qubits is not None else None, cls._springs_type(source)
             )
         )
@@ -308,14 +311,14 @@ class Strings[ImplT: QubitArray[Any, Any], SpecT, ElemT](Cmpnts[ImplT, SpecT]):
         return tuple(self[i].get_tuple() for i in range(len(self)))
 
 
-class StringSet[ImplT: QubitArray[Any, Any], SpecT, ElemT](CmpntSet[ImplT, SpecT]):
+class StringSet[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseStringSet[ImplT, SpecT]):
     """A collection of unique strings.
 
-    A set-like container of qubit-based strings that may be used to store unique components and
+    A set-like container of qubit-based strings that may be used to store unique strings and
     perform set-like operations on them.
     """
 
-    cmpnts_type: type[Strings[ImplT, SpecT, ElemT]]
+    strings_type: type[Strings[ImplT, SpecT, ElemT]]
 
     def __init__(self, qubits: int | Qubits = 0):
         """Initialize the string set.
@@ -324,45 +327,11 @@ class StringSet[ImplT: QubitArray[Any, Any], SpecT, ElemT](CmpntSet[ImplT, SpecT
             qubits: The qubit register or qubit count.
         """
         super().__init__(
-            self.cmpnts_type.cmpnt_type.impl_type(
+            self.strings_type.string_type.impl_type(
                 qubits if isinstance(qubits, Qubits) else Qubits.from_count(qubits)
             )
         )
 
-    @classmethod
-    def from_strings(cls, strings: Strings[ImplT, SpecT, ElemT]) -> StringSet[ImplT, SpecT, ElemT]:
-        """Create a new instance of ``cls`` from the strings in ``strings``.
-
-        Deprecated:
-            Use :meth:`~zixy.container.cmpnts.CmpntSet.from_cmpnts` instead.
-
-        Args:
-            strings: Owned or viewed strings with which to populate the new instance.
-
-        Returns:
-            A new instance of ``cls`` containing the strings in ``strings``.
-        """
-        warnings.warn(
-            f"{cls.__name__}.from_strings is deprecated, use {cls.__name__}.from_cmpnts instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return cls.from_cmpnts(strings)
-
     def to_strings(self) -> Strings[ImplT, SpecT, ElemT]:
-        """Create a new array of strings owning copies of all those contained in ``self``.
-
-        Deprecated:
-            Use :meth:`~zixy.container.cmpnts.CmpntSet.to_cmpnts` instead.
-
-        Returns:
-            New :class:`Strings` instance containing copies of the strings in ``self``. The
-            type is determined by :attr:`~zixy.qubit._strings.StringSet.cmpnts_type`.
-        """
-        warnings.warn(
-            f"{type(self).__name__}.to_strings is deprecated, "
-            f"use {type(self).__name__}.to_cmpnts instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return cast("Strings[ImplT, SpecT, ElemT]", self.to_cmpnts())
+        """Create a new array of strings owning copies of all those contained in ``self``."""
+        return cast("Strings[ImplT, SpecT, ElemT]", super().to_strings())

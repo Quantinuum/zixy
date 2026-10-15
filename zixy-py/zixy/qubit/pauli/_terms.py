@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Terms containing Pauli strings as components and collections of such terms.
+"""Terms containing Pauli strings and collections of such terms.
 
 The structure of this module parallels that of :mod:`~zixy.container.terms` and
-:mod:`~zixy.qubit._terms`, but with components that are Pauli strings, as defined in
+:mod:`~zixy.qubit._terms`, using Pauli strings defined in
 :mod:`~zixy.qubit.pauli._strings`.
 """
 
@@ -94,7 +94,7 @@ def _mul[
     """Driver for multiplication of a term with another term, a string, or a coefficient."""
     if isinstance(rhs, Coeff):
         scalar_product = lhs.coeff * rhs
-        return get_term_type(type(scalar_product)).from_cmpnt_coeff(lhs.string, scalar_product)
+        return get_term_type(type(scalar_product)).from_string_coeff(lhs.string, scalar_product)
     elif isinstance(rhs, String):
         product = lhs.string * rhs
         assert isinstance(product, ComplexSignTerm)
@@ -137,13 +137,13 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](
     instance, or a view on an element in another collection.
     """
 
-    cmpnts_type = Strings
+    strings_type = Strings
     coeff_type: type[C]
 
     @property
     def string(self) -> String:
-        """The string component of the term."""
-        return cast("String", self.cmpnt)
+        """The string of the term."""
+        return cast("String", super().string)
 
     def __imul__(self, rhs: Coeff | String | Term[C]) -> Self:
         """In-place multiplication of ``self`` by ``rhs``."""
@@ -192,7 +192,7 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](
         Note:
             This method operates in-place.
         """
-        signs = self._data.cmpnts._impl.conj_clifford_list(gates._impl)
+        signs = self._data.strings._impl.conj_clifford_list(gates._impl)
         self._impl._coeffs *= SignCoeffs._create(signs)
 
 
@@ -210,8 +210,8 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](
 
     @property
     def strings(self) -> Strings:
-        """The components of ``self``."""
-        return cast("Strings", self.cmpnts)
+        """The strings of ``self``."""
+        return cast("Strings", super().strings)
 
     def lexicographic_sort(self, ascending: bool = False) -> None:
         """Lexicographically sort the terms in-place.
@@ -224,15 +224,15 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](
         """
         coeffs = self._data.coeffs
         if isinstance(coeffs, SignCoeffs):
-            self._data.cmpnts._impl.lexicographic_sort_with_sign_vec(coeffs._impl, ascending)
+            self._data.strings._impl.lexicographic_sort_with_sign_vec(coeffs._impl, ascending)
         elif isinstance(coeffs, ComplexSignCoeffs):
-            self._data.cmpnts._impl.lexicographic_sort_with_complex_sign_vec(
+            self._data.strings._impl.lexicographic_sort_with_complex_sign_vec(
                 coeffs._impl, ascending
             )
         elif isinstance(coeffs, RealCoeffs):
-            self._data.cmpnts._impl.lexicographic_sort_with_real_vec(coeffs._impl, ascending)
+            self._data.strings._impl.lexicographic_sort_with_real_vec(coeffs._impl, ascending)
         elif isinstance(coeffs, ComplexCoeffs):
-            self._data.cmpnts._impl.lexicographic_sort_with_complex_vec(coeffs._impl, ascending)
+            self._data.strings._impl.lexicographic_sort_with_complex_vec(coeffs._impl, ascending)
         else:
             raise TypeError(f"Sort not implemented for coefficient type {type(coeffs)}")
 
@@ -248,7 +248,7 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](
         See Also:
             :meth:`~zixy.qubit.pauli._terms.Term.conj_clifford_list`
         """
-        signs = self._data.cmpnts._impl.conj_clifford_list(gates._impl)
+        signs = self._data.strings._impl.conj_clifford_list(gates._impl)
         self._impl._coeffs *= SignCoeffs._create(signs)
 
     def relabel(self, qubits: Qubits) -> Self:
@@ -332,22 +332,22 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](
 
         Args:
             mode_order: The order of binary entries to try reducing to at most one non-zero entry.
-            to_solve: The subset of the components to canonicalize over (e.g. if some partial
-                canonicalization has already been done, skip those components).
-            additional_reduces: Components outside of ``to_solve`` to include in the reduction step
+            to_solve: The subset of the strings to canonicalize over (e.g. if some partial
+                canonicalization has already been done, skip those strings).
+            additional_reduces: Strings outside of ``to_solve`` to include in the reduction step
                 (e.g. if some partial canonicalization has already been done, reduce the
-                components that already have leading entries).
+                strings that already have leading entries).
 
         Returns:
             The sequence of imul operations as pairs ``(lhs_written, rhs_read)``.
         """
         coeffs = self._data.coeffs
         if isinstance(coeffs, SignCoeffs):
-            return self._data._cmpnts._impl.canonicalize_sign(
+            return self._data._strings._impl.canonicalize_sign(
                 coeffs._impl, mode_order, to_solve, additional_reduces
             )
         elif isinstance(coeffs, ComplexSignCoeffs):
-            return self._data._cmpnts._impl.canonicalize_complex_sign(
+            return self._data._strings._impl.canonicalize_complex_sign(
                 coeffs._impl, mode_order, to_solve, additional_reduces
             )
         else:
@@ -364,9 +364,9 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](
         """
         coeffs = self._data.coeffs
         if isinstance(coeffs, SignCoeffs):
-            return self._data._cmpnts._impl.canonicalize_all_sign(coeffs._impl)
+            return self._data._strings._impl.canonicalize_all_sign(coeffs._impl)
         elif isinstance(coeffs, ComplexSignCoeffs):
-            return self._data._cmpnts._impl.canonicalize_all_complex_sign(coeffs._impl)
+            return self._data._strings._impl.canonicalize_all_complex_sign(coeffs._impl)
         else:
             raise TypeError(f"Canonicalization not valid for coefficient type {type(coeffs)}")
 
@@ -380,7 +380,7 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
     set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -396,7 +396,7 @@ class TermSum[C: (float, complex, Sign, ComplexSign, Expr)](
     linear combination operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -556,7 +556,7 @@ class SignTermSet(TermSet[Sign]):
     coefficients that may be used to store unique terms and perform set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -653,7 +653,7 @@ class ComplexSignTermSet(TermSet[ComplexSign]):
     terms and perform set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -768,7 +768,7 @@ class RealTermSet(TermSet[float]):
     store unique terms and perform set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -782,7 +782,7 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
     store unique terms and perform algebraic operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -802,7 +802,7 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         """
         assert isinstance(self._impl._coeffs, RealCoeffs)
         return QubitPauliArray.lincomb_to_sparse_real(
-            self._impl._cmpnts._impl,
+            self._impl._strings._impl,
             self._impl._coeffs._impl,
             big_endian,
         )
@@ -820,14 +820,14 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
             return NotImplemented
         assert isinstance(self._impl._coeffs, RealCoeffs)
         assert isinstance(other._impl._coeffs, RealCoeffs)
-        lhs_impl = self._impl._cmpnts._impl
+        lhs_impl = self._impl._strings._impl
         lhs_coeffs = self._impl._coeffs._impl
-        rhs_impl = other._impl._cmpnts._impl
+        rhs_impl = other._impl._strings._impl
         rhs_coeffs = other._impl._coeffs._impl
-        out = ComplexTermSum._create(TermData(other._impl._cmpnts._empty_clone(), ComplexCoeffs()))
+        out = ComplexTermSum._create(TermData(other._impl._strings._empty_clone(), ComplexCoeffs()))
         assert isinstance(out._impl._coeffs, ComplexCoeffs)
-        out_impl = out._impl._cmpnts._impl
-        out_map = out._cmpnt_set._map
+        out_impl = out._impl._strings._impl
+        out_map = out._string_set._map
         out_coeffs = out._impl._coeffs._impl
         QubitPauliArray.lincomb_mul_real(
             lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs, out_impl, out_map, out_coeffs
@@ -845,7 +845,7 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         """
         assert isinstance(self._impl._coeffs, RealCoeffs)
         return QubitPauliArray.lincomb_project_into_ortho_subspace_real(
-            self._impl._cmpnts._impl,
+            self._impl._strings._impl,
             self._impl._coeffs._impl,
             subspace._impl,
         )
@@ -863,16 +863,16 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
             overlap matrix of the subspace states.
         """
         assert isinstance(self._impl._coeffs, RealCoeffs)
-        cmpnts = tuple(item._cmpnt_set._impl for item in subspace)
-        maps = tuple(item._cmpnt_set._map for item in subspace)
+        strings = tuple(item._string_set._impl for item in subspace)
+        maps = tuple(item._string_set._map for item in subspace)
         coeffs = []
         for item in subspace:
             assert isinstance(item._impl._coeffs, RealCoeffs)
             coeffs.append(item._impl._coeffs._impl)
         return QubitPauliArray.lincomb_project_into_nonortho_subspace_real(
-            self._impl._cmpnts._impl,
+            self._impl._strings._impl,
             self._impl._coeffs._impl,
-            cmpnts,
+            strings,
             maps,
             tuple(coeffs),
         )
@@ -910,12 +910,12 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         assert isinstance(self._impl._coeffs, RealCoeffs)
         assert isinstance(state._impl._coeffs, RealCoeffs)
         assert isinstance(out._impl._coeffs, ComplexCoeffs)
-        self._impl._cmpnts._impl.apply_to_state_real(
+        self._impl._strings._impl.apply_to_state_real(
             self._impl._coeffs._impl,
-            state._impl._cmpnts._impl,
+            state._impl._strings._impl,
             state._impl._coeffs._impl,
-            out._impl._cmpnts._impl,
-            out._cmpnt_set._map,
+            out._impl._strings._impl,
+            out._string_set._map,
             out._impl._coeffs._impl,
         )
         return out.filter_nonzero()
@@ -959,11 +959,11 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
             assert isinstance(bra._impl._coeffs, RealCoeffs)
             assert isinstance(ket._impl._coeffs, RealCoeffs)
             return float(
-                self._impl._cmpnts._impl.mat_elem_real(
+                self._impl._strings._impl.mat_elem_real(
                     self._impl._coeffs._impl,
-                    bra._impl._cmpnts._impl,
+                    bra._impl._strings._impl,
                     bra._impl._coeffs._impl,
-                    ket._impl._cmpnts._impl,
+                    ket._impl._strings._impl,
                     ket._impl._coeffs._impl,
                 )
             )
@@ -1107,7 +1107,7 @@ class ComplexTermSet(TermSet[complex]):
     store unique terms and perform set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -1121,7 +1121,7 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
     store unique terms and perform algebraic operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -1131,14 +1131,14 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
     def real_part(self) -> RealTermSum:
         """The real part of ``self``."""
         assert isinstance(self._data.coeffs, ComplexCoeffs)
-        data = TermData(self._data.cmpnts, self._data.coeffs.real_part)
+        data = TermData(self._data.strings, self._data.coeffs.real_part)
         return RealTermSum._create(data)
 
     @property
     def imag_part(self) -> RealTermSum:
         """The imaginary part of ``self``."""
         assert isinstance(self._data.coeffs, ComplexCoeffs)
-        data = TermData(self._data.cmpnts, self._data.coeffs.imag_part)
+        data = TermData(self._data.strings, self._data.coeffs.imag_part)
         return RealTermSum._create(data)
 
     def to_sparse_matrix(self, big_endian: bool = False) -> Any:
@@ -1155,7 +1155,7 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         """
         assert isinstance(self._impl._coeffs, ComplexCoeffs)
         return QubitPauliArray.lincomb_to_sparse_complex(
-            self._impl._cmpnts._impl,
+            self._impl._strings._impl,
             self._impl._coeffs._impl,
             big_endian,
         )
@@ -1173,14 +1173,14 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
             return NotImplemented
         assert isinstance(self._impl._coeffs, ComplexCoeffs)
         assert isinstance(other._impl._coeffs, ComplexCoeffs)
-        lhs_impl = self._impl._cmpnts._impl
+        lhs_impl = self._impl._strings._impl
         lhs_coeffs = self._impl._coeffs._impl
-        rhs_impl = other._impl._cmpnts._impl
+        rhs_impl = other._impl._strings._impl
         rhs_coeffs = other._impl._coeffs._impl
-        out = ComplexTermSum._create(TermData(other._impl._cmpnts._empty_clone(), ComplexCoeffs()))
+        out = ComplexTermSum._create(TermData(other._impl._strings._empty_clone(), ComplexCoeffs()))
         assert isinstance(out._impl._coeffs, ComplexCoeffs)
-        out_impl = out._impl._cmpnts._impl
-        out_map = out._cmpnt_set._map
+        out_impl = out._impl._strings._impl
+        out_map = out._string_set._map
         out_coeffs = out._impl._coeffs._impl
         QubitPauliArray.lincomb_mul_complex(
             lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs, out_impl, out_map, out_coeffs
@@ -1198,7 +1198,7 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         """
         assert isinstance(self._impl._coeffs, ComplexCoeffs)
         return QubitPauliArray.lincomb_project_into_ortho_subspace_complex(
-            self._impl._cmpnts._impl,
+            self._impl._strings._impl,
             self._impl._coeffs._impl,
             subspace._impl,
         )
@@ -1236,12 +1236,12 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         assert isinstance(self._impl._coeffs, ComplexCoeffs)
         assert isinstance(state._impl._coeffs, ComplexCoeffs)
         assert isinstance(out._impl._coeffs, ComplexCoeffs)
-        self._impl._cmpnts._impl.apply_to_state_complex(
+        self._impl._strings._impl.apply_to_state_complex(
             self._impl._coeffs._impl,
-            state._impl._cmpnts._impl,
+            state._impl._strings._impl,
             state._impl._coeffs._impl,
-            out._impl._cmpnts._impl,
-            out._cmpnt_set._map,
+            out._impl._strings._impl,
+            out._string_set._map,
             out._impl._coeffs._impl,
         )
         return out.filter_nonzero()
@@ -1274,11 +1274,11 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         assert isinstance(bra._impl._coeffs, ComplexCoeffs)
         assert isinstance(ket._impl._coeffs, ComplexCoeffs)
         return complex(
-            self._impl._cmpnts._impl.mat_elem_complex(
+            self._impl._strings._impl.mat_elem_complex(
                 self._impl._coeffs._impl,
-                bra._impl._cmpnts._impl,
+                bra._impl._strings._impl,
                 bra._impl._coeffs._impl,
-                ket._impl._cmpnts._impl,
+                ket._impl._strings._impl,
                 ket._impl._coeffs._impl,
             )
         )
@@ -1409,9 +1409,9 @@ class SymbolicTerm(Term[Expr]):
         See Also:
             :meth:`~zixy.container.coeffs.SymbolicCoeffs.try_to_real`
         """
-        cmpnts = RealTerm.cmpnts_type.from_cmpnt(self.string.clone())
+        strings = RealTerm.strings_type.from_string(self.string.clone())
         coeffs = get_coeffs_type(RealTerm.coeff_type).from_scalar(float(self.coeff.evalf()))
-        return RealTerm._create(TermData(cmpnts, coeffs))
+        return RealTerm._create(TermData(strings, coeffs))
 
     def try_to_complex(self) -> ComplexTerm:
         """Try to evaluate ``self`` as a term containing a vector of complex coefficients.
@@ -1426,9 +1426,9 @@ class SymbolicTerm(Term[Expr]):
         See Also:
             :meth:`~zixy.container.coeffs.SymbolicCoeffs.try_to_complex`
         """
-        cmpnts = ComplexTerm.cmpnts_type.from_cmpnt(self.string.clone())
+        strings = ComplexTerm.strings_type.from_string(self.string.clone())
         coeffs = get_coeffs_type(ComplexTerm.coeff_type).from_scalar(complex(self.coeff.evalf()))
-        return ComplexTerm._create(TermData(cmpnts, coeffs))
+        return ComplexTerm._create(TermData(strings, coeffs))
 
 
 class SymbolicTerms(Terms[Expr]):
@@ -1534,7 +1534,7 @@ class SymbolicTermSet(TermSet[Expr]):
     set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -1548,7 +1548,7 @@ class SymbolicTermSum(TermSum[Expr]):
     algebraic operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -1568,7 +1568,7 @@ class SymbolicTermSum(TermSum[Expr]):
         elif not isinstance(other, SymbolicTermSum):
             return NotImplemented
         out = SymbolicTermSum._create(
-            TermData(other._impl._cmpnts._empty_clone(), SymbolicCoeffs())
+            TermData(other._impl._strings._empty_clone(), SymbolicCoeffs())
         )
         for l_term in self:
             assert isinstance(l_term, SymbolicTerm)

@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from .mock_cmpnts import String, Strings, StringSet, StringsImplArray
+from .mock_strings import String, Strings, StringSet, StringsImplArray
 
 
-def test_cmpnt():
+def test_string():
     s = String("hello")
     assert str(s) == "hello"
     assert String.from_str("hello") == s
@@ -32,7 +32,7 @@ def test_str():
     assert String.from_str(spaced.to_str()) == spaced
 
 
-def test_cmpnt_array():
+def test_string_array():
     impl = StringsImplArray()
     impl.resize(10)
     strings = Strings._create(impl)
@@ -76,15 +76,15 @@ def test_cmpnt_array():
         view.resize(1)
 
 
-def test_cmpnt_array_filter_map():
+def test_string_array_filter_map():
     s = Strings.from_iterable("what a time to be alive".split())
     assert len(s) == 6
     assert str(s) == "what, a, time, to, be, alive"
 
-    def f(cmpnt) -> bool:
-        if str(cmpnt)[0] != "t":
-            cmpnt.set(str(cmpnt) + "?!")
-        if "v" in str(cmpnt):
+    def f(string) -> bool:
+        if str(string)[0] != "t":
+            string.set(str(string) + "?!")
+        if "v" in str(string):
             return False
         return True
 
@@ -97,7 +97,7 @@ def test_cmpnt_array_filter_map():
     assert str(s.clone()) == "what?!, a?!, time, to, be?!"
 
 
-def test_cmpnt_set():
+def test_string_set():
     s = StringSet()
     assert len(s) == 0
     assert not s.contains("hello")
@@ -115,10 +115,10 @@ def test_cmpnt_set():
     assert s.lookup("be") == 4
     assert s.lookup("was") is None
 
-    def f(cmpnt) -> bool:
-        if str(cmpnt)[0] != "t":
-            cmpnt.set(str(cmpnt) + "?!")
-        if "v" in str(cmpnt):
+    def f(string) -> bool:
+        if str(string)[0] != "t":
+            string.set(str(string) + "?!")
+        if "v" in str(string):
             return False
         return True
 

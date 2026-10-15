@@ -19,7 +19,7 @@ package manager, such as `pip`.
 pip install zixy
 ```
 
-zixy supports Python 3.11 and later.
+zixy supports Python 3.12 and later.
 
 The source code is available in the public [GitHub repository](https://github.com/quantinuum/zixy).
 

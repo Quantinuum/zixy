@@ -17,10 +17,12 @@
 from __future__ import annotations
 
 import inspect
-from collections.abc import Iterator
-from typing import Final, TypeGuard
+from typing import TYPE_CHECKING, Final, TypeGuard
 
 import numpy
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 def isclass[T](cls: type[object], target: type[T]) -> TypeGuard[type[T]]:

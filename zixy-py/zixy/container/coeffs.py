@@ -32,7 +32,6 @@ from collections.abc import Iterable, Sequence
 from typing import TYPE_CHECKING, Any, Self, TypeAlias, overload
 
 import numpy as np
-from numpy.typing import NDArray
 from sympy import Expr, Float, I, Integer, Symbol, diff, sympify
 
 from zixy import _zixy
@@ -650,9 +649,6 @@ def convert[C: (float, complex, Sign, ComplexSign, Expr)](source: Coeff, cls: ty
         if isinstance(source, float | complex):
             if source.imag == 0 and int(source.real) == source.real:
                 return cls(source.real)
-        elif isinstance(source, float):
-            if int(source) == source:
-                return cls(source)
         else:
             return cls(source)
     elif issubclass(cls, float):
@@ -725,6 +721,8 @@ def typesafe_mul[C: (float, complex, Sign, ComplexSign, Expr)](lhs: C, rhs: Coef
 
 
 if TYPE_CHECKING:
+    from numpy.typing import NDArray
+
     BaseVec = _zixy.BaseVec
 else:
     BaseVec = object

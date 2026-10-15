@@ -78,6 +78,7 @@ select = [
     "D",  # pydocstyle
     "PL",  # pylint
     "UP",  # pyupgrade
+    "TC",  # flake8-type-checking
     "SIM",  # flake8-simplify
     "CPY",  # flake8-copyright
     "TID",  # flake8-tidy-imports

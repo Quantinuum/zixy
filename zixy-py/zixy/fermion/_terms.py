@@ -16,11 +16,20 @@
 
 from __future__ import annotations
 
-from typing import Generic, cast
+from typing import TYPE_CHECKING
+
+from sympy import Expr
+
+from zixy.container.coeffs import ComplexSign, Sign
+
+if TYPE_CHECKING:
+    from zixy._zixy import FermionArray
+
+from typing import cast
 
 from zixy._zixy import Modes
-from zixy.container.cmpnts import Cmpnt, SpecT
-from zixy.container.coeffs import CoeffT, get_coeffs_type
+from zixy.container.cmpnts import Cmpnt
+from zixy.container.coeffs import get_coeffs_type
 from zixy.container.data import TermData
 from zixy.container.terms import (
     Term as TermBase,
@@ -29,10 +38,12 @@ from zixy.container.terms import (
     TermSpecT,
     TermSum as TermSumBase,
 )
-from zixy.fermion._strings import ElemT, ImplT, String, Strings, _check_modes_compatibility
+from zixy.fermion._strings import String, Strings, _check_modes_compatibility
 
 
-class Term(Generic[ImplT, SpecT, CoeffT, ElemT], TermBase[ImplT, SpecT, CoeffT]):
+class Term[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
+    TermBase[ImplT, SpecT, C]
+):
     """A term consisting of a fermionic string and a coefficient.
 
     A single mode-based term consisting of a string and a coefficient that may be an owning
@@ -45,7 +56,7 @@ class Term(Generic[ImplT, SpecT, CoeffT, ElemT], TermBase[ImplT, SpecT, CoeffT])
     def __init__(
         self,
         modes: int | Modes = 0,
-        source: TermSpecT[ImplT, SpecT, CoeffT] = "",  # type: ignore[assignment]
+        source: TermSpecT[ImplT, SpecT, C] = "",  # type: ignore[assignment]
     ):
         """Initialize the term.
 
@@ -70,7 +81,9 @@ class Term(Generic[ImplT, SpecT, CoeffT, ElemT], TermBase[ImplT, SpecT, CoeffT])
         return self.string.modes
 
 
-class Terms(Generic[ImplT, SpecT, CoeffT, ElemT], TermsBase[ImplT, SpecT, CoeffT]):
+class Terms[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
+    TermsBase[ImplT, SpecT, C]
+):
     """A collection of terms consisting of fermionic strings and coefficients.
 
     An array-like container of mode-based terms consisting of strings and coefficients that may
@@ -78,7 +91,7 @@ class Terms(Generic[ImplT, SpecT, CoeffT, ElemT], TermsBase[ImplT, SpecT, CoeffT
     view on a slice of the elements in another collection.
     """
 
-    term_type: type[Term[ImplT, SpecT, CoeffT, ElemT]]
+    term_type: type[Term[ImplT, SpecT, C, ElemT]]
 
     def __init__(self, modes: int | Modes = 0, n: int = 0):
         """Initialize the term array.
@@ -102,7 +115,9 @@ class Terms(Generic[ImplT, SpecT, CoeffT, ElemT], TermsBase[ImplT, SpecT, CoeffT
         return self.strings.modes
 
 
-class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], TermSetBase[ImplT, SpecT, CoeffT]):
+class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
+    TermSetBase[ImplT, SpecT, C]
+):
     """A collection of unique terms consisting of fermionic strings and coefficients.
 
     A set-like container of mode-based terms that may be used to store unique terms and perform
@@ -113,7 +128,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], TermSetBase[ImplT, SpecT, Co
         are not.
     """
 
-    terms_type: type[Terms[ImplT, SpecT, CoeffT, ElemT]]
+    terms_type: type[Terms[ImplT, SpecT, C, ElemT]]
 
     def __init__(self, modes: int | Modes = 0):
         """Initialize the term set.
@@ -133,7 +148,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], TermSetBase[ImplT, SpecT, Co
         """The modes corresponding to ``self``."""
         return self.strings.modes
 
-    def _check_term(self, value: TermBase[ImplT, SpecT, CoeffT]) -> None:
+    def _check_term(self, value: TermBase[ImplT, SpecT, C]) -> None:
         """Hook to check whether a term is defined over the same modes as ``self``."""
         if not isinstance(value, self.terms_type.term_type):
             raise TypeError(
@@ -152,7 +167,9 @@ class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], TermSetBase[ImplT, SpecT, Co
         _check_modes_compatibility(self.modes, value.modes)
 
 
-class TermSum(TermSet[ImplT, SpecT, CoeffT, ElemT], TermSumBase[ImplT, SpecT, CoeffT]):
+class TermSum[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
+    TermSet[ImplT, SpecT, C, ElemT], TermSumBase[ImplT, SpecT, C]
+):
     """A sum of terms consisting of fermionic strings and coefficients.
 
     A set-like container of mode-based terms that may be used to store unique terms and perform

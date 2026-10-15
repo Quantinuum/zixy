@@ -29,10 +29,12 @@ from __future__ import annotations
 from collections.abc import Iterable, Sequence
 from typing import TYPE_CHECKING, Self, overload
 
+from sympy import Expr
+
 from zixy._zixy import FermionSprings, GeneralFermionOperatorArray, Modes
 from zixy.container.base import requires_ownership
 from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet
-from zixy.container.coeffs import Coeff, CoeffT
+from zixy.container.coeffs import Coeff, ComplexSign, Sign
 from zixy.fermion._strings import _check_modes_compatibility
 from zixy.fermion.operator._strings import (
     LadderOp,
@@ -211,9 +213,11 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
     def __mul__(self, rhs: String) -> Term[float]: ...
 
     @overload
-    def __mul__(self, rhs: CoeffT) -> Term[CoeffT]: ...
+    def __mul__[C: (float, complex, Sign, ComplexSign, Expr)](self, rhs: C) -> Term[C]: ...
 
-    def __mul__(self, rhs: String | CoeffT) -> Term[float] | Term[CoeffT]:
+    def __mul__[C: (float, complex, Sign, ComplexSign, Expr)](
+        self, rhs: String | C
+    ) -> Term[float] | Term[C]:
         """Multiplication of ``self`` by ``rhs``.
 
         Multiplication by a scalar returns a term. Multiplication by another raw string returns a

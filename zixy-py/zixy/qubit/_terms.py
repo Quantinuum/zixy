@@ -16,11 +16,20 @@
 
 from __future__ import annotations
 
-from typing import Any, Generic, cast
+from typing import TYPE_CHECKING
+
+from sympy import Expr
+
+from zixy.container.coeffs import ComplexSign, Sign
+
+if TYPE_CHECKING:
+    from zixy._zixy import QubitArray
+
+from typing import Any, cast
 
 from zixy._zixy import Qubits
-from zixy.container.cmpnts import Cmpnt, SpecT
-from zixy.container.coeffs import CoeffT, get_coeffs_type
+from zixy.container.cmpnts import Cmpnt
+from zixy.container.coeffs import get_coeffs_type
 from zixy.container.data import TermData
 from zixy.container.terms import (
     Term as TermBase,
@@ -29,10 +38,12 @@ from zixy.container.terms import (
     TermSpecT,
     TermSum as TermSumBase,
 )
-from zixy.qubit._strings import ElemT, ImplT, String, Strings, _check_qubits_compatibility
+from zixy.qubit._strings import String, Strings, _check_qubits_compatibility
 
 
-class Term(Generic[ImplT, SpecT, CoeffT, ElemT], TermBase[ImplT, SpecT, CoeffT]):
+class Term[ImplT: QubitArray[Any, Any], SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
+    TermBase[ImplT, SpecT, C]
+):
     """A term consisting of a string and a coefficient.
 
     A single qubit-based term consisting of a component and a coefficient that may be an owning
@@ -45,7 +56,7 @@ class Term(Generic[ImplT, SpecT, CoeffT, ElemT], TermBase[ImplT, SpecT, CoeffT])
     def __init__(
         self,
         qubits: int | Qubits = 0,
-        source: TermSpecT[ImplT, SpecT, CoeffT] = "",  # type: ignore[assignment]
+        source: TermSpecT[ImplT, SpecT, C] = "",  # type: ignore[assignment]
     ):
         """Initialize the term.
 
@@ -81,7 +92,12 @@ class Term(Generic[ImplT, SpecT, CoeffT, ElemT], TermBase[ImplT, SpecT, CoeffT])
         return self.string.to_sparse_matrix(big_endian) * complex(self.coeff)
 
 
-class Terms(Generic[ImplT, SpecT, CoeffT, ElemT], TermsBase[ImplT, SpecT, CoeffT]):
+class Terms[
+    ImplT: QubitArray[Any, Any],
+    SpecT,
+    C: (float, complex, Sign, ComplexSign, Expr),
+    ElemT,
+](TermsBase[ImplT, SpecT, C]):
     """A collection of terms consisting of strings and coefficients.
 
     An array-like container of qubit-based terms consisting of strings and coefficients that may
@@ -89,7 +105,7 @@ class Terms(Generic[ImplT, SpecT, CoeffT, ElemT], TermsBase[ImplT, SpecT, CoeffT
     view on a slice of the elements in another collection.
     """
 
-    term_type: type[Term[ImplT, SpecT, CoeffT, ElemT]]
+    term_type: type[Term[ImplT, SpecT, C, ElemT]]
 
     def __init__(self, qubits: int | Qubits = 0, n: int = 0):
         """Initialize the term array.
@@ -114,7 +130,12 @@ class Terms(Generic[ImplT, SpecT, CoeffT, ElemT], TermsBase[ImplT, SpecT, CoeffT
         return self.strings.qubits
 
 
-class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], TermSetBase[ImplT, SpecT, CoeffT]):
+class TermSet[
+    ImplT: QubitArray[Any, Any],
+    SpecT,
+    C: (float, complex, Sign, ComplexSign, Expr),
+    ElemT,
+](TermSetBase[ImplT, SpecT, C]):
     """A collection of unique terms consisting of strings and coefficients.
 
     A set-like container of qubit-based terms that may be used to store unique terms and perform
@@ -125,7 +146,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], TermSetBase[ImplT, SpecT, Co
         are not.
     """
 
-    terms_type: type[Terms[ImplT, SpecT, CoeffT, ElemT]]
+    terms_type: type[Terms[ImplT, SpecT, C, ElemT]]
 
     def __init__(self, qubits: int | Qubits = 0):
         """Initialize the term set.
@@ -145,7 +166,7 @@ class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], TermSetBase[ImplT, SpecT, Co
         """The qubits corresponding to ``self``."""
         return self.strings.qubits
 
-    def _check_term(self, value: TermBase[ImplT, SpecT, CoeffT]) -> None:
+    def _check_term(self, value: TermBase[ImplT, SpecT, C]) -> None:
         """Check whether a term is defined over the same qubits as ``self``."""
         if not isinstance(value, self.terms_type.term_type):
             raise TypeError(
@@ -164,7 +185,12 @@ class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], TermSetBase[ImplT, SpecT, Co
         _check_qubits_compatibility(self.qubits, value.qubits)
 
 
-class TermSum(TermSet[ImplT, SpecT, CoeffT, ElemT], TermSumBase[ImplT, SpecT, CoeffT]):
+class TermSum[
+    ImplT: QubitArray[Any, Any],
+    SpecT,
+    C: (float, complex, Sign, ComplexSign, Expr),
+    ElemT,
+](TermSet[ImplT, SpecT, C, ElemT], TermSumBase[ImplT, SpecT, C]):
     """A sum of terms consisting of strings and coefficients.
 
     A set-like container of qubit-based terms that may be used to store unique terms and perform

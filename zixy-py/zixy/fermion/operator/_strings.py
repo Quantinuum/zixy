@@ -20,22 +20,24 @@ operators, acting on a register of fermionic modes.
 
 from __future__ import annotations
 
-from abc import abstractmethod
-from typing import Generic, Self, TypeVar
+from typing import TYPE_CHECKING
 
-from zixy.container.cmpnts import SpecT
+if TYPE_CHECKING:
+    from zixy._zixy import FermionArray
+
+from abc import abstractmethod
+from typing import Self
+
 from zixy.fermion._strings import (
-    ImplT,
     String as FermionString,
     Strings as FermionStrings,
     StringSet as FermionStringSet,
 )
 
 type LadderOp = tuple[int, bool]
-ElemT = TypeVar("ElemT")
 
 
-class String(Generic[ImplT, SpecT, ElemT], FermionString[ImplT, SpecT, ElemT]):
+class String[ImplT: FermionArray, SpecT, ElemT](FermionString[ImplT, SpecT, ElemT]):
     """A fermionic ladder-operator string."""
 
     def __repr__(self) -> str:
@@ -83,13 +85,13 @@ class String(Generic[ImplT, SpecT, ElemT], FermionString[ImplT, SpecT, ElemT]):
         pass
 
 
-class Strings(Generic[ImplT, SpecT, ElemT], FermionStrings[ImplT, SpecT, ElemT]):
+class Strings[ImplT: FermionArray, SpecT, ElemT](FermionStrings[ImplT, SpecT, ElemT]):
     """A collection of fermionic ladder-operator strings."""
 
     cmpnt_type: type[String[ImplT, SpecT, ElemT]]
 
 
-class StringSet(Generic[ImplT, SpecT, ElemT], FermionStringSet[ImplT, SpecT, ElemT]):
+class StringSet[ImplT: FermionArray, SpecT, ElemT](FermionStringSet[ImplT, SpecT, ElemT]):
     """A collection of unique fermionic ladder-operator strings."""
 
     cmpnts_type: type[Strings[ImplT, SpecT, ElemT]]

@@ -25,8 +25,10 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Self, overload
 
+from sympy import Expr
+
 from zixy._zixy import BinarySprings, FermionStateArray, Modes
-from zixy.container.coeffs import Coeff, CoeffT
+from zixy.container.coeffs import Coeff, ComplexSign, Sign
 from zixy.fermion._strings import (
     String as FermionString,
     Strings as FermionStrings,
@@ -156,7 +158,7 @@ class String(FermionString[ImplT, SpecT, ElemT]):
         r"""Check whether the string is the vacuum state (:math:`\left[0, 0, \ldots, 0\right]`)."""
         return self.count(True) == 0
 
-    def __mul__(self, rhs: CoeffT) -> Term[CoeffT]:
+    def __mul__[C: (float, complex, Sign, ComplexSign, Expr)](self, rhs: C) -> Term[C]:
         """Return the product of ``self`` and ``rhs``."""
         if not isinstance(rhs, Coeff):
             return NotImplemented
@@ -165,7 +167,7 @@ class String(FermionString[ImplT, SpecT, ElemT]):
         term_type = get_term_type(type(rhs))
         return term_type.from_cmpnt_coeff(self, rhs)
 
-    def __rmul__(self, lhs: CoeffT) -> Term[CoeffT]:
+    def __rmul__[C: (float, complex, Sign, ComplexSign, Expr)](self, lhs: C) -> Term[C]:
         """Return the product of ``lhs`` and ``self``."""
         if not isinstance(lhs, Coeff):
             return NotImplemented

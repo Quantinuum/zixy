@@ -17,19 +17,14 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any, Generic, overload
+from typing import Any, overload
 
 from sympy import Expr
 
-from zixy.container.coeffs import (
-    CoeffT,
-    ComplexSign,
-    OtherCoeffT,
-    Sign,
-)
+from zixy.container.coeffs import ComplexSign, Sign
 
 
-class CoeffMulMixin(Generic[CoeffT]):
+class CoeffMulMixin[C: (float, complex, Sign, ComplexSign, Expr)]:
     """Mixin class for typing the multiplication operator for coefficient types."""
 
     @overload
@@ -86,7 +81,9 @@ class CoeffMulMixin(Generic[CoeffT]):
     def __mul__(self: CoeffMulMixin[Expr], rhs: Expr) -> CoeffMulMixin[Expr]: ...
 
     @abstractmethod
-    def __mul__(self, rhs: OtherCoeffT) -> CoeffMulMixin[Any]:
+    def __mul__[COther: (float, complex, Sign, ComplexSign, Expr)](
+        self, rhs: COther
+    ) -> CoeffMulMixin[Any]:
         """Multiply ``self`` with ``rhs``."""
         pass
 
@@ -143,12 +140,14 @@ class CoeffMulMixin(Generic[CoeffT]):
     @overload
     def __rmul__(self: CoeffMulMixin[Expr], lhs: Expr) -> CoeffMulMixin[Expr]: ...
 
-    def __rmul__(self, lhs: OtherCoeffT) -> CoeffMulMixin[Any]:
+    def __rmul__[COther: (float, complex, Sign, ComplexSign, Expr)](
+        self, lhs: COther
+    ) -> CoeffMulMixin[Any]:
         """Multiply ``lhs`` with ``self``."""
         return self.__mul__(lhs)
 
 
-class CoeffDivMixin(Generic[CoeffT]):
+class CoeffDivMixin[C: (float, complex, Sign, ComplexSign, Expr)]:
     """Mixin class for typing the division operator for coefficient types."""
 
     @overload
@@ -205,7 +204,9 @@ class CoeffDivMixin(Generic[CoeffT]):
     def __truediv__(self: CoeffDivMixin[Expr], rhs: Expr) -> CoeffDivMixin[Expr]: ...
 
     @abstractmethod
-    def __truediv__(self, rhs: OtherCoeffT) -> CoeffDivMixin[Any]:
+    def __truediv__[COther: (float, complex, Sign, ComplexSign, Expr)](
+        self, rhs: COther
+    ) -> CoeffDivMixin[Any]:
         """Divide ``self`` by ``rhs``."""
         pass
 
@@ -263,6 +264,8 @@ class CoeffDivMixin(Generic[CoeffT]):
     def __rtruediv__(self: CoeffDivMixin[Expr], lhs: Expr) -> CoeffDivMixin[Expr]: ...
 
     @abstractmethod
-    def __rtruediv__(self, lhs: OtherCoeffT) -> CoeffDivMixin[Any]:
+    def __rtruediv__[COther: (float, complex, Sign, ComplexSign, Expr)](
+        self, lhs: COther
+    ) -> CoeffDivMixin[Any]:
         """Divide ``lhs`` by ``self``."""
         pass

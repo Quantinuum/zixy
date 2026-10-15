@@ -69,7 +69,7 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
 
     @property
     def modes(self) -> Modes:
-        """Get the modes corresponding to ``self``."""
+        """The modes corresponding to ``self``."""
         return self._impl.modes
 
     def _set_copy(self, source: String[ImplT, SpecT, ElemT]) -> None:
@@ -116,7 +116,7 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
 
     @property
     def modes(self) -> Modes:
-        """Get the modes corresponding to ``self``."""
+        """The modes corresponding to ``self``."""
         return self._impl.modes
 
     @overload

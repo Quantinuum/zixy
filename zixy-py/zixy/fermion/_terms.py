@@ -61,12 +61,12 @@ class Term(Generic[ImplT, SpecT, CoeffT, ElemT], TermBase[ImplT, SpecT, CoeffT])
 
     @property
     def string(self) -> String[ImplT, SpecT, ElemT]:
-        """Get the string component of the term."""
+        """The string component of the term."""
         return cast(String[ImplT, SpecT, ElemT], self.cmpnt)
 
     @property
     def modes(self) -> Modes:
-        """Get the modes corresponding to ``self``."""
+        """The modes corresponding to ``self``."""
         return self.string.modes
 
 
@@ -93,12 +93,12 @@ class Terms(Generic[ImplT, SpecT, CoeffT, ElemT], TermsBase[ImplT, SpecT, CoeffT
 
     @property
     def strings(self) -> Strings[ImplT, SpecT, ElemT]:
-        """Get the string components of the terms."""
+        """The string components of the terms."""
         return cast(Strings[ImplT, SpecT, ElemT], self.cmpnts)
 
     @property
     def modes(self) -> Modes:
-        """Get the modes corresponding to ``self``."""
+        """The modes corresponding to ``self``."""
         return self.strings.modes
 
 
@@ -125,12 +125,12 @@ class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], TermSetBase[ImplT, SpecT, Co
 
     @property
     def strings(self) -> Strings[ImplT, SpecT, ElemT]:
-        """Get the string components of the terms."""
+        """The string components of the terms."""
         return cast(Strings[ImplT, SpecT, ElemT], self._impl._cmpnts)
 
     @property
     def modes(self) -> Modes:
-        """Get the modes corresponding to ``self``."""
+        """The modes corresponding to ``self``."""
         return self.strings.modes
 
     def _check_term(self, value: TermBase[ImplT, SpecT, CoeffT]) -> None:

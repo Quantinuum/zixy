@@ -106,7 +106,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
 
     @property
     def max_string_len(self) -> int:
-        """Get the maximum number of operators per string."""
+        """The maximum number of operators per string."""
         return self._impl.max_string_len
 
     @classmethod
@@ -256,7 +256,7 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
 
     @property
     def max_string_len(self) -> int:
-        """Get the maximum number of operators per string."""
+        """The maximum number of operators per string."""
         return self._impl.max_string_len
 
     @requires_ownership
@@ -353,7 +353,7 @@ class StringSet(OperatorStringSet[ImplT, SpecT, ElemT]):
 
     @property
     def max_string_len(self) -> int:
-        """Get the maximum number of operators per string."""
+        """The maximum number of operators per string."""
         return self._impl.max_string_len
 
     def _get_working_cmpnt(self, value: SpecT | Cmpnt[ImplT, SpecT]) -> Cmpnt[ImplT, SpecT]:

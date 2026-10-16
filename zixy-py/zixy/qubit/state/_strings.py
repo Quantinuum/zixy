@@ -112,7 +112,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         """Get the string as a set of the indices of bits with value 1."""
         return self._impl.string_get_set(self.index)
 
-    def set(self, source: SpecT | StringBase[ImplT, SpecT, ElemT]) -> None:
+    def _set_spec(self, source: SpecT) -> None:
         """Set the value of the string.
 
         Args:
@@ -124,7 +124,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         if isinstance(source, set):
             self._impl.string_set_from_set(self.index, source)
         else:
-            super().set(source)
+            super()._set_spec(source)
 
     def hamming_weight(self) -> int:
         r"""Get the Hamming weight of this bit string.

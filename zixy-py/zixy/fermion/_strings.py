@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING
 
 from zixy._zixy import Modes
 from zixy.container.strings import (
@@ -52,16 +52,21 @@ class String[ImplT: FermionArray, SpecT, ElemT](BaseString[ImplT, SpecT]):
     def __init__(
         self,
         modes: int | Modes | None = None,
-        source: SpecT = "",  # type: ignore[assignment]
+        source: SpecT | BaseString[ImplT, SpecT] = "",  # type: ignore[assignment]
     ):
         """Initialize the string.
 
         Args:
             modes: The mode space or mode count. If ``None``, the mode space is inferred from
                 the string specifier.
-            source: The string specifier to use for default modes and initial value.
+            source: Specification or compatible string to copy, also used to infer default modes.
         """
-        if modes is None:
+        if isinstance(source, BaseString):
+            if not isinstance(source._impl, self.impl_type):
+                self.raise_spec_type_error(source)
+            if modes is None:
+                modes = source._impl.modes
+        elif modes is None:
             modes = self._get_default_modes(source)
         impl = self.impl_type(Modes.from_count(modes) if isinstance(modes, int) else modes)
         impl.resize(1)
@@ -72,25 +77,6 @@ class String[ImplT: FermionArray, SpecT, ElemT](BaseString[ImplT, SpecT]):
     def modes(self) -> Modes:
         """The modes corresponding to ``self``."""
         return self._impl.modes
-
-    def _set_copy(self, source: String[ImplT, SpecT, ElemT]) -> None:
-        """Set the value of ``self`` to that of ``source``."""
-        if self._impl.same_as(source._impl):
-            self._impl.string_copy_internal(self.index, source.index)
-        else:
-            self._impl.string_copy_external(self.index, source._impl, source.index)
-
-    @abstractmethod
-    def set(self, source: SpecT | Self) -> None:
-        """Set the value of the string.
-
-        Args:
-            source: Specification for the new value.
-
-        Note:
-            This method operates in-place.
-        """
-        pass
 
 
 class Strings[ImplT: FermionArray, SpecT, ElemT](BaseStrings[ImplT, SpecT]):

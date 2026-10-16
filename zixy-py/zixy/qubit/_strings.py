@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Self
 
 from zixy._zixy import Qubits
@@ -61,16 +62,21 @@ class String[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseString[ImplT, SpecT]
     def __init__(
         self,
         qubits: int | Qubits | None = None,
-        source: SpecT = "",  # type: ignore[assignment]
+        source: SpecT | BaseString[ImplT, SpecT] = "",  # type: ignore[assignment]
     ):
         """Initialize the string.
 
         Args:
             qubits: The qubit register or qubit count. If ``None``, the qubit register is
                 inferred from the string specifier.
-            source: The string specifier to use for default qubits and initial value.
+            source: Specification or compatible string to copy, also used to infer default qubits.
         """
-        if qubits is None:
+        if isinstance(source, BaseString):
+            if not isinstance(source._impl, self.impl_type):
+                self.raise_spec_type_error(source)
+            if qubits is None:
+                qubits = source._impl.qubits
+        elif qubits is None:
             qubits = self._get_default_qubits(source)
         impl = self.impl_type(qubits if isinstance(qubits, Qubits) else Qubits.from_count(qubits))
         impl.resize(1)
@@ -101,16 +107,7 @@ class String[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseString[ImplT, SpecT]
         """Get the string as a tuple of its elements."""
         return tuple(self.get_list())
 
-    def _set_copy(self, source: String[ImplT, SpecT, ElemT]) -> None:
-        """Set the value of ``self`` to that of ``source``."""
-        if not isinstance(source, String):
-            raise TypeError("Source object must be a String.")
-        if self._impl.same_as(source._impl):
-            self._impl.string_copy_internal(self.index, source.index)
-        else:
-            self._impl.string_copy_external(self.index, source._impl, source.index)
-
-    def set(self, source: SpecT | String[ImplT, SpecT, ElemT]) -> None:
+    def _set_spec(self, source: SpecT) -> None:
         """Set the value of the string.
 
         Args:
@@ -119,9 +116,7 @@ class String[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseString[ImplT, SpecT]
         Note:
             This method operates in-place.
         """
-        if isinstance(source, String):
-            self._set_copy(source)
-        elif isinstance(source, tuple | list):
+        if isinstance(source, Sequence) and not isinstance(source, str):
             try:
                 self._impl.string_set_from_list(self.index, list(source))
             except TypeError:

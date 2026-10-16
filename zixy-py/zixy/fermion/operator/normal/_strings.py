@@ -88,7 +88,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         """
         return cls(modes, source)
 
-    def set(self, source: SpecT | String) -> None:
+    def _set_spec(self, source: SpecT) -> None:
         """Set the value of the string.
 
         Args:
@@ -97,9 +97,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         Note:
             This method operates in-place.
         """
-        if isinstance(source, String):
-            self._set_copy(source)
-        elif isinstance(source, str):
+        if isinstance(source, str):
             if not source.strip():
                 self._impl.string_clear(self.index)
                 return

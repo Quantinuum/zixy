@@ -5,59 +5,59 @@ from typing import Self, assert_type
 
 import pytest
 
-import zixy.fermion.operator.general as fermion_general
-import zixy.fermion.operator.normal as fermion_normal
-import zixy.fermion.state as fermion_state
-import zixy.qubit.operator as qubit_operator
-import zixy.qubit.state as qubit_state
+import zixy.fermion.operator.general as zfog
+import zixy.fermion.operator.normal as zfon
+import zixy.fermion.state as zfs
+import zixy.qubit.operator as zqo
+import zixy.qubit.state as zqs
 
 
 def test_qubit_operator_inherited_factories() -> None:
-    class DerivedTerms(qubit_operator.RealTerms):
+    class DerivedTerms(zqo.RealTerms):
         pass
 
-    class DerivedSum(qubit_operator.RealTermSum):
+    class DerivedSum(zqo.RealTermSum):
         pass
 
     terms = DerivedTerms(2, 1)
     total = DerivedSum.from_terms(terms)
 
-    assert_type(terms[0], qubit_operator.RealTerm)
-    assert_type(next(iter(terms)), qubit_operator.RealTerm)
+    assert_type(terms[0], zqo.RealTerm)
+    assert_type(next(iter(terms)), zqo.RealTerm)
     assert_type(terms[:], DerivedTerms)
-    assert_type(terms[0].string, qubit_operator.String)
-    assert_type(terms.strings, qubit_operator.Strings)
-    assert_type(terms.strings[0], qubit_operator.String)
-    assert_type(total.strings, qubit_operator.Strings)
-    assert_type(next(iter(total)), qubit_operator.RealTerm)
+    assert_type(terms[0].string, zqo.String)
+    assert_type(terms.strings, zqo.Strings)
+    assert_type(terms.strings[0], zqo.String)
+    assert_type(total.strings, zqo.Strings)
+    assert_type(next(iter(total)), zqo.RealTerm)
     assert type(terms[:]) is DerivedTerms
-    assert type(terms[0]) is qubit_operator.RealTerm
-    assert type(total.strings) is qubit_operator.Strings
+    assert type(terms[0]) is zqo.RealTerm
+    assert type(total.strings) is zqo.Strings
 
 
 def test_qubit_operator_overridden_factories() -> None:
-    class CustomString(qubit_operator.String):
+    class CustomString(zqo.String):
         pass
 
-    class CustomStrings(qubit_operator.Strings):
+    class CustomStrings(zqo.Strings):
         string_type = CustomString
         _set_type: type[CustomStringSet]
 
         def custom_marker(self) -> str:
             return "custom strings"
 
-    class CustomStringSet(qubit_operator.StringSet):
+    class CustomStringSet(zqo.StringSet):
         strings_type = CustomStrings
 
     CustomStrings._set_type = CustomStringSet
 
-    class CustomTerm(qubit_operator.RealTerm):
+    class CustomTerm(zqo.RealTerm):
         strings_type = CustomStrings
 
-    class CustomTerms(qubit_operator.RealTerms):
+    class CustomTerms(zqo.RealTerms):
         term_type = CustomTerm
 
-    class CustomSum(qubit_operator.RealTermSum):
+    class CustomSum(zqo.RealTermSum):
         terms_type = CustomTerms
 
     class DerivedTerms(CustomTerms):
@@ -131,7 +131,7 @@ def test_qubit_operator_overridden_factories() -> None:
     adopted = CustomSum._create(total._impl, total._string_set._map)
     assert adopted.strings.custom_marker() == "custom strings"
 
-    class CustomSet(qubit_operator.RealTermSet):
+    class CustomSet(zqo.RealTermSet):
         terms_type = CustomTerms
 
     custom_set = CustomSet.from_terms(terms)
@@ -139,8 +139,8 @@ def test_qubit_operator_overridden_factories() -> None:
     assert custom_set.strings.custom_marker() == "custom strings"
 
     # Compatible native data is insufficient when its Python wrapper lacks the promised API.
-    ordinary = qubit_operator.RealTerms(2, 1)
-    ordinary_sum = qubit_operator.RealTermSum.from_terms(ordinary)
+    ordinary = zqo.RealTerms(2, 1)
+    ordinary_sum = zqo.RealTermSum.from_terms(ordinary)
     with pytest.raises(TypeError, match="String storage does not match its factory"):
         CustomTerms._create(ordinary._impl)
     with pytest.raises(TypeError, match="String storage does not match its factory"):
@@ -152,54 +152,73 @@ def test_qubit_operator_overridden_factories() -> None:
     with pytest.raises(TypeError, match="String storage does not match its factory"):
         CustomSum._create(ordinary_sum._impl, ordinary_sum._string_set._map)
     assert len(ordinary) == 1
+
+    # Specialised factories accept compatible parent-class inputs, too.
+    parent = zqo.String(2, "X0")
+    copied = CustomStrings.from_string(parent)
+    assert_type(copied, CustomStrings)
+    assert type(copied[0]) is CustomString
+    assert copied[0] == parent
+    copied.append(parent)
+    assert copied[1] == parent
+    copied[0].set(parent)
+    parent_term = zqo.RealTerm(2, (parent, 2.0))
+    custom_term = CustomTerm.from_string_coeff(parent, 2.0)
+    assert_type(custom_term, CustomTerm)
+    assert custom_term == parent_term
+    custom_term.set(parent_term)
+    terms.append(parent_term)
+    total.insert(parent_term)
+    assert total.lookup_coeff(parent) == 2.0
+    assert parent == zqo.String(2, "X0")
 
 
 def test_qubit_state_inherited_factories() -> None:
-    class DerivedTerms(qubit_state.RealTerms):
+    class DerivedTerms(zqs.RealTerms):
         pass
 
-    class DerivedSum(qubit_state.RealTermSum):
+    class DerivedSum(zqs.RealTermSum):
         pass
 
     terms = DerivedTerms(2, 1)
     total = DerivedSum.from_terms(terms)
 
-    assert_type(terms[0], qubit_state.RealTerm)
-    assert_type(next(iter(terms)), qubit_state.RealTerm)
+    assert_type(terms[0], zqs.RealTerm)
+    assert_type(next(iter(terms)), zqs.RealTerm)
     assert_type(terms[:], DerivedTerms)
-    assert_type(terms[0].string, qubit_state.String)
-    assert_type(terms.strings, qubit_state.Strings)
-    assert_type(terms.strings[0], qubit_state.String)
-    assert_type(total.strings, qubit_state.Strings)
-    assert_type(next(iter(total)), qubit_state.RealTerm)
+    assert_type(terms[0].string, zqs.String)
+    assert_type(terms.strings, zqs.Strings)
+    assert_type(terms.strings[0], zqs.String)
+    assert_type(total.strings, zqs.Strings)
+    assert_type(next(iter(total)), zqs.RealTerm)
     assert type(terms[:]) is DerivedTerms
-    assert type(terms[0]) is qubit_state.RealTerm
-    assert type(total.strings) is qubit_state.Strings
+    assert type(terms[0]) is zqs.RealTerm
+    assert type(total.strings) is zqs.Strings
 
 
 def test_qubit_state_overridden_factories() -> None:
-    class CustomString(qubit_state.String):
+    class CustomString(zqs.String):
         pass
 
-    class CustomStrings(qubit_state.Strings):
+    class CustomStrings(zqs.Strings):
         string_type = CustomString
         _set_type: type[CustomStringSet]
 
         def custom_marker(self) -> str:
             return "custom strings"
 
-    class CustomStringSet(qubit_state.StringSet):
+    class CustomStringSet(zqs.StringSet):
         strings_type = CustomStrings
 
     CustomStrings._set_type = CustomStringSet
 
-    class CustomTerm(qubit_state.RealTerm):
+    class CustomTerm(zqs.RealTerm):
         strings_type = CustomStrings
 
-    class CustomTerms(qubit_state.RealTerms):
+    class CustomTerms(zqs.RealTerms):
         term_type = CustomTerm
 
-    class CustomSum(qubit_state.RealTermSum):
+    class CustomSum(zqs.RealTermSum):
         terms_type = CustomTerms
 
     class DerivedTerms(CustomTerms):
@@ -271,7 +290,7 @@ def test_qubit_state_overridden_factories() -> None:
     adopted = CustomSum._create(total._impl, total._string_set._map)
     assert adopted.strings.custom_marker() == "custom strings"
 
-    class CustomSet(qubit_state.RealTermSet):
+    class CustomSet(zqs.RealTermSet):
         terms_type = CustomTerms
 
     custom_set = CustomSet.from_terms(terms)
@@ -279,8 +298,8 @@ def test_qubit_state_overridden_factories() -> None:
     assert custom_set.strings.custom_marker() == "custom strings"
 
     # Compatible native data is insufficient when its Python wrapper lacks the promised API.
-    ordinary = qubit_state.RealTerms(2, 1)
-    ordinary_sum = qubit_state.RealTermSum.from_terms(ordinary)
+    ordinary = zqs.RealTerms(2, 1)
+    ordinary_sum = zqs.RealTermSum.from_terms(ordinary)
     with pytest.raises(TypeError, match="String storage does not match its factory"):
         CustomTerms._create(ordinary._impl)
     with pytest.raises(TypeError, match="String storage does not match its factory"):
@@ -292,62 +311,81 @@ def test_qubit_state_overridden_factories() -> None:
     with pytest.raises(TypeError, match="String storage does not match its factory"):
         CustomSum._create(ordinary_sum._impl, ordinary_sum._string_set._map)
     assert len(ordinary) == 1
+
+    # Specialised factories accept compatible parent-class inputs, too.
+    parent = zqs.String(2, "[1, 0]")
+    copied = CustomStrings.from_string(parent)
+    assert_type(copied, CustomStrings)
+    assert type(copied[0]) is CustomString
+    assert copied[0] == parent
+    copied.append(parent)
+    assert copied[1] == parent
+    copied[0].set(parent)
+    parent_term = zqs.RealTerm(2, (parent, 2.0))
+    custom_term = CustomTerm.from_string_coeff(parent, 2.0)
+    assert_type(custom_term, CustomTerm)
+    assert custom_term == parent_term
+    custom_term.set(parent_term)
+    terms.append(parent_term)
+    total.insert(parent_term)
+    assert total.lookup_coeff(parent) == 2.0
+    assert parent == zqs.String(2, "[1, 0]")
 
 
 def test_fermion_general_inherited_factories() -> None:
-    class DerivedTerms(fermion_general.RealTerms):
+    class DerivedTerms(zfog.RealTerms):
         pass
 
-    class DerivedSum(fermion_general.RealTermSum):
+    class DerivedSum(zfog.RealTermSum):
         pass
 
     terms = DerivedTerms(2, 1)
     total = DerivedSum.from_terms(terms)
 
-    assert_type(terms[0], fermion_general.RealTerm)
-    assert_type(next(iter(terms)), fermion_general.RealTerm)
+    assert_type(terms[0], zfog.RealTerm)
+    assert_type(next(iter(terms)), zfog.RealTerm)
     assert_type(terms[:], DerivedTerms)
-    assert_type(terms[0].string, fermion_general.String)
-    assert_type(terms.strings, fermion_general.Strings)
-    assert_type(terms.strings[0], fermion_general.String)
-    assert_type(total.strings, fermion_general.Strings)
-    assert_type(next(iter(total)), fermion_general.RealTerm)
+    assert_type(terms[0].string, zfog.String)
+    assert_type(terms.strings, zfog.Strings)
+    assert_type(terms.strings[0], zfog.String)
+    assert_type(total.strings, zfog.Strings)
+    assert_type(next(iter(total)), zfog.RealTerm)
     assert type(terms[:]) is DerivedTerms
-    assert type(terms[0]) is fermion_general.RealTerm
-    assert type(total.strings) is fermion_general.Strings
+    assert type(terms[0]) is zfog.RealTerm
+    assert type(total.strings) is zfog.Strings
 
 
 def test_fermion_general_overridden_factories() -> None:
-    class CustomString(fermion_general.String):
+    class CustomString(zfog.String):
         pass
 
-    class CustomStrings(fermion_general.Strings):
+    class CustomStrings(zfog.Strings):
         string_type = CustomString
         _set_type: type[CustomStringSet]
 
         def custom_marker(self) -> str:
             return "custom strings"
 
-    class CustomStringSet(fermion_general.StringSet):
+    class CustomStringSet(zfog.StringSet):
         strings_type = CustomStrings
 
     CustomStrings._set_type = CustomStringSet
 
-    class CustomTerm(fermion_general.RealTerm):
+    class CustomTerm(zfog.RealTerm):
         strings_type = CustomStrings
 
-    class CustomTerms(fermion_general.RealTerms):
+    class CustomTerms(zfog.RealTerms):
         term_type = CustomTerm
 
-    class CustomSum(fermion_general.RealTermSum):
+    class CustomSum(zfog.RealTermSum):
         terms_type = CustomTerms
 
     class DerivedTerms(CustomTerms):
         pass
 
-    strings = CustomStrings(2, 1)
+    strings = CustomStrings(2, 1, max_string_len=1)
     string_set = CustomStringSet.from_strings(strings)
-    terms = DerivedTerms(2, 1)
+    terms = DerivedTerms(2, 1, max_string_len=1)
     total = CustomSum.from_terms(terms)
 
     assert_type(strings[0], CustomString)
@@ -411,7 +449,7 @@ def test_fermion_general_overridden_factories() -> None:
     adopted = CustomSum._create(total._impl, total._string_set._map)
     assert adopted.strings.custom_marker() == "custom strings"
 
-    class CustomSet(fermion_general.RealTermSet):
+    class CustomSet(zfog.RealTermSet):
         terms_type = CustomTerms
 
     custom_set = CustomSet.from_terms(terms)
@@ -419,8 +457,8 @@ def test_fermion_general_overridden_factories() -> None:
     assert custom_set.strings.custom_marker() == "custom strings"
 
     # Compatible native data is insufficient when its Python wrapper lacks the promised API.
-    ordinary = fermion_general.RealTerms(2, 1)
-    ordinary_sum = fermion_general.RealTermSum.from_terms(ordinary)
+    ordinary = zfog.RealTerms(2, 1)
+    ordinary_sum = zfog.RealTermSum.from_terms(ordinary)
     with pytest.raises(TypeError, match="String storage does not match its factory"):
         CustomTerms._create(ordinary._impl)
     with pytest.raises(TypeError, match="String storage does not match its factory"):
@@ -432,54 +470,73 @@ def test_fermion_general_overridden_factories() -> None:
     with pytest.raises(TypeError, match="String storage does not match its factory"):
         CustomSum._create(ordinary_sum._impl, ordinary_sum._string_set._map)
     assert len(ordinary) == 1
+
+    # Specialised factories accept compatible parent-class inputs, too.
+    parent = zfog.String(2, "F0^")
+    copied = CustomStrings.from_string(parent)
+    assert_type(copied, CustomStrings)
+    assert type(copied[0]) is CustomString
+    assert copied[0] == parent
+    copied.append(parent)
+    assert copied[1] == parent
+    copied[0].set(parent)
+    parent_term = zfog.RealTerm(2, (parent, 2.0))
+    custom_term = CustomTerm.from_string_coeff(parent, 2.0)
+    assert_type(custom_term, CustomTerm)
+    assert custom_term == parent_term
+    custom_term.set(parent_term)
+    terms.append(parent_term)
+    total.insert(parent_term)
+    assert total.lookup_coeff(parent) == 2.0
+    assert parent == zfog.String(2, "F0^")
 
 
 def test_fermion_normal_inherited_factories() -> None:
-    class DerivedTerms(fermion_normal.RealTerms):
+    class DerivedTerms(zfon.RealTerms):
         pass
 
-    class DerivedSum(fermion_normal.RealTermSum):
+    class DerivedSum(zfon.RealTermSum):
         pass
 
     terms = DerivedTerms(2, 1)
     total = DerivedSum.from_terms(terms)
 
-    assert_type(terms[0], fermion_normal.RealTerm)
-    assert_type(next(iter(terms)), fermion_normal.RealTerm)
+    assert_type(terms[0], zfon.RealTerm)
+    assert_type(next(iter(terms)), zfon.RealTerm)
     assert_type(terms[:], DerivedTerms)
-    assert_type(terms[0].string, fermion_normal.String)
-    assert_type(terms.strings, fermion_normal.Strings)
-    assert_type(terms.strings[0], fermion_normal.String)
-    assert_type(total.strings, fermion_normal.Strings)
-    assert_type(next(iter(total)), fermion_normal.RealTerm)
+    assert_type(terms[0].string, zfon.String)
+    assert_type(terms.strings, zfon.Strings)
+    assert_type(terms.strings[0], zfon.String)
+    assert_type(total.strings, zfon.Strings)
+    assert_type(next(iter(total)), zfon.RealTerm)
     assert type(terms[:]) is DerivedTerms
-    assert type(terms[0]) is fermion_normal.RealTerm
-    assert type(total.strings) is fermion_normal.Strings
+    assert type(terms[0]) is zfon.RealTerm
+    assert type(total.strings) is zfon.Strings
 
 
 def test_fermion_normal_overridden_factories() -> None:
-    class CustomString(fermion_normal.String):
+    class CustomString(zfon.String):
         pass
 
-    class CustomStrings(fermion_normal.Strings):
+    class CustomStrings(zfon.Strings):
         string_type = CustomString
         _set_type: type[CustomStringSet]
 
         def custom_marker(self) -> str:
             return "custom strings"
 
-    class CustomStringSet(fermion_normal.StringSet):
+    class CustomStringSet(zfon.StringSet):
         strings_type = CustomStrings
 
     CustomStrings._set_type = CustomStringSet
 
-    class CustomTerm(fermion_normal.RealTerm):
+    class CustomTerm(zfon.RealTerm):
         strings_type = CustomStrings
 
-    class CustomTerms(fermion_normal.RealTerms):
+    class CustomTerms(zfon.RealTerms):
         term_type = CustomTerm
 
-    class CustomSum(fermion_normal.RealTermSum):
+    class CustomSum(zfon.RealTermSum):
         terms_type = CustomTerms
 
     class DerivedTerms(CustomTerms):
@@ -551,7 +608,7 @@ def test_fermion_normal_overridden_factories() -> None:
     adopted = CustomSum._create(total._impl, total._string_set._map)
     assert adopted.strings.custom_marker() == "custom strings"
 
-    class CustomSet(fermion_normal.RealTermSet):
+    class CustomSet(zfon.RealTermSet):
         terms_type = CustomTerms
 
     custom_set = CustomSet.from_terms(terms)
@@ -559,8 +616,8 @@ def test_fermion_normal_overridden_factories() -> None:
     assert custom_set.strings.custom_marker() == "custom strings"
 
     # Compatible native data is insufficient when its Python wrapper lacks the promised API.
-    ordinary = fermion_normal.RealTerms(2, 1)
-    ordinary_sum = fermion_normal.RealTermSum.from_terms(ordinary)
+    ordinary = zfon.RealTerms(2, 1)
+    ordinary_sum = zfon.RealTermSum.from_terms(ordinary)
     with pytest.raises(TypeError, match="String storage does not match its factory"):
         CustomTerms._create(ordinary._impl)
     with pytest.raises(TypeError, match="String storage does not match its factory"):
@@ -573,53 +630,72 @@ def test_fermion_normal_overridden_factories() -> None:
         CustomSum._create(ordinary_sum._impl, ordinary_sum._string_set._map)
     assert len(ordinary) == 1
 
+    # Specialised factories accept compatible parent-class inputs, too.
+    parent = zfon.String(2, "F0^")
+    copied = CustomStrings.from_string(parent)
+    assert_type(copied, CustomStrings)
+    assert type(copied[0]) is CustomString
+    assert copied[0] == parent
+    copied.append(parent)
+    assert copied[1] == parent
+    copied[0].set(parent)
+    parent_term = zfon.RealTerm(2, (parent, 2.0))
+    custom_term = CustomTerm.from_string_coeff(parent, 2.0)
+    assert_type(custom_term, CustomTerm)
+    assert custom_term == parent_term
+    custom_term.set(parent_term)
+    terms.append(parent_term)
+    total.insert(parent_term)
+    assert total.lookup_coeff(parent) == 2.0
+    assert parent == zfon.String(2, "F0^")
+
 
 def test_fermion_state_inherited_factories() -> None:
-    class DerivedTerms(fermion_state.RealTerms):
+    class DerivedTerms(zfs.RealTerms):
         pass
 
-    class DerivedSum(fermion_state.RealTermSum):
+    class DerivedSum(zfs.RealTermSum):
         pass
 
     terms = DerivedTerms(2, 1)
     total = DerivedSum.from_terms(terms)
 
-    assert_type(terms[0], fermion_state.RealTerm)
-    assert_type(next(iter(terms)), fermion_state.RealTerm)
+    assert_type(terms[0], zfs.RealTerm)
+    assert_type(next(iter(terms)), zfs.RealTerm)
     assert_type(terms[:], DerivedTerms)
-    assert_type(terms[0].string, fermion_state.String)
-    assert_type(terms.strings, fermion_state.Strings)
-    assert_type(terms.strings[0], fermion_state.String)
-    assert_type(total.strings, fermion_state.Strings)
-    assert_type(next(iter(total)), fermion_state.RealTerm)
+    assert_type(terms[0].string, zfs.String)
+    assert_type(terms.strings, zfs.Strings)
+    assert_type(terms.strings[0], zfs.String)
+    assert_type(total.strings, zfs.Strings)
+    assert_type(next(iter(total)), zfs.RealTerm)
     assert type(terms[:]) is DerivedTerms
-    assert type(terms[0]) is fermion_state.RealTerm
-    assert type(total.strings) is fermion_state.Strings
+    assert type(terms[0]) is zfs.RealTerm
+    assert type(total.strings) is zfs.Strings
 
 
 def test_fermion_state_overridden_factories() -> None:
-    class CustomString(fermion_state.String):
+    class CustomString(zfs.String):
         pass
 
-    class CustomStrings(fermion_state.Strings):
+    class CustomStrings(zfs.Strings):
         string_type = CustomString
         _set_type: type[CustomStringSet]
 
         def custom_marker(self) -> str:
             return "custom strings"
 
-    class CustomStringSet(fermion_state.StringSet):
+    class CustomStringSet(zfs.StringSet):
         strings_type = CustomStrings
 
     CustomStrings._set_type = CustomStringSet
 
-    class CustomTerm(fermion_state.RealTerm):
+    class CustomTerm(zfs.RealTerm):
         strings_type = CustomStrings
 
-    class CustomTerms(fermion_state.RealTerms):
+    class CustomTerms(zfs.RealTerms):
         term_type = CustomTerm
 
-    class CustomSum(fermion_state.RealTermSum):
+    class CustomSum(zfs.RealTermSum):
         terms_type = CustomTerms
 
     class DerivedTerms(CustomTerms):
@@ -691,7 +767,7 @@ def test_fermion_state_overridden_factories() -> None:
     adopted = CustomSum._create(total._impl, total._string_set._map)
     assert adopted.strings.custom_marker() == "custom strings"
 
-    class CustomSet(fermion_state.RealTermSet):
+    class CustomSet(zfs.RealTermSet):
         terms_type = CustomTerms
 
     custom_set = CustomSet.from_terms(terms)
@@ -699,8 +775,8 @@ def test_fermion_state_overridden_factories() -> None:
     assert custom_set.strings.custom_marker() == "custom strings"
 
     # Compatible native data is insufficient when its Python wrapper lacks the promised API.
-    ordinary = fermion_state.RealTerms(2, 1)
-    ordinary_sum = fermion_state.RealTermSum.from_terms(ordinary)
+    ordinary = zfs.RealTerms(2, 1)
+    ordinary_sum = zfs.RealTermSum.from_terms(ordinary)
     with pytest.raises(TypeError, match="String storage does not match its factory"):
         CustomTerms._create(ordinary._impl)
     with pytest.raises(TypeError, match="String storage does not match its factory"):
@@ -713,12 +789,31 @@ def test_fermion_state_overridden_factories() -> None:
         CustomSum._create(ordinary_sum._impl, ordinary_sum._string_set._map)
     assert len(ordinary) == 1
 
+    # Specialised factories accept compatible parent-class inputs, too.
+    parent = zfs.String(2, "[1, 0]")
+    copied = CustomStrings.from_string(parent)
+    assert_type(copied, CustomStrings)
+    assert type(copied[0]) is CustomString
+    assert copied[0] == parent
+    copied.append(parent)
+    assert copied[1] == parent
+    copied[0].set(parent)
+    parent_term = zfs.RealTerm(2, (parent, 2.0))
+    custom_term = CustomTerm.from_string_coeff(parent, 2.0)
+    assert_type(custom_term, CustomTerm)
+    assert custom_term == parent_term
+    custom_term.set(parent_term)
+    terms.append(parent_term)
+    total.insert(parent_term)
+    assert total.lookup_coeff(parent) == 2.0
+    assert parent == zfs.String(2, "[1, 0]")
+
 
 def test_non_identity_filters_dispatch_to_overrides() -> None:
-    class CustomString(qubit_operator.String):
+    class CustomString(zqo.String):
         pass
 
-    class CustomStrings(qubit_operator.Strings):
+    class CustomStrings(zqo.Strings):
         string_type = CustomString
         _set_type: type[CustomStringSet]
         lazy_calls = 0
@@ -732,7 +827,7 @@ def test_non_identity_filters_dispatch_to_overrides() -> None:
             self.eager_calls += 1
             return self[2:].clone()
 
-    class CustomStringSet(qubit_operator.StringSet):
+    class CustomStringSet(zqo.StringSet):
         strings_type = CustomStrings
 
     CustomStrings._set_type = CustomStringSet

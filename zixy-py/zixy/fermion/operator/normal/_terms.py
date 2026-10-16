@@ -152,11 +152,6 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerm[ImplT, Spe
     coeff_type: type[C]
     _term_sum_type: type[TermSum[C]]
 
-    @property
-    def string(self) -> String:
-        """The string of the term."""
-        return cast("String", super().string)
-
     def dagger(self) -> None:
         """Take the adjoint of ``self`` in-place, including the fermionic sign."""
         cre, ann = self.string.get_sets()

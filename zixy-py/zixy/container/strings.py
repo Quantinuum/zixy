@@ -32,7 +32,7 @@ from __future__ import annotations
 
 import builtins
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Self, overload
+from typing import TYPE_CHECKING, Any, Self, cast, overload
 
 from zixy._zixy import Map
 from zixy.container.base import (
@@ -47,6 +47,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Sequence
 
     from zixy._zixy import ImplArray
+    from zixy.container.base import _HasStringsType, _HasStringType
 
 
 class String[ImplT: ImplArray, SpecT](ViewableItem[ImplT], StringRepresentable):
@@ -256,7 +257,9 @@ class StringSet[ImplT: ImplArray, SpecT](StringRepresentable):
         out.insert_iterable(self)
         return out
 
-    def to_strings(self) -> Strings[ImplT, SpecT]:
+    def to_strings[StringsT: Strings[Any, Any]](
+        self: _HasStringsType[StringsT],
+    ) -> StringsT:
         """Create a new array of strings owning copies of all those contained in ``self``.
 
         Returns:
@@ -264,7 +267,8 @@ class StringSet[ImplT: ImplArray, SpecT](StringRepresentable):
             in ``self``. The
             type is determined by :attr:`~zixy.container.strings.StringSet.strings_type`.
         """
-        return self.strings_type._create(self._impl.strings_clone(None))
+        strings = cast("StringSet[Any, Any]", self)
+        return self.strings_type._create(strings._impl.strings_clone(None))
 
     def __repr__(self) -> str:
         """Return a string representation of ``self``."""
@@ -371,14 +375,17 @@ class StringSet[ImplT: ImplArray, SpecT](StringRepresentable):
             return NotImplemented
         return self._impl.mapped_equal(self._map, other._impl)
 
-    def __iter__(self) -> Iterator[String[ImplT, SpecT]]:
-        """Iterate over the elements of ``self``."""
-        if not len(self):
+    def __iter__[StringT: String[Any, Any]](
+        self: _HasStringsType[_HasStringType[StringT]],
+    ) -> Iterator[StringT]:
+        """Iterate over the concrete strings of ``self``."""
+        strings = cast("StringSet[Any, Any]", self)
+        if not len(strings):
             return
-        tmp = self._get_working_string(self.strings_type.string_type._clear_spec)
-        for i in range(len(self)):
-            tmp._impl.string_copy_external(0, self._impl, i)
-            yield tmp
+        tmp = strings._get_working_string(strings.strings_type.string_type._clear_spec)
+        for i in range(len(strings)):
+            tmp._impl.string_copy_external(0, strings._impl, i)
+            yield cast("StringT", tmp)
 
     def iter_filter_map(
         self, f: Callable[[String[ImplT, SpecT]], bool]
@@ -517,12 +524,14 @@ class Strings[ImplT: ImplArray, SpecT](
         return ", ".join(str(s) for s in self)
 
     @overload
-    def __getitem__(self, indexer: int) -> String[ImplT, SpecT]: ...
+    def __getitem__[StringT: String[Any, Any]](
+        self: _HasStringType[StringT], indexer: int
+    ) -> StringT: ...
 
     @overload
     def __getitem__(self, indexer: builtins.slice) -> Self: ...
 
-    def __getitem__(self, indexer: int | builtins.slice) -> String[ImplT, SpecT] | Self:
+    def __getitem__(self, indexer: int | builtins.slice) -> object:
         """Get the element or elements selected by ``indexer``.
 
         Args:

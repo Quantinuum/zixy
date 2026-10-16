@@ -23,7 +23,7 @@ The structure of this module parallels that of :mod:`~zixy.container.strings`.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Self, overload
+from typing import TYPE_CHECKING, Self
 
 from sympy import Expr
 
@@ -224,21 +224,6 @@ class Strings(FermionStrings[ImplT, SpecT, ElemT]):
             out.resize(0)
             return out
         return cls._create(cls.string_type.impl_type(modes, BinarySprings(source)))
-
-    @overload
-    def __getitem__(self, indexer: int) -> String: ...
-    @overload
-    def __getitem__(self, indexer: slice) -> Self: ...
-    def __getitem__(self, indexer: int | slice) -> String | Self:
-        """Get the element or elements selected by ``indexer``.
-
-        Args:
-            indexer: Index or slice selecting the element(s) to return.
-
-        Returns:
-            Element or slice selected by ``indexer``.
-        """
-        return super().__getitem__(indexer)  # type: ignore[return-value]
 
     def get_sets(self) -> tuple[set[int], ...]:
         """Get the strings as a list of sets of occupied mode indices."""

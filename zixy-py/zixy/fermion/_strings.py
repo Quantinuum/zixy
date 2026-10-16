@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Self, overload
+from typing import TYPE_CHECKING, Self
 
 from zixy._zixy import Modes
 from zixy.container.strings import (
@@ -119,21 +119,6 @@ class Strings[ImplT: FermionArray, SpecT, ElemT](BaseStrings[ImplT, SpecT]):
     def modes(self) -> Modes:
         """The modes corresponding to ``self``."""
         return self._impl.modes
-
-    @overload
-    def __getitem__(self, indexer: int) -> String[ImplT, SpecT, ElemT]: ...
-    @overload
-    def __getitem__(self, indexer: slice) -> Self: ...
-    def __getitem__(self, indexer: int | slice) -> String[ImplT, SpecT, ElemT] | Self:
-        """Get the element or elements selected by ``indexer``.
-
-        Args:
-            indexer: Index or slice selecting the element(s) to return.
-
-        Returns:
-            Element or slice selected by ``indexer``.
-        """
-        return super().__getitem__(indexer)  # type: ignore[return-value]
 
     def filter_unique(self) -> BaseStrings[ImplT, SpecT]:
         """Get a new instance containing the unique strings of ``self``."""

@@ -16,7 +16,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Self, cast
+from typing import TYPE_CHECKING, Any, Self
 
 from sympy import Expr
 
@@ -24,7 +24,7 @@ from zixy.container.coeffs import ComplexSign, Sign, convert
 
 if TYPE_CHECKING:
     from zixy._zixy import FermionArray
-    from zixy.fermion.operator._strings import String as OperatorString, Strings as OperatorStrings
+    from zixy.fermion.operator._strings import Strings as OperatorStrings
 
 from abc import abstractmethod
 from collections.abc import Callable
@@ -62,11 +62,6 @@ class Term[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
 
     strings_type: type[OperatorStrings[ImplT, SpecT, ElemT]]
 
-    @property
-    def string(self) -> OperatorString[ImplT, SpecT, ElemT]:
-        """The string of the term."""
-        return cast("OperatorString[ImplT, SpecT, ElemT]", super().string)
-
     @abstractmethod
     def dagger(self) -> None:
         """Take the adjoint of ``self`` in-place."""
@@ -85,11 +80,6 @@ class Terms[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, E
 
     term_type: type[Term[ImplT, SpecT, C, ElemT]]
 
-    @property
-    def strings(self) -> OperatorStrings[ImplT, SpecT, ElemT]:
-        """The strings of the terms."""
-        return cast("OperatorStrings[ImplT, SpecT, ElemT]", super().strings)
-
 
 class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
     FermionTermSet[ImplT, SpecT, C, ElemT]
@@ -97,11 +87,6 @@ class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign,
     """A collection of unique terms consisting of fermionic ladder-operator strings."""
 
     terms_type: type[Terms[ImplT, SpecT, C, ElemT]]
-
-    @property
-    def strings(self) -> OperatorStrings[ImplT, SpecT, ElemT]:
-        """The strings of the terms."""
-        return cast("OperatorStrings[ImplT, SpecT, ElemT]", self._impl._strings)
 
     @property
     def coeffs(self) -> Any:

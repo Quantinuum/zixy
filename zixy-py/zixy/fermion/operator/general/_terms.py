@@ -168,11 +168,6 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerm[ImplT, Spe
         self.set(source)
 
     @property
-    def string(self) -> String:
-        """The string of the term."""
-        return cast("String", super().string)
-
-    @property
     def max_string_len(self) -> int:
         """The maximum number of operators per string."""
         return self.string.max_string_len
@@ -212,11 +207,6 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerms[ImplT, S
         strings = self.term_type.strings_type(modes, n, max_string_len)
         coeffs = get_coeffs_type(self.term_type.coeff_type).from_size(n)
         TermsBase.__init__(self, TermData(strings, coeffs))
-
-    @property
-    def strings(self) -> Strings:
-        """The strings of the terms."""
-        return cast("Strings", super().strings)
 
     @property
     def max_string_len(self) -> int:
@@ -283,11 +273,6 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
             max_string_len: Maximum number of operators per string.
         """
         TermSetBase.__init__(self, self.terms_type(modes, max_string_len=max_string_len))
-
-    @property
-    def strings(self) -> Strings:
-        """The strings of the terms."""
-        return cast("Strings", self._impl._strings)
 
     @property
     def coeffs(self) -> Any:

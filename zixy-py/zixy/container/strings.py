@@ -47,7 +47,12 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Sequence
 
     from zixy._zixy import ImplArray
-    from zixy.container.base import _HasStringsType, _HasStringType
+    from zixy.container.base import (
+        _FilterableStrings,
+        _FilterableStringSet,
+        _HasStringsType,
+        _HasStringType,
+    )
 
 
 class String[ImplT: ImplArray, SpecT](ViewableItem[ImplT], StringRepresentable):
@@ -387,9 +392,9 @@ class StringSet[ImplT: ImplArray, SpecT](StringRepresentable):
             tmp._impl.string_copy_external(0, strings._impl, i)
             yield cast("StringT", tmp)
 
-    def iter_filter_map(
-        self, f: Callable[[String[ImplT, SpecT]], bool]
-    ) -> Iterator[String[ImplT, SpecT]]:
+    def iter_filter_map[StringT: String[Any, Any]](
+        self: _HasStringsType[_HasStringType[StringT]], f: Callable[[StringT], bool]
+    ) -> Iterator[StringT]:
         """Lazily evaluate a filter-map operation over the strings of ``self``.
 
         Args:
@@ -404,10 +409,13 @@ class StringSet[ImplT: ImplArray, SpecT](StringRepresentable):
             to ``f``. The type of the strings is determined by
             :attr:`~zixy.container.strings.Strings.strings_type`.
         """
-        tmp = self.strings_type._create(self._impl.strings_clone(None))
+        strings = cast("StringSet[Any, Any]", self)
+        tmp = cast("_FilterableStrings[Strings[Any, Any], StringT]", strings.to_strings())
         return tmp.iter_filter_map(f)
 
-    def filter_map(self, f: Callable[[String[ImplT, SpecT]], bool]) -> Self:
+    def filter_map[SetT: StringSet[Any, Any], StringT: String[Any, Any]](
+        self: _FilterableStringSet[SetT, StringT], f: Callable[[StringT], bool]
+    ) -> SetT:
         """Eagerly evaluate a filter-map operation over the strings of ``self``.
 
         Args:
@@ -605,13 +613,16 @@ class Strings[ImplT: ImplArray, SpecT](
             out.append(self[i])
         return out
 
-    def new_clear_string(self) -> String[ImplT, SpecT]:
+    def new_clear_string[StringT: String[Any, Any]](
+        self: _HasStringType[StringT],
+    ) -> StringT:
         """Create a cleared string using the same implementation as ``self``."""
-        return self._empty_clone().resize(1)[0]
+        strings = cast("Strings[Any, Any]", self)
+        return cast("StringT", strings._empty_clone().resize(1)[0])
 
-    def iter_filter_map(
-        self, f: Callable[[String[ImplT, SpecT]], bool]
-    ) -> Iterator[String[ImplT, SpecT]]:
+    def iter_filter_map[StringT: String[Any, Any]](
+        self: _HasStringType[StringT], f: Callable[[StringT], bool]
+    ) -> Iterator[StringT]:
         """Lazily evaluate a filter-map operation over the strings of ``self``.
 
         Args:
@@ -625,17 +636,20 @@ class Strings[ImplT: ImplArray, SpecT](
             Iterator over the selected (and possibly mutated) strings of ``self`` according
             to ``f``.
         """
-        if not len(self):
+        strings = cast("Strings[Any, Any]", self)
+        if not len(strings):
             return
-        tmp = self[0].clone()
+        tmp = cast("StringT", strings[0].clone())
         if f(tmp):
             yield tmp
-        for i in range(1, len(self)):
-            tmp.set(self[i])
+        for i in range(1, len(strings)):
+            tmp.set(strings[i])
             if f(tmp):
                 yield tmp
 
-    def filter_map(self, f: Callable[[String[ImplT, SpecT]], bool]) -> Self:
+    def filter_map[StringsT: Strings[Any, Any], StringT: String[Any, Any]](
+        self: _FilterableStrings[StringsT, StringT], f: Callable[[StringT], bool]
+    ) -> StringsT:
         """Eagerly evaluate a filter-map operation over the strings of ``self``.
 
         Args:
@@ -653,16 +667,20 @@ class Strings[ImplT: ImplArray, SpecT](
         out.append_iterable(self.iter_filter_map(f))
         return out
 
-    def filter_unique(self) -> Strings[ImplT, SpecT]:
+    def filter_unique(self) -> Self:
         """Create a new collection containing the unique strings of ``self``."""
-        return self._set_type(self._impl).to_strings()
+        unique = self._set_type.from_strings(self)
+        return self._create(unique._impl.strings_clone(None))
 
-    def iter_filter_populated(self) -> Iterator[String[ImplT, SpecT]]:
+    def iter_filter_populated[StringT: String[Any, Any]](
+        self: _HasStringType[StringT],
+    ) -> Iterator[StringT]:
         """Lazily filter strings of ``self``, retaining only those that are not clear."""
-        tmp = self.new_clear_string()
-        for view in self:
+        strings = cast("Strings[Any, Any]", self)
+        tmp = strings.new_clear_string()
+        for view in strings:
             if view != tmp:
-                yield view
+                yield cast("StringT", view)
 
     def filter_populated(self) -> Self:
         """Eagerly filter strings of ``self``, retaining only those that are not clear."""

@@ -98,7 +98,7 @@ jobs:
       - name: MyPy
         working-directory: zixy-py
         run: |
-          uv run mypy zixy
+          uv run mypy zixy test/typing
 
   tests-py:
     runs-on: ubuntu-latest

@@ -70,6 +70,12 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Sequence
 
     from zixy._zixy import ImplArray, Map
+    from zixy.container.base import (
+        _HasStringsType,
+        _HasStringType,
+        _HasTermsType,
+        _HasTermType,
+    )
 
 
 type TermSpecT[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)] = (
@@ -176,9 +182,12 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         return self._impl
 
     @property
-    def string_type(self) -> type[String[ImplT, SpecT]]:
-        """The string type of ``self``."""
-        return self.strings_type.string_type
+    def string_type[StringT: String[Any, Any]](
+        self: _HasStringsType[_HasStringType[StringT]],
+    ) -> type[StringT]:
+        """The concrete string type of ``self``."""
+        term = cast("Term[Any, Any, Any]", self)
+        return cast("type[StringT]", term.strings_type.string_type)
 
     @property
     def coeffs_type(self) -> type[Coeffs[C]]:
@@ -244,9 +253,12 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         return type(self)._create(self._impl.clone(self.index))
 
     @property
-    def string(self) -> String[ImplT, SpecT]:
-        """A view of the string of ``self``."""
-        return self._data.strings[self.index]
+    def string[StringT: String[Any, Any]](
+        self: _HasStringsType[_HasStringType[StringT]],
+    ) -> StringT:
+        """A view of the string of ``self``, preserving its concrete type."""
+        term = cast("Term[Any, Any, Any]", self)
+        return cast("StringT", term._data.strings[term.index])
 
     @property
     def coeff(self) -> C:
@@ -403,19 +415,28 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         return self._impl.coeff_type
 
     @property
-    def strings_type(self) -> type[Strings[ImplT, SpecT]]:
-        """The string container type of ``self``."""
-        return self._data.strings_type
+    def strings_type[StringsT: Strings[Any, Any]](
+        self: _HasTermType[_HasStringsType[StringsT]],
+    ) -> type[StringsT]:
+        """The concrete string container type of ``self``."""
+        terms = cast("Terms[Any, Any, Any]", self)
+        return cast("type[StringsT]", terms._data.strings_type)
 
     @property
-    def string_type(self) -> type[String[ImplT, SpecT]]:
-        """The string type of ``self``."""
-        return self._impl.string_type
+    def string_type[StringT: String[Any, Any]](
+        self: _HasTermType[_HasStringsType[_HasStringType[StringT]]],
+    ) -> type[StringT]:
+        """The concrete string type of ``self``."""
+        terms = cast("Terms[Any, Any, Any]", self)
+        return cast("type[StringT]", terms._impl.string_type)
 
     @property
-    def strings(self) -> Strings[ImplT, SpecT]:
-        """The strings of ``self``."""
-        return self._data.strings[self.slice]
+    def strings[StringsT: Strings[Any, Any]](
+        self: _HasTermType[_HasStringsType[StringsT]],
+    ) -> StringsT:
+        """The strings of ``self``, preserving their concrete container type."""
+        terms = cast("Terms[Any, Any, Any]", self)
+        return cast("StringsT", terms._data.strings[terms.slice])
 
     @property
     def coeffs(self) -> Coeffs[C]:
@@ -427,14 +448,14 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         return ", ".join(str(s) for s in self)
 
     @overload
-    def __getitem__(self, indexer: int) -> Term[ImplT, SpecT, C]: ...
+    def __getitem__[TermT: Term[Any, Any, Any]](
+        self: _HasTermType[TermT], indexer: int
+    ) -> TermT: ...
 
     @overload
-    def __getitem__(self, indexer: builtins.slice) -> Terms[ImplT, SpecT, C]: ...
+    def __getitem__(self, indexer: builtins.slice) -> Self: ...
 
-    def __getitem__(
-        self, indexer: int | builtins.slice
-    ) -> Term[ImplT, SpecT, C] | Terms[ImplT, SpecT, C]:
+    def __getitem__(self, indexer: int | builtins.slice) -> object:
         """Get the element or elements selected by ``indexer``.
 
         Args:
@@ -838,14 +859,28 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         return self._data.coeff_type
 
     @property
-    def strings_type(self) -> type[Strings[ImplT, SpecT]]:
-        """The string container type of ``self``."""
-        return self._impl.strings_type
+    def strings_type[StringsT: Strings[Any, Any]](
+        self: _HasTermsType[_HasTermType[_HasStringsType[StringsT]]],
+    ) -> type[StringsT]:
+        """The concrete string container type of ``self``."""
+        terms = cast("TermSet[Any, Any, Any]", self)
+        return cast("type[StringsT]", terms._impl.strings_type)
 
     @property
-    def string_type(self) -> type[String[ImplT, SpecT]]:
-        """The string type of ``self``."""
-        return self._data.string_type
+    def string_type[StringT: String[Any, Any]](
+        self: _HasTermsType[_HasTermType[_HasStringsType[_HasStringType[StringT]]]],
+    ) -> type[StringT]:
+        """The concrete string type of ``self``."""
+        terms = cast("TermSet[Any, Any, Any]", self)
+        return cast("type[StringT]", terms._data.string_type)
+
+    @property
+    def strings[StringsT: Strings[Any, Any]](
+        self: _HasTermsType[_HasTermType[_HasStringsType[StringsT]]],
+    ) -> StringsT:
+        """The strings of ``self``, preserving their concrete container type."""
+        terms = cast("TermSet[Any, Any, Any]", self)
+        return cast("StringsT", terms._impl._strings)
 
     @classmethod
     def _create(cls, data: TermData[ImplT, SpecT, C], map_: Map | None = None) -> Self:
@@ -1194,10 +1229,13 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             return False
         return all(self.lookup_coeff(term.string) == term.coeff for term in other)
 
-    def __iter__(self) -> Iterator[Term[ImplT, SpecT, C]]:
-        """Iterate over the elements of ``self``."""
-        for i in range(len(self)):
-            yield self.terms_type.term_type._create(self._impl, i)
+    def __iter__[TermT: Term[Any, Any, Any]](
+        self: _HasTermsType[_HasTermType[TermT]],
+    ) -> Iterator[TermT]:
+        """Iterate over the concrete terms of ``self``."""
+        terms = cast("TermSet[Any, Any, Any]", self)
+        for i in range(len(terms)):
+            yield cast("TermT", terms.terms_type.term_type._create(terms._impl, i))
 
     def _symbolic_vdot(self: TermSet[ImplT, SpecT, Expr], rhs: TermSet[ImplT, SpecT, Expr]) -> Expr:
         """Compute a sparse symbolic inner product between compatible term sets."""

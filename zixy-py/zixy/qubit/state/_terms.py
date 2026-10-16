@@ -38,7 +38,7 @@ from zixy.container.coeffs import (
     typesafe_mul,
 )
 from zixy.container.data import TermData
-from zixy.container.terms import NumericTerms, NumericTermSum
+from zixy.container.terms import NumericTerms, NumericTermSum, TermSpecT
 from zixy.qubit._strings import _check_qubits_compatibility
 from zixy.qubit._terms import (
     Term as TermBase,
@@ -54,9 +54,9 @@ if TYPE_CHECKING:
     import numpy as np
     from numpy.typing import NDArray
 
-type TermSpec[C: (float, complex, Sign, ComplexSign, Expr)] = (
-    String | StringSpec | tuple[StringSpec | String, C | None]
-)
+type TermSpec[C: (float, complex, Sign, ComplexSign, Expr)] = TermSpecT[
+    QubitStateArray, StringSpec, C
+]
 SignTermSpec = TermSpec[Sign]
 ComplexSignTermSpec = TermSpec[ComplexSign]
 RealTermSpec = TermSpec[float]

@@ -42,6 +42,7 @@ from zixy.container.data import TermData
 from zixy.container.terms import (
     NumericTerms,
     NumericTermSum,
+    TermSpecT,
 )
 from zixy.fermion._strings import _check_modes_compatibility
 from zixy.fermion.operator._terms import (
@@ -70,9 +71,9 @@ if TYPE_CHECKING:
         RealTermSum as GeneralRealTermSum,
     )
 
-type TermSpec[C: (float, complex, Sign, ComplexSign, Expr)] = (
-    String | StringSpec | tuple[StringSpec | String, C | None]
-)
+type TermSpec[C: (float, complex, Sign, ComplexSign, Expr)] = TermSpecT[
+    NormalFermionOperatorArray, StringSpec, C
+]
 ElemT = tuple[list[int], list[int]]
 SpecT = StringSpec
 ImplT = NormalFermionOperatorArray

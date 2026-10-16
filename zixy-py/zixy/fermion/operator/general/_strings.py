@@ -59,6 +59,8 @@ ImplT = GeneralFermionOperatorArray
 def _string_length(source: BaseString[ImplT, SpecT] | SpecT) -> int:
     """Get the number of operators needed to store a string specifier."""
     if isinstance(source, BaseString):
+        if not isinstance(source._impl, ImplT):
+            raise TypeError("Source string must be a general fermion operator string.")
         return len(source._impl.string_get_ops(source.index)[0])
     if isinstance(source, str):
         if not source.strip():
@@ -91,12 +93,17 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
     def __init__(
         self,
         modes: int | Modes | None = None,
-        source: SpecT = "",
+        source: SpecT | BaseString[ImplT, SpecT] = "",
         *,
         max_string_len: int = 0,
     ):
         """Create a string with a maximum length of ``max_string_len`` operators."""
-        if modes is None:
+        if isinstance(source, BaseString):
+            if not isinstance(source._impl, self.impl_type):
+                self.raise_spec_type_error(source)
+            if modes is None:
+                modes = source._impl.modes
+        elif modes is None:
             modes = _default_modes(source)
         modes = Modes.from_count(modes) if isinstance(modes, int) else modes
         impl = self.impl_type(modes, max_string_len)
@@ -132,7 +139,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         """
         return cls(modes, source, max_string_len=max_string_len)
 
-    def set(self, source: SpecT | String) -> None:
+    def _set_spec(self, source: SpecT) -> None:
         """Set the value of the string.
 
         Args:
@@ -141,9 +148,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         Note:
             This method operates in-place and preserves the input operator order.
         """
-        if isinstance(source, String):
-            self._set_copy(source)
-        elif isinstance(source, str):
+        if isinstance(source, str):
             if not source.strip():
                 self._impl.string_clear(self.index)
                 return
@@ -274,11 +279,8 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
             raise ValueError("The number of strings to append must be non-negative.")
         if n == 0:
             return self
-        value = String(self.modes, max_string_len=_string_length(source))
-        if isinstance(source, BaseString):
-            value._impl.string_copy_external(0, source._impl, source.index)
-        else:
-            value.set(source)
+        value = self.string_type(self.modes, max_string_len=_string_length(source))
+        value.set(source)
         self._impl._reserve_string_length(_string_length(value))
         return super().append_n(n, value)
 

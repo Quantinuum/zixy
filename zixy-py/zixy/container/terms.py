@@ -78,8 +78,19 @@ if TYPE_CHECKING:
     )
 
 
+type _AnyCoeffTerm[ImplT: ImplArray, SpecT] = (
+    Term[ImplT, SpecT, float]
+    | Term[ImplT, SpecT, complex]
+    | Term[ImplT, SpecT, Sign]
+    | Term[ImplT, SpecT, ComplexSign]
+    | Term[ImplT, SpecT, Expr]
+)
+
 type TermSpecT[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)] = (
-    String[ImplT, SpecT] | SpecT | tuple[SpecT | String[ImplT, SpecT], C | None]
+    String[ImplT, SpecT]
+    | SpecT
+    | tuple[SpecT | String[ImplT, SpecT], C | None]
+    | _AnyCoeffTerm[ImplT, SpecT]
 )
 
 
@@ -295,32 +306,39 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         )
         return result
 
-    def set(self, source: Self | TermSpecT[ImplT, SpecT, C]) -> None:
-        """Set the value of the term.
+    def set(self, source: TermSpecT[ImplT, SpecT, C]) -> None:
+        """Assign a specification, string/coefficient pair, or compatible term.
 
         Args:
-            source: Specification for the new value.
+            source: Value to copy or parse. Compatible parent and subclass terms are supported.
+                A string-only input sets the coefficient to unity; a ``None`` coefficient in a
+                pair also means unity. Coefficients are converted to this term's coefficient type.
 
         Note:
-            This method operates in-place.
+            This method operates in-place. A two-element tuple is first interpreted as a string
+            specification, so tuples of Pauli matrices and normal-ordered operator sets retain
+            their domain-specific meaning.
         """
+        if isinstance(source, Term):
+            self._set_string_coeff(source.string, source.coeff)
+            return
         try:
-            # first, attempt to set just the string
+            # A pair can also be a valid domain specification; try that interpretation first.
             self.string.set(cast("SpecT | String[ImplT, SpecT]", source))
+        except (TypeError, ValueError):
+            if not isinstance(source, tuple) or len(source) != 2:
+                raise
+        else:
             self.coeff = unit(self.coeff_type)
             return
-        except (TypeError, ValueError):
-            pass
-        if isinstance(source, type(self)):
-            self.string.set(source.string)
-            self.coeff = source.coeff
-            return
-        if isinstance(source, tuple) and len(source) == 2:
-            string, coeff = source
-        else:
-            string, coeff = source, None
+        string, coeff = source
+        self._set_string_coeff(string, coeff)
+
+    def _set_string_coeff(self, string: SpecT | String[ImplT, SpecT], coeff: Coeff | None) -> None:
+        """Validate coefficient conversion before copying or parsing the string."""
+        value = unit(self.coeff_type) if coeff is None else convert(coeff, self.coeff_type)
         self.string.set(string)
-        self.coeff = coeff if coeff is not None else unit(self.coeff_type)
+        self.coeff = value
 
     def clear(self) -> None:
         """Set the value of the string to zero and the coefficient to unity.
@@ -479,16 +497,18 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
     def __setitem__(
         self,
         indexer: int,
-        source: TermSpecT[ImplT, SpecT, C] | Term[ImplT, SpecT, C],
+        source: TermSpecT[ImplT, SpecT, C],
     ) -> None: ...
 
     @overload
-    def __setitem__(self, indexer: builtins.slice, source: Terms[ImplT, SpecT, C]) -> None: ...
+    def __setitem__(
+        self, indexer: builtins.slice, source: TermSpecT[ImplT, SpecT, C] | Terms[ImplT, SpecT, C]
+    ) -> None: ...
 
     def __setitem__(
         self,
         indexer: int | builtins.slice,
-        source: TermSpecT[ImplT, SpecT, C] | Term[ImplT, SpecT, C] | Terms[ImplT, SpecT, C],
+        source: TermSpecT[ImplT, SpecT, C] | Terms[ImplT, SpecT, C],
     ) -> None:
         """Set the term at ``indexer`` in ``self`` to ``source``.
 
@@ -656,7 +676,7 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
     def append_n(
         self,
         n: int,
-        source: TermSpecT[ImplT, SpecT, C] | Term[ImplT, SpecT, C] = "",  # type: ignore[assignment]
+        source: TermSpecT[ImplT, SpecT, C] = "",  # type: ignore[assignment]
     ) -> Self:
         """Append ``source`` to the end of ``self`` ``n`` times.
 
@@ -677,7 +697,7 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
     @requires_ownership
     def append(
         self,
-        source: TermSpecT[ImplT, SpecT, C] | Term[ImplT, SpecT, C] = "",  # type: ignore[assignment]
+        source: TermSpecT[ImplT, SpecT, C] = "",  # type: ignore[assignment]
     ) -> Self:
         """Append ``source`` to the end of ``self``.
 
@@ -691,7 +711,7 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
 
     def append_iterable(
         self,
-        source: Iterable[TermSpecT[ImplT, SpecT, C] | Term[ImplT, SpecT, C]] = tuple(),
+        source: Iterable[TermSpecT[ImplT, SpecT, C]] = tuple(),
     ) -> Self:
         """Append the elements of ``source`` to the end of ``self``.
 
@@ -717,7 +737,7 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
     @classmethod
     def from_iterable(
         cls,
-        source: Iterable[TermSpecT[ImplT, SpecT, C] | Term[ImplT, SpecT, C]],
+        source: Iterable[TermSpecT[ImplT, SpecT, C]],
         *args: Any,
         **kwargs: Any,
     ) -> Self:
@@ -1032,20 +1052,17 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         """Hook to check whether a string is valid for insertion into ``self``."""
         pass
 
-    def _get_working_term(
-        self, value: Term[ImplT, SpecT, C] | TermSpecT[ImplT, SpecT, C]
-    ) -> Term[ImplT, SpecT, C]:
+    def _get_working_term(self, value: TermSpecT[ImplT, SpecT, C]) -> Term[ImplT, SpecT, C]:
         """Get a term that contains the data specified by ``value``.
 
         Args:
             value: Term or term specifier required.
 
         Returns:
-            If ``value`` is an instance of :class:`Term`, return it. Otherwise, set the
-            internally-allocated working term to the data specified by ``value`` and return
-            that working term.
+            If ``value`` already has the destination term type, return it. Otherwise, copy or
+            parse it into the working term, applying checked coefficient conversion.
         """
-        if isinstance(value, Term):
+        if isinstance(value, self.terms_type.term_type):
             term = value
         else:
             self._working_term.set(value)
@@ -1074,7 +1091,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         self._check_string(string)
         return string
 
-    def insert(self, key: Term[ImplT, SpecT, C] | TermSpecT[ImplT, SpecT, C]) -> int:
+    def insert(self, key: TermSpecT[ImplT, SpecT, C]) -> int:
         """Try to insert the given term.
 
         Args:
@@ -1093,9 +1110,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         self._impl._coeffs[index] = term.coeff
         return index
 
-    def soft_insert(
-        self, key: Term[ImplT, SpecT, C] | TermSpecT[ImplT, SpecT, C]
-    ) -> tuple[int, bool]:
+    def soft_insert(self, key: TermSpecT[ImplT, SpecT, C]) -> tuple[int, bool]:
         """Insertion method which does not overwrite coefficient values.
 
         Operates similarly to :meth:`insert`, but does not overwrite coefficient values if the
@@ -1120,7 +1135,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
 
     def insert_iterable(
         self,
-        source: Iterable[Term[ImplT, SpecT, C] | TermSpecT[ImplT, SpecT, C]] = tuple(),
+        source: Iterable[TermSpecT[ImplT, SpecT, C]] = tuple(),
     ) -> None:
         """Insert many terms from an iterable source.
 
@@ -1309,7 +1324,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
     @classmethod
     def from_iterable(
         cls,
-        iterable: Iterable[Term[ImplT, SpecT, C] | TermSpecT[ImplT, SpecT, C]],
+        iterable: Iterable[TermSpecT[ImplT, SpecT, C]],
         *args: Any,
         **kwargs: Any,
     ) -> Self:

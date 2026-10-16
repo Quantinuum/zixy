@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Base classes for containers with an ownership model and underlying Rust-bound data."""
+"""Base classes and protocols for containers."""
 
 from __future__ import annotations
 
@@ -34,6 +34,46 @@ from zixy.utils import slice_index, slice_len
 
 if TYPE_CHECKING:
     import builtins
+
+
+class _Indexable[T](Protocol):
+    """An integer-indexed container whose element type can be inferred independently."""
+
+    def __getitem__(self, indexer: int) -> T:
+        """Get an element by index."""
+        ...
+
+    def __len__(self) -> int:
+        """Get the number of elements."""
+        ...
+
+
+class _HasStringType[StringT](Protocol):
+    """A container exposing its string factory."""
+
+    @property
+    def string_type(self) -> type[StringT]: ...
+
+
+class _HasStringsType[StringsT](Protocol):
+    """A container exposing its string-collection factory."""
+
+    @property
+    def strings_type(self) -> type[StringsT]: ...
+
+
+class _HasTermType[TermT](Protocol):
+    """A container exposing its term factory."""
+
+    @property
+    def term_type(self) -> type[TermT]: ...
+
+
+class _HasTermsType[TermsT](Protocol):
+    """A container exposing its term-collection factory."""
+
+    @property
+    def terms_type(self) -> type[TermsT]: ...
 
 
 class SupportsOwnership(Protocol):
@@ -230,7 +270,7 @@ class ViewableSequence[T, ImplT: Resizable](ViewableBase[ImplT, slice], Sequence
         """
         raise NotImplementedError
 
-    def __iter__(self) -> Iterator[T]:
+    def __iter__[ElemT](self: _Indexable[ElemT]) -> Iterator[ElemT]:
         """Iterate over the elements of ``self``."""
         for i in range(len(self)):
             yield self[i]

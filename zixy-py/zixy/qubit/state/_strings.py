@@ -24,7 +24,7 @@ The structure of this module parallels that of :mod:`~zixy.container.strings` an
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING
 
 from sympy import Expr
 
@@ -214,23 +214,6 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
         )
         out.resize(n)
         return out
-
-    @overload
-    def __getitem__(self, indexer: int) -> String: ...
-
-    @overload
-    def __getitem__(self, indexer: slice) -> Strings: ...
-
-    def __getitem__(self, indexer: int | slice) -> String | Strings:
-        """Get the element or elements selected by ``indexer``.
-
-        Args:
-            indexer: Index or slice selecting the element(s) to return.
-
-        Returns:
-            Element or slice selected by ``indexer``.
-        """
-        return super().__getitem__(indexer)  # type: ignore[return-value]
 
     def get_sets(self) -> tuple[set[int], ...]:
         """Get the strings as a list of sets of the indices of bits with value 1."""

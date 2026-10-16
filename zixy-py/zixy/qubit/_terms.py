@@ -16,7 +16,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from sympy import Expr
 
@@ -36,7 +36,7 @@ from zixy.container.terms import (
     TermSpecT,
     TermSum as TermSumBase,
 )
-from zixy.qubit._strings import String, Strings, _check_qubits_compatibility
+from zixy.qubit._strings import Strings, _check_qubits_compatibility
 
 
 class Term[ImplT: QubitArray[Any, Any], SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
@@ -67,11 +67,6 @@ class Term[ImplT: QubitArray[Any, Any], SpecT, C: (float, complex, Sign, Complex
         data = TermData(strings, coeffs)
         TermBase.__init__(self, data)
         self.set(source)
-
-    @property
-    def string(self) -> String[ImplT, SpecT, ElemT]:
-        """The string of the term."""
-        return cast("String[ImplT, SpecT, ElemT]", super().string)
 
     @property
     def qubits(self) -> Qubits:
@@ -118,11 +113,6 @@ class Terms[
         TermsBase.__init__(self, data)
 
     @property
-    def strings(self) -> Strings[ImplT, SpecT, ElemT]:
-        """The strings of the terms."""
-        return cast("Strings[ImplT, SpecT, ElemT]", super().strings)
-
-    @property
     def qubits(self) -> Qubits:
         """The qubits corresponding to ``self``."""
         return self.strings.qubits
@@ -153,11 +143,6 @@ class TermSet[
             qubits: The qubit register or qubit count.
         """
         TermSetBase.__init__(self, self.terms_type(qubits))
-
-    @property
-    def strings(self) -> Strings[ImplT, SpecT, ElemT]:
-        """The strings of the terms."""
-        return cast("Strings[ImplT, SpecT, ElemT]", self._impl._strings)
 
     @property
     def qubits(self) -> Qubits:

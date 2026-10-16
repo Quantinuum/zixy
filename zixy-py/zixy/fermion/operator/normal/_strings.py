@@ -231,21 +231,6 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
             return out
         return cls._create(cls.string_type.impl_type(modes, FermionSprings(source)))
 
-    @overload
-    def __getitem__(self, indexer: int) -> String: ...
-    @overload
-    def __getitem__(self, indexer: slice) -> Self: ...
-    def __getitem__(self, indexer: int | slice) -> String | Self:
-        """Get the element or elements selected by ``indexer``.
-
-        Args:
-            indexer: Index or slice selecting the element(s) to return.
-
-        Returns:
-            Element or slice selected by ``indexer``.
-        """
-        return super().__getitem__(indexer)  # type: ignore[return-value]
-
 
 class StringSet(OperatorStringSet[ImplT, SpecT, ElemT]):
     """A collection of unique normal-ordered fermionic ladder-operator strings.

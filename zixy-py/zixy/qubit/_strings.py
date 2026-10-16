@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Self, cast, overload
+from typing import TYPE_CHECKING, Any, Self
 
 from zixy._zixy import Qubits
 from zixy.container.strings import (
@@ -217,23 +217,6 @@ class Strings[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseStrings[ImplT, Spec
         """The qubits corresponding to ``self``."""
         return self._impl.qubits
 
-    @overload
-    def __getitem__(self, indexer: int) -> String[ImplT, SpecT, ElemT]: ...
-
-    @overload
-    def __getitem__(self, indexer: slice) -> Self: ...
-
-    def __getitem__(self, indexer: int | slice) -> String[ImplT, SpecT, ElemT] | Self:
-        """Get the element or elements selected by ``indexer``.
-
-        Args:
-            indexer: Index or slice selecting the element(s) to return.
-
-        Returns:
-            Element or slice selected by ``indexer``.
-        """
-        return super().__getitem__(indexer)  # type: ignore[return-value]
-
     def relabel(self, qubits: Qubits) -> Self:
         """Relabel the contents of the strings according to a new qubit register.
 
@@ -331,7 +314,3 @@ class StringSet[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseStringSet[ImplT, 
                 qubits if isinstance(qubits, Qubits) else Qubits.from_count(qubits)
             )
         )
-
-    def to_strings(self) -> Strings[ImplT, SpecT, ElemT]:
-        """Create a new array of strings owning copies of all those contained in ``self``."""
-        return cast("Strings[ImplT, SpecT, ElemT]", super().to_strings())

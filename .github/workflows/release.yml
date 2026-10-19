@@ -66,7 +66,7 @@ jobs:
           working-directory: ${{ env.MODULE_DIR }}
           target: ${{ matrix.platform.target }}
           args: --release --out ../dist --find-interpreter
-          sccache: 'true'
+          sccache: "true"
           manylinux: auto
       - name: Upload wheels
         uses: actions/upload-artifact@v7
@@ -100,7 +100,7 @@ jobs:
           working-directory: ${{ env.MODULE_DIR }}
           target: ${{ matrix.platform.target }}
           args: --release --out ../dist --find-interpreter
-          sccache: 'true'
+          sccache: "true"
           manylinux: musllinux_1_2
       - name: Upload wheels
         uses: actions/upload-artifact@v7
@@ -131,7 +131,7 @@ jobs:
           working-directory: ${{ env.MODULE_DIR }}
           target: ${{ matrix.platform.target }}
           args: --release --out ../dist --find-interpreter
-          sccache: 'true'
+          sccache: "true"
       - name: Upload wheels
         uses: actions/upload-artifact@v7
         with:
@@ -158,7 +158,7 @@ jobs:
           working-directory: ${{ env.MODULE_DIR }}
           target: ${{ matrix.platform.target }}
           args: --release --out ../dist --find-interpreter
-          sccache: 'true'
+          sccache: "true"
       - name: Upload wheels
         uses: actions/upload-artifact@v7
         with:
@@ -188,13 +188,13 @@ jobs:
     if: ${{ needs.check-tag.outputs.run == 'true' }}
     runs-on: ubuntu-latest
     env:
-      PYTHON_VERSION: '3.13'
+      PYTHON_VERSION: "3.13"
       RUST_NIGHTLY_VERSION: nightly
       UV_VERSION: latest
     strategy:
       matrix:
         emsdk_version:
-          - '4.0.9'
+          - "4.0.9"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -212,12 +212,13 @@ jobs:
       - name: Install Node.js for emsdk
         uses: actions/setup-node@v7
         with:
-          node-version: '18'
+          node-version: "18"
       - name: Setup emsdk manually
         # Ideally this should match both the version used by rustc and the pyodide ABI.
         # See <https://doc.rust-lang.org/beta/rustc/platform-support/wasm32-unknown-emscripten.html>
         # and <https://github.com/pyodide/pyodide/blob/main/docs/development/abi.md>
         # Pyodide `0.2X` requires emscripten 4
+        # Pyodide `314.X` requires emscripten 5
         # We fix a rustc version compatible with both.
         run: |
           git clone --depth 1 https://github.com/emscripten-core/emsdk.git
@@ -253,7 +254,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v7
         with:
-          name: wheels-wasm-${{ matrix.emsdk_version }}
+          name: wheels-wasm-${{ matrix.platform.target }}-${{ matrix.emsdk_version }}
           path: dist
 
   release:

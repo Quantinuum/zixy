@@ -189,8 +189,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PYTHON_VERSION: "3.13"
-      RUST_NIGHTLY_VERSION: nightly
-      UV_VERSION: latest
+      RUST_NIGHTLY_VERSION: "nightly-2026-05-28"
+      UV_VERSION: "0.9.5"
     strategy:
       matrix:
         emsdk_version:
@@ -254,7 +254,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v7
         with:
-          name: wheels-wasm-${{ matrix.platform.target }}-${{ matrix.emsdk_version }}
+          name: wheels-wasm-${{ matrix.emsdk_version }}
           path: dist
 
   release:

@@ -91,7 +91,7 @@ class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign,
     @property
     def coeffs(self) -> Any:
         """The coefficients of ``self``."""
-        return self._impl._coeffs
+        return self._impl.coeffs
 
 
 class TermSum[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](

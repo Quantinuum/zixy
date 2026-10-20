@@ -64,7 +64,8 @@ class Term[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         """
         strings = self.strings_type(modes, 1)
         coeffs = get_coeffs_type(self.coeff_type).from_size(1)
-        TermBase.__init__(self, TermData(strings, coeffs))
+        term_data = TermData(strings, coeffs)
+        TermBase.__init__(self, term_data)
         self.set(source)
 
     @property
@@ -94,7 +95,8 @@ class Terms[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, E
         """
         strings = self.term_type.strings_type(modes, n)
         coeffs = get_coeffs_type(self.term_type.coeff_type).from_size(n)
-        TermsBase.__init__(self, TermData(strings, coeffs))
+        term_data = TermData(strings, coeffs)
+        TermsBase.__init__(self, term_data)
 
     @property
     def modes(self) -> Modes:

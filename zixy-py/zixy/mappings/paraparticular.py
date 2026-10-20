@@ -76,15 +76,19 @@ class ParaparticularMapper(Mapper):
         if isinstance(value, FermionOperatorString):
             if real:
                 real_strings, real_coeffs, map_ = self._impl.apply_real(value.get_ops())
+                real_data = TermData(
+                    PauliStrings._create(real_strings), RealCoeffs._create(real_coeffs)
+                )
                 return PauliRealTermSum._create(
-                    TermData(PauliStrings._create(real_strings), RealCoeffs._create(real_coeffs)),
+                    real_data,
                     map_,
                 )
             complex_strings, complex_coeffs, map_ = self._impl.apply_complex(value.get_ops())
+            complex_data = TermData(
+                PauliStrings._create(complex_strings), ComplexCoeffs._create(complex_coeffs)
+            )
             return PauliComplexTermSum._create(
-                TermData(
-                    PauliStrings._create(complex_strings), ComplexCoeffs._create(complex_coeffs)
-                ),
+                complex_data,
                 map_,
             )
         raise TypeError(f"Cannot map an instance of {type(value).__name__}.")

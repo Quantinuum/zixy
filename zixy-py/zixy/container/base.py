@@ -62,6 +62,27 @@ class _HasStringsType[StringsT](Protocol):
     def strings_type(self) -> type[StringsT]: ...
 
 
+class _HasStrings[StringsT](Protocol):
+    """Storage exposing its concrete string collection."""
+
+    @property
+    def strings(self) -> StringsT: ...
+
+
+class _HasCoeffs[Cs](Protocol):
+    """Storage exposing its concrete coefficient collection."""
+
+    @property
+    def coeffs(self) -> Cs: ...
+
+
+class _HasCoeffType[C](Protocol):
+    """A coefficient collection exposing its scalar type."""
+
+    @property
+    def coeff_type(self) -> type[C]: ...
+
+
 class _HasEmptyClone[ContainerT](Protocol):
     """A container whose empty clone preserves its concrete type."""
 

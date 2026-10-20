@@ -64,7 +64,8 @@ class Term[ImplT: QubitArray[Any, Any], SpecT, C: (float, complex, Sign, Complex
         """
         strings = self.strings_type(qubits, 1)
         coeffs = get_coeffs_type(self.coeff_type).from_size(1)
-        TermBase.__init__(self, TermData(strings, coeffs))
+        term_data = TermData(strings, coeffs)
+        TermBase.__init__(self, term_data)
         self.set(source)
 
     @property

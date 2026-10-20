@@ -16,7 +16,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Self
 
 from sympy import Expr
 
@@ -87,11 +87,6 @@ class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign,
     """A collection of unique terms consisting of fermionic ladder-operator strings."""
 
     terms_type: type[Terms[ImplT, SpecT, C, ElemT]]
-
-    @property
-    def coeffs(self) -> Any:
-        """The coefficients of ``self``."""
-        return self._impl.coeffs
 
 
 class TermSum[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](

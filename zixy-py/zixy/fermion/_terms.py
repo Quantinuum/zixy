@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING
 from sympy import Expr
 
 from zixy._zixy import Modes  # noqa: TC001 (required for sphinx)
-from zixy.container.coeffs import ComplexSign, Sign, get_coeffs_type
+from zixy.container.coeffs import ComplexSign, Sign
 
 if TYPE_CHECKING:
     from zixy._zixy import FermionArray
@@ -63,7 +63,7 @@ class Term[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             source: The term specifier to use for initial value.
         """
         strings = self.strings_type(modes, 1)
-        coeffs = get_coeffs_type(self.coeff_type).from_size(1)
+        coeffs = self.coeffs_type.from_size(1)
         term_data = TermData(strings, coeffs)
         TermBase.__init__(self, term_data)
         self.set(source)
@@ -94,7 +94,7 @@ class Terms[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, E
             n: The number of items to initialize the array with.
         """
         strings = self.term_type.strings_type(modes, n)
-        coeffs = get_coeffs_type(self.term_type.coeff_type).from_size(n)
+        coeffs = self.term_type.coeffs_type.from_size(n)
         term_data = TermData(strings, coeffs)
         TermsBase.__init__(self, term_data)
 

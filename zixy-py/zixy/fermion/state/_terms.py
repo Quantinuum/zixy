@@ -21,7 +21,7 @@ This module follows :mod:`~zixy.container.terms`, using strings defined in
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Any, Protocol, Self, cast, overload
+from typing import TYPE_CHECKING, Any, Protocol, Self, overload
 
 import numpy as np
 from sympy import Expr, Symbol
@@ -34,6 +34,7 @@ from zixy.container.coeffs import (
     Number,
     RealCoeffs,
     Sign,
+    SignCoeffs,
     SymbolicCoeffs,
     get_coeffs_type,
 )
@@ -181,6 +182,7 @@ class SignTerm(Term[Sign]):
     """
 
     coeff_type = Sign
+    coeffs_type = SignCoeffs
 
     @overload
     def __mul__(self, rhs: Sign) -> SignTerm: ...
@@ -249,6 +251,7 @@ class RealTerm(Term[float]):
     """
 
     coeff_type = float
+    coeffs_type = RealCoeffs
 
     @overload
     def __mul__(self, rhs: Sign) -> RealTerm: ...
@@ -419,6 +422,7 @@ class ComplexTerm(Term[complex]):
     """
 
     coeff_type = complex
+    coeffs_type = ComplexCoeffs
 
     @overload
     def __mul__(self, rhs: Sign) -> ComplexTerm: ...
@@ -603,6 +607,7 @@ class SymbolicTerm(Term[Expr]):
     """
 
     coeff_type = Expr
+    coeffs_type = SymbolicCoeffs
 
     @overload
     def __mul__(self, rhs: Sign) -> SymbolicTerm: ...
@@ -708,11 +713,6 @@ class SymbolicTerms(Terms[Expr]):
     """
 
     term_type = SymbolicTerm
-
-    @property
-    def coeffs(self) -> SymbolicCoeffs:
-        """The coefficients of ``self``."""
-        return cast("SymbolicCoeffs", self._data.coeffs[self.slice])
 
     @property
     def free_symbols(self) -> set[Symbol]:
@@ -853,11 +853,6 @@ class SymbolicTermSum(TermSum[Expr]):
         for term in self:
             out += mapper_instance.apply(term.string.into(String)) * term.coeff
         return out
-
-    @property
-    def coeffs(self) -> SymbolicCoeffs:
-        """The coefficients of ``self``."""
-        return cast("SymbolicCoeffs", self._data.coeffs)
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
         """Apply a partial substitution of the symbols in-place.

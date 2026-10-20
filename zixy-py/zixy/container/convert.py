@@ -26,7 +26,6 @@ from zixy.container.coeffs import (
     Sign,
     convert,
     convert_vec,
-    get_coeffs_type,
     unit,
 )
 from zixy.container.data import TermData
@@ -185,7 +184,7 @@ def _into_term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, E
     if isinstance(source, String):
         _check_string_compatibility(type(source), t.strings_type.string_type)
         strings = t.strings_type._create(source.clone()._impl)
-        coeffs = get_coeffs_type(t.coeff_type).from_scalar(unit(t.coeff_type))
+        coeffs = t.coeffs_type.from_scalar(unit(t.coeff_type))
         term_data = TermData(strings, coeffs)
         return t._create(term_data)
     if isinstance(source, Strings):
@@ -194,7 +193,7 @@ def _into_term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, E
     if isinstance(source, Term):
         _check_string_compatibility(source.string_type, t.strings_type.string_type)
         strings = t.strings_type._create(source.string.clone()._impl)
-        coeffs = get_coeffs_type(t.coeff_type).from_scalar(convert(source.coeff, t.coeff_type))
+        coeffs = t.coeffs_type.from_scalar(convert(source.coeff, t.coeff_type))
         term_data = TermData(strings, coeffs)
         return t._create(term_data)
     if isinstance(source, Terms):
@@ -208,7 +207,7 @@ def _into_terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, 
 ) -> Terms[ImplT, SpecT, C]:
     """Convert to a term sequence."""
     strings_type = t.term_type.strings_type
-    coeffs_type = get_coeffs_type(t.term_type.coeff_type)
+    coeffs_type = t.term_type.coeffs_type
     if isinstance(source, String):
         _check_string_compatibility(type(source), strings_type.string_type)
         strings = strings_type._create(source.clone()._impl)
@@ -228,8 +227,8 @@ def _into_terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, 
         return t._create(term_data)
     if isinstance(source, Terms):
         strings = _clone_strings_as(source.strings, strings_type)
-        coeffs = convert_vec(source.coeffs, coeffs_type)
-        term_data = TermData(strings, coeffs)
+        converted_coeffs = convert_vec(source.coeffs, coeffs_type)
+        term_data = TermData(strings, converted_coeffs)
         return t._create(term_data)
     raise TypeError(f"Cannot convert {type(source)} into term collection type {t}.")
 

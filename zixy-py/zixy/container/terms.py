@@ -56,7 +56,6 @@ from zixy.container.coeffs import (
     Sign,
     convert,
     convert_vec,
-    get_coeffs_type,
     typesafe_mul,
     unit,
     zero,
@@ -75,6 +74,8 @@ if TYPE_CHECKING:
         _HasStringType,
         _HasTermsType,
         _HasTermType,
+        _TermCoeffsView,
+        _TermSetCoeffs,
     )
 
 
@@ -134,10 +135,9 @@ def _parse_term_str(source: str) -> tuple[str | None, str]:
 
 
 def _coeffs_from_str[C: (float, complex, Sign, ComplexSign, Expr)](
-    source_coeff: str | None, coeff_type: type[C], n_string: int
+    source_coeff: str | None, coeffs_type: type[Coeffs[C]], n_string: int
 ) -> Coeffs[C]:
     """Construct coefficient data from parsed coefficient text."""
-    coeffs_type = get_coeffs_type(coeff_type)
     coeffs = (
         coeffs_type.from_size(n_string)
         if source_coeff is None
@@ -162,6 +162,7 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
     """
 
     coeff_type: type[C]
+    coeffs_type: type[Coeffs[C]]
     strings_type: type[Strings[ImplT, SpecT]]
 
     _impl: _TermData[ImplT, SpecT, C]
@@ -184,6 +185,8 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
                 f"Term data coeff type {data.coeffs.coeff_type} does not match "
                 f"the coeff type {self.coeff_type} of this {type(self)}."
             )
+        if not isinstance(data.coeffs, self.coeffs_type):
+            raise TypeError("Coefficient storage does not match its factory")
         self._impl = data
         self._index = indexer
 
@@ -199,11 +202,6 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         """The concrete string type of ``self``."""
         term = cast("Term[Any, Any, Any]", self)
         return cast("type[StringT]", term.strings_type.string_type)
-
-    @property
-    def coeffs_type(self) -> type[Coeffs[C]]:
-        """The coefficient container type of ``self``."""
-        return get_coeffs_type(self.coeff_type)
 
     @classmethod
     def _create(cls, data: _TermData[ImplT, SpecT, C], indexer: int | None = None) -> Self:
@@ -233,7 +231,7 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
             An instance of ``cls`` with the given string and coefficient.
         """
         strings = cls.strings_type.from_string(string)
-        coeffs = get_coeffs_type(cls.coeff_type)()
+        coeffs = cls.coeffs_type()
         coeffs.append(coeff)
         term_data = TermData(strings, coeffs)
         return cls._create(term_data)
@@ -252,7 +250,7 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         """
         source_coeff, source_string = _parse_term_str(source)
         strings = cls.strings_type.from_str(source_string, *args, **kwargs)
-        coeffs = _coeffs_from_str(source_coeff, cls.coeff_type, len(strings))
+        coeffs = _coeffs_from_str(source_coeff, cls.coeffs_type, len(strings))
         data = TermData(strings, coeffs)
         if len(data) != 1:
             raise ValueError(
@@ -389,8 +387,10 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
             indexer: Slice of the data in ``data`` that ``self`` will view. The default value of
                 ``slice(None)`` indicates that this instance is considered to be owning.
         """
-        if data.strings_type is not self.term_type.strings_type:
+        if type(data.strings) is not self.term_type.strings_type:
             raise TypeError("String storage does not match its factory")
+        if not isinstance(data.coeffs, self.term_type.coeffs_type):
+            raise TypeError("Coefficient storage does not match its factory")
         self._impl = data
         self._slice = indexer
 
@@ -426,9 +426,11 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         return all(self[i] == other[i] for i in range(len(self)))
 
     @property
-    def coeffs_type(self) -> type[Coeffs[C]]:
-        """The coefficient container type of ``self``."""
-        return get_coeffs_type(self._data.coeffs.coeff_type)
+    def coeffs_type[Cs: Coeffs[Any]](
+        self: _TermCoeffsView[Cs],
+    ) -> type[Cs]:
+        """The concrete coefficient container type of ``self``."""
+        return cast("type[Cs]", type(self._data.coeffs))
 
     @property
     def coeff_type(self) -> type[C]:
@@ -460,9 +462,11 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         return cast("StringsT", terms._data.strings[terms.slice])
 
     @property
-    def coeffs(self) -> Coeffs[C]:
-        """The coefficients of ``self``."""
-        return self._data.coeffs[self.slice]
+    def coeffs[Cs: Coeffs[Any]](
+        self: _TermCoeffsView[Cs],
+    ) -> Cs:
+        """The coefficients of ``self``, preserving their concrete container type."""
+        return cast("Cs", self._data.coeffs[self.slice])
 
     def __repr__(self) -> str:
         """Return a string representation of ``self``."""
@@ -772,7 +776,7 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
             return cls(*args, **kwargs)
         source_coeff, source_strings = _parse_term_str(source)
         strings = cls.term_type.strings_type.from_str(source_strings, *args, **kwargs)
-        coeffs = _coeffs_from_str(source_coeff, cls.term_type.coeff_type, len(strings))
+        coeffs = _coeffs_from_str(source_coeff, cls.term_type.coeffs_type, len(strings))
         term_data = TermData(strings, coeffs)
         return cls._create(term_data)
 
@@ -834,8 +838,10 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             Strings which appear multiple times in ``terms`` will appear only once in
                 ``self``.
         """
-        if terms._data.strings_type is not self.terms_type.term_type.strings_type:
+        if type(terms._data.strings) is not self.terms_type.term_type.strings_type:
             raise TypeError("String storage does not match its factory")
+        if not isinstance(terms._data.coeffs, self.terms_type.term_type.coeffs_type):
+            raise TypeError("Coefficient storage does not match its factory")
         self._impl = terms._empty_clone()._impl
         string_set_type = terms.strings_type._set_type
         self._string_set = string_set_type.__new__(string_set_type)
@@ -880,9 +886,18 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         return self._impl
 
     @property
-    def coeffs_type(self) -> type[Coeffs[C]]:
-        """The coefficient container type of ``self``."""
-        return type(self._impl.coeffs)
+    def coeffs_type[Cs: Coeffs[Any]](
+        self: _TermSetCoeffs[Cs],
+    ) -> type[Cs]:
+        """The concrete coefficient container type of ``self``."""
+        return cast("type[Cs]", type(self._data.coeffs))
+
+    @property
+    def coeffs[Cs: Coeffs[Any]](
+        self: _TermSetCoeffs[Cs],
+    ) -> Cs:
+        """The coefficients of ``self``, preserving their concrete container type."""
+        return cast("Cs", self._data.coeffs)
 
     @property
     def coeff_type(self) -> type[C]:
@@ -928,8 +943,10 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         if map_ is None:
             TermSet.__init__(out, cls.terms_type._create(data))
         else:
-            if data.strings_type is not cls.terms_type.term_type.strings_type:
+            if type(data.strings) is not cls.terms_type.term_type.strings_type:
                 raise TypeError("String storage does not match its factory")
+            if not isinstance(data.coeffs, cls.terms_type.term_type.coeffs_type):
+                raise TypeError("Coefficient storage does not match its factory")
             assert len(data) == len(map_)
             out._impl = data
             string_set_type = type(data.strings)._set_type
@@ -1021,8 +1038,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             A new instance of ``t`` containing the same data as ``self``.
         """
         if issubclass(t, TermSet):
-            coeff_type = t.terms_type.term_type.coeff_type
-            coeffs_type = get_coeffs_type(coeff_type)
+            coeffs_type = t.terms_type.term_type.coeffs_type
             strings = self._impl.strings
             coeffs = convert_vec(self._impl.coeffs, coeffs_type)
             term_data = TermData(strings, coeffs)

@@ -35,6 +35,8 @@ from zixy.utils import slice_index, slice_len
 if TYPE_CHECKING:
     import builtins
 
+    from zixy.container.coeffs import Coeffs
+
 
 class _Indexable[T](Protocol):
     """An integer-indexed container whose element type can be inferred independently."""
@@ -74,6 +76,12 @@ class _HasCoeffs[Cs](Protocol):
 
     @property
     def coeffs(self) -> Cs: ...
+
+
+class _HasCoeffsType[Cs](Protocol):
+    """A container exposing its coefficient-collection factory."""
+
+    coeffs_type: type[Cs]
 
 
 class _HasCoeffType[C](Protocol):
@@ -117,6 +125,23 @@ class _HasTermsType[TermsT](Protocol):
 
     @property
     def terms_type(self) -> type[TermsT]: ...
+
+
+class _TermCoeffsView[Cs](_HasTermType[_HasCoeffsType[Cs]], Protocol):
+    """A term-array factory and the storage and slice needed to access its coefficients."""
+
+    @property
+    def _data(self) -> _HasCoeffs[Coeffs[Any]]: ...
+
+    @property
+    def slice(self) -> slice: ...
+
+
+class _TermSetCoeffs[Cs](_HasTermsType[_HasTermType[_HasCoeffsType[Cs]]], Protocol):
+    """A term-set factory and the storage needed to access its coefficients."""
+
+    @property
+    def _data(self) -> _HasCoeffs[Coeffs[Any]]: ...
 
 
 class SupportsOwnership(Protocol):

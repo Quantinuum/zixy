@@ -21,7 +21,7 @@ This module follows :mod:`~zixy.container.terms`, using strings defined in
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
-from typing import TYPE_CHECKING, Any, Self, cast, overload
+from typing import TYPE_CHECKING, Any, Self, overload
 
 from sympy import Expr, Symbol
 
@@ -37,7 +37,6 @@ from zixy.container.coeffs import (
     RealCoeffs,
     Sign,
     SymbolicCoeffs,
-    get_coeffs_type,
 )
 from zixy.container.data import TermData
 from zixy.container.strings import String as BaseString
@@ -164,7 +163,7 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerm[ImplT, Spe
         """
         strings = self.strings_type(modes, 1, max_string_len)
         strings._impl._reserve_string_length(_max_string_len_from_source(source), warn=False)
-        coeffs = get_coeffs_type(self.coeff_type).from_size(1)
+        coeffs = self.coeffs_type.from_size(1)
         term_data = TermData(strings, coeffs)
         TermBase.__init__(self, term_data)
         self.set(source)
@@ -207,7 +206,7 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerms[ImplT, S
             max_string_len: Maximum number of operators per string.
         """
         strings = self.term_type.strings_type(modes, n, max_string_len)
-        coeffs = get_coeffs_type(self.term_type.coeff_type).from_size(n)
+        coeffs = self.term_type.coeffs_type.from_size(n)
         term_data = TermData(strings, coeffs)
         TermsBase.__init__(self, term_data)
 
@@ -276,11 +275,6 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
             max_string_len: Maximum number of operators per string.
         """
         TermSetBase.__init__(self, self.terms_type(modes, max_string_len=max_string_len))
-
-    @property
-    def coeffs(self) -> Any:
-        """The coefficients of ``self``."""
-        return self._impl.coeffs
 
     @property
     def max_string_len(self) -> int:
@@ -401,6 +395,7 @@ class RealTerm(Term[float]):
     """
 
     coeff_type = float
+    coeffs_type = RealCoeffs
 
     @overload
     def __mul__(self, rhs: Sign) -> RealTerm: ...
@@ -549,6 +544,7 @@ class ComplexTerm(Term[complex]):
     """
 
     coeff_type = complex
+    coeffs_type = ComplexCoeffs
 
     @overload
     def __mul__(self, rhs: Sign) -> ComplexTerm: ...
@@ -699,6 +695,7 @@ class SymbolicTerm(Term[Expr]):
     """
 
     coeff_type = Expr
+    coeffs_type = SymbolicCoeffs
 
     @overload
     def __mul__(self, rhs: Sign) -> SymbolicTerm: ...
@@ -792,11 +789,6 @@ class SymbolicTerms(Terms[Expr]):
     """
 
     term_type = SymbolicTerm
-
-    @property
-    def coeffs(self) -> SymbolicCoeffs:
-        """The coefficients of ``self``."""
-        return cast("SymbolicCoeffs", self._data.coeffs[self.slice])
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
         """Apply a partial substitution of the symbols in-place.

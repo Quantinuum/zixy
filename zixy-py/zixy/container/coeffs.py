@@ -29,15 +29,7 @@ from __future__ import annotations
 import builtins
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Sequence
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Generic,
-    Self,
-    TypeAlias,
-    TypeVar,
-    overload,
-)
+from typing import TYPE_CHECKING, Any, Self, TypeAlias, overload
 
 import numpy as np
 from numpy.typing import NDArray
@@ -57,7 +49,6 @@ from zixy.utils import (
 )
 
 Number: TypeAlias = int | float | complex  # noqa: UP040
-NumberT = TypeVar("NumberT", float, complex)
 
 
 def _imul_factor_error(lhs: Any, rhs: Any, factor: Any) -> ValueError:
@@ -143,7 +134,7 @@ class Sign(RootOfUnity):
             return NotImplemented
         return self._impl == other._impl
 
-    def __mul__(self, other: OtherCoeffT) -> OtherCoeffT:
+    def __mul__[C: (float, complex, Expr, Sign, ComplexSign)](self, other: C) -> C:
         """Out-of-place multiplication of ``self`` by ``other``.
 
         Note:
@@ -158,7 +149,7 @@ class Sign(RootOfUnity):
             return ComplexSign(other._impl.to_phase() + (2 if self._impl.to_phase() else 0))
         return self.to_numeric() * other
 
-    def __rmul__(self, other: OtherCoeffT) -> OtherCoeffT:
+    def __rmul__[C: (float, complex, Sign, ComplexSign, Expr)](self, other: C) -> C:
         """Out-of-place multiplication of ``other`` by ``self``.
 
         See Also:
@@ -203,7 +194,7 @@ class Sign(RootOfUnity):
     @overload
     def __truediv__(self, other: Expr) -> Expr: ...
 
-    def __truediv__(self, other: OtherCoeffT) -> OtherCoeffT:
+    def __truediv__[C: (float, complex, Sign, ComplexSign, Expr)](self, other: C) -> C:
         """Out-of-place division of ``self`` by ``other``.
 
         See Also:
@@ -227,7 +218,7 @@ class Sign(RootOfUnity):
     @overload
     def __rtruediv__(self, other: Expr) -> Expr: ...
 
-    def __rtruediv__(self, other: OtherCoeffT) -> OtherCoeffT:
+    def __rtruediv__[C: (float, complex, Sign, ComplexSign, Expr)](self, other: C) -> C:
         """Out-of-place division of ``other`` by ``self``.
 
         See Also:
@@ -567,11 +558,9 @@ class ComplexSign(RootOfUnity):
 
 Scalar: TypeAlias = Number | Sign | ComplexSign  # noqa: UP040
 Coeff: TypeAlias = Scalar | Expr  # noqa: UP040
-CoeffT = TypeVar("CoeffT", float, complex, Sign, ComplexSign, Expr)
-OtherCoeffT = TypeVar("OtherCoeffT", float, complex, Sign, ComplexSign, Expr)
 
 
-def zero(coeff_type: type[CoeffT]) -> CoeffT:
+def zero[C: (float, complex, Sign, ComplexSign, Expr)](coeff_type: type[C]) -> C:
     """Zero as the given coeff type.
 
     Args:
@@ -590,7 +579,7 @@ def zero(coeff_type: type[CoeffT]) -> CoeffT:
         raise TypeError(f"Unsupported coefficient type {coeff_type}.")
 
 
-def unit(coeff_type: type[CoeffT]) -> CoeffT:
+def unit[C: (float, complex, Sign, ComplexSign, Expr)](coeff_type: type[C]) -> C:
     """Unity as the given coeff type.
 
     Args:
@@ -609,7 +598,7 @@ def unit(coeff_type: type[CoeffT]) -> CoeffT:
         raise TypeError(f"Unsupported coefficient type {coeff_type}.")
 
 
-def _convert_symbolic(source: Expr, t: type[CoeffT]) -> CoeffT:
+def _convert_symbolic[C: (float, complex, Sign, ComplexSign, Expr)](source: Expr, t: type[C]) -> C:
     """Convert the symbolic expression ``source`` to a coefficient of type ``t``.
 
     Args:
@@ -669,7 +658,7 @@ def _is_complex_sign(cls: type[Coeff]) -> TypeIs[type[ComplexSign]]:
     return issubclass(cls, ComplexSign)
 
 
-def convert(source: Coeff, cls: type[CoeffT]) -> CoeffT:
+def convert[C: (float, complex, Sign, ComplexSign, Expr)](source: Coeff, cls: type[C]) -> C:
     """Convert the coefficient ``source`` to a coefficient of type ``cls``.
 
     Args:
@@ -741,7 +730,7 @@ def common_type(lhs: Coeff, rhs: Coeff) -> type[Coeff]:
     )
 
 
-def typesafe_mul(lhs: CoeffT, rhs: Coeff) -> CoeffT:
+def typesafe_mul[C: (float, complex, Sign, ComplexSign, Expr)](lhs: C, rhs: Coeff) -> C:
     """Multiply ``lhs`` by ``rhs`` with the result conserving the type of ``lhs``.
 
     Args:
@@ -772,14 +761,16 @@ else:
     BaseVec = object
 
 
-class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresentable):
+class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
+    ViewableSequence[C, BaseVec], StringRepresentable
+):
     """A collection of coefficients.
 
     A resizable vector-like container of coefficients that may be an owning instance referencing a
     contiguous Rust-bound data object, or a view on a slice of the elements in another collection.
     """
 
-    coeff_type: type[CoeffT]
+    coeff_type: type[C]
     coeffs_type: type[_zixy.BaseVec]
 
     _impl: _zixy.BaseVec
@@ -795,7 +786,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
         self._impl = data if data is not None else self.coeffs_type(0)
         self._slice = indexer
 
-    def fill(self, coeff: CoeffT) -> None:
+    def fill(self, coeff: C) -> None:
         """Set all the coefficients in the vector to the given value.
 
         Args:
@@ -804,7 +795,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
         for i in range(len(self)):
             self[i] = coeff
 
-    def set(self, source: Iterable[CoeffT]) -> None:
+    def set(self, source: Iterable[C]) -> None:
         """Assign the viewed coefficients according to the values yielded by the given iterable.
 
         Args:
@@ -871,12 +862,12 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
         return slice_index(self.slice, index, len(self._impl))
 
     @overload
-    def __getitem__(self, indexer: int) -> CoeffT: ...
+    def __getitem__(self, indexer: int) -> C: ...
 
     @overload
     def __getitem__(self, indexer: builtins.slice) -> Self: ...
 
-    def __getitem__(self, indexer: int | builtins.slice) -> CoeffT | Self:
+    def __getitem__(self, indexer: int | builtins.slice) -> C | Self:
         """Get the element or elements selected by ``indexer``.
 
         Args:
@@ -897,7 +888,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
             raise TypeError(f"Expected coefficient of type {self.coeff_type}, got {type(coeff)}")
         return coeff
 
-    def _set_scalar(self, index: int, value: CoeffT | None = None) -> None:
+    def _set_scalar(self, index: int, value: C | None = None) -> None:
         """Set the indexed element to the given value.
 
         Args:
@@ -915,7 +906,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
         self._impl[self.map_index(index)] = data
 
     def __setitem__(
-        self, indexer: int | builtins.slice, source: CoeffT | Coeffs[CoeffT] | None = None
+        self, indexer: int | builtins.slice, source: C | Coeffs[C] | None = None
     ) -> None:
         """Set the indexed element(s) to the given value(s).
 
@@ -960,7 +951,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
         for i in range(len(self)):
             self[i] = typesafe_mul(self[i], scalar)
 
-    def scale_by_coeffs(self, coeffs: Coeffs[CoeffT]) -> None:
+    def scale_by_coeffs(self, coeffs: Coeffs[C]) -> None:
         """Scale all elements by the corresponding elements of ``coeffs``.
 
         Args:
@@ -980,7 +971,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
         for i in range(len(self)):
             self[i] = typesafe_mul(self[i], coeffs[i])
 
-    def __imul__(self, rhs: Coeff | Coeffs[CoeffT] | Iterable[Coeff]) -> Self:
+    def __imul__(self, rhs: Coeff | Coeffs[C] | Iterable[Coeff]) -> Self:
         """Multiply ``self`` by ``rhs`` in-place.
 
         Raises:
@@ -998,7 +989,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
                 self._set_scalar(i, typesafe_mul(self[i], c))
         return self
 
-    def to_tuple(self) -> tuple[CoeffT, ...]:
+    def to_tuple(self) -> tuple[C, ...]:
         """Get a tuple of clones of the elements of ``self``."""
         return tuple(c for c in self)
 
@@ -1024,7 +1015,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
         return out
 
     @requires_ownership
-    def append_n(self, n: int, value: CoeffT) -> None:
+    def append_n(self, n: int, value: C) -> None:
         """Append ``value`` to the end of ``self`` ``n`` times.
 
         Args:
@@ -1041,7 +1032,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
                 self._impl.append(value)
 
     @requires_ownership
-    def append(self, value: CoeffT) -> None:
+    def append(self, value: C) -> None:
         """Append ``value`` to the end of ``self``.
 
         Args:
@@ -1152,7 +1143,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
         return np.allclose(self.np_array, other.np_array, rtol=rtol, atol=atol)
 
     @classmethod
-    def from_scalar(cls, coeff: CoeffT, n: int = 1) -> Self:
+    def from_scalar(cls, coeff: C, n: int = 1) -> Self:
         """Get a new instance of ``cls`` with the given scalar repeated ``n`` times.
 
         Args:
@@ -1167,7 +1158,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
         return out
 
     @classmethod
-    def from_sequence(cls, source: Sequence[CoeffT]) -> Self:
+    def from_sequence(cls, source: Sequence[C]) -> Self:
         """Get a new instance from a sequence of coefficients.
 
         Args:
@@ -1183,7 +1174,7 @@ class Coeffs(Generic[CoeffT], ViewableSequence[CoeffT, BaseVec], StringRepresent
         return out
 
 
-class RootOfUnityCoeffs(Coeffs[CoeffT]):
+class RootOfUnityCoeffs[C: (float, complex, Sign, ComplexSign, Expr)](Coeffs[C]):
     """A collection of :class:`RootOfUnity` coefficients.
 
     A resizable vector-like container of coefficients that may be an owning instance referencing a
@@ -1277,7 +1268,7 @@ class ComplexSignCoeffs(RootOfUnityCoeffs[ComplexSign]):
         return np.array([complex(s) for s in self], dtype=np.complex128)[self.slice].ravel()
 
 
-class NumericalCoeffs(Coeffs[NumberT]):
+class NumericalCoeffs[C: (float, complex)](Coeffs[C]):
     """A collection of numerical coefficients.
 
     A resizable vector-like container of coefficients that may be an owning instance referencing a
@@ -1309,7 +1300,7 @@ class NumericalCoeffs(Coeffs[NumberT]):
         return not np.allclose(self.np_array, 0, rtol=0, atol=atol)
 
     @classmethod
-    def from_sequence(cls, source: Sequence[NumberT] | NDArray[np.inexact]) -> Self:
+    def from_sequence(cls, source: Sequence[C] | NDArray[np.inexact]) -> Self:
         """Get a new instance from a sequence of coefficients.
 
         Args:
@@ -1718,7 +1709,9 @@ class SymbolicCoeffs(Coeffs[Expr]):
             return self.try_to_complex().np_array
 
 
-def convert_vec(source: Coeffs[Any], t: type[Coeffs[CoeffT]]) -> Coeffs[CoeffT]:
+def convert_vec[C: (float, complex, Sign, ComplexSign, Expr)](
+    source: Coeffs[Any], t: type[Coeffs[C]]
+) -> Coeffs[C]:
     """Convert a vector of coefficients to a vector of another coefficient type.
 
     Args:
@@ -1734,7 +1727,7 @@ def convert_vec(source: Coeffs[Any], t: type[Coeffs[CoeffT]]) -> Coeffs[CoeffT]:
     return out
 
 
-def get_coeffs_type(t: type[CoeffT]) -> type[Coeffs[CoeffT]]:
+def get_coeffs_type[C: (float, complex, Sign, ComplexSign, Expr)](t: type[C]) -> type[Coeffs[C]]:
     """Get the coefficient vector type corresponding to a given coefficient type.
 
     Args:

@@ -33,11 +33,9 @@ from zixy.container.cmpnts import Cmpnt
 from zixy.container.coeffs import (
     Coeff,
     Coeffs,
-    CoeffT,
     ComplexCoeffs,
     ComplexSign,
     Number,
-    OtherCoeffT,
     RealCoeffs,
     Sign,
     SymbolicCoeffs,
@@ -89,8 +87,8 @@ ComplexTermSpec = TermSpec[complex]
 SymbolicTermSpec = TermSpec[Expr]
 
 
-def _max_string_len_from_source(
-    source: terms.TermSpecT[ImplT, SpecT, CoeffT] | TermBase[ImplT, SpecT, CoeffT],
+def _max_string_len_from_source[C: (float, complex, Sign, ComplexSign, Expr)](
+    source: terms.TermSpecT[ImplT, SpecT, C] | TermBase[ImplT, SpecT, C],
 ) -> int:
     """Get the maximum operator-product length from a term source."""
     if (
@@ -111,7 +109,10 @@ def _max_string_len_from_source(
     return len(source)
 
 
-def _mul(lhs: Term[CoeffT], rhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+def _mul[
+    C: (float, complex, Sign, ComplexSign, Expr),
+    COther: (float, complex, Sign, ComplexSign, Expr),
+](lhs: Term[C], rhs: COther | String | Term[COther]) -> Term[Any]:
     """Driver for multiplication of a term with another term, a string, or a coefficient."""
     if isinstance(rhs, Coeff):
         scalar_product = lhs.coeff * rhs
@@ -126,7 +127,10 @@ def _mul(lhs: Term[CoeffT], rhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Te
     return get_term_type(type(coeff)).from_cmpnt_coeff(string, coeff)
 
 
-def _rmul(rhs: Term[CoeffT], lhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+def _rmul[
+    C: (float, complex, Sign, ComplexSign, Expr),
+    COther: (float, complex, Sign, ComplexSign, Expr),
+](rhs: Term[C], lhs: COther | String | Term[COther]) -> Term[Any]:
     """Driver for multiplication of another term, a string, or a coefficient with a term."""
     if isinstance(lhs, Coeff):
         return _mul(rhs, lhs)
@@ -140,7 +144,7 @@ def _rmul(rhs: Term[CoeffT], lhs: OtherCoeffT | String | Term[OtherCoeffT]) -> T
     return get_term_type(type(coeff)).from_cmpnt_coeff(string, coeff)
 
 
-class Term(OperatorTerm[ImplT, SpecT, CoeffT, ElemT]):
+class Term[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerm[ImplT, SpecT, C, ElemT]):
     """A term consisting of a raw fermionic string and a coefficient.
 
     A single mode-based term consisting of a raw fermionic string and a coefficient that may be an
@@ -149,12 +153,12 @@ class Term(OperatorTerm[ImplT, SpecT, CoeffT, ElemT]):
     """
 
     cmpnts_type = Strings
-    coeff_type: type[CoeffT]
+    coeff_type: type[C]
 
     def __init__(
         self,
         modes: int | Modes = 0,
-        source: TermSpec[CoeffT] = "",
+        source: TermSpec[C] = "",
         max_string_len: int = 0,
     ):
         """Initialize the term.
@@ -193,7 +197,7 @@ class Term(OperatorTerm[ImplT, SpecT, CoeffT, ElemT]):
         return out
 
 
-class Terms(OperatorTerms[ImplT, SpecT, CoeffT, ElemT]):
+class Terms[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerms[ImplT, SpecT, C, ElemT]):
     """A collection of terms consisting of raw fermionic strings and coefficients.
 
     An array-like container of mode-based terms consisting of raw fermionic strings and
@@ -202,7 +206,7 @@ class Terms(OperatorTerms[ImplT, SpecT, CoeffT, ElemT]):
     another collection.
     """
 
-    term_type: type[Term[CoeffT]]
+    term_type: type[Term[C]]
 
     def __init__(self, modes: int | Modes = 0, n: int = 0, max_string_len: int = 0):
         """Initialize the term array.
@@ -230,24 +234,24 @@ class Terms(OperatorTerms[ImplT, SpecT, CoeffT, ElemT]):
     def append_n(
         self,
         n: int,
-        source: terms.TermSpecT[ImplT, SpecT, CoeffT] | TermBase[ImplT, SpecT, CoeffT] = "",
+        source: terms.TermSpecT[ImplT, SpecT, C] | TermBase[ImplT, SpecT, C] = "",
     ) -> Self:
         """Append a term repeatedly."""
         if n < 0:
             raise ValueError("The number of terms to append must be non-negative.")
         if n == 0:
             return self
-        value: TermBase[ImplT, SpecT, CoeffT] = self.term_type(
+        value: TermBase[ImplT, SpecT, C] = self.term_type(
             self.modes, max_string_len=_max_string_len_from_source(source)
         )
         value.set(source)
         self.strings._impl._reserve_string_length(_max_string_len_from_source(value))
-        return TermsBase[ImplT, SpecT, CoeffT].append_n(self, n, value)
+        return TermsBase[ImplT, SpecT, C].append_n(self, n, value)
 
     @classmethod
     def from_iterable(
         cls,
-        source: Iterable[terms.TermSpecT[ImplT, SpecT, CoeffT] | TermBase[ImplT, SpecT, CoeffT]],
+        source: Iterable[terms.TermSpecT[ImplT, SpecT, C] | TermBase[ImplT, SpecT, C]],
         modes: int | Modes = 0,
         n: int = 0,
         max_string_len: int = 0,
@@ -263,7 +267,9 @@ class Terms(OperatorTerms[ImplT, SpecT, CoeffT, ElemT]):
         return out
 
 
-class TermSet(OperatorTermSet[ImplT, SpecT, CoeffT, ElemT]):
+class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
+    OperatorTermSet[ImplT, SpecT, C, ElemT]
+):
     """A collection of unique terms consisting of raw fermionic strings and coefficients.
 
     A set-like container of mode-based terms that may be used to store unique terms and perform
@@ -274,7 +280,7 @@ class TermSet(OperatorTermSet[ImplT, SpecT, CoeffT, ElemT]):
         are not.
     """
 
-    terms_type: type[Terms[CoeffT]]
+    terms_type: type[Terms[C]]
 
     def __init__(self, modes: int | Modes = 0, max_string_len: int = 0):
         """Initialize the term set.
@@ -302,8 +308,8 @@ class TermSet(OperatorTermSet[ImplT, SpecT, CoeffT, ElemT]):
 
     def _get_working_term(
         self,
-        value: terms.TermSpecT[ImplT, SpecT, CoeffT] | TermBase[ImplT, SpecT, CoeffT],
-    ) -> TermBase[ImplT, SpecT, CoeffT]:
+        value: terms.TermSpecT[ImplT, SpecT, C] | TermBase[ImplT, SpecT, C],
+    ) -> TermBase[ImplT, SpecT, C]:
         """Prepare a term without warning about temporary storage."""
         self._working_term.cmpnt._impl._reserve_string_length(
             _max_string_len_from_source(value),
@@ -319,7 +325,7 @@ class TermSet(OperatorTermSet[ImplT, SpecT, CoeffT, ElemT]):
     @classmethod
     def from_iterable(
         cls,
-        iterable: Iterable[terms.TermSpecT[ImplT, SpecT, CoeffT] | TermBase[ImplT, SpecT, CoeffT]],
+        iterable: Iterable[terms.TermSpecT[ImplT, SpecT, C] | TermBase[ImplT, SpecT, C]],
         modes: int | Modes = 0,
         max_string_len: int = 0,
     ) -> Self:
@@ -334,7 +340,9 @@ class TermSet(OperatorTermSet[ImplT, SpecT, CoeffT, ElemT]):
         return out
 
 
-class TermSum(OperatorTermSum[ImplT, SpecT, CoeffT, ElemT], TermSet[CoeffT]):
+class TermSum[C: (float, complex, Sign, ComplexSign, Expr)](
+    OperatorTermSum[ImplT, SpecT, C, ElemT], TermSet[C]
+):
     """A sum of terms consisting of raw fermionic strings and coefficients.
 
     A set-like container of mode-based terms that may be used to store unique terms and perform
@@ -373,7 +381,7 @@ class TermSum(OperatorTermSum[ImplT, SpecT, CoeffT, ElemT], TermSet[CoeffT]):
             out += term.into(self.terms_type.term_type).daggered()
         terms.TermSum.__init__(self, out.to_terms())
 
-    def _added(self, rhs: TermBase[ImplT, SpecT, CoeffT] | Self, scalar: int) -> Self:
+    def _added(self, rhs: TermBase[ImplT, SpecT, C] | Self, scalar: int) -> Self:
         """Allocate a sum with enough string storage for both operands."""
         required = (
             rhs.max_string_len if isinstance(rhs, TermSum) else _max_string_len_from_source(rhs)
@@ -382,14 +390,14 @@ class TermSum(OperatorTermSum[ImplT, SpecT, CoeffT, ElemT], TermSet[CoeffT]):
         if required > out.max_string_len:
             out.strings._impl._reserve_string_length(required, warn=False)
             out.strings._impl.refresh_map(out._cmpnt_set._map)
-        terms.TermSum[ImplT, SpecT, CoeffT]._scaled_iadd(out, rhs, scalar)
+        terms.TermSum[ImplT, SpecT, C]._scaled_iadd(out, rhs, scalar)
         return out
 
-    def __add__(self, rhs: TermBase[ImplT, SpecT, CoeffT] | Self) -> Self:
+    def __add__(self, rhs: TermBase[ImplT, SpecT, C] | Self) -> Self:
         """Add two operators, preallocating the result's string storage."""
         return self._added(rhs, 1)
 
-    def __sub__(self, rhs: TermBase[ImplT, SpecT, CoeffT] | Self) -> Self:
+    def __sub__(self, rhs: TermBase[ImplT, SpecT, C] | Self) -> Self:
         """Subtract two operators, preallocating the result's string storage."""
         return self._added(rhs, -1)
 
@@ -430,7 +438,9 @@ class RealTerm(Term[float]):
     @overload
     def __mul__(self, rhs: SymbolicTerm) -> SymbolicTerm: ...
 
-    def __mul__(self, rhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+    def __mul__[C: (float, complex, Sign, ComplexSign, Expr)](
+        self, rhs: C | String | Term[C]
+    ) -> Term[Any]:
         """Multiplication of ``self`` by ``rhs``."""
         if not isinstance(rhs, Coeff | String | Term):
             return NotImplemented
@@ -455,7 +465,9 @@ class RealTerm(Term[float]):
     @overload
     def __rmul__(self, lhs: SymbolicTerm) -> SymbolicTerm: ...
 
-    def __rmul__(self, lhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+    def __rmul__[C: (float, complex, Sign, ComplexSign, Expr)](
+        self, lhs: C | String | Term[C]
+    ) -> Term[Any]:
         """Multiplication of ``lhs`` by ``self``."""
         if not isinstance(lhs, Coeff | String | Term):
             return NotImplemented
@@ -575,7 +587,9 @@ class ComplexTerm(Term[complex]):
     @overload
     def __mul__(self, rhs: SymbolicTerm) -> SymbolicTerm: ...
 
-    def __mul__(self, rhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+    def __mul__[C: (float, complex, Sign, ComplexSign, Expr)](
+        self, rhs: C | String | Term[C]
+    ) -> Term[Any]:
         """Multiplication of ``self`` by ``rhs``."""
         if not isinstance(rhs, Coeff | String | Term):
             return NotImplemented
@@ -600,7 +614,9 @@ class ComplexTerm(Term[complex]):
     @overload
     def __rmul__(self, lhs: SymbolicTerm) -> SymbolicTerm: ...
 
-    def __rmul__(self, lhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+    def __rmul__[C: (float, complex, Sign, ComplexSign, Expr)](
+        self, lhs: C | String | Term[C]
+    ) -> Term[Any]:
         """Multiplication of ``lhs`` by ``self``."""
         if not isinstance(lhs, Coeff | String | Term):
             return NotImplemented
@@ -722,7 +738,9 @@ class SymbolicTerm(Term[Expr]):
     @overload
     def __mul__(self, rhs: SymbolicTerm) -> SymbolicTerm: ...
 
-    def __mul__(self, rhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+    def __mul__[C: (float, complex, Sign, ComplexSign, Expr)](
+        self, rhs: C | String | Term[C]
+    ) -> Term[Any]:
         """Multiplication of ``self`` by ``rhs``."""
         if not isinstance(rhs, Coeff | String | Term):
             return NotImplemented
@@ -747,7 +765,9 @@ class SymbolicTerm(Term[Expr]):
     @overload
     def __rmul__(self, lhs: SymbolicTerm) -> SymbolicTerm: ...
 
-    def __rmul__(self, lhs: OtherCoeffT | String | Term[OtherCoeffT]) -> Term[Any]:
+    def __rmul__[C: (float, complex, Sign, ComplexSign, Expr)](
+        self, lhs: C | String | Term[C]
+    ) -> Term[Any]:
         """Multiplication of ``lhs`` by ``self``."""
         if not isinstance(lhs, Coeff | String | Term):
             return NotImplemented
@@ -896,14 +916,16 @@ class SymbolicTermSum(TermSum[Expr]):
         return out
 
 
-def get_term_type(coeff_type: type[CoeffT]) -> type[Term[CoeffT]]:
+def get_term_type[C: (float, complex, Sign, ComplexSign, Expr)](
+    coeff_type: type[C],
+) -> type[Term[C]]:
     """Get the term type corresponding to ``coeff_type``."""
     if _is_int(coeff_type) or _is_float(coeff_type) or _is_sign(coeff_type):
-        return cast(type[Term[CoeffT]], RealTerm)
+        return cast(type[Term[C]], RealTerm)
     elif _is_complex(coeff_type) or _is_complex_sign(coeff_type):
-        return cast(type[Term[CoeffT]], ComplexTerm)
+        return cast(type[Term[C]], ComplexTerm)
     elif _is_expr(coeff_type):
-        return cast(type[Term[CoeffT]], SymbolicTerm)
+        return cast(type[Term[C]], SymbolicTerm)
     else:
         raise TypeError(f"Unsupported coefficient type {coeff_type} for term type lookup.")
 

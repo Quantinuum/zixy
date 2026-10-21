@@ -15,17 +15,16 @@
 """Number operator utilities for terms containing Pauli strings."""
 
 from collections.abc import Sequence
-from typing import TypeVar
 
 from zixy._zixy import Qubits
 from zixy.container.coeffs import unit
 from zixy.qubit.pauli import Z
 from zixy.qubit.pauli._terms import ComplexTerm, RealTerm
 
-TermT = TypeVar("TermT", RealTerm, ComplexTerm)
 
-
-def create_num_op_general(t: type[TermT], qubits: int | Qubits, inds: Sequence[int]) -> TermT:
+def create_num_op_general[T: (RealTerm, ComplexTerm)](
+    t: type[T], qubits: int | Qubits, inds: Sequence[int]
+) -> T:
     """Create a number operator term.
 
     Args:
@@ -43,7 +42,7 @@ def create_num_op_general(t: type[TermT], qubits: int | Qubits, inds: Sequence[i
     return out  # type: ignore[no-any-return]
 
 
-def create_num_op(t: type[TermT], qubits: int | Qubits) -> TermT:
+def create_num_op[T: (RealTerm, ComplexTerm)](t: type[T], qubits: int | Qubits) -> T:
     """Create a number operator term.
 
     Args:
@@ -57,7 +56,7 @@ def create_num_op(t: type[TermT], qubits: int | Qubits) -> TermT:
     return create_num_op_general(t, qubits, range(n))
 
 
-def create_num_op_odd_bits(t: type[TermT], qubits: int | Qubits) -> TermT:
+def create_num_op_odd_bits[T: (RealTerm, ComplexTerm)](t: type[T], qubits: int | Qubits) -> T:
     """Create a number operator term that includes only the odd-indexed qubits.
 
     Args:

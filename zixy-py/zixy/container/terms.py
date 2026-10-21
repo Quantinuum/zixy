@@ -1503,17 +1503,18 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         factor = 1 / scalar if not isinstance(scalar, RootOfUnity) else 1 / scalar.to_numeric()
         return self * factor
 
-    def add_iterable(self, iterable: Iterable[Term[ImplT, SpecT, C]]) -> None:
+    def add_iterable(self, iterable: Iterable[TermSpecT[ImplT, SpecT, C]]) -> None:
         """In-place addition of the terms in ``iterable`` to ``self``.
 
         Args:
-            iterable: Iterable of terms to add to ``self``.
+            iterable: Iterable of term specifiers or compatible terms to add to ``self``.
 
         Note:
             This method operates in-place.
         """
         for item in iterable:
-            self += item
+            term = self._get_working_term(item)
+            self += term
 
     @classmethod
     def from_str(cls, source: str, *args: Any, **kwargs: Any) -> Self:
@@ -1549,11 +1550,10 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         out.add_iterable(gen)
         return out
 
-    # TODO: solve override with base class
     @classmethod
     def from_iterable(
         cls,
-        iterable: Iterable[Term[ImplT, SpecT, C]],  # type: ignore[override]
+        iterable: Iterable[TermSpecT[ImplT, SpecT, C]],
         *args: Any,
         **kwargs: Any,
     ) -> Self:

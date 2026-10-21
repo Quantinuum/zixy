@@ -21,7 +21,7 @@ that are normal-ordered fermionic strings, as defined in
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Self, TypeAlias, cast, overload
+from typing import TYPE_CHECKING, Any, Self, cast, overload
 
 from sympy import Expr, Symbol
 
@@ -79,7 +79,9 @@ if TYPE_CHECKING:
         RealTermSum as GeneralRealTermSum,
     )
 
-TermSpec: TypeAlias = String | StringSpec | tuple[StringSpec | String, CoeffT | None]
+type TermSpec[C: (float, complex, Sign, ComplexSign, Expr)] = (
+    String | StringSpec | tuple[StringSpec | String, C | None]
+)
 ElemT = tuple[list[int], list[int]]
 SpecT = StringSpec
 ImplT = NormalFermionOperatorArray
@@ -87,8 +89,8 @@ SignTermSpec = TermSpec[Sign]
 RealTermSpec = TermSpec[float]
 ComplexTermSpec = TermSpec[complex]
 SymbolicTermSpec = TermSpec[Expr]
-NumericState: TypeAlias = RealState | ComplexState
-State: TypeAlias = NumericState | SymbolicState
+type NumericState = RealState | ComplexState
+type State = NumericState | SymbolicState
 
 
 def _term_sum_from_product(

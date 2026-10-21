@@ -158,7 +158,7 @@ class ViewableItem[ImplT: Resizable](ViewableBase[ImplT, int | None]):
 
     @property
     def index(self) -> int:
-        """Get the index of ``self`` within its underlying data."""
+        """The index of ``self`` within its underlying data."""
         return 0 if self._index is None else self._index
 
 
@@ -196,7 +196,7 @@ class ViewableSequence[T, ImplT: Resizable](ViewableBase[ImplT, slice], Sequence
 
     @property
     def slice(self) -> builtins.slice:
-        """Get the slice of the underlying data that ``self`` views."""
+        """The slice of the underlying data that ``self`` views."""
         return self._slice
 
     def map_index(self, i: int) -> int:

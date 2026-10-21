@@ -80,7 +80,7 @@ class String(Generic[ImplT, SpecT, ElemT], Cmpnt[ImplT, SpecT]):
 
     @property
     def qubits(self) -> Qubits:
-        """Get the qubits corresponding to ``self``."""
+        """The qubits corresponding to ``self``."""
         return self._impl.qubits
 
     @abstractmethod
@@ -214,7 +214,7 @@ class Strings(Generic[ImplT, SpecT, ElemT], Cmpnts[ImplT, SpecT]):
 
     @property
     def qubits(self) -> Qubits:
-        """Get the qubits corresponding to ``self``."""
+        """The qubits corresponding to ``self``."""
         return self._impl.qubits
 
     @overload

@@ -340,8 +340,13 @@ class TermSum[C: (float, complex, Sign, ComplexSign, Expr)](
         TermSet.__init__(self, modes, max_string_len=max_string_len)
 
     @classmethod
-    def from_iterable(cls, source: Any, modes: int | Modes = 0, max_string_len: int = 0) -> Self:
-        """Create a new instance of ``cls`` from an iterable of terms."""
+    def from_iterable(
+        cls,
+        source: Iterable[terms.TermSpecT[ImplT, SpecT, C]],
+        modes: int | Modes = 0,
+        max_string_len: int = 0,
+    ) -> Self:
+        """Create a new instance of ``cls`` from an iterable of term specifiers."""
         terms = cls.terms_type.from_iterable(source, modes, max_string_len=max_string_len)
         out = cls(modes, max_string_len=max_string_len)
         if isinstance(terms._impl.coeffs, RealCoeffs | ComplexCoeffs):

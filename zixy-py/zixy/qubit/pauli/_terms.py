@@ -22,12 +22,11 @@ The structure of this module parallels that of :mod:`~zixy.container.terms` and
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, Literal, TypeAlias, cast, overload
+from typing import Any, Literal, Self, TypeAlias, cast, overload
 
 import numpy as np
 from numpy.typing import NDArray
 from sympy import Expr, Symbol
-from typing_extensions import Self
 
 from zixy._zixy import (
     PauliMatrix,

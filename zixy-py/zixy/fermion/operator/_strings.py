@@ -21,9 +21,7 @@ operators, acting on a register of fermionic modes.
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Generic, TypeAlias, TypeVar
-
-from typing_extensions import Self
+from typing import Generic, Self, TypeAlias, TypeVar
 
 from zixy.container.cmpnts import SpecT
 from zixy.fermion._strings import (

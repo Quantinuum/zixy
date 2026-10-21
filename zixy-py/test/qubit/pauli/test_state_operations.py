@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from typing import assert_type
+
 import pytest
 from sympy import Expr, I, Symbol, symbols
-from typing_extensions import assert_type
 
 from zixy.qubit.pauli import (
     ComplexTermSum,

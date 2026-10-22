@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, cast
 
 from sympy import Expr
 
-from zixy._zixy import Modes  # noqa: TC001
+from zixy._zixy import Modes  # noqa: TC001 (required for sphinx)
 from zixy.container.coeffs import ComplexSign, Sign, get_coeffs_type
 
 if TYPE_CHECKING:

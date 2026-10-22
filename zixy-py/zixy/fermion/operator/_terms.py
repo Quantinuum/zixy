@@ -37,7 +37,7 @@ from zixy.fermion._terms import (
     TermSum as FermionTermSum,
 )
 from zixy.mappings.base import Mapper
-from zixy.qubit.pauli._terms import ComplexTermSum as PauliComplexTermSum
+from zixy.qubit.operator._terms import ComplexTermSum as PauliComplexTermSum
 
 type MapperType = Callable[[int | Qubits], Mapper]
 

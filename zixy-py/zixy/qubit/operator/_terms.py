@@ -16,7 +16,7 @@
 
 The structure of this module parallels that of :mod:`~zixy.container.terms` and
 :mod:`~zixy.qubit._terms`, using Pauli strings defined in
-:mod:`~zixy.qubit.pauli._strings`.
+:mod:`~zixy.qubit.operator._strings`.
 """
 
 from __future__ import annotations
@@ -55,7 +55,7 @@ from zixy.qubit._terms import (
     TermSet as TermSetBase,
     TermSum as TermSumBase,
 )
-from zixy.qubit.pauli._strings import String, Strings, StringSpec
+from zixy.qubit.operator._strings import String, Strings, StringSpec
 from zixy.qubit.state._terms import (
     ComplexTermSum as ComplexState,
     RealTermSum as RealState,
@@ -246,7 +246,7 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](
             This method operates in-place.
 
         See Also:
-            :meth:`~zixy.qubit.pauli._terms.Term.conj_clifford_list`
+            :meth:`~zixy.qubit.operator._terms.Term.conj_clifford_list`
         """
         signs = self._data.strings._impl.conj_clifford_list(gates._impl)
         self._impl._coeffs *= SignCoeffs._create(signs)
@@ -264,7 +264,7 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](
             This method operates in-place.
 
         See Also:
-            :meth:`~zixy.qubit.pauli._strings.Strings.relabel`
+            :meth:`~zixy.qubit.operator._strings.Strings.relabel`
         """
         self.strings.relabel(qubits)
         return self
@@ -279,7 +279,7 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](
             The resulting value.
 
         See Also:
-            :meth:`~zixy.qubit.pauli._strings.Strings.relabelled`
+            :meth:`~zixy.qubit.operator._strings.Strings.relabelled`
         """
         out = self.clone()
         out.relabel(qubits)
@@ -298,7 +298,7 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](
             This method operates in-place.
 
         See Also:
-            :meth:`~zixy.qubit.pauli._strings.Strings.standardize`
+            :meth:`~zixy.qubit.operator._strings.Strings.standardize`
         """
         self.strings.standardize(n_qubit)
         return self
@@ -313,7 +313,7 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](
             The resulting value.
 
         See Also:
-            :meth:`~zixy.qubit.pauli._strings.Strings.standardized`
+            :meth:`~zixy.qubit.operator._strings.Strings.standardized`
         """
         out = self.clone()
         out.strings.standardize(n_qubit)
@@ -440,7 +440,7 @@ class TermSum[C: (float, complex, Sign, ComplexSign, Expr)](
             Whether ``self`` conserves Hamming weight.
 
         See Also:
-            :meth:`~zixy.qubit.pauli.num_ops.create_num_op`
+            :meth:`~zixy.qubit.operator.num_ops.create_num_op`
         """
         from .num_ops import create_num_op  # noqa: PLC0415
 
@@ -458,7 +458,7 @@ class TermSum[C: (float, complex, Sign, ComplexSign, Expr)](
             Whether ``self`` conserves odd-bit Hamming weight.
 
         See Also:
-            :meth:`~zixy.qubit.pauli.num_ops.create_num_op_odd_bits`
+            :meth:`~zixy.qubit.operator.num_ops.create_num_op_odd_bits`
         """
         from .num_ops import create_num_op_odd_bits  # noqa: PLC0415
 
@@ -1400,7 +1400,7 @@ class SymbolicTerm(Term[Expr]):
         """Try to evaluate ``self`` as a term containing a vector of real coefficients.
 
         Returns:
-            An instance of :class:`~zixy.qubit.pauli._terms.RealTerm` with the evaluated
+            An instance of :class:`~zixy.qubit.operator._terms.RealTerm` with the evaluated
             coefficients.
 
         Raises:
@@ -1417,7 +1417,7 @@ class SymbolicTerm(Term[Expr]):
         """Try to evaluate ``self`` as a term containing a vector of complex coefficients.
 
         Returns:
-            An instance of :class:`~zixy.qubit.pauli._terms.ComplexTerm` with the evaluated
+            An instance of :class:`~zixy.qubit.operator._terms.ComplexTerm` with the evaluated
             coefficients.
 
         Raises:
@@ -1506,7 +1506,7 @@ class SymbolicTerms(Terms[Expr]):
         """Try to evaluate ``self`` as terms containing a vector of real coefficients.
 
         Returns:
-            An instance of :class:`~zixy.qubit.pauli._terms.RealTerms` with the evaluated
+            An instance of :class:`~zixy.qubit.operator._terms.RealTerms` with the evaluated
             coefficients.
 
         Raises:
@@ -1518,7 +1518,7 @@ class SymbolicTerms(Terms[Expr]):
         """Try to evaluate ``self`` as terms containing a vector of complex coefficients.
 
         Returns:
-            An instance of :class:`~zixy.qubit.pauli._terms.ComplexTerms` with the evaluated
+            An instance of :class:`~zixy.qubit.operator._terms.ComplexTerms` with the evaluated
             coefficients.
 
         Raises:

@@ -39,7 +39,7 @@ from zixy.qubit._strings import (
 )
 
 if TYPE_CHECKING:
-    from zixy.qubit.pauli import String as PauliString
+    from zixy.qubit.operator import String as PauliString
     from zixy.qubit.state._terms import Term
 
 type StringSpec = Sequence[bool] | set[int] | str

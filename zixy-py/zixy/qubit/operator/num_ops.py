@@ -18,8 +18,8 @@ from collections.abc import Sequence
 
 from zixy._zixy import Qubits
 from zixy.container.coeffs import unit
-from zixy.qubit.pauli import Z
-from zixy.qubit.pauli._terms import ComplexTerm, RealTerm
+from zixy.qubit.operator import Z
+from zixy.qubit.operator._terms import ComplexTerm, RealTerm
 
 
 def create_num_op_general[T: (RealTerm, ComplexTerm)](

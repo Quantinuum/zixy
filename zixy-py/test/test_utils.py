@@ -1,6 +1,26 @@
 import pytest
 
-from zixy.utils import slice_index, slice_len, slice_of_slice, slice_to_tuple, split_top_level
+from zixy.utils import (
+    isclass,
+    slice_index,
+    slice_len,
+    slice_of_slice,
+    slice_to_tuple,
+    split_top_level,
+)
+
+
+def test_isclass():
+    assert isclass(int, int)
+    assert isclass(float, float)
+    assert not isclass(int, float)
+    assert not isclass(bool, int)
+
+    class DerivedInt(int):
+        pass
+
+    assert isclass(DerivedInt, DerivedInt)
+    assert not isclass(DerivedInt, int)
 
 
 def test_slice_len():

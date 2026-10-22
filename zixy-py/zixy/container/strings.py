@@ -95,7 +95,7 @@ class String[ImplT: ImplArray, SpecT](ViewableItem[ImplT], StringRepresentable):
 
     def clone(self) -> Self:
         """Return a deep copy of ``self``."""
-        return type(self)._create(self._impl.cmpnts_clone([self.index]))
+        return type(self)._create(self._impl.strings_clone([self.index]))
 
     def aliases(self, other: String[ImplT, SpecT]) -> bool:
         """Determine whether ``self`` is a view of the same string as ``other``."""
@@ -108,11 +108,11 @@ class String[ImplT: ImplArray, SpecT](ViewableItem[ImplT], StringRepresentable):
         """Return whether ``self`` and ``other`` are equal."""
         if not isinstance(other, String):
             return NotImplemented
-        return self._impl.cmpnts_eq([self.index], other._impl, [other.index])
+        return self._impl.strings_eq([self.index], other._impl, [other.index])
 
     def __repr__(self) -> str:
         """Return a string representation of ``self``."""
-        return self._impl.cmpnt_to_string(self.index)
+        return self._impl.string_to_string(self.index)
 
     @abstractmethod
     def set(self, source: SpecT | Self) -> None:
@@ -186,9 +186,9 @@ class StringSet[ImplT: ImplArray, SpecT](StringRepresentable):
                 not referenced directly by ``self``.
         """
         assert isinstance(impl, self.strings_type.string_type.impl_type), type(impl)
-        self._impl = impl.cmpnts_clone([])
+        self._impl = impl.strings_clone([])
         self._map = self.map_type()
-        self._working_string = self.strings_type._create(impl.cmpnts_clone([])).new_clear_string()
+        self._working_string = self.strings_type._create(impl.strings_clone([])).new_clear_string()
         self.insert_iterable(self.strings_type._create(impl))
 
     @classmethod
@@ -212,7 +212,9 @@ class StringSet[ImplT: ImplArray, SpecT](StringRepresentable):
             assert len(impl) == len(map_)
             out._impl = impl
             out._map = map_
-            out._working_string = cls.strings_type._create(impl.cmpnts_clone([])).new_clear_string()
+            out._working_string = cls.strings_type._create(
+                impl.strings_clone([])
+            ).new_clear_string()
         return out
 
     @classmethod
@@ -225,7 +227,7 @@ class StringSet[ImplT: ImplArray, SpecT](StringRepresentable):
         Returns:
             A new instance of ``cls`` containing the strings in ``strings``.
         """
-        out = cls._create(strings._impl.cmpnts_clone([]))
+        out = cls._create(strings._impl.strings_clone([]))
         out.insert_iterable(strings)
         return out
 
@@ -246,7 +248,7 @@ class StringSet[ImplT: ImplArray, SpecT](StringRepresentable):
 
     def _empty_clone(self) -> Self:
         """Get an empty (owning, contiguous) clone of ``self``."""
-        return self._create(self._impl.cmpnts_clone([]))
+        return self._create(self._impl.strings_clone([]))
 
     def clone(self) -> Self:
         """Return a deep copy of ``self``."""
@@ -262,7 +264,7 @@ class StringSet[ImplT: ImplArray, SpecT](StringRepresentable):
             in ``self``. The
             type is determined by :attr:`~zixy.container.strings.StringSet.strings_type`.
         """
-        return self.strings_type._create(self._impl.cmpnts_clone(None))
+        return self.strings_type._create(self._impl.strings_clone(None))
 
     def __repr__(self) -> str:
         """Return a string representation of ``self``."""
@@ -375,7 +377,7 @@ class StringSet[ImplT: ImplArray, SpecT](StringRepresentable):
             return
         tmp = self._get_working_string(self.strings_type.string_type._clear_spec)
         for i in range(len(self)):
-            tmp._impl.cmpnt_copy_external(0, self._impl, i)
+            tmp._impl.string_copy_external(0, self._impl, i)
             yield tmp
 
     def iter_filter_map(
@@ -395,7 +397,7 @@ class StringSet[ImplT: ImplArray, SpecT](StringRepresentable):
             to ``f``. The type of the strings is determined by
             :attr:`~zixy.container.strings.Strings.strings_type`.
         """
-        tmp = self.strings_type._create(self._impl.cmpnts_clone(None))
+        tmp = self.strings_type._create(self._impl.strings_clone(None))
         return tmp.iter_filter_map(f)
 
     def filter_map(self, f: Callable[[String[ImplT, SpecT]], bool]) -> Self:
@@ -500,7 +502,7 @@ class Strings[ImplT: ImplArray, SpecT](
     def clone(self) -> Self:
         """Return a deep copy of ``self``."""
         inds = slice_to_tuple(self.slice, len(self._impl))
-        return self._create(self._impl.cmpnts_clone(inds))
+        return self._create(self._impl.strings_clone(inds))
 
     def __eq__(self, other: object) -> bool:
         """Return whether ``self`` and ``other`` are equal."""
@@ -508,7 +510,7 @@ class Strings[ImplT: ImplArray, SpecT](
             return NotImplemented
         inds = slice_to_tuple(self.slice, len(self._impl))
         other_inds = slice_to_tuple(other.slice, len(other._impl))
-        return self._impl.cmpnts_eq(inds, other._impl, other_inds)
+        return self._impl.strings_eq(inds, other._impl, other_inds)
 
     def __repr__(self) -> str:
         """Return a string representation of ``self``."""
@@ -575,7 +577,7 @@ class Strings[ImplT: ImplArray, SpecT](
 
     def _empty_clone(self) -> Self:
         """Get an empty (owning, contiguous) clone of ``self``."""
-        return self._create(self._impl.cmpnts_clone([]))
+        return self._create(self._impl.strings_clone([]))
 
     def reordered(self, inds: Sequence[int]) -> Self:
         """Get a new instance with the elements of ``self`` in a new order.

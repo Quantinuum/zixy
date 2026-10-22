@@ -7,7 +7,7 @@
 // use super::encoding;
 // use super::mode::{PauliMatrix, Qubits};
 // use super::mode_settings::OpModeSettings;
-// use crate::cmpnt::mode_settings::ModeSettings;
+// use crate::string::mode_settings::ModeSettings;
 // use crate::container::iterable_elements::IterableElements;
 // use crate::container::table::Table;
 // use crate::container::two_bit_vec::{self, TwoBitVec};
@@ -25,15 +25,15 @@
 
 // /// Contiguous and compact storage for vectors of mode-major Pauli words.
 // #[derive(Debug, Hash, PartialEq, Eq, Encode, Decode)]
-// pub struct CmpntVec {
+// pub struct StringVec {
 //     /// Each element is the vector of bit-packed Pauli matrices associated with each mode.
 //     modes: Vec<TwoBitVec>,
 //     /// Qubits on which the Pauli words are defined
 //     qubits: Qubits,
 // }
 
-// impl CmpntVec {
-//     /// Create an empty CmpntVec on the Qubits given.
+// impl StringVec {
+//     /// Create an empty StringVec on the Qubits given.
 //     pub fn new(qubits: Qubits) -> Self {
 //         Self {
 //             modes: vec![TwoBitVec::default(); n_qubit_from_qubits(&qubits) as usize],
@@ -45,15 +45,15 @@
 //     /// Repeated mode indices with differing Pauli matrix settings in general result in a phase
 //     /// factor. This factor is returned as a power of the imag unit.
 //     pub fn push_mode_settings(&mut self, mode_settings: &OpModeSettings, i: usize) -> u8 {
-//         let i_cmpnt: usize = self.len();
+//         let i_string: usize = self.len();
 //         self.push_clear();
 //         let mut tot_phase: usize = 0;
 //         // multiply-in each term from the right
 //         for (pauli, i_mode) in mode_settings.get_pauli_iter(i) {
 //             let (new_pauli, phase) =
-//                 pauli_matrix_product(self.elem_ref(i_cmpnt).get_qubit(i_mode), pauli);
+//                 pauli_matrix_product(self.elem_ref(i_string).get_qubit(i_mode), pauli);
 //             tot_phase += phase as usize;
-//             OpMutRef(self, i_cmpnt).set_qubit(i_mode, new_pauli);
+//             OpMutRef(self, i_string).set_qubit(i_mode, new_pauli);
 //         }
 //         (tot_phase & 3) as u8
 //     }
@@ -86,7 +86,7 @@
 //     }
 // }
 
-// impl Clone for CmpntVec {
+// impl Clone for StringVec {
 //     fn clone(&self) -> Self {
 //         Self {
 //             modes: self.modes.clone(),
@@ -95,7 +95,7 @@
 //     }
 // }
 
-// impl Collection for CmpntVec {
+// impl Collection for StringVec {
 //     fn len(&self) -> usize {
 //         if let Some(v) = self.modes.first() {v.len()}
 //         else {0}
@@ -106,7 +106,7 @@
 //     }
 // }
 
-// impl PushPaulis for CmpntVec {
+// impl PushPaulis for StringVec {
 
 //     fn push_clear(&mut self) {
 //         for v in self.modes.iter_mut() {

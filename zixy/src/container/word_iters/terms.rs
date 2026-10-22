@@ -236,7 +236,7 @@ pub trait AsViewMut<T: WordIters, C: NumRepr>: AsView<T, C> {
         self_mut_ref.coeffs.copy_unchecked(i_dst, i_src);
     }
 
-    /// `Set` the size of the cmpnts and coeffs.
+    /// `Set` the size of the strings and coeffs.
     fn resize(&mut self, n: usize) {
         let self_mut_ref = self.view_mut();
         self_mut_ref.word_iters.resize(n);

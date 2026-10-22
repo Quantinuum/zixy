@@ -8,8 +8,8 @@ use zixy::container::traits::MutRefElements;
 use zixy::container::traits::RefElements;
 use zixy::qubit::mode::PauliMatrix::*;
 use zixy::qubit::mode::Qubits;
-use zixy::qubit::pauli::cmpnt_major::term::Term;
-use zixy::qubit::pauli::cmpnt_major::terms::{AsViewMut, Terms};
+use zixy::qubit::pauli::string_major::term::Term;
+use zixy::qubit::pauli::string_major::terms::{AsViewMut, Terms};
 use zixy::qubit::traits::PushPaulis;
 
 type PhasedOp = Term<ComplexSign>;
@@ -76,13 +76,13 @@ fn bench_pauli_mult(c: &mut Criterion) {
                         .unwrap();
                         p0.borrow_mut().set_coeff(ComplexSign::I);
                         for _ in 0..*n_iter {
-                            for i_cmpnt in 0..tab.len() {
-                                let tab_ref = tab.get_elem_ref(i_cmpnt);
+                            for i_string in 0..tab.len() {
+                                let tab_ref = tab.get_elem_ref(i_string);
                                 if tab_ref
                                     .get_word_iter_ref()
                                     .anticommutes_with(p0.borrow().get_word_iter_ref())
                                 {
-                                    let _ = tab.get_elem_mut_ref(i_cmpnt).imul(p0.borrow());
+                                    let _ = tab.get_elem_mut_ref(i_string).imul(p0.borrow());
                                 }
                             }
                         }

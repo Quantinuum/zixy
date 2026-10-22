@@ -76,9 +76,9 @@ class String[ImplT: FermionArray, SpecT, ElemT](BaseString[ImplT, SpecT]):
     def _set_copy(self, source: String[ImplT, SpecT, ElemT]) -> None:
         """Set the value of ``self`` to that of ``source``."""
         if self._impl.same_as(source._impl):
-            self._impl.cmpnt_copy_internal(self.index, source.index)
+            self._impl.string_copy_internal(self.index, source.index)
         else:
-            self._impl.cmpnt_copy_external(self.index, source._impl, source.index)
+            self._impl.string_copy_external(self.index, source._impl, source.index)
 
     @abstractmethod
     def set(self, source: SpecT | Self) -> None:

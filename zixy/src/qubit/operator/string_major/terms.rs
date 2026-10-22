@@ -14,8 +14,8 @@ use crate::container::utils::DistinctPair;
 use crate::container::word_iters::{terms, WordIters};
 use crate::qubit::clifford;
 use crate::qubit::mode::{pauli_matrix_product, PauliMatrix, Qubits, SymplecticPart};
-use crate::qubit::pauli::springs::Springs;
-use crate::qubit::pauli::string_major::string_list::{StringList, StringRef};
+use crate::qubit::operator::springs::Springs;
+use crate::qubit::operator::string_major::string_list::{StringList, StringRef};
 use crate::qubit::traits::{
     DifferentQubits, PauliWordMutRef, PauliWordRef, PushPaulis, QubitsBased, QubitsRelabel,
     QubitsStandardize, QubitsStandardized,
@@ -525,7 +525,7 @@ mod tests {
     use crate::container::traits::{Elements, RefElements};
     use crate::container::word_iters::terms::AsViewMut as _;
     use crate::qubit::mode::{PauliMatrix, Qubits};
-    use crate::qubit::pauli::string_major::string::PauliWord;
+    use crate::qubit::operator::string_major::string::PauliWord;
     use rstest::rstest;
     use PauliMatrix::*;
 

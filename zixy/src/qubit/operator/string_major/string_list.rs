@@ -15,10 +15,10 @@ use crate::container::traits::{
 };
 use crate::container::word_iters::{self, WordIters};
 use crate::qubit::mode::{PauliMatrix, Qubits};
-use crate::qubit::pauli::mode_major;
-use crate::qubit::pauli::mode_major::array::Array;
-use crate::qubit::pauli::springs::Springs;
-use crate::qubit::pauli::string_major::encoding;
+use crate::qubit::operator::mode_major;
+use crate::qubit::operator::mode_major::array::Array;
+use crate::qubit::operator::springs::Springs;
+use crate::qubit::operator::string_major::encoding;
 use crate::qubit::traits::{
     DifferentQubits, PauliWordMutRef, PauliWordRef, PushPaulis, QubitsBased, QubitsRelabel,
     QubitsStandardize, QubitsStandardized,
@@ -598,7 +598,7 @@ mod tests {
     use crate::container::traits::proj::{Borrow, BorrowMut};
     use crate::qubit::mode::pauli_matrix_product as pmp;
     use crate::qubit::mode::{PauliMatrix, Qubits};
-    use crate::qubit::pauli::string_major::string::PauliWord;
+    use crate::qubit::operator::string_major::string::PauliWord;
     use crate::qubit::test::HEHP_STO3G_HAM_JW_INPUT;
     use bincode::config;
     use num_complex::Complex64;

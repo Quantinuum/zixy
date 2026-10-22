@@ -1,4 +1,4 @@
-//! Qubit pauli mode major mode major vec module.
+//! Vector storage for qubit operators in mode-major order.
 
 // //! Defines vectors of Pauli words, stored as contiguous vectors of Pauli matrices associated with each mode.
 // use std::collections::HashMap;

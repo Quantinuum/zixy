@@ -6,7 +6,7 @@ use crate::container::bit_matrix::BitMatrix;
 use crate::container::traits::{Compatible, Elements, EmptyClone};
 use crate::container::word_iters::WordIters;
 use crate::qubit::mode::Qubits;
-use crate::qubit::pauli::string_major;
+use crate::qubit::operator::string_major;
 use crate::qubit::traits::QubitsBased;
 use serde::{Deserialize, Serialize};
 
@@ -137,8 +137,8 @@ mod tests {
     use super::*;
     use crate::qubit::mode::PauliMatrix::*;
     use crate::qubit::mode::Qubits;
-    use crate::qubit::pauli::mode_major::array::Array;
-    use crate::qubit::pauli::string_major;
+    use crate::qubit::operator::mode_major::array::Array;
+    use crate::qubit::operator::string_major;
     use crate::qubit::traits::PushPaulis;
 
     fn create_test_array() -> Array {

@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Raw fermionic ladder-operator string components and collections of such strings.
+"""Raw fermionic ladder-operator strings and collections of such strings.
 
-Raw fermionic strings are components representing ordered products of creation and annihilation
+Raw fermionic strings represent ordered products of creation and annihilation
 operators, acting on a register of fermionic modes.
 
-The structure of this module parallels that of :mod:`~zixy.container.cmpnts`.
+The structure of this module parallels that of :mod:`~zixy.container.strings`.
 
 ``max_string_len`` is the maximum number of creation or annihilation operators per string. It is
 recommended that the user sets ``max_len`` to the longest expected operator string when constructing
@@ -33,8 +33,12 @@ from sympy import Expr
 
 from zixy._zixy import FermionSprings, GeneralFermionOperatorArray, Modes
 from zixy.container.base import requires_ownership
-from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet
 from zixy.container.coeffs import Coeff, ComplexSign, Sign
+from zixy.container.strings import (
+    String as BaseString,
+    Strings as BaseStrings,
+    StringSet as BaseStringSet,
+)
 from zixy.fermion._strings import _check_modes_compatibility
 from zixy.fermion.operator._strings import (
     LadderOp,
@@ -52,9 +56,9 @@ SpecT = StringSpec
 ImplT = GeneralFermionOperatorArray
 
 
-def _string_length(source: Cmpnt[ImplT, SpecT] | SpecT) -> int:
+def _string_length(source: BaseString[ImplT, SpecT] | SpecT) -> int:
     """Get the number of operators needed to store a string specifier."""
-    if isinstance(source, Cmpnt):
+    if isinstance(source, BaseString):
         return len(source._impl.cmpnt_get_ops(source.index)[0])
     if isinstance(source, str):
         if not source.strip():
@@ -98,7 +102,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         impl = self.impl_type(modes, max_string_len)
         impl._reserve_string_length(_string_length(source), warn=False)
         impl.resize(1)
-        Cmpnt.__init__(self, impl)
+        BaseString.__init__(self, impl)
         self.set(source)
 
     @staticmethod
@@ -149,7 +153,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
             elif len(springs) == 1:
                 self._impl.cmpnt_set_from_spring(self.index, springs, 0)
             else:
-                raise ValueError("String input has more than one component.")
+                raise ValueError("Input represents more than one string.")
         else:
             ops = list(source)
             mode_inds, adj = zip(*ops, strict=True) if ops else ((), ())
@@ -227,12 +231,12 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
 
         if isinstance(rhs, Coeff):
             scalar_term_type = get_term_type(type(rhs))
-            return scalar_term_type.from_cmpnt_coeff(self, rhs)
+            return scalar_term_type.from_string_coeff(self, rhs)
         if not isinstance(rhs, String):
             return NotImplemented
         _check_modes_compatibility(self.modes, rhs.modes)
         string = String(self.modes, self.get_ops() + rhs.get_ops())
-        return RealTerm.from_cmpnt_coeff(string, 1.0)
+        return RealTerm.from_string_coeff(string, 1.0)
 
 
 class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
@@ -243,7 +247,7 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
     another collection.
     """
 
-    cmpnt_type = String
+    string_type = String
     _set_type: type[StringSet]
 
     def __init__(self, modes: int | Modes = 0, n: int = 0, max_string_len: int = 0):
@@ -255,7 +259,7 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
             max_string_len: Maximum number of operators per string.
         """
         modes = Modes.from_count(modes) if isinstance(modes, int) else modes
-        Cmpnts.__init__(self, self.cmpnt_type.impl_type(modes, max_string_len))
+        BaseStrings.__init__(self, self.string_type.impl_type(modes, max_string_len))
         self.resize(n)
 
     @property
@@ -264,14 +268,14 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
         return self._impl.max_string_len
 
     @requires_ownership
-    def append_n(self, n: int, source: SpecT | Cmpnt[ImplT, SpecT]) -> Self:
+    def append_n(self, n: int, source: SpecT | BaseString[ImplT, SpecT]) -> Self:
         """Append a string repeatedly."""
         if n < 0:
             raise ValueError("The number of strings to append must be non-negative.")
         if n == 0:
             return self
         value = String(self.modes, max_string_len=_string_length(source))
-        if isinstance(source, Cmpnt):
+        if isinstance(source, BaseString):
             value._impl.cmpnt_copy_external(0, source._impl, source.index)
         else:
             value.set(source)
@@ -281,7 +285,7 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
     @classmethod
     def from_iterable(
         cls,
-        iterable: Iterable[SpecT | Cmpnt[ImplT, SpecT]],
+        iterable: Iterable[SpecT | BaseString[ImplT, SpecT]],
         modes: int | Modes = 0,
         n: int = 0,
         max_string_len: int = 0,
@@ -319,7 +323,7 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
         springs = FermionSprings(source)
         if modes is None:
             modes = Modes.from_count(springs.default_n_mode())
-        return cls._create(cls.cmpnt_type.impl_type(modes, max_string_len, springs))
+        return cls._create(cls.string_type.impl_type(modes, max_string_len, springs))
 
     @overload
     def __getitem__(self, indexer: int) -> String: ...
@@ -344,7 +348,7 @@ class StringSet(OperatorStringSet[ImplT, SpecT, ElemT]):
     strings and perform set-like operations on them.
     """
 
-    cmpnts_type = Strings
+    strings_type = Strings
 
     def __init__(self, modes: int | Modes = 0, max_string_len: int = 0):
         """Initialize the string set.
@@ -353,22 +357,24 @@ class StringSet(OperatorStringSet[ImplT, SpecT, ElemT]):
             modes: The mode space or number of modes.
             max_string_len: Maximum number of operators per string.
         """
-        CmpntSet.__init__(self, self.cmpnts_type(modes, max_string_len=max_string_len)._impl)
+        BaseStringSet.__init__(self, self.strings_type(modes, max_string_len=max_string_len)._impl)
 
     @property
     def max_string_len(self) -> int:
         """The maximum number of operators per string."""
         return self._impl.max_string_len
 
-    def _get_working_cmpnt(self, value: SpecT | Cmpnt[ImplT, SpecT]) -> Cmpnt[ImplT, SpecT]:
+    def _get_working_string(
+        self, value: SpecT | BaseString[ImplT, SpecT]
+    ) -> BaseString[ImplT, SpecT]:
         """Prepare a lookup or insertion string without warning about temporary storage."""
-        self._working_cmpnt._impl._reserve_string_length(_string_length(value), warn=False)
-        return super()._get_working_cmpnt(value)
+        self._working_string._impl._reserve_string_length(_string_length(value), warn=False)
+        return super()._get_working_string(value)
 
     @classmethod
     def from_iterable(
         cls,
-        iterable: Iterable[SpecT | Cmpnt[ImplT, SpecT]],
+        iterable: Iterable[SpecT | BaseString[ImplT, SpecT]],
         modes: int | Modes = 0,
         max_string_len: int = 0,
     ) -> Self:

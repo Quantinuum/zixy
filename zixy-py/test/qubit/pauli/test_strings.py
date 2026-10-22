@@ -80,7 +80,7 @@ def test_string_modification():
 
 
 @pytest.mark.parametrize(
-    ("cmpnt_type", "source", "qubits", "expected"),
+    ("string_type", "source", "qubits", "expected"),
     (
         (String, "X0 Y2", None, "X0 Y2"),
         (String, "  X0   Y2  ", None, "X0 Y2"),
@@ -96,13 +96,13 @@ def test_string_modification():
         (StringSet, "", 3, ""),
     ),
 )
-def test_from_str(cmpnt_type, source, qubits, expected):
+def test_from_str(string_type, source, qubits, expected):
     args = () if qubits is None else (qubits,)
-    parsed = cmpnt_type.from_str(source, *args)
+    parsed = string_type.from_str(source, *args)
     assert str(parsed) == expected
 
-    if cmpnt_type is StringSet:
-        assert parsed == StringSet.from_cmpnts(Strings.from_str(source, *args))
+    if string_type is StringSet:
+        assert parsed == StringSet.from_strings(Strings.from_str(source, *args))
 
     with pytest.raises(ValueError) as err:
         String.from_str("X0 Y2, Y3, X2 Y3, X3, Z0 Z1 Z2 Z3", 4)
@@ -261,7 +261,7 @@ def test_in_place_products():
     assert a[0].get_tuple() == (Z, X, I, Z, Z, I)
 
 
-def test_cmpnt_copy():
+def test_string_copy():
     n_qubit = 6
     a = Strings(n_qubit)
     tuples = (
@@ -369,21 +369,22 @@ def test_string_set():
     assert str(err.value) == "'Value X0 X1 X2 Z3 not found in StringSet.'"
 
     assert len(Strings.from_iterable(s, n_qubit)._impl) == len(s._impl)
-    assert s.to_cmpnts() == Strings.from_iterable(s, n_qubit)
+    assert s.to_strings() == Strings.from_iterable(s, n_qubit)
     assert Strings.from_iterable(s, n_qubit)._impl == s._impl
     strings = Strings.from_iterable(s, n_qubit)
-    assert StringSet.from_cmpnts(strings).to_cmpnts() == strings
+    assert StringSet.from_strings(strings).to_strings() == strings
 
 
-def test_string_set_deprecated_string_conversions():
+@pytest.mark.filterwarnings("error::DeprecationWarning")
+def test_string_set_string_conversions():
     strings = Strings.from_iterable(((X,), (Y,)), 1)
+    string_set = StringSet.from_strings(strings)
+    round_tripped = string_set.to_strings()
 
-    with pytest.deprecated_call(match="StringSet.from_strings is deprecated"):
-        string_set = StringSet.from_strings(strings)
-    with pytest.deprecated_call(match="StringSet.to_strings is deprecated"):
-        round_tripped = string_set.to_strings()
-
+    assert isinstance(round_tripped, Strings)
     assert round_tripped == strings
+    round_tripped[0].set((Z,))
+    assert string_set.to_strings() == strings
 
 
 def test_string_set_from_iterable():

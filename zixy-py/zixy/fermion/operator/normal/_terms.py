@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Terms containing normal-ordered fermionic strings as components and collections of such terms.
+"""Terms containing normal-ordered fermionic strings and collections of such terms.
 
-The structure of this module parallels that of :mod:`~zixy.container.terms`, but with components
-that are normal-ordered fermionic strings, as defined in
+This module follows :mod:`~zixy.container.terms`, using strings defined in
 :mod:`~zixy.fermion.operator.normal._strings`.
 """
 
@@ -95,10 +94,10 @@ def _term_sum_from_product(
     """Compute the product of two normal-ordered strings."""
     out = term_type._term_sum_type(modes)
     impl, signs = lhs._impl.cmpnt_mul(lhs.index, rhs._impl, rhs.index)
-    cmpnts = term_type.cmpnts_type._create(impl)
+    strings = term_type.strings_type._create(impl)
     for i in range(len(impl)):
         coeff = typesafe_mul(base_coeff, Sign(signs[i]))
-        term = term_type.from_cmpnt_coeff(cmpnts[i], coeff)
+        term = term_type.from_string_coeff(strings[i], coeff)
         if issubclass(term_type.coeff_type, RootOfUnity):
             out.insert(term)
         else:
@@ -113,7 +112,7 @@ def _mul[
     """Driver for multiplication of a term with another term, a string, or a coefficient."""
     if isinstance(rhs, Coeff):
         scalar_product = lhs.coeff * rhs
-        return get_term_type(type(scalar_product)).from_cmpnt_coeff(lhs.cmpnt, scalar_product)
+        return get_term_type(type(scalar_product)).from_string_coeff(lhs.string, scalar_product)
     if isinstance(rhs, String):
         return _term_sum_from_product(
             get_term_type(type(lhs.coeff)), lhs.modes, lhs.string, rhs, lhs.coeff
@@ -149,14 +148,14 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerm[ImplT, Spe
     :class:`~zixy.container.data.TermData` instance, or a view on an element in another collection.
     """
 
-    cmpnts_type = Strings
+    strings_type = Strings
     coeff_type: type[C]
     _term_sum_type: type[TermSum[C]]
 
     @property
     def string(self) -> String:
-        """The string component of the term."""
-        return cast("String", self.cmpnt)
+        """The string of the term."""
+        return cast("String", super().string)
 
     def dagger(self) -> None:
         """Take the adjoint of ``self`` in-place, including the fermionic sign."""
@@ -193,7 +192,7 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
     set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -214,7 +213,7 @@ class TermSum[C: (float, complex, Sign, ComplexSign, Expr)](
     linear combination operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -321,7 +320,7 @@ class SignTermSet(TermSet[Sign]):
     coefficients that may be used to store unique terms and perform set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -423,7 +422,7 @@ class RealTermSet(TermSet[float]):
     store unique terms and perform set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -437,7 +436,7 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
     store unique terms and perform algebraic operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -456,9 +455,9 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
             return NotImplemented
         assert isinstance(self._impl._coeffs, RealCoeffs)
         assert isinstance(rhs._impl._coeffs, RealCoeffs)
-        lhs_impl = self._impl._cmpnts._impl
+        lhs_impl = self._impl._strings._impl
         lhs_coeffs = self._impl._coeffs._impl
-        rhs_impl = rhs._impl._cmpnts._impl
+        rhs_impl = rhs._impl._strings._impl
         rhs_coeffs = rhs._impl._coeffs._impl
         # TODO: support output by reference
         impl, coeffs = lhs_impl.lincomb_mul_real(lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs)
@@ -511,7 +510,7 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
         )
 
         impl, coeffs = self.strings._impl.lincomb_to_general_real(
-            self.strings._impl, self._cmpnt_set._map, self.coeffs._impl
+            self.strings._impl, self._string_set._map, self.coeffs._impl
         )
         return GeneralRealTermSum._create(
             TermData(
@@ -545,12 +544,12 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
         assert isinstance(self._impl._coeffs, RealCoeffs)
         assert isinstance(state._impl._coeffs, RealCoeffs)
         assert isinstance(out._impl._coeffs, RealCoeffs)
-        self._impl._cmpnts._impl.apply_to_state_real(
+        self._impl._strings._impl.apply_to_state_real(
             self._impl._coeffs._impl,
-            state._impl._cmpnts._impl,
+            state._impl._strings._impl,
             state._impl._coeffs._impl,
-            out._impl._cmpnts._impl,
-            out._cmpnt_set._map,
+            out._impl._strings._impl,
+            out._string_set._map,
             out._impl._coeffs._impl,
         )
         return out.filter_nonzero()
@@ -585,11 +584,11 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
         assert isinstance(bra._impl._coeffs, RealCoeffs)
         assert isinstance(ket._impl._coeffs, RealCoeffs)
         return float(
-            self._impl._cmpnts._impl.mat_elem_real(
+            self._impl._strings._impl.mat_elem_real(
                 self._impl._coeffs._impl,
-                bra._impl._cmpnts._impl,
+                bra._impl._strings._impl,
                 bra._impl._coeffs._impl,
-                ket._impl._cmpnts._impl,
+                ket._impl._strings._impl,
                 ket._impl._coeffs._impl,
             )
         )
@@ -702,7 +701,7 @@ class ComplexTermSet(TermSet[complex]):
     store unique terms and perform set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -718,7 +717,7 @@ class ComplexTermSum(
     store unique terms and perform algebraic operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -737,9 +736,9 @@ class ComplexTermSum(
             return NotImplemented
         assert isinstance(self._impl._coeffs, ComplexCoeffs)
         assert isinstance(rhs._impl._coeffs, ComplexCoeffs)
-        lhs_impl = self._impl._cmpnts._impl
+        lhs_impl = self._impl._strings._impl
         lhs_coeffs = self._impl._coeffs._impl
-        rhs_impl = rhs._impl._cmpnts._impl
+        rhs_impl = rhs._impl._strings._impl
         rhs_coeffs = rhs._impl._coeffs._impl
         # TODO: support output by reference
         impl, coeffs = lhs_impl.lincomb_mul_complex(lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs)
@@ -794,7 +793,7 @@ class ComplexTermSum(
         )
 
         impl, coeffs = self.strings._impl.lincomb_to_general_complex(
-            self.strings._impl, self._cmpnt_set._map, self.coeffs._impl
+            self.strings._impl, self._string_set._map, self.coeffs._impl
         )
         return GeneralComplexTermSum._create(
             TermData(
@@ -826,12 +825,12 @@ class ComplexTermSum(
         assert isinstance(self._impl._coeffs, ComplexCoeffs)
         assert isinstance(state._impl._coeffs, ComplexCoeffs)
         assert isinstance(out._impl._coeffs, ComplexCoeffs)
-        self._impl._cmpnts._impl.apply_to_state_complex(
+        self._impl._strings._impl.apply_to_state_complex(
             self._impl._coeffs._impl,
-            state._impl._cmpnts._impl,
+            state._impl._strings._impl,
             state._impl._coeffs._impl,
-            out._impl._cmpnts._impl,
-            out._cmpnt_set._map,
+            out._impl._strings._impl,
+            out._string_set._map,
             out._impl._coeffs._impl,
         )
         return out.filter_nonzero()
@@ -864,11 +863,11 @@ class ComplexTermSum(
         assert isinstance(bra._impl._coeffs, ComplexCoeffs)
         assert isinstance(ket._impl._coeffs, ComplexCoeffs)
         return complex(
-            self._impl._cmpnts._impl.mat_elem_complex(
+            self._impl._strings._impl.mat_elem_complex(
                 self._impl._coeffs._impl,
-                bra._impl._cmpnts._impl,
+                bra._impl._strings._impl,
                 bra._impl._coeffs._impl,
-                ket._impl._cmpnts._impl,
+                ket._impl._strings._impl,
                 ket._impl._coeffs._impl,
             )
         )
@@ -1033,7 +1032,7 @@ class SymbolicTermSet(TermSet[Expr]):
     set-like operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 
@@ -1071,7 +1070,7 @@ class SymbolicTermSum(TermSum[Expr]):
     algebraic operations on them.
 
     Note:
-        Coefficients are mutable in-place, but components are the keys of a hashmap and therefore
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
 

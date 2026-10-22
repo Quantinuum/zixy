@@ -36,7 +36,7 @@ def test_string_modification():
 
 
 @pytest.mark.parametrize(
-    ("cmpnt_type", "source", "modes", "expected"),
+    ("string_type", "source", "modes", "expected"),
     (
         (String, "F0^ F1", None, "F0^ F1"),
         (String, "  F0^   F1  ", None, "F0^ F1"),
@@ -62,13 +62,13 @@ def test_string_modification():
         (StringSet, "", 3, ""),
     ),
 )
-def test_from_str(cmpnt_type, source, modes, expected):
+def test_from_str(string_type, source, modes, expected):
     args = () if modes is None else (modes,)
-    parsed = cmpnt_type.from_str(source, *args)
+    parsed = string_type.from_str(source, *args)
     assert str(parsed) == expected
 
-    if cmpnt_type is StringSet:
-        assert parsed == StringSet.from_cmpnts(Strings.from_str(source, *args))
+    if string_type is StringSet:
+        assert parsed == StringSet.from_strings(Strings.from_str(source, *args))
 
 
 def test_string_dagger():
@@ -190,10 +190,10 @@ def test_errors():
 
 def test_string_set():
     strings = Strings.from_str("F1 F0^, F1 F0^, F0^ F1", 2)
-    string_set = StringSet.from_cmpnts(strings)
+    string_set = StringSet.from_strings(strings)
 
     assert len(string_set) == 2
-    assert str(string_set.to_cmpnts()) == "F1 F0^, F0^ F1"
+    assert str(string_set.to_strings()) == "F1 F0^, F0^ F1"
 
 
 def test_mapped_insert():
@@ -269,4 +269,4 @@ def test_string_set_from_iterable():
     string_set = StringSet.from_iterable(specs, 2, max_string_len=2)
     assert len(string_set) == 3
     assert StringSet.from_iterable(reversed(specs), 2, max_string_len=2) == string_set
-    assert StringSet.from_cmpnts(string_set.to_cmpnts()).to_cmpnts() == string_set.to_cmpnts()
+    assert StringSet.from_strings(string_set.to_strings()).to_strings() == string_set.to_strings()

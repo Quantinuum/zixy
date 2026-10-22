@@ -199,7 +199,7 @@ def test_term():
 
 def test_term_real_sum():
     lc = RealTermSum(6)
-    assert len(lc._impl._cmpnts._impl.qubits) == 6
+    assert len(lc._impl._strings._impl.qubits) == 6
     assert len(lc) == 0
     assert str(lc) == ""
     lc += RealTerm(6, ((1, 0, 0, 0, 0, 1), 3.0))
@@ -307,20 +307,20 @@ def test_term_set_check_term():
         term_set._check_term(RealTerm(4, ((1, 0, 0, 0), 1.0)))
 
     with pytest.raises(TypeError, match="Expected a RealTerm instance"):
-        term_set._check_term(PauliRealTerm.from_cmpnt_coeff(PauliString(3, (X, I, I)), 1.0))
+        term_set._check_term(PauliRealTerm.from_string_coeff(PauliString(3, (X, I, I)), 1.0))
 
 
-def test_term_set_check_cmpnt():
+def test_term_set_check_string():
     term_set = RealTermSet(3)
     string = String(3, (1, 0, 0))
 
-    term_set._check_cmpnt(string)
+    term_set._check_string(string)
 
     with pytest.raises(ValueError, match="different qubits"):
-        term_set._check_cmpnt(String(4, (1, 0, 0, 0)))
+        term_set._check_string(String(4, (1, 0, 0, 0)))
 
     with pytest.raises(TypeError, match="Expected a String instance"):
-        term_set._check_cmpnt(PauliString(3, (X, I, I)))
+        term_set._check_string(PauliString(3, (X, I, I)))
 
 
 def test_real_term_sum_to_dense_matrix_index_error():

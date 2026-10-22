@@ -60,12 +60,12 @@ class Term[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
 ):
     """A term consisting of a fermionic ladder-operator string and a coefficient."""
 
-    cmpnts_type: type[OperatorStrings[ImplT, SpecT, ElemT]]
+    strings_type: type[OperatorStrings[ImplT, SpecT, ElemT]]
 
     @property
     def string(self) -> OperatorString[ImplT, SpecT, ElemT]:
-        """The string component of the term."""
-        return cast("OperatorString[ImplT, SpecT, ElemT]", self.cmpnt)
+        """The string of the term."""
+        return cast("OperatorString[ImplT, SpecT, ElemT]", super().string)
 
     @abstractmethod
     def dagger(self) -> None:
@@ -87,8 +87,8 @@ class Terms[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, E
 
     @property
     def strings(self) -> OperatorStrings[ImplT, SpecT, ElemT]:
-        """The string components of the terms."""
-        return cast("OperatorStrings[ImplT, SpecT, ElemT]", self.cmpnts)
+        """The strings of the terms."""
+        return cast("OperatorStrings[ImplT, SpecT, ElemT]", super().strings)
 
 
 class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
@@ -100,8 +100,8 @@ class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign,
 
     @property
     def strings(self) -> OperatorStrings[ImplT, SpecT, ElemT]:
-        """The string components of the terms."""
-        return cast("OperatorStrings[ImplT, SpecT, ElemT]", self._impl._cmpnts)
+        """The strings of the terms."""
+        return cast("OperatorStrings[ImplT, SpecT, ElemT]", self._impl._strings)
 
     @property
     def coeffs(self) -> Any:
@@ -156,6 +156,8 @@ class TermSum[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign,
         mapper_instance = mapper_type(qubits)
         out = PauliComplexTermSum(qubits)
         for term in self:
-            cmpnt_type = self.terms_type.term_type.cmpnts_type.cmpnt_type
-            out += convert(term.coeff, complex) * mapper_instance.apply(term.cmpnt.into(cmpnt_type))
+            string_type = self.terms_type.term_type.strings_type.string_type
+            out += convert(term.coeff, complex) * mapper_instance.apply(
+                term.string.into(string_type)
+            )
         return out

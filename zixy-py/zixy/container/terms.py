@@ -614,13 +614,8 @@ class Terms(
             Iterator over the selected (and possibly mutated) terms of ``self`` according
             to ``f``.
         """
-        if not len(self):
-            return
-        tmp = self[0].clone()
-        if f(tmp):
-            yield tmp
-        for i in range(1, len(self)):
-            tmp.set(self[i])
+        for term in self:
+            tmp = term.clone()
             if f(tmp):
                 yield tmp
 
@@ -1212,14 +1207,9 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         return all(self.lookup_coeff(term.cmpnt) == term.coeff for term in other)
 
     def __iter__(self) -> Iterator[Term[ImplT, SpecT, CoeffT]]:
-        """Iterate over the elements of ``self``."""
-        if not len(self):
-            return
-        tmp = self._get_working_term("").clone()  # type: ignore[arg-type]
+        """Iterate over elements of ``self``."""
         for i in range(len(self)):
-            tmp.coeff = self._impl._coeffs[i]
-            tmp._impl._cmpnts._impl.cmpnt_copy_external(0, self._impl._cmpnts._impl, i)
-            yield tmp
+            yield self.terms_type.term_type._create(self._impl, i)
 
     def _from_generator(self, gen: Iterator[Term[ImplT, SpecT, CoeffT]]) -> Self:
         """Creates a new instance from a generator yielding instances of :class:`Term`."""
@@ -1244,7 +1234,10 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
         Note:
             The resulting generator does not enforce uniqueness of components.
         """
-        return (term for term in self if f(term))
+        for term in self:
+            copy = term.clone()
+            if f(copy):
+                yield copy
 
     def filter_map(self, f: Callable[[Term[ImplT, SpecT, CoeffT]], bool]) -> Self:
         """Eagerly evaluate a filter-map operation over the terms of ``self``.

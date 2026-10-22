@@ -365,4 +365,4 @@ class StringSet[ImplT: QubitArray[Any, Any], SpecT, ElemT](CmpntSet[ImplT, SpecT
             DeprecationWarning,
             stacklevel=2,
         )
-        return cast(Strings[ImplT, SpecT, ElemT], self.to_cmpnts())
+        return cast("Strings[ImplT, SpecT, ElemT]", self.to_cmpnts())

@@ -156,7 +156,7 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerm[ImplT, Spe
     @property
     def string(self) -> String:
         """The string component of the term."""
-        return cast(String, self.cmpnt)
+        return cast("String", self.cmpnt)
 
     def dagger(self) -> None:
         """Take the adjoint of ``self`` in-place, including the fermionic sign."""
@@ -1001,7 +1001,7 @@ class SymbolicTerms(Terms[Expr]):
     @property
     def coeffs(self) -> SymbolicCoeffs:
         """The coefficients of ``self``."""
-        return cast(SymbolicCoeffs, self._data.coeffs[self.slice])
+        return cast("SymbolicCoeffs", self._data.coeffs[self.slice])
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
         """Apply a partial substitution of the symbols in-place.

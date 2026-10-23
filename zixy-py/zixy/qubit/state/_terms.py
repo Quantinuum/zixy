@@ -96,11 +96,6 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](
     strings_type = Strings
     coeff_type: type[C]
 
-    @property
-    def string(self) -> String:
-        """The string of the term."""
-        return cast("String", super().string)
-
     def __imul__(self, rhs: Coeff | String | Term[C]) -> Self:
         """In-place multiplication of ``self`` by ``rhs``."""
         init_coeff = None
@@ -153,11 +148,6 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](
     """
 
     term_type: type[Term[C]]
-
-    @property
-    def strings(self) -> Strings:
-        """The strings of ``self``."""
-        return cast("Strings", super().strings)
 
 
 class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](

@@ -23,8 +23,8 @@ The structure of this module parallels that of :mod:`~zixy.container.strings` an
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Sequence
-from typing import TYPE_CHECKING, Self, cast, overload
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Self, overload
 
 from sympy import Expr
 
@@ -298,13 +298,8 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
             # todo: have rust binding take inds to preclude this copy in this non-contiguous case.
             return self.clone()._impl.compatibility_matrix()
 
-    def iter_filter_non_identity(self) -> Iterator[String]:
-        """Lazy filter retaining only the strings that are different to identity."""
-        return cast("Iterator[String]", self.iter_filter_populated())
-
-    def filter_non_identity(self) -> Strings:
-        """Eagerly filter retaining only the strings that are different to identity."""
-        return self.filter_populated()
+    iter_filter_non_identity = StringsBase.iter_filter_populated
+    filter_non_identity = StringsBase.filter_populated
 
     def centralizer_and_remainder(self) -> tuple[Strings, Strings]:
         """Get the centralizer and remainder of ``self``.

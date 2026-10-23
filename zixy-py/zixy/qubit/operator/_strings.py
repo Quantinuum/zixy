@@ -173,7 +173,8 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         if isinstance(rhs, String):
             product, phase = self._impl.string_mul(self.index, rhs._impl, rhs.index)
             phases = ComplexSignCoeffs.from_scalar(ComplexSign(phase))
-            return ComplexSignTerm._create(TermData(Strings._create(product), phases))
+            term_data = TermData(Strings._create(product), phases)
+            return ComplexSignTerm._create(term_data)
         return get_term_type(type(rhs)).from_string_coeff(self, rhs)
 
     def __rmul__[C: (float, complex, Sign, ComplexSign, Expr)](self, lhs: C) -> Term[C]:

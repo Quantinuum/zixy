@@ -197,7 +197,7 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
     @property
     def coeffs(self) -> Any:
         """The coefficients of ``self``."""
-        return self._impl._coeffs
+        return self._impl.coeffs
 
 
 class TermSum[C: (float, complex, Sign, ComplexSign, Expr)](
@@ -449,12 +449,12 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
             return super().__mul__(rhs)
         elif not isinstance(rhs, RealTermSum):
             return NotImplemented
-        assert isinstance(self._impl._coeffs, RealCoeffs)
-        assert isinstance(rhs._impl._coeffs, RealCoeffs)
-        lhs_impl = self._impl._strings._impl
-        lhs_coeffs = self._impl._coeffs._impl
-        rhs_impl = rhs._impl._strings._impl
-        rhs_coeffs = rhs._impl._coeffs._impl
+        assert isinstance(self._impl.coeffs, RealCoeffs)
+        assert isinstance(rhs._impl.coeffs, RealCoeffs)
+        lhs_impl = self._impl.strings._impl
+        lhs_coeffs = self._impl.coeffs._impl
+        rhs_impl = rhs._impl.strings._impl
+        rhs_coeffs = rhs._impl.coeffs._impl
         # TODO: support output by reference
         impl, coeffs = lhs_impl.lincomb_mul_real(lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs)
         data = TermData(Strings._create(impl), RealCoeffs._create(coeffs))
@@ -508,12 +508,11 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
         impl, coeffs = self.strings._impl.lincomb_to_general_real(
             self.strings._impl, self._string_set._map, self.coeffs._impl
         )
-        return GeneralRealTermSum._create(
-            TermData(
-                GeneralStrings._create(impl),
-                RealCoeffs._create(coeffs),
-            )
+        term_data = TermData(
+            GeneralStrings._create(impl),
+            RealCoeffs._create(coeffs),
         )
+        return GeneralRealTermSum._create(term_data)
 
     @overload
     def apply(self, state: RealState) -> RealState: ...
@@ -537,16 +536,16 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
         if isinstance(state, SymbolicState):
             return self.into(SymbolicTermSum).apply(state)
         out = RealState(self.modes)
-        assert isinstance(self._impl._coeffs, RealCoeffs)
-        assert isinstance(state._impl._coeffs, RealCoeffs)
-        assert isinstance(out._impl._coeffs, RealCoeffs)
-        self._impl._strings._impl.apply_to_state_real(
-            self._impl._coeffs._impl,
-            state._impl._strings._impl,
-            state._impl._coeffs._impl,
-            out._impl._strings._impl,
+        assert isinstance(self._impl.coeffs, RealCoeffs)
+        assert isinstance(state._impl.coeffs, RealCoeffs)
+        assert isinstance(out._impl.coeffs, RealCoeffs)
+        self._impl.strings._impl.apply_to_state_real(
+            self._impl.coeffs._impl,
+            state._impl.strings._impl,
+            state._impl.coeffs._impl,
+            out._impl.strings._impl,
             out._string_set._map,
-            out._impl._coeffs._impl,
+            out._impl.coeffs._impl,
         )
         return out.filter_nonzero()
 
@@ -576,16 +575,16 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
             return self.into(SymbolicTermSum).mat_elem(bra, ket)
         if isinstance(bra, ComplexState) or isinstance(ket, ComplexState):
             return self.into(ComplexTermSum).mat_elem(bra, ket)
-        assert isinstance(self._impl._coeffs, RealCoeffs)
-        assert isinstance(bra._impl._coeffs, RealCoeffs)
-        assert isinstance(ket._impl._coeffs, RealCoeffs)
+        assert isinstance(self._impl.coeffs, RealCoeffs)
+        assert isinstance(bra._impl.coeffs, RealCoeffs)
+        assert isinstance(ket._impl.coeffs, RealCoeffs)
         return float(
-            self._impl._strings._impl.mat_elem_real(
-                self._impl._coeffs._impl,
-                bra._impl._strings._impl,
-                bra._impl._coeffs._impl,
-                ket._impl._strings._impl,
-                ket._impl._coeffs._impl,
+            self._impl.strings._impl.mat_elem_real(
+                self._impl.coeffs._impl,
+                bra._impl.strings._impl,
+                bra._impl.coeffs._impl,
+                ket._impl.strings._impl,
+                ket._impl.coeffs._impl,
             )
         )
 
@@ -730,12 +729,12 @@ class ComplexTermSum(
             return super().__mul__(rhs)
         elif not isinstance(rhs, ComplexTermSum):
             return NotImplemented
-        assert isinstance(self._impl._coeffs, ComplexCoeffs)
-        assert isinstance(rhs._impl._coeffs, ComplexCoeffs)
-        lhs_impl = self._impl._strings._impl
-        lhs_coeffs = self._impl._coeffs._impl
-        rhs_impl = rhs._impl._strings._impl
-        rhs_coeffs = rhs._impl._coeffs._impl
+        assert isinstance(self._impl.coeffs, ComplexCoeffs)
+        assert isinstance(rhs._impl.coeffs, ComplexCoeffs)
+        lhs_impl = self._impl.strings._impl
+        lhs_coeffs = self._impl.coeffs._impl
+        rhs_impl = rhs._impl.strings._impl
+        rhs_coeffs = rhs._impl.coeffs._impl
         # TODO: support output by reference
         impl, coeffs = lhs_impl.lincomb_mul_complex(lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs)
         data = TermData(Strings._create(impl), ComplexCoeffs._create(coeffs))
@@ -791,12 +790,11 @@ class ComplexTermSum(
         impl, coeffs = self.strings._impl.lincomb_to_general_complex(
             self.strings._impl, self._string_set._map, self.coeffs._impl
         )
-        return GeneralComplexTermSum._create(
-            TermData(
-                GeneralStrings._create(impl),
-                ComplexCoeffs._create(coeffs),
-            )
+        term_data = TermData(
+            GeneralStrings._create(impl),
+            ComplexCoeffs._create(coeffs),
         )
+        return GeneralComplexTermSum._create(term_data)
 
     @overload
     def apply(self, state: NumericState) -> ComplexState: ...
@@ -818,16 +816,16 @@ class ComplexTermSum(
         elif isinstance(state, SymbolicState):
             return self.into(SymbolicTermSum).apply(state)
         out = ComplexState(self.modes)
-        assert isinstance(self._impl._coeffs, ComplexCoeffs)
-        assert isinstance(state._impl._coeffs, ComplexCoeffs)
-        assert isinstance(out._impl._coeffs, ComplexCoeffs)
-        self._impl._strings._impl.apply_to_state_complex(
-            self._impl._coeffs._impl,
-            state._impl._strings._impl,
-            state._impl._coeffs._impl,
-            out._impl._strings._impl,
+        assert isinstance(self._impl.coeffs, ComplexCoeffs)
+        assert isinstance(state._impl.coeffs, ComplexCoeffs)
+        assert isinstance(out._impl.coeffs, ComplexCoeffs)
+        self._impl.strings._impl.apply_to_state_complex(
+            self._impl.coeffs._impl,
+            state._impl.strings._impl,
+            state._impl.coeffs._impl,
+            out._impl.strings._impl,
             out._string_set._map,
-            out._impl._coeffs._impl,
+            out._impl.coeffs._impl,
         )
         return out.filter_nonzero()
 
@@ -855,16 +853,16 @@ class ComplexTermSum(
             bra = bra.into(ComplexState)
         if isinstance(ket, RealState):
             ket = ket.into(ComplexState)
-        assert isinstance(self._impl._coeffs, ComplexCoeffs)
-        assert isinstance(bra._impl._coeffs, ComplexCoeffs)
-        assert isinstance(ket._impl._coeffs, ComplexCoeffs)
+        assert isinstance(self._impl.coeffs, ComplexCoeffs)
+        assert isinstance(bra._impl.coeffs, ComplexCoeffs)
+        assert isinstance(ket._impl.coeffs, ComplexCoeffs)
         return complex(
-            self._impl._strings._impl.mat_elem_complex(
-                self._impl._coeffs._impl,
-                bra._impl._strings._impl,
-                bra._impl._coeffs._impl,
-                ket._impl._strings._impl,
-                ket._impl._coeffs._impl,
+            self._impl.strings._impl.mat_elem_complex(
+                self._impl.coeffs._impl,
+                bra._impl.strings._impl,
+                bra._impl.coeffs._impl,
+                ket._impl.strings._impl,
+                ket._impl.coeffs._impl,
             )
         )
 
@@ -1018,7 +1016,8 @@ class SymbolicTerms(Terms[Expr]):
         Returns:
             A new contiguously stored instance with the substitution applied.
         """
-        return SymbolicTerms._create(TermData(self.strings.clone(), self.coeffs.subs(values)))
+        term_data = TermData(self.strings.clone(), self.coeffs.subs(values))
+        return SymbolicTerms._create(term_data)
 
 
 class SymbolicTermSet(TermSet[Expr]):

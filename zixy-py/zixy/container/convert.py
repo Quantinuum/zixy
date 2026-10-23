@@ -186,7 +186,8 @@ def _into_term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, E
         _check_string_compatibility(type(source), t.strings_type.string_type)
         strings = t.strings_type._create(source.clone()._impl)
         coeffs = get_coeffs_type(t.coeff_type).from_scalar(unit(t.coeff_type))
-        return t._create(TermData(strings, coeffs))
+        term_data = TermData(strings, coeffs)
+        return t._create(term_data)
     if isinstance(source, Strings):
         _require_single_item(source, t)
         return _into_term(source[0], t)
@@ -194,7 +195,8 @@ def _into_term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, E
         _check_string_compatibility(source.string_type, t.strings_type.string_type)
         strings = t.strings_type._create(source.string.clone()._impl)
         coeffs = get_coeffs_type(t.coeff_type).from_scalar(convert(source.coeff, t.coeff_type))
-        return t._create(TermData(strings, coeffs))
+        term_data = TermData(strings, coeffs)
+        return t._create(term_data)
     if isinstance(source, Terms):
         _require_single_item(source, t)
         return _into_term(source[0], t)
@@ -211,20 +213,24 @@ def _into_terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, 
         _check_string_compatibility(type(source), strings_type.string_type)
         strings = strings_type._create(source.clone()._impl)
         coeffs = coeffs_type.from_scalar(unit(t.term_type.coeff_type))
-        return t._create(TermData(strings, coeffs))
+        term_data = TermData(strings, coeffs)
+        return t._create(term_data)
     if isinstance(source, Strings):
         strings = _clone_strings_as(source, strings_type)
         coeffs = coeffs_type.from_scalar(unit(t.term_type.coeff_type), len(source))
-        return t._create(TermData(strings, coeffs))
+        term_data = TermData(strings, coeffs)
+        return t._create(term_data)
     if isinstance(source, Term):
         _check_string_compatibility(source.string_type, strings_type.string_type)
         strings = strings_type._create(source.string.clone()._impl)
         coeffs = coeffs_type.from_scalar(convert(source.coeff, t.term_type.coeff_type))
-        return t._create(TermData(strings, coeffs))
+        term_data = TermData(strings, coeffs)
+        return t._create(term_data)
     if isinstance(source, Terms):
         strings = _clone_strings_as(source.strings, strings_type)
         coeffs = convert_vec(source.coeffs, coeffs_type)
-        return t._create(TermData(strings, coeffs))
+        term_data = TermData(strings, coeffs)
+        return t._create(term_data)
     raise TypeError(f"Cannot convert {type(source)} into term collection type {t}.")
 
 

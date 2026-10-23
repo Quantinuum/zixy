@@ -424,9 +424,9 @@ class RealTermSum(NumericTermSum[QubitStateArray, StringSpec, float], TermSum[fl
         if isinstance(qubits, int):
             qubits = Qubits.from_count(qubits)
         out = cls(qubits)
-        assert isinstance(out._impl._coeffs, RealCoeffs)  # TODO: resolve
-        out._impl._strings._impl.from_dense_real(
-            out._string_set._map, out._impl._coeffs._impl, list(source), big_endian
+        assert isinstance(out._impl.coeffs, RealCoeffs)  # TODO: resolve
+        out._impl.strings._impl.from_dense_real(
+            out._string_set._map, out._impl.coeffs._impl, list(source), big_endian
         )
         return out
 
@@ -442,20 +442,20 @@ class RealTermSum(NumericTermSum[QubitStateArray, StringSpec, float], TermSum[fl
         Returns:
             The dense vector.
         """
-        assert isinstance(self._impl._coeffs, RealCoeffs)  # TODO: resolve
-        return self._impl._strings._impl.to_dense_real(self._impl._coeffs._impl, big_endian)
+        assert isinstance(self._impl.coeffs, RealCoeffs)  # TODO: resolve
+        return self._impl.strings._impl.to_dense_real(self._impl.coeffs._impl, big_endian)
 
     def vdot(self, rhs: RealTermSum) -> float:
         """Compute the inner product of ``self`` with ``rhs``."""
         _check_qubits_compatibility(self.qubits, rhs.qubits)
-        assert isinstance(self._impl._coeffs, RealCoeffs)  # TODO: resolve
-        assert isinstance(rhs._impl._coeffs, RealCoeffs)  # TODO: resolve
+        assert isinstance(self._impl.coeffs, RealCoeffs)  # TODO: resolve
+        assert isinstance(rhs._impl.coeffs, RealCoeffs)  # TODO: resolve
         return float(
-            self._impl._strings._impl.vdot_real(
+            self._impl.strings._impl.vdot_real(
                 self._string_set._map,
-                self._impl._coeffs._impl,
-                rhs._impl._strings._impl,
-                rhs._impl._coeffs._impl,
+                self._impl.coeffs._impl,
+                rhs._impl.strings._impl,
+                rhs._impl.coeffs._impl,
             )
         )
 
@@ -567,9 +567,9 @@ class ComplexTermSum(NumericTermSum[QubitStateArray, StringSpec, complex], TermS
         if isinstance(qubits, int):
             qubits = Qubits.from_count(qubits)
         out = cls(qubits)
-        assert isinstance(out._impl._coeffs, ComplexCoeffs)  # TODO: resolve
-        out._impl._strings._impl.from_dense_complex(
-            out._string_set._map, out._impl._coeffs._impl, list(source), big_endian
+        assert isinstance(out._impl.coeffs, ComplexCoeffs)  # TODO: resolve
+        out._impl.strings._impl.from_dense_complex(
+            out._string_set._map, out._impl.coeffs._impl, list(source), big_endian
         )
         return out
 
@@ -599,20 +599,20 @@ class ComplexTermSum(NumericTermSum[QubitStateArray, StringSpec, complex], TermS
         Returns:
             The dense vector.
         """
-        assert isinstance(self._impl._coeffs, ComplexCoeffs)  # TODO: resolve
-        return self._impl._strings._impl.to_dense_complex(self._impl._coeffs._impl, big_endian)
+        assert isinstance(self._impl.coeffs, ComplexCoeffs)  # TODO: resolve
+        return self._impl.strings._impl.to_dense_complex(self._impl.coeffs._impl, big_endian)
 
     def vdot(self, rhs: ComplexTermSum) -> complex:
         """Compute the inner product of ``self`` with ``rhs``."""
         _check_qubits_compatibility(self.qubits, rhs.qubits)
-        assert isinstance(self._impl._coeffs, ComplexCoeffs)  # TODO: resolve
-        assert isinstance(rhs._impl._coeffs, ComplexCoeffs)  # TODO: resolve
+        assert isinstance(self._impl.coeffs, ComplexCoeffs)  # TODO: resolve
+        assert isinstance(rhs._impl.coeffs, ComplexCoeffs)  # TODO: resolve
         return complex(
-            self._impl._strings._impl.vdot_complex(
+            self._impl.strings._impl.vdot_complex(
                 self._string_set._map,
-                self._impl._coeffs._impl,
-                rhs._impl._strings._impl,
-                rhs._impl._coeffs._impl,
+                self._impl.coeffs._impl,
+                rhs._impl.strings._impl,
+                rhs._impl.coeffs._impl,
             )
         )
 
@@ -700,7 +700,8 @@ class SymbolicTerm(Term[Expr]):
         """
         strings = RealTerm.strings_type.from_string(self.string.clone())
         coeffs = get_coeffs_type(RealTerm.coeff_type).from_scalar(float(self.coeff.evalf()))
-        return RealTerm._create(TermData(strings, coeffs))
+        term_data = TermData(strings, coeffs)
+        return RealTerm._create(term_data)
 
     def try_to_complex(self) -> ComplexTerm:
         """Try to evaluate ``self`` as a term containing a complex coefficient.
@@ -717,7 +718,8 @@ class SymbolicTerm(Term[Expr]):
         """
         strings = ComplexTerm.strings_type.from_string(self.string.clone())
         coeffs = get_coeffs_type(ComplexTerm.coeff_type).from_scalar(complex(self.coeff.evalf()))
-        return ComplexTerm._create(TermData(strings, coeffs))
+        term_data = TermData(strings, coeffs)
+        return ComplexTerm._create(term_data)
 
 
 class SymbolicTerms(Terms[Expr]):
@@ -765,7 +767,8 @@ class SymbolicTerms(Terms[Expr]):
         Returns:
             A new contiguously stored instance with the substitution applied.
         """
-        return SymbolicTerms._create(TermData(self.strings.clone(), self.coeffs.subs(values)))
+        term_data = TermData(self.strings.clone(), self.coeffs.subs(values))
+        return SymbolicTerms._create(term_data)
 
     def idiff(self, variable: Symbol | str) -> None:
         """Differentiate partially with respect to ``variable`` in-place.
@@ -789,7 +792,8 @@ class SymbolicTerms(Terms[Expr]):
         Returns:
             A new contiguously stored instance with the differentiation applied.
         """
-        return SymbolicTerms._create(TermData(self.strings.clone(), self.coeffs.diff(variable)))
+        term_data = TermData(self.strings.clone(), self.coeffs.diff(variable))
+        return SymbolicTerms._create(term_data)
 
     def try_to_real(self) -> RealTerms:
         """Try to evaluate ``self`` as terms containing a vector of real coefficients.
@@ -801,7 +805,8 @@ class SymbolicTerms(Terms[Expr]):
         Raises:
             TypeError: A coefficient is not representable as real or there are free symbols.
         """
-        return RealTerms._create(TermData(self.strings.clone(), self.coeffs.try_to_real()))
+        term_data = TermData(self.strings.clone(), self.coeffs.try_to_real())
+        return RealTerms._create(term_data)
 
     def try_to_complex(self) -> ComplexTerms:
         """Try to evaluate ``self`` as terms containing a vector of complex coefficients.
@@ -813,7 +818,8 @@ class SymbolicTerms(Terms[Expr]):
         Raises:
             TypeError: A coefficient is not representable as complex or there are free symbols.
         """
-        return ComplexTerms._create(TermData(self.strings.clone(), self.coeffs.try_to_complex()))
+        term_data = TermData(self.strings.clone(), self.coeffs.try_to_complex())
+        return ComplexTerms._create(term_data)
 
 
 class SymbolicTermSet(TermSet[Expr]):

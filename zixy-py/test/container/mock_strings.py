@@ -186,13 +186,11 @@ class String(BaseString[StringsImplArray, StringSpecT]):
     def copy(self) -> String:
         return String(self)
 
-    def set(self, source: str | String):
+    def _set_spec(self, source: str) -> None:
         if isinstance(source, str):
             self._impl._list[self.index] = source
-        elif isinstance(source, String):
-            self._impl._list[self.index] = source._impl._list[source.index]
         else:
-            String.raise_spec_type_error(source)
+            self.raise_spec_type_error(source)
 
 
 class Strings(BaseStrings[StringsImplArray, StringSpecT]):

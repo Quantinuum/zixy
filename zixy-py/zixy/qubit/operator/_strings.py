@@ -135,7 +135,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         """Get the string as a dictionary of its elements."""
         return self._impl.string_get_dict(self.index)
 
-    def set(self, source: SpecT | StringBase[ImplT, SpecT, ElemT]) -> None:
+    def _set_spec(self, source: SpecT) -> None:
         """Set the value of the string.
 
         Args:
@@ -147,7 +147,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         if isinstance(source, dict):
             self._impl.string_set_from_dict(self.index, source)
         else:
-            super().set(source)
+            super()._set_spec(source)
 
     def is_identity(self) -> bool:
         """Check whether the string is identity (:math:`II...I`)."""

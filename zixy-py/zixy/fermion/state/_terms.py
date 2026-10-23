@@ -41,6 +41,7 @@ from zixy.container.data import TermData
 from zixy.container.terms import (
     NumericTerms,
     NumericTermSum,
+    TermSpecT,
 )
 from zixy.fermion._strings import _check_modes_compatibility
 from zixy.fermion._terms import (
@@ -61,9 +62,9 @@ if TYPE_CHECKING:
 
     from zixy.qubit.state._strings import String as QubitStateString
 
-type TermSpec[C: (float, complex, Sign, ComplexSign, Expr)] = (
-    String | StringSpec | tuple[StringSpec | String, C | None]
-)
+type TermSpec[C: (float, complex, Sign, ComplexSign, Expr)] = TermSpecT[
+    FermionStateArray, StringSpec, C
+]
 ElemT = bool
 SpecT = StringSpec
 ImplT = FermionStateArray

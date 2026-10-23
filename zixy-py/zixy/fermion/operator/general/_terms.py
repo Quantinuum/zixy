@@ -47,6 +47,7 @@ from zixy.container.terms import (
     Term as TermBase,
     Terms as TermsBase,
     TermSet as TermSetBase,
+    TermSpecT,
 )
 from zixy.fermion._strings import _check_modes_compatibility
 from zixy.fermion.operator._strings import LadderOp
@@ -69,9 +70,9 @@ if TYPE_CHECKING:
         RealTermSum as NormalRealTermSum,
     )
 
-type TermSpec[C: (float, complex, Sign, ComplexSign, Expr)] = (
-    String | StringSpec | tuple[StringSpec | String, C | None]
-)
+type TermSpec[C: (float, complex, Sign, ComplexSign, Expr)] = TermSpecT[
+    GeneralFermionOperatorArray, StringSpec, C
+]
 ElemT = list[LadderOp]
 SpecT = StringSpec
 ImplT = GeneralFermionOperatorArray
@@ -81,7 +82,7 @@ SymbolicTermSpec = TermSpec[Expr]
 
 
 def _max_string_len_from_source[C: (float, complex, Sign, ComplexSign, Expr)](
-    source: terms.TermSpecT[ImplT, SpecT, C] | TermBase[ImplT, SpecT, C],
+    source: terms.TermSpecT[ImplT, SpecT, C],
 ) -> int:
     """Get the maximum operator-product length from a term source."""
     if (
@@ -217,7 +218,7 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerms[ImplT, S
     def append_n(
         self,
         n: int,
-        source: terms.TermSpecT[ImplT, SpecT, C] | TermBase[ImplT, SpecT, C] = "",
+        source: terms.TermSpecT[ImplT, SpecT, C] = "",
     ) -> Self:
         """Append a term repeatedly."""
         if n < 0:
@@ -234,7 +235,7 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerms[ImplT, S
     @classmethod
     def from_iterable(
         cls,
-        source: Iterable[terms.TermSpecT[ImplT, SpecT, C] | TermBase[ImplT, SpecT, C]],
+        source: Iterable[terms.TermSpecT[ImplT, SpecT, C]],
         modes: int | Modes = 0,
         n: int = 0,
         max_string_len: int = 0,
@@ -286,7 +287,7 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
 
     def _get_working_term(
         self,
-        value: terms.TermSpecT[ImplT, SpecT, C] | TermBase[ImplT, SpecT, C],
+        value: terms.TermSpecT[ImplT, SpecT, C],
     ) -> TermBase[ImplT, SpecT, C]:
         """Prepare a term without warning about temporary storage."""
         self._working_term.string._impl._reserve_string_length(
@@ -305,7 +306,7 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
     @classmethod
     def from_iterable(
         cls,
-        iterable: Iterable[terms.TermSpecT[ImplT, SpecT, C] | TermBase[ImplT, SpecT, C]],
+        iterable: Iterable[terms.TermSpecT[ImplT, SpecT, C]],
         modes: int | Modes = 0,
         max_string_len: int = 0,
     ) -> Self:

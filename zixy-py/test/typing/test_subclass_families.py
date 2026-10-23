@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import assert_type
 
+import pytest
+
 import zixy.fermion.operator.general as fermion_general
 import zixy.fermion.operator.normal as fermion_normal
 import zixy.fermion.state as fermion_state
@@ -39,6 +41,9 @@ def test_qubit_operator_overridden_factories() -> None:
     class CustomStrings(qubit_operator.Strings):
         string_type = CustomString
         _set_type: type[CustomStringSet]
+
+        def custom_marker(self) -> str:
+            return "custom strings"
 
     class CustomStringSet(qubit_operator.StringSet):
         strings_type = CustomStrings
@@ -98,6 +103,34 @@ def test_qubit_operator_overridden_factories() -> None:
     assert terms[0].coeff == 3.0
     assert terms[0].string.aliases(terms.strings[0])
 
+    # The inferred custom API must exist at runtime for correctly configured storage.
+    assert_type(total.strings.custom_marker(), str)
+    assert total.strings.custom_marker() == "custom strings"
+    adopted = CustomSum._create(total._impl, total._string_set._map)
+    assert adopted.strings.custom_marker() == "custom strings"
+
+    class CustomSet(qubit_operator.RealTermSet):
+        terms_type = CustomTerms
+
+    custom_set = CustomSet.from_terms(terms)
+    assert_type(custom_set.strings, CustomStrings)
+    assert custom_set.strings.custom_marker() == "custom strings"
+
+    # Compatible native data is insufficient when its Python wrapper lacks the promised API.
+    ordinary = qubit_operator.RealTerms(2, 1)
+    ordinary_sum = qubit_operator.RealTermSum.from_terms(ordinary)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomTerms._create(ordinary._impl)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomSum.from_terms(ordinary)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomSet.from_terms(ordinary)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomSum._create(ordinary._impl)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomSum._create(ordinary_sum._impl, ordinary_sum._string_set._map)
+    assert len(ordinary) == 1
+
 
 def test_qubit_state_inherited_factories() -> None:
     class DerivedTerms(qubit_state.RealTerms):
@@ -129,6 +162,9 @@ def test_qubit_state_overridden_factories() -> None:
     class CustomStrings(qubit_state.Strings):
         string_type = CustomString
         _set_type: type[CustomStringSet]
+
+        def custom_marker(self) -> str:
+            return "custom strings"
 
     class CustomStringSet(qubit_state.StringSet):
         strings_type = CustomStrings
@@ -188,6 +224,34 @@ def test_qubit_state_overridden_factories() -> None:
     assert terms[0].coeff == 3.0
     assert terms[0].string.aliases(terms.strings[0])
 
+    # The inferred custom API must exist at runtime for correctly configured storage.
+    assert_type(total.strings.custom_marker(), str)
+    assert total.strings.custom_marker() == "custom strings"
+    adopted = CustomSum._create(total._impl, total._string_set._map)
+    assert adopted.strings.custom_marker() == "custom strings"
+
+    class CustomSet(qubit_state.RealTermSet):
+        terms_type = CustomTerms
+
+    custom_set = CustomSet.from_terms(terms)
+    assert_type(custom_set.strings, CustomStrings)
+    assert custom_set.strings.custom_marker() == "custom strings"
+
+    # Compatible native data is insufficient when its Python wrapper lacks the promised API.
+    ordinary = qubit_state.RealTerms(2, 1)
+    ordinary_sum = qubit_state.RealTermSum.from_terms(ordinary)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomTerms._create(ordinary._impl)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomSum.from_terms(ordinary)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomSet.from_terms(ordinary)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomSum._create(ordinary._impl)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomSum._create(ordinary_sum._impl, ordinary_sum._string_set._map)
+    assert len(ordinary) == 1
+
 
 def test_fermion_general_inherited_factories() -> None:
     class DerivedTerms(fermion_general.RealTerms):
@@ -219,6 +283,9 @@ def test_fermion_general_overridden_factories() -> None:
     class CustomStrings(fermion_general.Strings):
         string_type = CustomString
         _set_type: type[CustomStringSet]
+
+        def custom_marker(self) -> str:
+            return "custom strings"
 
     class CustomStringSet(fermion_general.StringSet):
         strings_type = CustomStrings
@@ -278,6 +345,34 @@ def test_fermion_general_overridden_factories() -> None:
     assert terms[0].coeff == 3.0
     assert terms[0].string.aliases(terms.strings[0])
 
+    # The inferred custom API must exist at runtime for correctly configured storage.
+    assert_type(total.strings.custom_marker(), str)
+    assert total.strings.custom_marker() == "custom strings"
+    adopted = CustomSum._create(total._impl, total._string_set._map)
+    assert adopted.strings.custom_marker() == "custom strings"
+
+    class CustomSet(fermion_general.RealTermSet):
+        terms_type = CustomTerms
+
+    custom_set = CustomSet.from_terms(terms)
+    assert_type(custom_set.strings, CustomStrings)
+    assert custom_set.strings.custom_marker() == "custom strings"
+
+    # Compatible native data is insufficient when its Python wrapper lacks the promised API.
+    ordinary = fermion_general.RealTerms(2, 1)
+    ordinary_sum = fermion_general.RealTermSum.from_terms(ordinary)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomTerms._create(ordinary._impl)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomSum.from_terms(ordinary)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomSet.from_terms(ordinary)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomSum._create(ordinary._impl)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomSum._create(ordinary_sum._impl, ordinary_sum._string_set._map)
+    assert len(ordinary) == 1
+
 
 def test_fermion_normal_inherited_factories() -> None:
     class DerivedTerms(fermion_normal.RealTerms):
@@ -309,6 +404,9 @@ def test_fermion_normal_overridden_factories() -> None:
     class CustomStrings(fermion_normal.Strings):
         string_type = CustomString
         _set_type: type[CustomStringSet]
+
+        def custom_marker(self) -> str:
+            return "custom strings"
 
     class CustomStringSet(fermion_normal.StringSet):
         strings_type = CustomStrings
@@ -368,6 +466,34 @@ def test_fermion_normal_overridden_factories() -> None:
     assert terms[0].coeff == 3.0
     assert terms[0].string.aliases(terms.strings[0])
 
+    # The inferred custom API must exist at runtime for correctly configured storage.
+    assert_type(total.strings.custom_marker(), str)
+    assert total.strings.custom_marker() == "custom strings"
+    adopted = CustomSum._create(total._impl, total._string_set._map)
+    assert adopted.strings.custom_marker() == "custom strings"
+
+    class CustomSet(fermion_normal.RealTermSet):
+        terms_type = CustomTerms
+
+    custom_set = CustomSet.from_terms(terms)
+    assert_type(custom_set.strings, CustomStrings)
+    assert custom_set.strings.custom_marker() == "custom strings"
+
+    # Compatible native data is insufficient when its Python wrapper lacks the promised API.
+    ordinary = fermion_normal.RealTerms(2, 1)
+    ordinary_sum = fermion_normal.RealTermSum.from_terms(ordinary)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomTerms._create(ordinary._impl)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomSum.from_terms(ordinary)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomSet.from_terms(ordinary)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomSum._create(ordinary._impl)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomSum._create(ordinary_sum._impl, ordinary_sum._string_set._map)
+    assert len(ordinary) == 1
+
 
 def test_fermion_state_inherited_factories() -> None:
     class DerivedTerms(fermion_state.RealTerms):
@@ -399,6 +525,9 @@ def test_fermion_state_overridden_factories() -> None:
     class CustomStrings(fermion_state.Strings):
         string_type = CustomString
         _set_type: type[CustomStringSet]
+
+        def custom_marker(self) -> str:
+            return "custom strings"
 
     class CustomStringSet(fermion_state.StringSet):
         strings_type = CustomStrings
@@ -457,3 +586,31 @@ def test_fermion_state_overridden_factories() -> None:
     terms[:][0].coeff = 3.0
     assert terms[0].coeff == 3.0
     assert terms[0].string.aliases(terms.strings[0])
+
+    # The inferred custom API must exist at runtime for correctly configured storage.
+    assert_type(total.strings.custom_marker(), str)
+    assert total.strings.custom_marker() == "custom strings"
+    adopted = CustomSum._create(total._impl, total._string_set._map)
+    assert adopted.strings.custom_marker() == "custom strings"
+
+    class CustomSet(fermion_state.RealTermSet):
+        terms_type = CustomTerms
+
+    custom_set = CustomSet.from_terms(terms)
+    assert_type(custom_set.strings, CustomStrings)
+    assert custom_set.strings.custom_marker() == "custom strings"
+
+    # Compatible native data is insufficient when its Python wrapper lacks the promised API.
+    ordinary = fermion_state.RealTerms(2, 1)
+    ordinary_sum = fermion_state.RealTermSum.from_terms(ordinary)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomTerms._create(ordinary._impl)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomSum.from_terms(ordinary)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomSet.from_terms(ordinary)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomSum._create(ordinary._impl)
+    with pytest.raises(TypeError, match="String storage does not match its factory"):
+        CustomSum._create(ordinary_sum._impl, ordinary_sum._string_set._map)
+    assert len(ordinary) == 1

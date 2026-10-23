@@ -370,6 +370,8 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
             indexer: Slice of the data in ``data`` that ``self`` will view. The default value of
                 ``slice(None)`` indicates that this instance is considered to be owning.
         """
+        if data.strings_type is not self.term_type.strings_type:
+            raise TypeError("String storage does not match its factory")
         self._impl = data
         self._slice = indexer
 
@@ -810,6 +812,8 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             Strings which appear multiple times in ``terms`` will appear only once in
                 ``self``.
         """
+        if terms._data.strings_type is not self.terms_type.term_type.strings_type:
+            raise TypeError("String storage does not match its factory")
         self._impl = terms._empty_clone()._impl
         string_set_type = terms.strings_type._set_type
         self._string_set = string_set_type.__new__(string_set_type)
@@ -902,6 +906,8 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         if map_ is None:
             TermSet.__init__(out, cls.terms_type._create(data))
         else:
+            if data.strings_type is not cls.terms_type.term_type.strings_type:
+                raise TypeError("String storage does not match its factory")
             assert len(data) == len(map_)
             out._impl = data
             string_set_type = data.strings_type._set_type

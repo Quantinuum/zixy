@@ -21,7 +21,7 @@ The structure of this module parallels that of :mod:`~zixy.container.terms` and
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Self, cast, overload
+from typing import TYPE_CHECKING, Any, Self, overload
 
 from sympy import Expr, Symbol
 
@@ -30,9 +30,11 @@ from zixy.container.coeffs import (
     Coeff,
     ComplexCoeffs,
     ComplexSign,
+    ComplexSignCoeffs,
     Number,
     RealCoeffs,
     Sign,
+    SignCoeffs,
     SymbolicCoeffs,
     get_coeffs_type,
     typesafe_mul,
@@ -190,6 +192,7 @@ class SignTerm(Term[Sign]):
     """
 
     coeff_type = Sign
+    coeffs_type = SignCoeffs
 
     @overload
     def __mul__(self, other: Sign) -> SignTerm: ...
@@ -258,6 +261,7 @@ class ComplexSignTerm(Term[ComplexSign]):
     """
 
     coeff_type = ComplexSign
+    coeffs_type = ComplexSignCoeffs
 
     @overload
     def __mul__(self, other: Sign) -> ComplexSignTerm: ...
@@ -327,6 +331,7 @@ class RealTerm(Term[float]):
     """
 
     coeff_type = float
+    coeffs_type = RealCoeffs
 
     @overload
     def __mul__(self, other: Sign) -> RealTerm: ...
@@ -470,6 +475,7 @@ class ComplexTerm(Term[complex]):
     """
 
     coeff_type = complex
+    coeffs_type = ComplexCoeffs
 
     @overload
     def __mul__(self, other: Sign) -> ComplexTerm: ...
@@ -627,6 +633,7 @@ class SymbolicTerm(Term[Expr]):
     """
 
     coeff_type = Expr
+    coeffs_type = SymbolicCoeffs
 
     @overload
     def __mul__(self, other: Sign) -> SymbolicTerm: ...
@@ -732,11 +739,6 @@ class SymbolicTerms(Terms[Expr]):
     """
 
     term_type = SymbolicTerm
-
-    @property
-    def coeffs(self) -> SymbolicCoeffs:
-        """The coefficients of ``self``."""
-        return cast("SymbolicCoeffs", self._data.coeffs[self.slice])
 
     @property
     def free_symbols(self) -> set[Symbol]:

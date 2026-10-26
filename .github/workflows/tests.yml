@@ -22,6 +22,30 @@ env:
 
 jobs:
 
+  linux:
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      matrix:
+        platform:
+          - runner: ubuntu-latest
+            target: x86_64
+            manylinux: "manylinux_2_28"
+          - runner: ubuntu-latest
+            target: x86
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: 3.x
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          working-directory: ${{ env.MODULE_DIR }}
+          target: ${{ matrix.platform.target }}
+          args: --release --out ../dist --find-interpreter
+          sccache: 'false'
+          manylinux: ${{ matrix.platform.manylinux }}
+
   check-rs:
     name: Checks (Rust)
     runs-on: ubuntu-latest

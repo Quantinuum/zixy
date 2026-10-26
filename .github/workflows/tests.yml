@@ -27,14 +27,14 @@ jobs:
   repo-dns-check:
     runs-on: ubuntu-latest
     steps:
-    - name: Check AlmaLinux 8 i686 BaseOS
-      run: |
-        docker run --rm almalinux:8 \
-        dnf --forcearch=i686 \
-        --disablerepo='*' \
-        --repofrompath=baseos,https://vault.almalinux.org/8/BaseOS/i686/os \
-        --enablerepo=baseos \
-        makecache --refresh
+      - name: Check AlmaLinux 8 i686 BaseOS
+        run: |
+          docker run --rm almalinux:8 \
+            dnf --forcearch=i686 \
+            --disablerepo='*' \
+            --repofrompath=probe-baseos,https://vault.almalinux.org/8/BaseOS/i686/os \
+            --enablerepo=probe-baseos \
+            makecache --refresh
 
   check-rs:
     name: Checks (Rust)

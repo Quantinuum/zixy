@@ -75,6 +75,8 @@ class _FilterableStrings[ContainerT, StringT](
 
     def iter_filter_map(self, f: Callable[[StringT], bool]) -> Iterator[StringT]: ...
 
+    def iter_filter_populated(self) -> Iterator[StringT]: ...
+
 
 class _FilterableStringSet[ContainerT, StringT](
     _HasStringsType[_HasStringType[StringT]], _HasEmptyClone[ContainerT], Protocol

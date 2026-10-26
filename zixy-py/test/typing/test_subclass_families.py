@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import assert_type
+from typing import Self, assert_type
 
 import pytest
 
@@ -712,3 +712,46 @@ def test_fermion_state_overridden_factories() -> None:
     with pytest.raises(TypeError, match="String storage does not match its factory"):
         CustomSum._create(ordinary_sum._impl, ordinary_sum._string_set._map)
     assert len(ordinary) == 1
+
+
+def test_non_identity_filters_dispatch_to_overrides() -> None:
+    class CustomString(qubit_operator.String):
+        pass
+
+    class CustomStrings(qubit_operator.Strings):
+        string_type = CustomString
+        _set_type: type[CustomStringSet]
+        lazy_calls = 0
+        eager_calls = 0
+
+        def iter_filter_populated(self) -> Iterator[CustomString]:
+            self.lazy_calls += 1
+            return iter((self[1],))
+
+        def filter_populated(self) -> Self:
+            self.eager_calls += 1
+            return self[2:].clone()
+
+    class CustomStringSet(qubit_operator.StringSet):
+        strings_type = CustomStrings
+
+    CustomStrings._set_type = CustomStringSet
+    strings = CustomStrings.from_iterable(["X0", "Y0", "Z0"], 1)
+    lazy = strings.iter_filter_non_identity()
+    eager = strings.filter_non_identity()
+
+    assert_type(lazy, Iterator[CustomString])
+    assert_type(eager, CustomStrings)
+    assert strings.lazy_calls == 1
+    assert strings.eager_calls == 1
+    collected = list(lazy)
+    assert [str(string) for string in collected] == ["Y0"]
+    assert [str(string) for string in eager] == ["Z0"]
+    assert type(collected[0]) is CustomString
+    assert type(eager) is CustomStrings
+
+    # Forwarding preserves the lazy override's views and the eager override's copied storage.
+    collected[0].set("X0")
+    assert str(strings[1]) == "X0"
+    eager[0].set("X0")
+    assert str(strings[2]) == "Z0"

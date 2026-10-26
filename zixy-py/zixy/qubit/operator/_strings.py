@@ -24,7 +24,7 @@ The structure of this module parallels that of :mod:`~zixy.container.strings` an
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Self, overload
+from typing import TYPE_CHECKING, Any, Self, overload
 
 from sympy import Expr
 
@@ -52,9 +52,12 @@ from zixy.qubit._strings import (
 from zixy.utils import slice_equal
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     import numpy as np
     from numpy.typing import NDArray
 
+    from zixy.container.base import _FilterableStrings
     from zixy.qubit.operator._terms import ComplexSignTerm, Term
 
 type StringSpec = Sequence[PauliMatrix] | dict[int, PauliMatrix] | str
@@ -298,8 +301,15 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
             # todo: have rust binding take inds to preclude this copy in this non-contiguous case.
             return self.clone()._impl.compatibility_matrix()
 
-    iter_filter_non_identity = StringsBase.iter_filter_populated
-    filter_non_identity = StringsBase.filter_populated
+    def iter_filter_non_identity[StringT: String](
+        self: _FilterableStrings[Any, StringT],
+    ) -> Iterator[StringT]:
+        """Lazily filter strings of ``self``, retaining only those different to identity."""
+        return self.iter_filter_populated()
+
+    def filter_non_identity(self) -> Self:
+        """Eagerly filter strings of ``self``, retaining only those different to identity."""
+        return self.filter_populated()
 
     def centralizer_and_remainder(self) -> tuple[Strings, Strings]:
         """Get the centralizer and remainder of ``self``.

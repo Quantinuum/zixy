@@ -31,8 +31,6 @@ jobs:
       - name: Diagnose and fetch i686 BaseOS metadata
         run: |
           docker run --rm almalinux:8 sh -c '
-            echo "Resolver configuration:"
-            cat /etc/resolv.conf
             echo "DNS lookup:"
             getent ahostsv4 vault.almalinux.org || true
             dnf --forcearch=i686 \
@@ -49,8 +47,6 @@ jobs:
       - name: Diagnose and fetch i686 BaseOS metadata
         run: |
           docker run --rm quay.io/pypa/manylinux_2_28_i686 sh -c '
-            echo "Resolver configuration:"
-            cat /etc/resolv.conf
             echo "DNS lookup:"
             getent ahostsv4 vault.almalinux.org || true
             dnf --forcearch=i686 \
@@ -70,10 +66,10 @@ jobs:
           for image in quay.io/pypa/manylinux_2_28_x86_64 quay.io/pypa/manylinux_2_28_i686; do
             echo "===== $image ====="
             if docker run --rm "$image" sh -c '
-              echo "Resolver configuration:"
-              cat /etc/resolv.conf
-              echo "NSS configuration:"
-              cat /etc/nsswitch.conf
+              echo "libnss_dns library:"
+              ldconfig -p | grep libnss_dns || true
+              echo "glibc packages:"
+              rpm -q glibc glibc-common
               echo "DNS lookup:"
               getent ahostsv4 vault.almalinux.org || true
               dnf --forcearch=i686 \

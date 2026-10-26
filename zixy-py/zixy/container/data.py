@@ -59,11 +59,18 @@ class TermData[StringsT: Strings[Any, Any], Cs: Coeffs[Any]]:
         Args:
             strings: The string array.
             coeffs: The coefficient vector.
+
+        Raises:
+            ValueError: If the string and coefficient containers have different lengths.
         """
         if not isinstance(strings, Strings):
             raise TypeError(f"strings must be a Strings, got {type(strings)}")
         if not isinstance(coeffs, Coeffs):
             raise TypeError(f"coeffs must be a Coeffs, got {type(coeffs)}")
+        if len(strings) != len(coeffs):
+            raise ValueError(
+                f"strings and coefficients must have equal lengths: {len(strings)} != {len(coeffs)}"
+            )
         self._coeffs = coeffs
         self._strings = strings
 

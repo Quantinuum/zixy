@@ -42,24 +42,6 @@ jobs:
               makecache --refresh
           '
 
-  repo-dns-almalinux-x86_64:
-    name: Repo DNS (AlmaLinux 8, x86_64)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Diagnose and fetch x86_64 BaseOS metadata
-        run: |
-          docker run --rm almalinux:8 sh -c '
-            echo "Resolver configuration:"
-            cat /etc/resolv.conf
-            echo "DNS lookup:"
-            getent ahostsv4 vault.almalinux.org || true
-            dnf --forcearch=x86_64 \
-              --disablerepo="*" \
-              --repofrompath=probe-baseos,https://vault.almalinux.org/8/BaseOS/x86_64/os \
-              --enablerepo=probe-baseos \
-              makecache --refresh
-          '
-
   repo-dns-manylinux-i686:
     name: Repo DNS (manylinux 2.28, i686)
     runs-on: ubuntu-latest
@@ -78,23 +60,35 @@ jobs:
               makecache --refresh
           '
 
-  repo-dns-manylinux-x86_64:
-    name: Repo DNS (manylinux 2.28, x86_64)
+  repo-dns-compare-images:
+    name: Compare manylinux DNS on one runner
     runs-on: ubuntu-latest
     steps:
-      - name: Diagnose and fetch x86_64 BaseOS metadata
+      - name: Compare x86_64 and i686 images
         run: |
-          docker run --rm quay.io/pypa/manylinux_2_28_x86_64 sh -c '
-            echo "Resolver configuration:"
-            cat /etc/resolv.conf
-            echo "DNS lookup:"
-            getent ahostsv4 vault.almalinux.org || true
-            dnf --forcearch=x86_64 \
-              --disablerepo="*" \
-              --repofrompath=probe-baseos,https://vault.almalinux.org/8/BaseOS/x86_64/os \
-              --enablerepo=probe-baseos \
-              makecache --refresh
-          '
+          status=0
+          for image in quay.io/pypa/manylinux_2_28_x86_64 quay.io/pypa/manylinux_2_28_i686; do
+            echo "===== $image ====="
+            if docker run --rm "$image" sh -c '
+              echo "Resolver configuration:"
+              cat /etc/resolv.conf
+              echo "NSS configuration:"
+              cat /etc/nsswitch.conf
+              echo "DNS lookup:"
+              getent ahostsv4 vault.almalinux.org || true
+              dnf --forcearch=i686 \
+                --disablerepo="*" \
+                --repofrompath=probe-baseos,https://vault.almalinux.org/8/BaseOS/i686/os \
+                --enablerepo=probe-baseos \
+                makecache --refresh
+            '; then
+              echo "Repository check passed for $image"
+            else
+              echo "Repository check failed for $image"
+              status=1
+            fi
+          done
+          exit "$status"
 
   check-rs:
     name: Checks (Rust)

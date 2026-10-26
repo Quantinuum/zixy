@@ -19,6 +19,8 @@ env:
 
   LLVM_VERSION: "14.0"
   LLVM_FEATURE_NAME: "14-0"
+  MODULE_DIR: zixy-py
+
 
 jobs:
 
@@ -39,6 +41,8 @@ jobs:
           python-version: 3.x
       - name: Build wheels
         uses: PyO3/maturin-action@v1
+        env:
+          RUSTC_WRAPPER: ""
         with:
           working-directory: ${{ env.MODULE_DIR }}
           target: ${{ matrix.platform.target }}

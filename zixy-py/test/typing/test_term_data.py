@@ -428,7 +428,7 @@ def test_storage_rejects_foreign_string_family() -> None:
 def test_term_data_rejects_mismatched_lengths(n_strings: int, n_coeffs: int) -> None:
     strings = zqo.Strings(2, n_strings)
     coeffs = RealCoeffs.from_size(n_coeffs)
-    with pytest.raises(ValueError, match="Strings and coefficients must have equal lengths"):
+    with pytest.raises(ValueError, match="strings and coefficients must have equal lengths"):
         TermData(strings, coeffs)
 
 
@@ -438,5 +438,5 @@ def test_term_data_checks_view_lengths() -> None:
     data = TermData(strings[::2], coeffs[1::2])
     assert len(data) == 2
     assert len(TermData(strings[:0], coeffs[:0])) == 0
-    with pytest.raises(ValueError, match="Strings and coefficients must have equal lengths"):
+    with pytest.raises(ValueError, match="strings and coefficients must have equal lengths"):
         TermData(strings[::2], coeffs[:1])

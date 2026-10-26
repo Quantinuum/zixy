@@ -29,7 +29,7 @@ jobs:
     steps:
       - name: Check AlmaLinux 8 i686 BaseOS
         run: |
-          docker run --rm almalinux:8 \
+          docker run --rm quay.io/pypa/manylinux_2_28_i686 \
             dnf --forcearch=i686 \
             --disablerepo='*' \
             --repofrompath=probe-baseos,https://vault.almalinux.org/8/BaseOS/i686/os \

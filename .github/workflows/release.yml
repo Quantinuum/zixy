@@ -25,7 +25,7 @@ jobs:
   # or if the workflow is running on a non-release event.
   check-tag:
     name: Check tag
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       run: ${{ steps.check-tag.outputs.run }}
     steps:
@@ -43,22 +43,22 @@ jobs:
     strategy:
       matrix:
         platform:
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: x86_64
             manylinux: "manylinux_2_28"
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: x86
             manylinux: "manylinux_2_28"
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: aarch64
             manylinux: "manylinux_2_28"
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: armv7
             manylinux: "manylinux_2_28"
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: s390x
             manylinux: "manylinux_2_28"
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: ppc64le
             manylinux: "manylinux_2_28"
     steps:
@@ -87,13 +87,13 @@ jobs:
     strategy:
       matrix:
         platform:
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: x86_64
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: x86
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: aarch64
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: armv7
     steps:
       - uses: actions/checkout@v7
@@ -174,7 +174,7 @@ jobs:
   sdist:
     needs: check-tag
     if: ${{ needs.check-tag.outputs.run == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - name: Build sdist
@@ -200,7 +200,7 @@ jobs:
 
   release:
     name: Release to PyPI
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [linux, musllinux, windows, macos, sdist]
     if: ${{ (github.event_name == 'release' && github.ref_type == 'tag' && startsWith(github.ref, 'refs/tags/v') ) || (github.event_name == 'workflow_dispatch' && github.ref_type == 'tag' && startsWith(github.ref, 'refs/tags/v') ) }}
     environment: release

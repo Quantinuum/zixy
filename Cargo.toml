@@ -28,7 +28,7 @@ itertools = "0.15.0"
 rand = "0.9.1"
 indexmap = "2.9.0"
 num-complex = { version = "0.4", features = ["serde"] }
-rstest = "0.26.1"
+rstest = "0.27.0"
 serde = { version = "1.0.219", features = ["derive"] }
 bincode = { version = "2.0.1", features = ["derive", "serde"] }
 pluralizer = "0.5.0"

@@ -368,12 +368,8 @@ class CmpntSet(Generic[ImplT, SpecT], StringRepresentable):
 
     def __iter__(self) -> Iterator[Cmpnt[ImplT, SpecT]]:
         """Iterate over the elements of ``self``."""
-        if not len(self):
-            return
-        tmp = self._get_working_cmpnt(self.cmpnts_type.cmpnt_type._clear_spec)
         for i in range(len(self)):
-            tmp._impl.cmpnt_copy_external(0, self._impl, i)
-            yield tmp
+            yield self.cmpnts_type.cmpnt_type._create(self._impl, i)
 
     def iter_filter_map(
         self, f: Callable[[Cmpnt[ImplT, SpecT]], bool]
@@ -610,13 +606,8 @@ class Cmpnts(
             Iterator over the selected (and possibly mutated) components of ``self`` according
             to ``f``.
         """
-        if not len(self):
-            return
-        tmp = self[0].clone()
-        if f(tmp):
-            yield tmp
-        for i in range(1, len(self)):
-            tmp.set(self[i])
+        for cmpnt in self:
+            tmp = cmpnt.clone()
             if f(tmp):
                 yield tmp
 

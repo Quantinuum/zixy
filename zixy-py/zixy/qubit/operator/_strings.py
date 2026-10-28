@@ -282,23 +282,6 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
             return out
         return cls._create(cls.string_type.impl_type(qubits, PauliSprings(source)))
 
-    @overload
-    def __getitem__(self, indexer: int) -> String: ...
-
-    @overload
-    def __getitem__(self, indexer: slice) -> Strings: ...
-
-    def __getitem__(self, indexer: int | slice) -> String | Strings:
-        """Get the element or elements selected by ``indexer``.
-
-        Args:
-            indexer: Index or slice selecting the element(s) to return.
-
-        Returns:
-            Element or slice selected by ``indexer``.
-        """
-        return super().__getitem__(indexer)  # type: ignore[return-value]
-
     def get_dicts(self) -> tuple[dict[int, PauliMatrix], ...]:
         """Get the strings as a list of dictionaries of their elements."""
         return tuple(self[i].get_dict() for i in range(len(self)))

@@ -35,10 +35,10 @@ from __future__ import annotations
 import builtins
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from typing import (
+    TYPE_CHECKING,
     Any,
     Generic,
     Self,
-    TypeAlias,
     TypeVar,
     cast,
     overload,
@@ -62,11 +62,13 @@ from zixy.container.coeffs import (
     Coeffs,
     CoeffT,
     ComplexCoeffs,
+    ComplexSign,
     Number,
     NumberT,
     OtherCoeffT,
     RealCoeffs,
     RootOfUnity,
+    Sign,
     convert,
     convert_vec,
     get_coeffs_type,
@@ -77,8 +79,14 @@ from zixy.container.coeffs import (
 from zixy.container.data import TermData
 from zixy.utils import DEFAULT_ATOL, DEFAULT_RTOL, slice_index_gen, slice_of_slice, split_top_level
 
-TermSpecT: TypeAlias = (
-    Cmpnt[ImplT, SpecT] | SpecT | tuple[SpecT | Cmpnt[ImplT, SpecT], CoeffT | None]
+if TYPE_CHECKING:
+    from zixy._zixy import ImplArray
+else:
+    ImplArray = object
+
+
+type TermSpecT[I: ImplArray, S, C: (float, complex, Sign, ComplexSign, Expr)] = (
+    Cmpnt[I, S] | S | tuple[S | Cmpnt[I, S], C | None]
 )
 OutT = TypeVar("OutT", bound="ViewableBase[Any, Any]")
 OutTermSetT = TypeVar("OutTermSetT", bound="TermSet[Any, Any, Any]")

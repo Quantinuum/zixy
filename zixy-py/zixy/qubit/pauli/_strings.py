@@ -28,6 +28,7 @@ from typing import TYPE_CHECKING, Self, cast, overload
 
 import numpy as np
 from numpy.typing import NDArray
+from sympy import Expr
 
 from zixy._zixy import (
     PauliMatrix,
@@ -37,9 +38,9 @@ from zixy._zixy import (
 )
 from zixy.container.coeffs import (
     Coeff,
-    CoeffT,
     ComplexSign,
     ComplexSignCoeffs,
+    Sign,
     _imul_factor_error,
     unit,
 )
@@ -158,9 +159,11 @@ class String(StringBase[ImplT, SpecT, ElemT]):
     @overload
     def __mul__(self, rhs: String) -> ComplexSignTerm: ...
     @overload
-    def __mul__(self, rhs: CoeffT) -> Term[CoeffT]: ...
+    def __mul__[C: (float, complex, Sign, ComplexSign, Expr)](self, rhs: C) -> Term[C]: ...
 
-    def __mul__(self, rhs: CoeffT | String) -> Term[CoeffT] | ComplexSignTerm:
+    def __mul__[C: (float, complex, Sign, ComplexSign, Expr)](
+        self, rhs: C | String
+    ) -> Term[C] | ComplexSignTerm:
         """Multiplication of ``self`` by ``rhs``."""
         if not isinstance(rhs, Coeff | String):
             return NotImplemented
@@ -172,7 +175,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
             return ComplexSignTerm._create(TermData(Strings._create(product), phases))
         return get_term_type(type(rhs)).from_cmpnt_coeff(self, rhs)
 
-    def __rmul__(self, lhs: CoeffT) -> Term[CoeffT]:
+    def __rmul__[C: (float, complex, Sign, ComplexSign, Expr)](self, lhs: C) -> Term[C]:
         """Return the product of ``lhs`` and ``self``."""
         if not isinstance(lhs, Coeff):
             return NotImplemented

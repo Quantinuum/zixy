@@ -16,25 +16,28 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+from sympy import Expr
+
+from zixy.container.coeffs import ComplexSign
+
+if TYPE_CHECKING:
+    from zixy._zixy import FermionArray
+
 from abc import abstractmethod
 from collections.abc import Callable
-from typing import Any, Generic, Self, cast
+from typing import Any, Self, cast
 
 from zixy._zixy import Qubits
-from zixy.container.cmpnts import SpecT
-from zixy.container.coeffs import CoeffT, Sign, convert
-from zixy.fermion._strings import ImplT
+from zixy.container.coeffs import Sign, convert
 from zixy.fermion._terms import (
     Term as FermionTerm,
     Terms as FermionTerms,
     TermSet as FermionTermSet,
     TermSum as FermionTermSum,
 )
-from zixy.fermion.operator._strings import (
-    ElemT,
-    String as OperatorString,
-    Strings as OperatorStrings,
-)
+from zixy.fermion.operator._strings import String as OperatorString, Strings as OperatorStrings
 from zixy.mappings.base import Mapper
 from zixy.qubit.pauli._terms import ComplexTermSum as PauliComplexTermSum
 
@@ -54,7 +57,9 @@ def _product_sign(n_cre: int, n_ann: int) -> Sign:
     return Sign(((n_cre * (n_cre - 1) // 2) + (n_ann * (n_ann - 1) // 2)) & 1)
 
 
-class Term(Generic[ImplT, SpecT, CoeffT, ElemT], FermionTerm[ImplT, SpecT, CoeffT, ElemT]):
+class Term[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
+    FermionTerm[ImplT, SpecT, C, ElemT]
+):
     """A term consisting of a fermionic ladder-operator string and a coefficient."""
 
     cmpnts_type: type[OperatorStrings[ImplT, SpecT, ElemT]]
@@ -75,10 +80,12 @@ class Term(Generic[ImplT, SpecT, CoeffT, ElemT], FermionTerm[ImplT, SpecT, Coeff
         pass
 
 
-class Terms(Generic[ImplT, SpecT, CoeffT, ElemT], FermionTerms[ImplT, SpecT, CoeffT, ElemT]):
+class Terms[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
+    FermionTerms[ImplT, SpecT, C, ElemT]
+):
     """A collection of terms consisting of fermionic ladder-operator strings and coefficients."""
 
-    term_type: type[Term[ImplT, SpecT, CoeffT, ElemT]]
+    term_type: type[Term[ImplT, SpecT, C, ElemT]]
 
     @property
     def strings(self) -> OperatorStrings[ImplT, SpecT, ElemT]:
@@ -86,10 +93,12 @@ class Terms(Generic[ImplT, SpecT, CoeffT, ElemT], FermionTerms[ImplT, SpecT, Coe
         return cast(OperatorStrings[ImplT, SpecT, ElemT], self.cmpnts)
 
 
-class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], FermionTermSet[ImplT, SpecT, CoeffT, ElemT]):
+class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
+    FermionTermSet[ImplT, SpecT, C, ElemT]
+):
     """A collection of unique terms consisting of fermionic ladder-operator strings."""
 
-    terms_type: type[Terms[ImplT, SpecT, CoeffT, ElemT]]
+    terms_type: type[Terms[ImplT, SpecT, C, ElemT]]
 
     @property
     def strings(self) -> OperatorStrings[ImplT, SpecT, ElemT]:
@@ -102,10 +111,9 @@ class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], FermionTermSet[ImplT, SpecT,
         return self._impl._coeffs
 
 
-class TermSum(
-    Generic[ImplT, SpecT, CoeffT, ElemT],
-    FermionTermSum[ImplT, SpecT, CoeffT, ElemT],
-    TermSet[ImplT, SpecT, CoeffT, ElemT],
+class TermSum[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
+    FermionTermSum[ImplT, SpecT, C, ElemT],
+    TermSet[ImplT, SpecT, C, ElemT],
 ):
     """A sum of terms consisting of fermionic ladder-operator strings and coefficients."""
 

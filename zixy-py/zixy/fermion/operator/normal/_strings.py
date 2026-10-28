@@ -25,8 +25,10 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Self, overload
 
+from sympy import Expr
+
 from zixy._zixy import FermionSprings, Modes, NormalFermionOperatorArray
-from zixy.container.coeffs import Coeff, CoeffT, Sign
+from zixy.container.coeffs import Coeff, ComplexSign, Sign
 from zixy.fermion.operator._strings import (
     LadderOp,
     String as OperatorString,
@@ -172,9 +174,11 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
     def __mul__(self, rhs: String) -> RealTermSum: ...
 
     @overload
-    def __mul__(self, rhs: CoeffT) -> Term[CoeffT]: ...
+    def __mul__[C: (float, complex, Sign, ComplexSign, Expr)](self, rhs: C) -> Term[C]: ...
 
-    def __mul__(self, rhs: String | CoeffT) -> RealTermSum | Term[CoeffT]:
+    def __mul__[C: (float, complex, Sign, ComplexSign, Expr)](
+        self, rhs: String | C
+    ) -> RealTermSum | Term[C]:
         """Multiplication of ``self`` by ``rhs``.
 
         Multiplication by a scalar returns a term. Multiplication by another normal-ordered string

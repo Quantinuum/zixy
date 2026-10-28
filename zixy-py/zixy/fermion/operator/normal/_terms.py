@@ -161,7 +161,7 @@ class Term(OperatorTerm[ImplT, SpecT, CoeffT, ElemT]):
 
     @property
     def string(self) -> String:
-        """Get the string component of the term."""
+        """The string component of the term."""
         return cast(String, self.cmpnt)
 
     def dagger(self) -> None:
@@ -205,7 +205,7 @@ class TermSet(OperatorTermSet[ImplT, SpecT, CoeffT, ElemT]):
 
     @property
     def coeffs(self) -> Any:
-        """Get the coefficients of ``self``."""
+        """The coefficients of ``self``."""
         return self._impl._coeffs
 
 
@@ -986,7 +986,7 @@ class SymbolicTerms(Terms[Expr]):
 
     @property
     def coeffs(self) -> SymbolicCoeffs:
-        """Get the coefficients of ``self``."""
+        """The coefficients of ``self``."""
         return cast(SymbolicCoeffs, self._data.coeffs[self.slice])
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:

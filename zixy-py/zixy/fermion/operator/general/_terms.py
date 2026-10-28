@@ -172,12 +172,12 @@ class Term(OperatorTerm[ImplT, SpecT, CoeffT, ElemT]):
 
     @property
     def string(self) -> String:
-        """Get the string component of the term."""
+        """The string component of the term."""
         return cast(String, self.cmpnt)
 
     @property
     def max_string_len(self) -> int:
-        """Get the maximum number of operators per string."""
+        """The maximum number of operators per string."""
         return self.string.max_string_len
 
     def dagger(self) -> None:
@@ -218,12 +218,12 @@ class Terms(OperatorTerms[ImplT, SpecT, CoeffT, ElemT]):
 
     @property
     def strings(self) -> Strings:
-        """Get the string components of the terms."""
+        """The string components of the terms."""
         return cast(Strings, self.cmpnts)
 
     @property
     def max_string_len(self) -> int:
-        """Get the maximum number of operators per string."""
+        """The maximum number of operators per string."""
         return self.strings.max_string_len
 
     @requires_ownership
@@ -287,17 +287,17 @@ class TermSet(OperatorTermSet[ImplT, SpecT, CoeffT, ElemT]):
 
     @property
     def strings(self) -> Strings:
-        """Get the string components of the terms."""
+        """The string components of the terms."""
         return cast(Strings, self._impl._cmpnts)
 
     @property
     def coeffs(self) -> Any:
-        """Get the coefficients of ``self``."""
+        """The coefficients of ``self``."""
         return self._impl._coeffs
 
     @property
     def max_string_len(self) -> int:
-        """Get the maximum number of operators per string."""
+        """The maximum number of operators per string."""
         return self.strings.max_string_len
 
     def _get_working_term(
@@ -794,7 +794,7 @@ class SymbolicTerms(Terms[Expr]):
 
     @property
     def coeffs(self) -> SymbolicCoeffs:
-        """Get the coefficients of ``self``."""
+        """The coefficients of ``self``."""
         return cast(SymbolicCoeffs, self._data.coeffs[self.slice])
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:

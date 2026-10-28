@@ -189,17 +189,17 @@ class Term(
 
     @property
     def _data(self) -> TermData[ImplT, SpecT, CoeffT]:
-        """Get the raw term data object underlying ``self``."""
+        """The raw term data object underlying ``self``."""
         return self._impl
 
     @property
     def cmpnt_type(self) -> type[Cmpnt[ImplT, SpecT]]:
-        """Get the component type of ``self``."""
+        """The component type of ``self``."""
         return self.cmpnts_type.cmpnt_type
 
     @property
     def coeffs_type(self) -> type[Coeffs[CoeffT]]:
-        """Get the coefficient container type of ``self``."""
+        """The coefficient container type of ``self``."""
         return get_coeffs_type(self.coeff_type)
 
     @classmethod
@@ -262,12 +262,12 @@ class Term(
 
     @property
     def cmpnt(self) -> Cmpnt[ImplT, SpecT]:
-        """Get a view on the component of ``self``."""
+        """A view of the component of ``self``."""
         return self._data.cmpnts[self.index]
 
     @property
     def coeff(self) -> CoeffT:
-        """Get a copy of the coefficient of ``self``."""
+        """A copy of the coefficient of ``self``."""
         return self._data.coeffs[self.index]
 
     @coeff.setter
@@ -381,7 +381,7 @@ class Terms(
 
     @property
     def _data(self) -> TermData[ImplT, SpecT, CoeffT]:
-        """Return the raw term data object underlying ``self``."""
+        """The raw term data object underlying ``self``."""
         return self._impl
 
     @classmethod
@@ -412,32 +412,32 @@ class Terms(
 
     @property
     def coeffs_type(self) -> type[Coeffs[CoeffT]]:
-        """Get the coefficient container type of ``self``."""
+        """The coefficient container type of ``self``."""
         return get_coeffs_type(self._data.coeff_type)
 
     @property
     def coeff_type(self) -> type[CoeffT]:
-        """Get the coefficient type of ``self``."""
+        """The coefficient type of ``self``."""
         return self._impl.coeff_type
 
     @property
     def cmpnts_type(self) -> type[Cmpnts[ImplT, SpecT]]:
-        """Get the component container type of ``self``."""
+        """The component container type of ``self``."""
         return self._data.cmpnts_type
 
     @property
     def cmpnt_type(self) -> type[Cmpnt[ImplT, SpecT]]:
-        """Get the component type of ``self``."""
+        """The component type of ``self``."""
         return self._impl.cmpnt_type
 
     @property
     def cmpnts(self) -> Cmpnts[ImplT, SpecT]:
-        """Get the components of ``self``."""
+        """The components of ``self``."""
         return self._data.cmpnts[self.slice]
 
     @property
     def coeffs(self) -> Coeffs[CoeffT]:
-        """Get the coefficients of ``self``."""
+        """The coefficients of ``self``."""
         return self._data.coeffs[self.slice]
 
     def __repr__(self) -> str:
@@ -842,27 +842,27 @@ class TermSet(Generic[ImplT, SpecT, CoeffT], StringRepresentable):
 
     @property
     def _data(self) -> TermData[ImplT, SpecT, CoeffT]:
-        """Get the raw term data object underlying ``self``."""
+        """The raw term data object underlying ``self``."""
         return self._impl
 
     @property
     def coeffs_type(self) -> type[Coeffs[CoeffT]]:
-        """Get the coefficient container type of ``self``."""
+        """The coefficient container type of ``self``."""
         return self._impl.coeffs_type
 
     @property
     def coeff_type(self) -> type[CoeffT]:
-        """Get the coefficient type of ``self``."""
+        """The coefficient type of ``self``."""
         return self._data.coeff_type
 
     @property
     def cmpnts_type(self) -> type[Cmpnts[ImplT, SpecT]]:
-        """Get the component container type of ``self``."""
+        """The component container type of ``self``."""
         return self._impl.cmpnts_type
 
     @property
     def cmpnt_type(self) -> type[Cmpnt[ImplT, SpecT]]:
-        """Get the component type of ``self``."""
+        """The component type of ``self``."""
         return self._data.cmpnt_type
 
     @classmethod
@@ -1524,7 +1524,7 @@ class NumericTermSum(TermSum[ImplT, SpecT, NumberT]):
 
     @property
     def l1_norm(self) -> NumberT:
-        """Get the L1 norm of ``self``."""
+        """The L1 norm of ``self``."""
         coeffs = self._impl._coeffs
         if isinstance(coeffs, RealCoeffs | ComplexCoeffs):
             return self.coeff_type(coeffs._impl.norm_slice(coeffs.slice, False))
@@ -1535,7 +1535,7 @@ class NumericTermSum(TermSum[ImplT, SpecT, NumberT]):
 
     @property
     def l2_norm_square(self) -> NumberT:
-        """Get the square of the L2 norm of ``self``."""
+        """The square of the L2 norm of ``self``."""
         coeffs = self._impl._coeffs
         if isinstance(coeffs, RealCoeffs | ComplexCoeffs):
             return self.coeff_type(coeffs._impl.norm_slice(coeffs.slice, True))
@@ -1546,7 +1546,7 @@ class NumericTermSum(TermSum[ImplT, SpecT, NumberT]):
 
     @property
     def l2_norm(self) -> Number:
-        """Get the L2 norm of ``self``."""
+        """The L2 norm of ``self``."""
         return cast(Number, self.l2_norm_square**0.5)
 
     def l1_normalize(self) -> None:

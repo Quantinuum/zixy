@@ -61,7 +61,7 @@ class Term(Generic[ImplT, SpecT, CoeffT, ElemT], FermionTerm[ImplT, SpecT, Coeff
 
     @property
     def string(self) -> OperatorString[ImplT, SpecT, ElemT]:
-        """Get the string component of the term."""
+        """The string component of the term."""
         return cast(OperatorString[ImplT, SpecT, ElemT], self.cmpnt)
 
     @abstractmethod
@@ -82,7 +82,7 @@ class Terms(Generic[ImplT, SpecT, CoeffT, ElemT], FermionTerms[ImplT, SpecT, Coe
 
     @property
     def strings(self) -> OperatorStrings[ImplT, SpecT, ElemT]:
-        """Get the string components of the terms."""
+        """The string components of the terms."""
         return cast(OperatorStrings[ImplT, SpecT, ElemT], self.cmpnts)
 
 
@@ -93,12 +93,12 @@ class TermSet(Generic[ImplT, SpecT, CoeffT, ElemT], FermionTermSet[ImplT, SpecT,
 
     @property
     def strings(self) -> OperatorStrings[ImplT, SpecT, ElemT]:
-        """Get the string components of the terms."""
+        """The string components of the terms."""
         return cast(OperatorStrings[ImplT, SpecT, ElemT], self._impl._cmpnts)
 
     @property
     def coeffs(self) -> Any:
-        """Get the coefficients of ``self``."""
+        """The coefficients of ``self``."""
         return self._impl._coeffs
 
 

@@ -50,32 +50,32 @@ class TermData(Generic[ImplT, SpecT, CoeffT]):
 
     @property
     def cmpnts(self) -> Cmpnts[ImplT, SpecT]:
-        """Get the components of ``self``."""
+        """The components of ``self``."""
         return self._cmpnts
 
     @property
     def coeffs(self) -> Coeffs[CoeffT]:
-        """Get the coefficients of ``self``."""
+        """The coefficients of ``self``."""
         return self._coeffs
 
     @property
     def cmpnts_type(self) -> type[Cmpnts[ImplT, SpecT]]:
-        """Get the component container type of ``self``."""
+        """The component container type of ``self``."""
         return type(self._cmpnts)
 
     @property
     def cmpnt_type(self) -> type[Cmpnt[ImplT, SpecT]]:
-        """Get the component type of ``self``."""
+        """The component type of ``self``."""
         return self._cmpnts.cmpnt_type
 
     @property
     def coeffs_type(self) -> type[Coeffs[CoeffT]]:
-        """Get the coefficient container type of ``self``."""
+        """The coefficient container type of ``self``."""
         return type(self._coeffs)
 
     @property
     def coeff_type(self) -> type[CoeffT]:
-        """Get the coefficient type of ``self``."""
+        """The coefficient type of ``self``."""
         return self._coeffs.coeff_type
 
     def __len__(self) -> int:

@@ -64,12 +64,12 @@ class String(Generic[ImplT, SpecT, ElemT], FermionString[ImplT, SpecT, ElemT]):
 
     @property
     def creations(self) -> list[int]:
-        """Get the creation mode indices."""
+        """The creation mode indices."""
         return self.get_sets()[0]
 
     @property
     def annihilations(self) -> list[int]:
-        """Get the annihilation mode indices."""
+        """The annihilation mode indices."""
         return self.get_sets()[1]
 
     @abstractmethod

@@ -16,10 +16,11 @@ from zixy.container.coeffs import (
     Sign,
     SignCoeffs,
 )
-from zixy.container.data import TermData, _TermData
+from zixy.container.data import TermData
 
 if TYPE_CHECKING:
     from zixy._zixy import ImplArray
+    from zixy.container.data import _TermData
 
 
 def _first_coeff[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](

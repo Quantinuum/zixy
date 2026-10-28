@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import builtins
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Self, TypeAlias, overload
 
 import numpy as np
@@ -721,6 +721,8 @@ def typesafe_mul[C: (float, complex, Sign, ComplexSign, Expr)](lhs: C, rhs: Coef
 
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from numpy.typing import NDArray
 
     BaseVec = _zixy.BaseVec

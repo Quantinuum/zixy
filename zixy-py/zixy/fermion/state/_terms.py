@@ -20,18 +20,17 @@ This module follows :mod:`~zixy.container.terms`, using strings defined in
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Protocol, Self, overload
 
 import numpy as np
-from sympy import Expr, Symbol
+from sympy import Expr
 
 from zixy._zixy import FermionStateArray, Modes, Qubits
 from zixy.container.coeffs import (
     Coeff,
     ComplexCoeffs,
     ComplexSign,
-    Number,
     RealCoeffs,
     Sign,
     SignCoeffs,
@@ -59,8 +58,12 @@ from zixy.qubit.state._terms import (
 )
 
 if TYPE_CHECKING:
-    from numpy.typing import NDArray
+    from collections.abc import Sequence
 
+    from numpy.typing import NDArray
+    from sympy import Symbol
+
+    from zixy.container.coeffs import Number
     from zixy.qubit.state._strings import String as QubitStateString
 
 type TermSpec[C: (float, complex, Sign, ComplexSign, Expr)] = TermSpecT[

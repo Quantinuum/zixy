@@ -24,11 +24,10 @@ The structure of this module parallels that of :mod:`~zixy.container.cmpnts` and
 from __future__ import annotations
 
 from collections.abc import Iterator, Sequence
-from typing import TYPE_CHECKING, TypeAlias, cast, overload
+from typing import TYPE_CHECKING, Self, TypeAlias, cast, overload
 
 import numpy as np
 from numpy.typing import NDArray
-from typing_extensions import Self
 
 from zixy._zixy import (
     PauliMatrix,

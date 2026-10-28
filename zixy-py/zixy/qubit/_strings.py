@@ -18,9 +18,7 @@ from __future__ import annotations
 
 import warnings
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Generic, TypeVar, cast, overload
-
-from typing_extensions import Self
+from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar, cast, overload
 
 from zixy._zixy import Qubits
 from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet, SpecT

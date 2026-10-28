@@ -27,9 +27,7 @@ can be selected efficiently.
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
-from typing import TYPE_CHECKING, TypeAlias, overload
-
-from typing_extensions import Self
+from typing import TYPE_CHECKING, Self, TypeAlias, overload
 
 from zixy._zixy import FermionSprings, GeneralFermionOperatorArray, Modes
 from zixy.container.base import requires_ownership

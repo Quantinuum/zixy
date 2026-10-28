@@ -22,12 +22,11 @@ that are fermionic occupation-number state strings, as defined in
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from typing import Any, Protocol, TypeAlias, cast, overload
+from typing import Any, Protocol, Self, TypeAlias, cast, overload
 
 import numpy as np
 from numpy.typing import NDArray
 from sympy import Expr, Symbol
-from typing_extensions import Self
 
 from zixy._zixy import FermionStateArray, Modes, Qubits
 from zixy.container.coeffs import (

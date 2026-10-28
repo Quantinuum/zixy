@@ -18,9 +18,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from collections.abc import Callable
-from typing import Any, Generic, TypeAlias, cast
-
-from typing_extensions import Self
+from typing import Any, Generic, Self, TypeAlias, cast
 
 from zixy._zixy import Qubits
 from zixy.container.cmpnts import SpecT

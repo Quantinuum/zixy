@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Iterator, Sequence, Sized
+from collections.abc import Sequence, Sized
 from functools import wraps
 from typing import (
     TYPE_CHECKING,
@@ -34,6 +34,7 @@ from zixy.utils import slice_index, slice_len
 
 if TYPE_CHECKING:
     import builtins
+    from collections.abc import Callable, Iterator
 
     from zixy.container.coeffs import Coeffs
 

@@ -22,16 +22,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Self, overload
 
-from sympy import Expr, Symbol
+from sympy import Expr
 
-from zixy._zixy import Modes, NormalFermionOperatorArray
+from zixy._zixy import NormalFermionOperatorArray
 from zixy.container import terms
 from zixy.container.coeffs import (
     Coeff,
     Coeffs,
     ComplexCoeffs,
     ComplexSign,
-    Number,
     RealCoeffs,
     RootOfUnity,
     Sign,
@@ -67,6 +66,10 @@ from zixy.fermion.state._terms import (
 )
 
 if TYPE_CHECKING:
+    from sympy import Symbol
+
+    from zixy._zixy import Modes
+    from zixy.container.coeffs import Number
     from zixy.fermion.operator.general._terms import (
         ComplexTermSum as GeneralComplexTermSum,
         RealTermSum as GeneralRealTermSum,

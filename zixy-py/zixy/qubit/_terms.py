@@ -22,21 +22,20 @@ from sympy import Expr
 
 from zixy._zixy import Qubits  # noqa: TC001 (required for sphinx)
 from zixy.container.coeffs import ComplexSign, Sign
-
-if TYPE_CHECKING:
-    from zixy._zixy import QubitArray
-    from zixy.container.strings import String as BaseString
-
-
 from zixy.container.data import TermData
 from zixy.container.terms import (
     Term as TermBase,
     Terms as TermsBase,
     TermSet as TermSetBase,
-    TermSpecT,
     TermSum as TermSumBase,
 )
-from zixy.qubit._strings import Strings, _check_qubits_compatibility
+from zixy.qubit._strings import _check_qubits_compatibility
+
+if TYPE_CHECKING:
+    from zixy._zixy import QubitArray
+    from zixy.container.strings import String as BaseString
+    from zixy.container.terms import TermSpecT
+    from zixy.qubit._strings import Strings
 
 
 class Term[ImplT: QubitArray[Any, Any], SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](

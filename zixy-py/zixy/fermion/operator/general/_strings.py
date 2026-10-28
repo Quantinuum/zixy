@@ -26,7 +26,7 @@ can be selected efficiently.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Self, overload
 
 from sympy import Expr
@@ -48,6 +48,8 @@ from zixy.fermion.operator._strings import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from zixy.fermion.operator.general._terms import Term
 
 type StringSpec = str | Sequence[LadderOp]

@@ -50,7 +50,6 @@ from zixy.container.coeffs import (
     Coeffs,
     ComplexCoeffs,
     ComplexSign,
-    Number,
     RealCoeffs,
     RootOfUnity,
     Sign,
@@ -77,6 +76,7 @@ if TYPE_CHECKING:
         _TermCoeffsView,
         _TermSetCoeffs,
     )
+    from zixy.container.coeffs import Number
 
 
 type _AnyCoeffTerm[ImplT: ImplArray, SpecT] = (

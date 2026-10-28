@@ -24,13 +24,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Literal, Self, cast, overload
 
 import numpy as np
-from sympy import Expr, Symbol
+from sympy import Expr
 
 from zixy._zixy import (
     PauliMatrix,
     QubitPauliArray,
-    Qubits,
-    SymplecticPart,
 )
 from zixy.container.coeffs import (
     Coeff,
@@ -38,7 +36,6 @@ from zixy.container.coeffs import (
     ComplexCoeffs,
     ComplexSign,
     ComplexSignCoeffs,
-    Number,
     RealCoeffs,
     Sign,
     SignCoeffs,
@@ -68,7 +65,10 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from numpy.typing import NDArray
+    from sympy import Symbol
 
+    from zixy._zixy import Qubits, SymplecticPart
+    from zixy.container.coeffs import Number
     from zixy.qubit.clifford import GateList
     from zixy.qubit.state._strings import Strings as StateStrings
 

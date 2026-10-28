@@ -20,12 +20,12 @@ This module follows :mod:`~zixy.container.terms`, using strings defined in
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Self, overload
 
-from sympy import Expr, Symbol
+from sympy import Expr
 
-from zixy._zixy import FermionSprings, GeneralFermionOperatorArray, Modes
+from zixy._zixy import FermionSprings, GeneralFermionOperatorArray
 from zixy.container import terms
 from zixy.container.base import requires_ownership
 from zixy.container.coeffs import (
@@ -33,7 +33,6 @@ from zixy.container.coeffs import (
     Coeffs,
     ComplexCoeffs,
     ComplexSign,
-    Number,
     RealCoeffs,
     Sign,
     SymbolicCoeffs,
@@ -64,6 +63,12 @@ from zixy.fermion.operator.general._strings import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from sympy import Symbol
+
+    from zixy._zixy import Modes
+    from zixy.container.coeffs import Number
     from zixy.fermion.operator.normal._terms import (
         ComplexTermSum as NormalComplexTermSum,
         RealTermSum as NormalRealTermSum,

@@ -19,10 +19,10 @@ use crate::container::word_iters::term_set::AsView;
 use crate::container::word_iters::terms::AsView as _;
 use crate::container::word_iters::terms::AsViewMut;
 use crate::container::word_iters::WordIters;
-use crate::qubit::pauli::string_major as pauli;
-use crate::qubit::pauli::string_major::lincomb;
-use crate::qubit::pauli::string_major::products::mul_op_state_bits_u64;
-use crate::qubit::pauli::string_major::products::mul_op_state_phase_u64;
+use crate::qubit::operator::string_major as operator;
+use crate::qubit::operator::string_major::lincomb;
+use crate::qubit::operator::string_major::products::mul_op_state_bits_u64;
+use crate::qubit::operator::string_major::products::mul_op_state_phase_u64;
 use crate::qubit::state;
 use crate::qubit::state::string_list::StringList as StateList;
 use crate::qubit::state::string_list::StringRef as StateRef;
@@ -56,12 +56,12 @@ impl std::error::Error for SubspaceNonorthogonal {}
 ///
 /// Return the sorted list of terms along with a map that points to the start of each block of terms with the same X string value.
 pub fn sort_and_map_pauli_op<C: FieldElem>(
-    op: &mut impl pauli::terms::AsViewMut<C>,
+    op: &mut impl operator::terms::AsViewMut<C>,
 ) -> HashMap<u64, usize> {
     let op = op.view_mut();
     // extract the components and coeffs, then sort them by component value
 
-    QuickSort::<pauli::string_list::StringList, C>::sort_with_coeffs(
+    QuickSort::<operator::string_list::StringList, C>::sort_with_coeffs(
         &LexicographicSort { ascending: true },
         op.word_iters,
         op.coeffs,
@@ -90,7 +90,7 @@ pub fn sort_and_map_pauli_op<C: FieldElem>(
 
 /// Get the matrix element of the operator with the given terms and X block map between the computational basis vectors `bra` and `ket`.
 pub fn mat_elem_strings_from_presorted<C: FieldElem>(
-    presorted_op: &impl pauli::terms::AsView<C>,
+    presorted_op: &impl operator::terms::AsView<C>,
     x_block_map: &HashMap<u64, usize>,
     bra: &StateRef,
     ket: &StateRef,
@@ -123,7 +123,7 @@ pub fn mat_elem_strings_from_presorted<C: FieldElem>(
 
 /// Get the matrix element of the operator with the given terms and X block map between the state linear combinations `bra` and `ket`.
 pub fn mat_elem_from_presorted<C: FieldElem>(
-    presorted_op: &impl pauli::terms::AsView<C>,
+    presorted_op: &impl operator::terms::AsView<C>,
     x_block_map: &HashMap<u64, usize>,
     bra: &impl state::terms::AsView<C>,
     ket: &impl state::terms::AsView<C>,
@@ -148,7 +148,7 @@ pub fn mat_elem_from_presorted<C: FieldElem>(
 
 /// Evaluate the matrix element of op between bra and ket by first sorting and X block mapping `op`.
 pub fn mat_elem<C: FieldElem>(
-    op: &impl pauli::terms::AsView<C>,
+    op: &impl operator::terms::AsView<C>,
     bra: &impl state::terms::AsView<C>,
     ket: &impl state::terms::AsView<C>,
 ) -> C {
@@ -160,7 +160,7 @@ pub fn mat_elem<C: FieldElem>(
 /// Evaluate the matrix elements and overlaps between all elements of `subspace` and return the matrices
 /// of op matrix elements and overlaps with a basis ordering consistent with `subspace`.
 pub fn mat_nonortho_projected<C: FieldElem>(
-    op: &pauli::terms::View<C>,
+    op: &operator::terms::View<C>,
     subspace: Vec<&state::term_set::View<C>>,
 ) -> (Matrix<C>, Matrix<C>) {
     let dim = subspace.len();
@@ -198,7 +198,7 @@ pub fn mat_nonortho_projected<C: FieldElem>(
 /// Evaluate the matrix elements for the orthonormal basis defined by the components of `subspace`.
 /// Do not check that the subspace is indeed orthonormal.
 pub fn mat_ortho_projected_unchecked<C: FieldElem>(
-    op: &pauli::terms::View<C>,
+    op: &operator::terms::View<C>,
     subspace: StateList,
 ) -> Matrix<C> {
     let shape = (subspace.len(), subspace.len());
@@ -225,7 +225,7 @@ pub fn mat_ortho_projected_unchecked<C: FieldElem>(
 /// Evaluate the matrix elements for the orthonormal basis defined by the components of `subspace`.
 /// Check that the subspace is indeed orthonormal (i.e. no repeated basis states).
 pub fn mat_ortho_projected<C: FieldElem>(
-    op: &pauli::terms::View<C>,
+    op: &operator::terms::View<C>,
     subspace: StateList,
 ) -> Result<Matrix<C>, SubspaceNonorthogonal> {
     if subspace.find_duplicates().count() == 0 {
@@ -239,7 +239,7 @@ pub fn mat_ortho_projected<C: FieldElem>(
 /// with a non-zero overlap <trial|state>, the energy can be extracted by the "mixed estimator"
 /// E = <trial|op|state> / <trial|state>
 pub fn expval_eigenfunction<C: FieldElem>(
-    op: &impl pauli::terms::AsView<C>,
+    op: &impl operator::terms::AsView<C>,
     state: &impl state::terms::AsView<C>,
 ) -> C {
     let state = state.view();
@@ -255,7 +255,7 @@ pub fn expval_eigenfunction<C: FieldElem>(
 }
 
 pub fn apply<C: FieldElem>(
-    op: &pauli::terms::View<C>,
+    op: &operator::terms::View<C>,
     state: &state::terms::View<C>,
     out: &mut state::term_set::ViewMut<Complex64>,
 ) {
@@ -287,7 +287,7 @@ mod tests {
         const E_EXACT: f64 = -2404.544973130422;
         let operator_path = file_path_in_crate("src/qubit/test_files/mof_cas/operator.bin");
         let reader = BinFileReader::new(operator_path).unwrap();
-        let op: pauli::term_set::TermSet<f64> =
+        let op: operator::term_set::TermSet<f64> =
             bincode::serde::decode_from_reader(reader, config::standard()).unwrap();
         let state_path = file_path_in_crate("src/qubit/test_files/mof_cas/state.bin");
         let reader = BinFileReader::new(state_path).unwrap();

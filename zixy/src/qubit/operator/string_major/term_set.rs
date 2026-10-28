@@ -6,9 +6,9 @@ use crate::container::map::Map;
 use crate::container::traits::proj::Borrow;
 use crate::container::word_iters;
 use crate::qubit::mode::{PauliMatrix, Qubits};
-use crate::qubit::pauli::string_major::string::PauliWord;
-use crate::qubit::pauli::string_major::string_list::StringList;
-use crate::qubit::pauli::string_major::terms::Terms;
+use crate::qubit::operator::string_major::string::PauliWord;
+use crate::qubit::operator::string_major::string_list::StringList;
+use crate::qubit::operator::string_major::terms::Terms;
 use crate::qubit::traits::QubitsBased;
 
 pub type TermSet<C /*: NumRepr*/> = word_iters::term_set::TermSet<StringList, C>;
@@ -73,7 +73,7 @@ mod tests {
     use crate::container::traits::Elements;
     use crate::container::word_iters::term_set::{AsView, AsViewMut};
     use crate::qubit::mode::PauliMatrix;
-    use crate::qubit::pauli::springs::Springs;
+    use crate::qubit::operator::springs::Springs;
     use crate::qubit::test::HEHP_STO3G_HAM_JW_INPUT;
     use crate::string::springs::ModeSettings;
 

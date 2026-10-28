@@ -21,7 +21,7 @@ fn _zixy(_py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     m.add_class::<crate::container::map::Map>()?;
 
     // // Lists of qubit pauli strings and terms thereof with coefficient vectors of each type.
-    m.add_class::<crate::qubit::pauli::Array>()?;
+    m.add_class::<crate::qubit::operator::Array>()?;
     m.add_class::<crate::qubit::state::Array>()?;
 
     m.add_class::<crate::mappings::JordanWignerMapper>()?;

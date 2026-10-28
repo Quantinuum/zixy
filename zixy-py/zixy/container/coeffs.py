@@ -1676,9 +1676,7 @@ class SymbolicCoeffs(Coeffs[Expr]):
             return self.try_to_complex().np_array
 
 
-def convert_vec[C: (float, complex, Sign, ComplexSign, Expr)](
-    source: Coeffs[Any], t: type[Coeffs[C]]
-) -> Coeffs[C]:
+def convert_vec[Cs: Coeffs[Any]](source: Coeffs[Any], t: type[Cs]) -> Cs:
     """Convert a vector of coefficients to a vector of another coefficient type.
 
     Args:
@@ -1692,6 +1690,32 @@ def convert_vec[C: (float, complex, Sign, ComplexSign, Expr)](
     for c in source:
         out.append(convert(c, t.coeff_type))
     return out
+
+
+@overload
+def get_coeffs_type(coeff_type: type[Sign]) -> type[SignCoeffs]: ...
+
+
+@overload
+def get_coeffs_type(coeff_type: type[ComplexSign]) -> type[ComplexSignCoeffs]: ...
+
+
+@overload
+def get_coeffs_type(coeff_type: type[float]) -> type[RealCoeffs]: ...
+
+
+@overload
+def get_coeffs_type(coeff_type: type[complex]) -> type[ComplexCoeffs]: ...
+
+
+@overload
+def get_coeffs_type(coeff_type: type[Expr]) -> type[SymbolicCoeffs]: ...
+
+
+@overload
+def get_coeffs_type[C: (float, complex, Sign, ComplexSign, Expr)](
+    coeff_type: type[C],
+) -> type[Coeffs[C]]: ...
 
 
 def get_coeffs_type[C: (float, complex, Sign, ComplexSign, Expr)](

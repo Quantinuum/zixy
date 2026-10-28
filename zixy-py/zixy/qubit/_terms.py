@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Any
 from sympy import Expr
 
 from zixy._zixy import Qubits  # noqa: TC001 (required for sphinx)
-from zixy.container.coeffs import ComplexSign, Sign, get_coeffs_type
+from zixy.container.coeffs import ComplexSign, Sign
 
 if TYPE_CHECKING:
     from zixy._zixy import QubitArray
@@ -63,7 +63,7 @@ class Term[ImplT: QubitArray[Any, Any], SpecT, C: (float, complex, Sign, Complex
             source: The term specifier to use for default qubits and initial value.
         """
         strings = self.strings_type(qubits, 1)
-        coeffs = get_coeffs_type(self.coeff_type).from_size(1)
+        coeffs = self.coeffs_type.from_size(1)
         term_data = TermData(strings, coeffs)
         TermBase.__init__(self, term_data)
         self.set(source)
@@ -108,7 +108,7 @@ class Terms[
             n: The number of items to initialize the array with.
         """
         strings = self.term_type.strings_type(qubits, n)
-        coeffs = get_coeffs_type(self.term_type.coeff_type).from_size(n)
+        coeffs = self.term_type.coeffs_type.from_size(n)
         data = TermData(strings, coeffs)
         TermsBase.__init__(self, data)
 

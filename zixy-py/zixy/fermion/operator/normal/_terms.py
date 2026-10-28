@@ -20,7 +20,7 @@ This module follows :mod:`~zixy.container.terms`, using strings defined in
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Self, cast, overload
+from typing import TYPE_CHECKING, Any, Self, overload
 
 from sympy import Expr, Symbol
 
@@ -35,6 +35,7 @@ from zixy.container.coeffs import (
     RealCoeffs,
     RootOfUnity,
     Sign,
+    SignCoeffs,
     SymbolicCoeffs,
     typesafe_mul,
 )
@@ -194,11 +195,6 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
 
     terms_type: type[Terms[C]]
 
-    @property
-    def coeffs(self) -> Any:
-        """The coefficients of ``self``."""
-        return self._impl.coeffs
-
 
 class TermSum[C: (float, complex, Sign, ComplexSign, Expr)](
     OperatorTermSum[ImplT, SpecT, C, ElemT], TermSet[C]
@@ -237,6 +233,7 @@ class SignTerm(Term[Sign]):
     """
 
     coeff_type = Sign
+    coeffs_type = SignCoeffs
 
     @overload
     def __mul__(self, rhs: Sign) -> SignTerm: ...
@@ -339,6 +336,7 @@ class RealTerm(Term[float]):
     """
 
     coeff_type = float
+    coeffs_type = RealCoeffs
 
     @overload
     def __mul__(self, rhs: Sign) -> RealTerm: ...
@@ -462,16 +460,20 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
 
     def commutator(self, rhs: TermSum[float]) -> RealTermSum:
         """Return the commutator ``[self, rhs]``."""
+        rhs_coeffs = rhs.coeffs
+        assert isinstance(rhs_coeffs, RealCoeffs)
         impl, coeffs = self.strings._impl.lincomb_commutator_real(
-            self.strings._impl, self.coeffs._impl, rhs.strings._impl, rhs.coeffs._impl
+            self.strings._impl, self.coeffs._impl, rhs.strings._impl, rhs_coeffs._impl
         )
         data = TermData(Strings._create(impl), RealCoeffs._create(coeffs))
         return RealTermSum._create(data)
 
     def anticommutator(self, rhs: TermSum[float]) -> RealTermSum:
         """Return the anticommutator ``{self, rhs}``."""
+        rhs_coeffs = rhs.coeffs
+        assert isinstance(rhs_coeffs, RealCoeffs)
         impl, coeffs = self.strings._impl.lincomb_anticommutator_real(
-            self.strings._impl, self.coeffs._impl, rhs.strings._impl, rhs.coeffs._impl
+            self.strings._impl, self.coeffs._impl, rhs.strings._impl, rhs_coeffs._impl
         )
         data = TermData(Strings._create(impl), RealCoeffs._create(coeffs))
         return RealTermSum._create(data)
@@ -617,6 +619,7 @@ class ComplexTerm(Term[complex]):
     """
 
     coeff_type = complex
+    coeffs_type = ComplexCoeffs
 
     @overload
     def __mul__(self, rhs: Sign) -> ComplexTerm: ...
@@ -742,16 +745,20 @@ class ComplexTermSum(
 
     def commutator(self, rhs: TermSum[complex]) -> ComplexTermSum:
         """Return the commutator ``[self, rhs]``."""
+        rhs_coeffs = rhs.coeffs
+        assert isinstance(rhs_coeffs, ComplexCoeffs)
         impl, coeffs = self.strings._impl.lincomb_commutator_complex(
-            self.strings._impl, self.coeffs._impl, rhs.strings._impl, rhs.coeffs._impl
+            self.strings._impl, self.coeffs._impl, rhs.strings._impl, rhs_coeffs._impl
         )
         data = TermData(Strings._create(impl), ComplexCoeffs._create(coeffs))
         return ComplexTermSum._create(data)
 
     def anticommutator(self, rhs: TermSum[complex]) -> ComplexTermSum:
         """Return the anticommutator ``{self, rhs}``."""
+        rhs_coeffs = rhs.coeffs
+        assert isinstance(rhs_coeffs, ComplexCoeffs)
         impl, coeffs = self.strings._impl.lincomb_anticommutator_complex(
-            self.strings._impl, self.coeffs._impl, rhs.strings._impl, rhs.coeffs._impl
+            self.strings._impl, self.coeffs._impl, rhs.strings._impl, rhs_coeffs._impl
         )
         data = TermData(Strings._create(impl), ComplexCoeffs._create(coeffs))
         return ComplexTermSum._create(data)
@@ -893,6 +900,7 @@ class SymbolicTerm(Term[Expr]):
     """
 
     coeff_type = Expr
+    coeffs_type = SymbolicCoeffs
 
     @overload
     def __mul__(self, rhs: Sign) -> SymbolicTerm: ...
@@ -990,11 +998,6 @@ class SymbolicTerms(Terms[Expr]):
     """
 
     term_type = SymbolicTerm
-
-    @property
-    def coeffs(self) -> SymbolicCoeffs:
-        """The coefficients of ``self``."""
-        return cast("SymbolicCoeffs", self._data.coeffs[self.slice])
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
         """Apply a partial substitution of the symbols in-place.

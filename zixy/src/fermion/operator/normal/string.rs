@@ -8,14 +8,14 @@ use crate::container::errors::OutOfBounds;
 use crate::container::traits::proj::{Borrow, BorrowMut};
 use crate::container::word_iters::{Elem, WordIters};
 use crate::fermion::mode::Modes;
-use crate::fermion::operator::normal::cmpnt_list::{CmpntList, CmpntRef};
+use crate::fermion::operator::normal::string_list::{StringList, StringRef};
 use crate::fermion::traits::ModesBased;
 
 /// A single normal-ordered pair of fermionic creation and annihilation operator strings.
-impl Elem<CmpntList> {
+impl Elem<StringList> {
     /// Create a new instance.
     pub fn new(modes: Modes) -> Self {
-        let mut this = Self(CmpntList::new(modes));
+        let mut this = Self(StringList::new(modes));
         this.0.push_clear();
         this
     }
@@ -57,24 +57,24 @@ impl Elem<CmpntList> {
     }
 
     /// Create an instance from a reference to a component.
-    pub fn from_cmpnt_ref(cmpnt_ref: CmpntRef) -> Self {
-        let mut this = Self::new(cmpnt_ref.to_modes());
-        this.borrow_mut().assign(cmpnt_ref);
+    pub fn from_string_ref(string_ref: StringRef) -> Self {
+        let mut this = Self::new(string_ref.to_modes());
+        this.borrow_mut().assign(string_ref);
         this
     }
 }
 
-impl ModesBased for Elem<CmpntList> {
+impl ModesBased for Elem<StringList> {
     fn modes(&self) -> &Modes {
         self.0.modes()
     }
 }
 
-impl Display for Elem<CmpntList> {
+impl Display for Elem<StringList> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.borrow())
     }
 }
 
-/// Type alias for a single element of the CmpntList.
-pub type Cmpnt = Elem<CmpntList>;
+/// Type alias for a single element of the StringList.
+pub type String = Elem<StringList>;

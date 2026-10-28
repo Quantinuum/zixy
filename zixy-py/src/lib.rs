@@ -1,9 +1,9 @@
 //! Python bindings for Zixy.
-pub mod cmpnt;
 pub mod container;
 pub mod fermion;
 pub mod mappings;
 pub mod qubit;
+pub mod string;
 pub mod utils;
 
 use pyo3::prelude::*;
@@ -34,7 +34,7 @@ fn _zixy(_py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     m.add_class::<crate::fermion::operator::NormalArray>()?;
     m.add_class::<crate::fermion::operator::GeneralArray>()?;
 
-    m.add_class::<crate::cmpnt::state_springs::BinarySprings>()?;
+    m.add_class::<crate::string::state_springs::BinarySprings>()?;
     m.add_class::<crate::qubit::clifford::CliffordGateList>()?;
     m.add_class::<crate::qubit::clifford::CliffordGate>()?;
     m.add_class::<crate::qubit::springs::PauliSprings>()?;

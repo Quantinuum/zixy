@@ -59,7 +59,7 @@ ImplT = GeneralFermionOperatorArray
 def _string_length(source: BaseString[ImplT, SpecT] | SpecT) -> int:
     """Get the number of operators needed to store a string specifier."""
     if isinstance(source, BaseString):
-        return len(source._impl.cmpnt_get_ops(source.index)[0])
+        return len(source._impl.string_get_ops(source.index)[0])
     if isinstance(source, str):
         if not source.strip():
             return 0
@@ -145,23 +145,23 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
             self._set_copy(source)
         elif isinstance(source, str):
             if not source.strip():
-                self._impl.cmpnt_clear(self.index)
+                self._impl.string_clear(self.index)
                 return
             springs = FermionSprings(source)
             if len(springs) == 0:
-                self._impl.cmpnt_clear(self.index)
+                self._impl.string_clear(self.index)
             elif len(springs) == 1:
-                self._impl.cmpnt_set_from_spring(self.index, springs, 0)
+                self._impl.string_set_from_spring(self.index, springs, 0)
             else:
                 raise ValueError("Input represents more than one string.")
         else:
             ops = list(source)
             mode_inds, adj = zip(*ops, strict=True) if ops else ((), ())
-            self._impl.cmpnt_set_from_ops(self.index, list(mode_inds), list(adj))
+            self._impl.string_set_from_ops(self.index, list(mode_inds), list(adj))
 
     def get_ops(self) -> list[LadderOp]:
         """Get the raw ladder-operator product as ``(mode, is_creation)`` pairs."""
-        modes, adj = self._impl.cmpnt_get_ops(self.index)
+        modes, adj = self._impl.string_get_ops(self.index)
         return list(zip(modes, adj, strict=True))
 
     def get_sets(self) -> tuple[list[int], list[int]]:
@@ -276,7 +276,7 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
             return self
         value = String(self.modes, max_string_len=_string_length(source))
         if isinstance(source, BaseString):
-            value._impl.cmpnt_copy_external(0, source._impl, source.index)
+            value._impl.string_copy_external(0, source._impl, source.index)
         else:
             value.set(source)
         self._impl._reserve_string_length(_string_length(value))

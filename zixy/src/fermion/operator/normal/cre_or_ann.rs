@@ -11,8 +11,6 @@ use std::hash::Hash;
 use itertools::{izip, Itertools};
 use serde::{Deserialize, Serialize};
 
-use crate::cmpnt::springs::ModeSettings;
-use crate::cmpnt::state_springs::BinarySprings;
 use crate::container::bit_matrix::{AsBitMatrix, AsRowMutRef, AsRowRef, BitMatrix};
 use crate::container::coeffs::sign::{Sign, SignVec};
 use crate::container::coeffs::traits::NumReprVec;
@@ -22,10 +20,12 @@ use crate::container::traits::{Compatible, Elements, EmptyClone, RefElements};
 use crate::container::word_iters::{self, WordIters};
 use crate::fermion::mode::Modes;
 use crate::fermion::traits::ModesBased;
+use crate::string::springs::ModeSettings;
+use crate::string::state_springs::BinarySprings;
 
 /// Contiguous and compact storage for fermionic creation or annihilation ladder operator string on a given space of modes.
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Serialize, Deserialize)]
-pub struct CmpntList {
+pub struct StringList {
     /// Raw storage table for the fermionic ladder operators as bitsets.
     bitsets: BitMatrix,
     /// Space of fermionic modes on which the ladder operators are defined.
@@ -34,8 +34,8 @@ pub struct CmpntList {
     is_cre: bool,
 }
 
-impl CmpntList {
-    /// Create an empty `CmpntList` on the `Qubits` given.
+impl StringList {
+    /// Create an empty `StringList` on the `Qubits` given.
     pub fn new(modes: Modes, is_cre: bool) -> Self {
         Self {
             bitsets: BitMatrix::new(modes.len()),
@@ -87,7 +87,7 @@ impl CmpntList {
     }
 }
 
-impl AsBitMatrix for CmpntList {
+impl AsBitMatrix for StringList {
     fn get_table(&self) -> &Table {
         self.bitsets.get_table()
     }
@@ -101,25 +101,25 @@ impl AsBitMatrix for CmpntList {
     }
 }
 
-impl Compatible for CmpntList {
+impl Compatible for StringList {
     fn compatible_with(&self, other: &Self) -> bool {
         self.modes == other.modes
     }
 }
 
-impl Elements for CmpntList {
+impl Elements for StringList {
     fn len(&self) -> usize {
         self.bitsets.len()
     }
 }
 
-impl ModesBased for CmpntList {
+impl ModesBased for StringList {
     fn modes(&self) -> &Modes {
         &self.modes
     }
 }
 
-impl EmptyClone for CmpntList {
+impl EmptyClone for StringList {
     fn empty_clone(&self) -> Self {
         Self {
             bitsets: self.bitsets.empty_clone(),
@@ -129,7 +129,7 @@ impl EmptyClone for CmpntList {
     }
 }
 
-impl WordIters for CmpntList {
+impl WordIters for StringList {
     fn elem_u64it(&self, i: usize) -> impl Iterator<Item = u64> + Clone {
         self.bitsets.elem_u64it(i)
     }
@@ -146,7 +146,7 @@ impl WordIters for CmpntList {
         self.bitsets.pop_and_swap(i_row);
     }
 
-    fn fmt_elem(&self, i: usize) -> String {
+    fn fmt_elem(&self, i: usize) -> std::string::String {
         (0..self.modes.len())
             .map(|i_mode| self.get_bit_unchecked(i, i_mode))
             .enumerate()
@@ -160,7 +160,7 @@ impl WordIters for CmpntList {
     }
 }
 
-impl Display for CmpntList {
+impl Display for StringList {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -170,28 +170,28 @@ impl Display for CmpntList {
     }
 }
 
-pub type CmpntRef<'a> = word_iters::ElemRef<'a, CmpntList>;
-pub type CmpntMutRef<'a> = word_iters::ElemMutRef<'a, CmpntList>;
+pub type StringRef<'a> = word_iters::ElemRef<'a, StringList>;
+pub type StringMutRef<'a> = word_iters::ElemMutRef<'a, StringList>;
 
-impl<'a> ModesBased for CmpntRef<'a> {
+impl<'a> ModesBased for StringRef<'a> {
     fn modes(&self) -> &Modes {
         &self.word_iters.modes
     }
 }
 
-impl<'a> ModesBased for CmpntMutRef<'a> {
+impl<'a> ModesBased for StringMutRef<'a> {
     fn modes(&self) -> &Modes {
         &self.word_iters.modes
     }
 }
 
-impl<'a> AsRowRef for CmpntRef<'a> {
+impl<'a> AsRowRef for StringRef<'a> {
     fn bit_mat(&self) -> &impl AsBitMatrix {
         self.word_iters
     }
 }
 
-impl<'a> AsRowMutRef for CmpntMutRef<'a> {
+impl<'a> AsRowMutRef for StringMutRef<'a> {
     fn bit_mat(&self) -> &impl AsBitMatrix {
         self.word_iters
     }
@@ -201,7 +201,7 @@ impl<'a> AsRowMutRef for CmpntMutRef<'a> {
     }
 }
 
-impl<'a> CmpntRef<'a> {
+impl<'a> StringRef<'a> {
     /// Conjugation involves a triangular number of antisymmetric exchanges.
     /// n
     /// 2: ab -> ba (1)
@@ -216,7 +216,7 @@ impl<'a> CmpntRef<'a> {
     }
 
     /// Compute the number of set bits in the bitwise AND of the viewed bitset with another, or its negation.
-    pub fn pair_hamming_weight(&self, other: &CmpntRef, negate: bool) -> usize {
+    pub fn pair_hamming_weight(&self, other: &StringRef, negate: bool) -> usize {
         let func = if negate {
             |(a, b): (u64, u64)| (a & !b).count_ones()
         } else {
@@ -229,21 +229,21 @@ impl<'a> CmpntRef<'a> {
     }
 
     /// Compute the number of set bits in the bitwise AND of the viewed bitset with another.
-    pub fn intersection_hamming_weight(&self, other: &CmpntRef) -> usize {
+    pub fn intersection_hamming_weight(&self, other: &StringRef) -> usize {
         self.pair_hamming_weight(other, false)
     }
 
     /// Compute the number of set bits in the bitwise AND of the viewed bitset with the negation of another.
-    pub fn difference_hamming_weight(&self, other: &CmpntRef) -> usize {
+    pub fn difference_hamming_weight(&self, other: &StringRef) -> usize {
         self.pair_hamming_weight(other, true)
     }
 
     /// Compute the number of set bits in the bitwise AND of the viewed bitset with two others, with given negations.
     pub fn triple_hamming_weight(
         &self,
-        first: &CmpntRef,
+        first: &StringRef,
         negate_first: bool,
-        second: &CmpntRef,
+        second: &StringRef,
         negate_second: bool,
     ) -> usize {
         let func = if negate_first {
@@ -272,7 +272,7 @@ mod tests {
     #[test]
     fn test_empty() {
         {
-            let v = CmpntList::new(Modes::from_count(4), true);
+            let v = StringList::new(Modes::from_count(4), true);
             assert!(v.bitsets.is_empty());
         }
     }
@@ -280,13 +280,13 @@ mod tests {
     #[test]
     fn test_to_string() {
         {
-            let mut v = CmpntList::new(Modes::from_count(10), true);
+            let mut v = StringList::new(Modes::from_count(10), true);
             v.push_clear();
             v.get_elem_mut_ref(0).assign_set_unchecked([].into());
             assert_eq!(v.to_string(), "[]");
             v.get_elem_mut_ref(0).assign_set_unchecked([3, 6, 7].into());
             assert_eq!(v.to_string(), "[F3^ F6^ F7^]");
-            let mut v = CmpntList::new(Modes::from_count(10), false);
+            let mut v = StringList::new(Modes::from_count(10), false);
             v.push_clear();
             v.get_elem_mut_ref(0).assign_set_unchecked([].into());
             assert_eq!(v.to_string(), "[]");

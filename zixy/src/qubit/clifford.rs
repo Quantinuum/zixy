@@ -9,7 +9,7 @@ use crate::container::traits::proj::Borrow;
 use crate::container::traits::proj::BorrowMut;
 use crate::container::utils::DistinctPair;
 use crate::qubit::mode::Qubits;
-use crate::qubit::pauli::cmpnt_major::cmpnt::PauliWord;
+use crate::qubit::pauli::string_major::string::PauliWord;
 use crate::qubit::traits::{PauliWordMutRef, PauliWordRef};
 
 /// Enum with a variant for each kind of Clifford gate implemented
@@ -195,16 +195,16 @@ mod tests {
         for big_endian in [true, false] {
             use crate::{
                 container::coeffs::{complex_sign::ComplexSign, sign::Sign, traits::NumRepr},
-                qubit::{pauli::cmpnt_major::term::Term, traits::PauliWordRef},
+                qubit::{pauli::string_major::term::Term, traits::PauliWordRef},
             };
 
-            let mut cmpnt =
+            let mut string =
                 PauliWord::from_vec(Qubits::from_count(n_qubit), paulis.clone()).unwrap();
             let mut term = Term::<ComplexSign>::from_vec_unchecked(
                 Qubits::from_count(n_qubit),
                 paulis.clone(),
             );
-            let mut sparse_work = cmpnt.borrow().to_sparse_matrix(big_endian);
+            let mut sparse_work = string.borrow().to_sparse_matrix(big_endian);
             let mut n_isqrt2_tot = 0_usize;
             let mut phase = Sign(false);
             // build up the conjugation as a product of parse matrices in sparse_work
@@ -217,7 +217,7 @@ mod tests {
                 sparse_work = &sparse_work * &gate_sparse;
                 n_isqrt2_tot += n_isqrt2;
                 // perform each conjugation on the Pauli string
-                phase *= cmpnt.borrow_mut().conj_clifford(*gate);
+                phase *= string.borrow_mut().conj_clifford(*gate);
                 term.borrow_mut().conj_clifford(*gate);
             }
             for gate in gates.iter().rev() {
@@ -230,7 +230,7 @@ mod tests {
             sparse_work /= Complex64::new((1 << (n_isqrt2_tot / 2)) as f64, 0.0);
 
             assert_eq!(
-                cmpnt.borrow().to_sparse_matrix(big_endian).to_dense() * phase.to_complex(),
+                string.borrow().to_sparse_matrix(big_endian).to_dense() * phase.to_complex(),
                 sparse_work.to_dense()
             );
             assert_eq!(

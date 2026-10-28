@@ -8,8 +8,6 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-use crate::cmpnt::springs::ModeSettings;
-use crate::cmpnt::state_springs::BinarySprings;
 use crate::container::bit_matrix;
 use crate::container::bit_matrix::AsBitMatrix;
 use crate::container::coeffs::sign::Sign;
@@ -18,22 +16,24 @@ use crate::container::table::Table;
 use crate::container::traits::{Compatible, Elements, EmptyClone};
 use crate::container::word_iters::{self, WordIters};
 use crate::fermion::mode::Modes;
-use crate::fermion::operator::normal::cmpnt_list as operator;
 use crate::fermion::operator::normal::products::apply_op_ket_u64;
 use crate::fermion::operator::normal::products::ApplyResult;
+use crate::fermion::operator::normal::string_list as operator;
 use crate::fermion::traits::ModesBased;
+use crate::string::springs::ModeSettings;
+use crate::string::state_springs::BinarySprings;
 
 /// Contiguous and compact storage for Slater determinants
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Serialize, Deserialize)]
-pub struct CmpntList {
+pub struct StringList {
     /// Raw storage table for the Slater determinants as bitsets.
     bitsets: bit_matrix::BitMatrix,
     /// Space of fermionic modes on which the Slater determinants are defined.
     modes: Modes,
 }
 
-impl CmpntList {
-    /// Create an empty `CmpntList` on the modes given.
+impl StringList {
+    /// Create an empty `StringList` on the modes given.
     pub fn new(modes: Modes) -> Self {
         Self {
             bitsets: bit_matrix::BitMatrix::new(modes.len()),
@@ -58,31 +58,31 @@ impl CmpntList {
     }
 }
 
-impl Compatible for CmpntList {
+impl Compatible for StringList {
     fn compatible_with(&self, other: &Self) -> bool {
         self.modes == other.modes
     }
 }
 
-impl Elements for CmpntList {
+impl Elements for StringList {
     fn len(&self) -> usize {
         self.bitsets.len()
     }
 }
 
-impl ModesBased for CmpntList {
+impl ModesBased for StringList {
     fn modes(&self) -> &Modes {
         &self.modes
     }
 }
 
-impl EmptyClone for CmpntList {
+impl EmptyClone for StringList {
     fn empty_clone(&self) -> Self {
         Self::new(self.modes.clone())
     }
 }
 
-impl WordIters for CmpntList {
+impl WordIters for StringList {
     fn elem_u64it(&self, i: usize) -> impl Iterator<Item = u64> + Clone {
         self.bitsets.elem_u64it(i)
     }
@@ -99,7 +99,7 @@ impl WordIters for CmpntList {
         self.bitsets.pop_and_swap(i_row);
     }
 
-    fn fmt_elem(&self, i: usize) -> String {
+    fn fmt_elem(&self, i: usize) -> std::string::String {
         self.bitsets.fmt_elem(i)
     }
 
@@ -108,7 +108,7 @@ impl WordIters for CmpntList {
     }
 }
 
-impl Display for CmpntList {
+impl Display for StringList {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -118,28 +118,28 @@ impl Display for CmpntList {
     }
 }
 
-pub type CmpntRef<'a> = word_iters::ElemRef<'a, CmpntList>;
-pub type CmpntMutRef<'a> = word_iters::ElemMutRef<'a, CmpntList>;
+pub type StringRef<'a> = word_iters::ElemRef<'a, StringList>;
+pub type StringMutRef<'a> = word_iters::ElemMutRef<'a, StringList>;
 
-impl<'a> ModesBased for CmpntRef<'a> {
+impl<'a> ModesBased for StringRef<'a> {
     fn modes(&self) -> &Modes {
         &self.word_iters.modes
     }
 }
 
-impl<'a> ModesBased for CmpntMutRef<'a> {
+impl<'a> ModesBased for StringMutRef<'a> {
     fn modes(&self) -> &Modes {
         &self.word_iters.modes
     }
 }
 
-impl<'a> bit_matrix::AsRowRef for CmpntRef<'a> {
+impl<'a> bit_matrix::AsRowRef for StringRef<'a> {
     fn bit_mat(&self) -> &impl bit_matrix::AsBitMatrix {
         &self.word_iters.bitsets
     }
 }
 
-impl<'a> bit_matrix::AsRowMutRef for CmpntMutRef<'a> {
+impl<'a> bit_matrix::AsRowMutRef for StringMutRef<'a> {
     fn bit_mat(&self) -> &impl bit_matrix::AsBitMatrix {
         &self.word_iters.bitsets
     }
@@ -155,13 +155,13 @@ pub enum AssignResult {
     Zero,
 }
 
-impl<'a> CmpntMutRef<'a> {
+impl<'a> StringMutRef<'a> {
     /// Set the value of this referenced Slater determinant to the result of applying the given normal-ordered
     /// ladder operator component to `rhs`, returning the anti-symmetric exchange sign of the result, or `Zero
     /// if the fermionic exclusion principle forbids the term (an annihilated mode is unoccupied in `rhs`, or a
     /// created mode is already occupied).
     /// Assumes the mode space fits in a single `u64` word.
-    pub fn assign_mul_by_op(&mut self, op: operator::CmpntRef, rhs: CmpntRef) -> AssignResult {
+    pub fn assign_mul_by_op(&mut self, op: operator::StringRef, rhs: StringRef) -> AssignResult {
         assert!(
             self.modes().len() <= 64,
             "fermion state component multiplication supports at most 64 modes"
@@ -178,7 +178,7 @@ impl<'a> CmpntMutRef<'a> {
     }
 }
 
-impl bit_matrix::AsBitMatrix for CmpntList {
+impl bit_matrix::AsBitMatrix for StringList {
     fn get_table(&self) -> &Table {
         self.bitsets.get_table()
     }
@@ -202,7 +202,7 @@ mod tests {
     #[test]
     fn test_empty() {
         {
-            let v = CmpntList::new(Modes::from_count(4));
+            let v = StringList::new(Modes::from_count(4));
             assert_eq!(v.len(), 0);
             assert!(v.is_empty());
         }
@@ -221,10 +221,10 @@ mod tests {
         let springs = BinarySprings::from_str(input);
         assert!(springs.is_ok());
         let springs = springs.unwrap();
-        let cmpnts = CmpntList::from_springs_default(&springs);
-        let vecs = (0..cmpnts.len())
+        let strings = StringList::from_springs_default(&springs);
+        let vecs = (0..strings.len())
             .map(|i| {
-                cmpnts
+                strings
                     .get_elem_ref(i)
                     .iter()
                     .map(|x| if x { 1 } else { 0 })
@@ -239,19 +239,19 @@ mod tests {
         use crate::container::bit_matrix::AsRowMutRef;
         use crate::container::traits::proj::Borrow;
         use crate::container::traits::MutRefElements;
-        use crate::fermion::operator::normal::cmpnt::Cmpnt;
+        use crate::fermion::operator::normal::string::String;
         use std::collections::HashSet;
 
         let modes = Modes::from_count(3);
         // c_2^+ c_0, applied to |1_0 1_1> should give -|1_1 1_2>.
-        let op = Cmpnt::from_sets_unchecked(modes.clone(), HashSet::from([2]), HashSet::from([0]));
+        let op = String::from_sets_unchecked(modes.clone(), HashSet::from([2]), HashSet::from([0]));
 
-        let mut ket = CmpntList::new(modes.clone());
+        let mut ket = StringList::new(modes.clone());
         ket.push_clear();
         ket.get_elem_mut_ref(0)
             .assign_set_unchecked(HashSet::from([0, 1]));
 
-        let mut out = CmpntList::new(modes);
+        let mut out = StringList::new(modes);
         out.push_clear();
         let sign = out
             .get_elem_mut_ref(0)
@@ -266,19 +266,19 @@ mod tests {
         use crate::container::bit_matrix::AsRowMutRef;
         use crate::container::traits::proj::Borrow;
         use crate::container::traits::MutRefElements;
-        use crate::fermion::operator::normal::cmpnt::Cmpnt;
+        use crate::fermion::operator::normal::string::String;
         use std::collections::HashSet;
 
         let modes = Modes::from_count(3);
         // c_0 annihilating an unoccupied mode 0 is forbidden.
-        let op = Cmpnt::from_sets_unchecked(modes.clone(), HashSet::new(), HashSet::from([0]));
+        let op = String::from_sets_unchecked(modes.clone(), HashSet::new(), HashSet::from([0]));
 
-        let mut ket = CmpntList::new(modes.clone());
+        let mut ket = StringList::new(modes.clone());
         ket.push_clear();
         ket.get_elem_mut_ref(0)
             .assign_set_unchecked(HashSet::from([1]));
 
-        let mut out = CmpntList::new(modes);
+        let mut out = StringList::new(modes);
         out.push_clear();
         let sign = out
             .get_elem_mut_ref(0)

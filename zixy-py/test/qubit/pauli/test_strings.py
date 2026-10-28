@@ -160,8 +160,7 @@ def test_from_str_errors():
     with pytest.raises(IndexError) as err:
         Strings.from_str("X0 Y2, Y3, X2 Y3, Z0 Z1 Z2 Z6", 4)
     assert (
-        str(err.value)
-        == "Mode index 6 is out-of-bounds for component list with 4 modes per component."
+        str(err.value) == "Mode index 6 is out-of-bounds for string list with 4 modes per string."
     )
 
 

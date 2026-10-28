@@ -29,7 +29,6 @@ pub enum Dimension {
     Row,
     Bit,
     Element,
-    Cmpnt,
     Mode,
     String,
 }
@@ -72,15 +71,9 @@ impl std::fmt::Display for OutOfBounds {
                 self.0,
                 pluralize("element", self.1 as isize, true)
             ),
-            Dimension::Cmpnt => write!(
-                f,
-                "Component index {} is out-of-bounds for component list with {}.",
-                self.0,
-                pluralize("components", self.1 as isize, true)
-            ),
             Dimension::Mode => write!(
                 f,
-                "Mode index {} is out-of-bounds for component list with {} per component.",
+                "Mode index {} is out-of-bounds for string list with {} per string.",
                 self.0,
                 pluralize("mode", self.1 as isize, true)
             ),

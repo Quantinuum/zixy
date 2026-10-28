@@ -95,7 +95,7 @@ class String[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseString[ImplT, SpecT]
 
     def get_list(self) -> list[ElemT]:
         """Get the string as a list of its elements."""
-        return self._impl.cmpnt_get_list(self.index)
+        return self._impl.string_get_list(self.index)
 
     def get_tuple(self) -> tuple[ElemT, ...]:
         """Get the string as a tuple of its elements."""
@@ -106,9 +106,9 @@ class String[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseString[ImplT, SpecT]
         if not isinstance(source, String):
             raise TypeError("Source object must be a String.")
         if self._impl.same_as(source._impl):
-            self._impl.cmpnt_copy_internal(self.index, source.index)
+            self._impl.string_copy_internal(self.index, source.index)
         else:
-            self._impl.cmpnt_copy_external(self.index, source._impl, source.index)
+            self._impl.string_copy_external(self.index, source._impl, source.index)
 
     def set(self, source: SpecT | String[ImplT, SpecT, ElemT]) -> None:
         """Set the value of the string.
@@ -123,19 +123,19 @@ class String[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseString[ImplT, SpecT]
             self._set_copy(source)
         elif isinstance(source, tuple | list):
             try:
-                self._impl.cmpnt_set_from_list(self.index, list(source))
+                self._impl.string_set_from_list(self.index, list(source))
             except TypeError:
                 for i, c in enumerate(source):
                     self[i] = c
         elif isinstance(source, str):
             if not source.strip():
-                self._impl.cmpnt_set_from_list(self.index, [])
+                self._impl.string_set_from_list(self.index, [])
                 return
             springs = self._springs_type(source)
             if len(springs) == 0:
-                self._impl.cmpnt_set_from_list(self.index, [])
+                self._impl.string_set_from_list(self.index, [])
             elif len(springs) == 1:
-                self._impl.cmpnt_set_from_spring(self.index, springs, 0)
+                self._impl.string_set_from_spring(self.index, springs, 0)
             else:
                 raise ValueError("Input represents more than one string.")
         else:
@@ -150,7 +150,7 @@ class String[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseString[ImplT, SpecT]
         Returns:
             The number of occurrences of ``elem`` in the string.
         """
-        return self._impl.cmpnt_count(self.index, elem)
+        return self._impl.string_count(self.index, elem)
 
     def to_sparse_matrix(self, big_endian: bool = False) -> Any:
         """Return ``self`` as a sparse matrix.
@@ -161,7 +161,7 @@ class String[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseString[ImplT, SpecT]
         Returns:
             The sparse matrix representation of ``self``.
         """
-        return self._impl.cmpnt_to_sparse_matrix(self.index, big_endian)  # type: ignore[attr-defined]
+        return self._impl.string_to_sparse_matrix(self.index, big_endian)  # type: ignore[attr-defined]
 
 
 class Strings[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseStrings[ImplT, SpecT]):

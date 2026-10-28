@@ -9,21 +9,21 @@ use crate::container::traits::{Elements, MutRefElements, RefElements};
 use crate::container::word_iters::lincomb;
 use crate::container::word_iters::term_set::AsViewMut as _;
 use crate::container::word_iters::terms::AsViewMut;
-use crate::fermion::state::cmpnt_list::CmpntRef as FermionStateRef;
+use crate::fermion::state::string_list::StringRef as FermionStateRef;
 use crate::mappings::traits::UpdateParityRho;
 use crate::mappings::Mapper;
 use crate::qubit::mode::PauliMatrix::{X, Y, Z};
 use crate::qubit::mode::Qubits;
-use crate::qubit::pauli::cmpnt_major::cmpnt_list::CmpntList;
-use crate::qubit::pauli::cmpnt_major::{term_set, terms};
-use crate::qubit::state::cmpnt::BasisState;
+use crate::qubit::pauli::string_major::string_list::StringList;
+use crate::qubit::pauli::string_major::{term_set, terms};
+use crate::qubit::state::string::BasisState;
 use crate::qubit::traits::{PauliWordMutRef, PauliWordRef, QubitsBased};
 
 /// Workspace containing cached real and imaginary Pauli strings for fermionic ladder operators.
 #[derive(Clone)]
 pub(super) struct OperatorMapper {
-    re_strings: CmpntList,
-    im_strings: CmpntList,
+    re_strings: StringList,
+    im_strings: StringList,
     work: terms::Terms<ComplexSign>,
 }
 
@@ -45,8 +45,8 @@ impl OperatorMapper {
         };
 
         let mut out = Self {
-            re_strings: CmpntList::new(qubits.clone()),
-            im_strings: CmpntList::new(qubits.clone()),
+            re_strings: StringList::new(qubits.clone()),
+            im_strings: StringList::new(qubits.clone()),
             work: terms::Terms::<ComplexSign>::new(qubits.clone()),
         };
         out.re_strings.resize(qubits.len());
@@ -107,12 +107,14 @@ impl OperatorMapper {
             self.work.self_append();
             for i in 0..(self.work.len() / 2) {
                 let mut re_part = self.work.word_iters.get_elem_mut_ref(i);
-                let phase = re_part.imul_by_cmpnt_ref_unchecked(self.re_strings.get_elem_ref(op.0));
+                let phase =
+                    re_part.imul_by_string_ref_unchecked(self.re_strings.get_elem_ref(op.0));
                 self.work.get_coeffs_mut().imul_elem_unchecked(i, phase);
             }
             for i in (self.work.len() >> 1)..self.work.len() {
                 let mut im_part = self.work.word_iters.get_elem_mut_ref(i);
-                let phase = im_part.imul_by_cmpnt_ref_unchecked(self.im_strings.get_elem_ref(op.0));
+                let phase =
+                    im_part.imul_by_string_ref_unchecked(self.im_strings.get_elem_ref(op.0));
                 self.work
                     .get_coeffs_mut()
                     .imul_elem_unchecked(i, phase * ComplexSign(if op.1 { 3 } else { 1 }));
@@ -197,15 +199,15 @@ mod tests {
     use super::*;
     use crate::container::word_iters::Elem;
     use crate::fermion::mode::Modes;
-    use crate::fermion::state::cmpnt_list::CmpntList as FermionStateCmpntList;
+    use crate::fermion::state::string_list::StringList as FermionStateStringList;
     use crate::mappings::{
         bk::BravyiKitaevRule, jw::JordanWignerRule, paraparticular::ParaparticularRule,
         parity::ParityRule,
     };
     use std::collections::HashSet;
 
-    fn fermion_state(occupied: impl IntoIterator<Item = usize>) -> Elem<FermionStateCmpntList> {
-        Elem::<FermionStateCmpntList>::from_set(Modes::from_count(4), HashSet::from_iter(occupied))
+    fn fermion_state(occupied: impl IntoIterator<Item = usize>) -> Elem<FermionStateStringList> {
+        Elem::<FermionStateStringList>::from_set(Modes::from_count(4), HashSet::from_iter(occupied))
             .unwrap()
     }
 

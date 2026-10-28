@@ -45,13 +45,13 @@ class StringsImplArray:
     def __len__(self) -> int:
         return len(self._list)
 
-    def cmpnts_clone(self, inds: Sequence[int] | None) -> StringsImplArray:
+    def strings_clone(self, inds: Sequence[int] | None) -> StringsImplArray:
         out = StringsImplArray()
         inds = range(len(self)) if inds is None else inds
         out._list = [self._list[i] for i in inds]
         return out
 
-    def cmpnts_eq(
+    def strings_eq(
         self,
         inds: Sequence[int] | None,
         other: StringsImplArray,
@@ -66,10 +66,10 @@ class StringsImplArray:
                 return False
         return True
 
-    def cmpnt_copy_internal(self, i_dst: int, i_src: int):
+    def string_copy_internal(self, i_dst: int, i_src: int):
         self._list[i_dst] = self._list[i_src]
 
-    def cmpnt_copy_external(self, i_dst: int, src: StringsImplArray, i_src: int):
+    def string_copy_external(self, i_dst: int, src: StringsImplArray, i_src: int):
         self._list[i_dst] = src._list[i_src]
 
     def __eq__(self, other: StringsImplArray) -> bool:

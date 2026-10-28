@@ -91,12 +91,12 @@ Implementers of both `NumRepr` and `FieldElem` use `Vec<T>` for collection stora
 The Python interface further supports symbolic types via SymPy,
 which are not currently available within the Rust library.
 
-On the Rust side, strings are stored contiguously in `CmpntList` types.
+On the Rust side, strings are stored contiguously in `StringList` types.
 These implement the business logic applicable to their elements.
-There are three main kinds of container that encapsulate `CmpntList` with generic coefficient type `C`
+There are three main kinds of container that encapsulate `StringList` with generic coefficient type `C`
 
-- `Terms<C: NumRepr>`: stores a `C::Vector` of the same length as the `CmpntList`, offers mutable access to the strings and coefficients.
-- `TermSet<C: NumRepr>`: stores a `C::Vector` of the same length as the `CmpntList` and via an indirect hash map, provides constant complexity lookup and enforces uniqueness among strings. Offers mutable access only to the coefficients.
+- `Terms<C: NumRepr>`: stores a `C::Vector` of the same length as the `StringList`, offers mutable access to the strings and coefficients.
+- `TermSet<C: NumRepr>`: stores a `C::Vector` of the same length as the `StringList` and via an indirect hash map, provides constant complexity lookup and enforces uniqueness among strings. Offers mutable access only to the coefficients.
 - `TermSum<C: FieldElem>`: works like `Set<C>` but with linear combination semantics and is only defined for `FieldElem`-implementing coefficient types.
 
 

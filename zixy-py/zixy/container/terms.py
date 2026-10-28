@@ -276,7 +276,7 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         if not isinstance(other, Term):
             return NotImplemented
         result: bool = (
-            self._impl._strings._impl.cmpnts_eq(
+            self._impl._strings._impl.strings_eq(
                 [self.index], other._impl._strings._impl, [other.index]
             )
             and self._impl._coeffs[self.index] == other._impl._coeffs[other.index]

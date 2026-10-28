@@ -41,7 +41,7 @@ class String[ImplT: FermionArray, SpecT, ElemT](FermionString[ImplT, SpecT, Elem
 
     def __repr__(self) -> str:
         """Return a sparse-string representation of ``self``."""
-        return self._impl.cmpnt_to_string(self.index)
+        return self._impl.string_to_string(self.index)
 
     @abstractmethod
     def get_ops(self) -> list[LadderOp]:

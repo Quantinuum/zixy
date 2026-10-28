@@ -1,7 +1,7 @@
 //! Fermion state module.
 
-pub mod cmpnt;
-pub mod cmpnt_list;
 pub mod lincomb;
+pub mod string;
+pub mod string_list;
 pub mod term_set;
 pub mod terms;

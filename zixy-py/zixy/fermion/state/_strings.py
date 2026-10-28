@@ -86,7 +86,7 @@ class String(FermionString[ImplT, SpecT, ElemT]):
 
     def __getitem__(self, i: int) -> bool:
         """Return the occupation value of the string at index ``i``."""
-        return self._impl.cmpnt_get_bit(self.index, i)
+        return self._impl.string_get_bit(self.index, i)
 
     def __setitem__(self, i: int, bit: bool | int) -> None:
         """Set the occupation value of the string at index ``i``."""
@@ -96,11 +96,11 @@ class String(FermionString[ImplT, SpecT, ElemT]):
             bit = bool(bit)
         elif not isinstance(bit, bool):
             raise TypeError("Bit argument should be bool or 0 or 1")
-        self._impl.cmpnt_set_bit(self.index, i, bit)
+        self._impl.string_set_bit(self.index, i, bit)
 
     def get_list(self) -> list[bool]:
         """Get the string as a list of occupation flags."""
-        return self._impl.cmpnt_get_list(self.index)
+        return self._impl.string_get_list(self.index)
 
     def get_tuple(self) -> tuple[bool, ...]:
         """Get the string as a tuple of occupation flags."""
@@ -108,7 +108,7 @@ class String(FermionString[ImplT, SpecT, ElemT]):
 
     def get_set(self) -> set[int]:
         """Get the string as a set of occupied mode indices."""
-        return self._impl.cmpnt_get_set(self.index)
+        return self._impl.string_get_set(self.index)
 
     def set(self, source: SpecT | String) -> None:
         """Set the value of the string.
@@ -122,18 +122,18 @@ class String(FermionString[ImplT, SpecT, ElemT]):
         if isinstance(source, String):
             self._set_copy(source)
         elif isinstance(source, set):
-            self._impl.cmpnt_set_from_set(self.index, source)
+            self._impl.string_set_from_set(self.index, source)
         elif isinstance(source, tuple | list):
-            self._impl.cmpnt_set_from_list(self.index, list(source))
+            self._impl.string_set_from_list(self.index, list(source))
         elif isinstance(source, str):
             if not source.strip():
-                self._impl.cmpnt_clear(self.index)
+                self._impl.string_clear(self.index)
                 return
             springs = BinarySprings(source)
             if len(springs) == 0:
-                self._impl.cmpnt_clear(self.index)
+                self._impl.string_clear(self.index)
             elif len(springs) == 1:
-                self._impl.cmpnt_set_from_spring(self.index, springs, 0)
+                self._impl.string_set_from_spring(self.index, springs, 0)
             else:
                 raise ValueError("Input represents more than one string.")
         else:
@@ -141,7 +141,7 @@ class String(FermionString[ImplT, SpecT, ElemT]):
 
     def count(self, bit: bool) -> int:
         """Return the number of occurrences of ``bit`` in the string."""
-        return self._impl.cmpnt_count(self.index, bit)
+        return self._impl.string_count(self.index, bit)
 
     def hamming_weight(self) -> int:
         r"""Get the Hamming weight of this bit string.

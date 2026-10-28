@@ -10,7 +10,7 @@ use crate::fermion::traits::ModesBased;
 
 /// Contiguous and compact storage for non-normal-ordered fermion operator strings.
 #[derive(Clone)]
-pub struct CmpntList {
+pub struct StringList {
     pub mode_part: ModeInds,   // mode index at each operator position
     pub adj_part: BitMatrix,   // cre/ann flag per slot
     pub len_part: Vec<u64>,    // length of each string, included in packed keys
@@ -19,7 +19,7 @@ pub struct CmpntList {
     pub n_bits: usize,         // number of bits per mode index
 }
 
-impl CmpntList {
+impl StringList {
     /// Grow to the required string length without changing existing strings.
     pub fn reserve_string_length(&mut self, required: usize) {
         if required <= self.max_string_len {
@@ -73,7 +73,7 @@ impl CmpntList {
         )
     }
 
-    /// Create a new empty non-normal-ordered `CmpntList` with the given mode space and maximum operator string length.
+    /// Create a new empty non-normal-ordered `StringList` with the given mode space and maximum operator string length.
     pub fn new(max_string_len: usize, modes: Modes) -> Self {
         let n_modes = modes.len();
         let n_bits = if n_modes <= 1 {
@@ -155,25 +155,25 @@ impl CmpntList {
     }
 }
 
-impl Elements for CmpntList {
+impl Elements for StringList {
     fn len(&self) -> usize {
         self.len_part.len()
     }
 }
 
-impl Compatible for CmpntList {
+impl Compatible for StringList {
     fn compatible_with(&self, other: &Self) -> bool {
         self.modes == other.modes
     }
 }
 
-impl EmptyClone for CmpntList {
+impl EmptyClone for StringList {
     fn empty_clone(&self) -> Self {
         Self::new(self.max_string_len, self.modes.clone())
     }
 }
 
-impl WordIters for CmpntList {
+impl WordIters for StringList {
     fn elem_u64it(&self, i: usize) -> impl Iterator<Item = u64> + Clone {
         self.mode_part
             .elem_u64it(i)
@@ -218,7 +218,7 @@ impl WordIters for CmpntList {
     }
 }
 
-impl ModesBased for CmpntList {
+impl ModesBased for StringList {
     fn modes(&self) -> &Modes {
         &self.modes
     }
@@ -235,7 +235,7 @@ mod tests {
     #[case(65)]
     #[case(257)]
     fn test_growth_and_assignment(#[case] n_modes: usize) {
-        let mut strings = CmpntList::new(0, Modes::from_count(n_modes));
+        let mut strings = StringList::new(0, Modes::from_count(n_modes));
         strings.push(&[], &[]);
         strings.push(&[0], &[true]);
         for length in [2, 11, 64, 65, 129] {
@@ -257,7 +257,7 @@ mod tests {
     #[test]
     fn test_keys_preserve_length_and_capacity_independence() {
         use crate::container::word_iters::set::AsViewMut;
-        let mut strings = CmpntList::new(2, Modes::from_count(2));
+        let mut strings = StringList::new(2, Modes::from_count(2));
         strings.push(&[], &[]);
         strings.push(&[0], &[false]);
         strings.push(&[0, 0], &[false, false]);
@@ -268,7 +268,7 @@ mod tests {
             map: &map,
         }
         .consistency_check();
-        let mut other = CmpntList::new(129, strings.modes.clone());
+        let mut other = StringList::new(129, strings.modes.clone());
         other.push(&[0], &[false]);
         assert_eq!(strings.lookup(&map, &other, 0), Some(1));
         strings.reserve_string_length(65);
@@ -289,7 +289,7 @@ mod tests {
 
     #[test]
     fn test_empty() {
-        let v = CmpntList::new(4, Modes::from_count(8));
+        let v = StringList::new(4, Modes::from_count(8));
         assert!(v.is_empty());
         assert_eq!(v.len(), 0);
     }
@@ -299,7 +299,7 @@ mod tests {
     #[case(&[3, 1, 2], &[true, false, true])]
     #[case(&[0], &[true])]
     fn test_push_single(#[case] modes: &[usize], #[case] adj: &[bool]) {
-        let mut v = CmpntList::new(4, Modes::from_count(8));
+        let mut v = StringList::new(4, Modes::from_count(8));
         v.push(modes, adj);
         assert_eq!(v.len(), 1);
         let (out_modes, out_adj) = v.get(0);
@@ -309,7 +309,7 @@ mod tests {
 
     #[test]
     fn test_push_multiple() {
-        let mut v = CmpntList::new(4, Modes::from_count(8));
+        let mut v = StringList::new(4, Modes::from_count(8));
         let inputs = vec![
             (vec![0, 1], vec![false, false]),
             (vec![3, 1, 2], vec![true, false, true]),

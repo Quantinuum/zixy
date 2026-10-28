@@ -9,12 +9,12 @@ use itertools::Itertools;
 use ndarray::Array2 as Matrix;
 use serde::{Deserialize, Serialize};
 
-use crate::cmpnt::springs::ModeSettings;
-use crate::cmpnt::state_springs::BinarySprings;
 use crate::container::errors::{Dimension, OutOfBounds};
 use crate::container::table::Table;
 use crate::container::traits::{Compatible, Elements, EmptyClone, HasIndex, RefElements};
 use crate::container::word_iters::{self, WordIters};
+use crate::string::springs::ModeSettings;
+use crate::string::state_springs::BinarySprings;
 use crate::utils::arith::{divceil, divrem};
 
 /// A [`WordIters`] implementation viewable as a bit-matrix.
@@ -258,7 +258,7 @@ pub trait AsRowRef: HasIndex {
     }
 
     /// Return the lowest set bit overall.
-    /// Returns `None` when the cmpnt is clear.
+    /// Returns `None` when the string is clear.
     fn lowest_set_bit(&self) -> Option<usize> {
         self.lowest_set_bit_not_before(0)
     }
@@ -306,7 +306,7 @@ pub trait AsRowRef: HasIndex {
     }
 
     /// Return the highest set bit overall.
-    /// Returns `None` when the cmpnt is clear.
+    /// Returns `None` when the string is clear.
     fn highest_set_bit(&self) -> Option<usize> {
         self.next_highest_set_bit(0)
     }
@@ -477,12 +477,12 @@ pub trait AsRowMutRef: HasIndex {
 pub struct BitMatrix {
     /// Raw storage table for the bitsets.
     table: Table,
-    /// Number of bits per cmpnt
+    /// Number of bits per string
     n_bit: usize,
 }
 
 impl BitMatrix {
-    /// Create an empty `CmpntList` on the given number of bits.
+    /// Create an empty `StringList` on the given number of bits.
     pub fn new(n_bit: usize) -> Self {
         let row_size = divceil(n_bit, 64);
         Self {
@@ -649,7 +649,7 @@ impl WordIters for BitMatrix {
         self.table.pop_and_swap(i_row);
     }
 
-    fn fmt_elem(&self, i: usize) -> String {
+    fn fmt_elem(&self, i: usize) -> std::string::String {
         format!(
             "[{}]",
             self.get_elem_ref(i)
@@ -688,17 +688,17 @@ impl IndexMut<usize> for BitMatrix {
 }
 
 /// Borrowed immutable row view into a [`BitMatrix`].
-pub type CmpntRef<'a> = word_iters::ElemRef<'a, BitMatrix>;
+pub type StringRef<'a> = word_iters::ElemRef<'a, BitMatrix>;
 /// Borrowed mutable row view into a [`BitMatrix`].
-pub type CmpntMutRef<'a> = word_iters::ElemMutRef<'a, BitMatrix>;
+pub type StringMutRef<'a> = word_iters::ElemMutRef<'a, BitMatrix>;
 
-impl<'a> AsRowRef for CmpntRef<'a> {
+impl<'a> AsRowRef for StringRef<'a> {
     fn bit_mat(&self) -> &impl AsBitMatrix {
         self.word_iters
     }
 }
 
-impl<'a> AsRowMutRef for CmpntMutRef<'a> {
+impl<'a> AsRowMutRef for StringMutRef<'a> {
     fn bit_mat(&self) -> &impl AsBitMatrix {
         self.word_iters
     }
@@ -714,16 +714,16 @@ pub struct Row(BitMatrix);
 
 impl Row {
     /// Borrow the single stored row as an immutable row view.
-    pub fn borrow(&self) -> CmpntRef<'_> {
-        CmpntRef {
+    pub fn borrow(&self) -> StringRef<'_> {
+        StringRef {
             word_iters: &self.0,
             index: 0,
         }
     }
 
     /// Borrow the single stored row as a mutable row view.
-    pub fn borrow_mut(&mut self) -> CmpntMutRef<'_> {
-        CmpntMutRef {
+    pub fn borrow_mut(&mut self) -> StringMutRef<'_> {
+        StringMutRef {
             word_iters: &mut self.0,
             index: 0,
         }
@@ -776,10 +776,10 @@ mod tests {
         let springs = BinarySprings::from_str(input);
         assert!(springs.is_ok());
         let springs = springs.unwrap();
-        let cmpnts = BitMatrix::from_springs_default(&springs);
-        let vecs = (0..cmpnts.len())
+        let strings = BitMatrix::from_springs_default(&springs);
+        let vecs = (0..strings.len())
             .map(|i| {
-                cmpnts
+                strings
                     .get_elem_ref(i)
                     .iter()
                     .map(|x| if x { 1 } else { 0 })
@@ -816,22 +816,22 @@ mod tests {
     #[case(100, [0, 1, 2, 3, 33, 36, 49, 63, 64, 99].into())]
     #[case(1000, [0, 1, 2, 3, 10, 63, 64, 99, 199, 200, 300, 400, 410, 560, 800].into())]
     fn test_bit_iteration(#[case] n_bit: usize, #[case] set_bits: Vec<usize>) {
-        let mut cmpnt = Row::new(n_bit);
-        cmpnt
+        let mut string = Row::new(n_bit);
+        string
             .borrow_mut()
             .assign_set_unchecked(HashSet::from_iter(set_bits.iter().copied()));
-        assert_eq!(cmpnt.borrow().hamming_weight(), set_bits.len());
+        assert_eq!(string.borrow().hamming_weight(), set_bits.len());
         assert_eq!(
-            cmpnt.borrow().to_set(),
+            string.borrow().to_set(),
             HashSet::from_iter(set_bits.iter().copied())
         );
         assert_eq!(
             set_bits,
-            cmpnt.borrow().iter_set_bits_flat().collect::<Vec<_>>()
+            string.borrow().iter_set_bits_flat().collect::<Vec<_>>()
         );
         assert_eq!(
             set_bits.iter().copied().rev().collect::<Vec<_>>(),
-            cmpnt.borrow().iter_set_bits_flat_rev().collect::<Vec<_>>()
+            string.borrow().iter_set_bits_flat_rev().collect::<Vec<_>>()
         );
     }
 
@@ -839,13 +839,13 @@ mod tests {
     fn test_to_matrix() {
         let data: Vec<u8> = vec![1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1];
         let mat = Matrix::from_shape_vec((5, 4), data.clone()).unwrap();
-        let mut cmpnt_list = BitMatrix::new(mat.shape()[1]);
+        let mut string_list = BitMatrix::new(mat.shape()[1]);
         for row in data.chunks(mat.shape()[1]) {
             let vec = row.iter().map(|i| *i == 1).collect::<Vec<_>>();
-            cmpnt_list.push_vec(vec).unwrap();
+            string_list.push_vec(vec).unwrap();
         }
-        assert_eq!(cmpnt_list.to_matrix(), mat);
-        assert_eq!(cmpnt_list.transpose().to_matrix(), mat.reversed_axes());
+        assert_eq!(string_list.to_matrix(), mat);
+        assert_eq!(string_list.transpose().to_matrix(), mat.reversed_axes());
     }
 
     #[test]
@@ -868,16 +868,16 @@ mod tests {
         }
 
         let mat = Matrix::from_shape_vec((n_row, n_bit), data.clone()).unwrap();
-        let mut cmpnt_list = BitMatrix::new(n_bit);
+        let mut string_list = BitMatrix::new(n_bit);
         for row in data.chunks(n_bit) {
             let vec = row.iter().map(|i| *i == 1).collect::<Vec<_>>();
-            cmpnt_list.push_vec(vec).unwrap();
+            string_list.push_vec(vec).unwrap();
         }
 
-        let transpose = cmpnt_list.transpose();
-        assert_eq!(cmpnt_list.to_matrix(), mat);
+        let transpose = string_list.transpose();
+        assert_eq!(string_list.to_matrix(), mat);
         assert_eq!(transpose.to_matrix(), mat.reversed_axes());
-        assert_eq!(transpose.transpose(), cmpnt_list);
+        assert_eq!(transpose.transpose(), string_list);
     }
 
     #[test]

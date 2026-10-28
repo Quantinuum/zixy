@@ -22,10 +22,9 @@ that are fermionic occupation-number state strings, as defined in
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from typing import Any, Protocol, Self, cast, overload
+from typing import TYPE_CHECKING, Any, Protocol, Self, cast, overload
 
 import numpy as np
-from numpy.typing import NDArray
 from sympy import Expr, Symbol
 
 from zixy._zixy import FermionStateArray, Modes, Qubits
@@ -52,12 +51,16 @@ from zixy.fermion._terms import (
     TermSum as FermionTermSum,
 )
 from zixy.fermion.state._strings import String, Strings, StringSpec
-from zixy.qubit.state._strings import String as QubitStateString
 from zixy.qubit.state._terms import (
     ComplexTermSum as QubitComplexTermSum,
     RealTermSum as QubitRealTermSum,
     SymbolicTermSum as QubitSymbolicTermSum,
 )
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+
+    from zixy.qubit.state._strings import String as QubitStateString
 
 type TermSpec[C: (float, complex, Sign, ComplexSign, Expr)] = (
     String | StringSpec | tuple[StringSpec | String, C | None]
@@ -707,7 +710,7 @@ class SymbolicTerms(Terms[Expr]):
     @property
     def coeffs(self) -> SymbolicCoeffs:
         """The coefficients of ``self``."""
-        return cast(SymbolicCoeffs, self._data.coeffs[self.slice])
+        return cast("SymbolicCoeffs", self._data.coeffs[self.slice])
 
     @property
     def free_symbols(self) -> set[Symbol]:
@@ -848,7 +851,7 @@ class SymbolicTermSum(TermSum[Expr]):
     @property
     def coeffs(self) -> SymbolicCoeffs:
         """The coefficients of ``self``."""
-        return cast(SymbolicCoeffs, self._data.coeffs)
+        return cast("SymbolicCoeffs", self._data.coeffs)
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
         """Apply a partial substitution of the symbols in-place.

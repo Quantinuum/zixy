@@ -110,7 +110,7 @@ class String(FermionString[ImplT, SpecT, ElemT]):
         """Get the string as a set of occupied mode indices."""
         return self._impl.string_get_set(self.index)
 
-    def set(self, source: SpecT | String) -> None:
+    def _set_spec(self, source: SpecT) -> None:
         """Set the value of the string.
 
         Args:
@@ -119,11 +119,9 @@ class String(FermionString[ImplT, SpecT, ElemT]):
         Note:
             This method operates in-place.
         """
-        if isinstance(source, String):
-            self._set_copy(source)
-        elif isinstance(source, set):
+        if isinstance(source, set):
             self._impl.string_set_from_set(self.index, source)
-        elif isinstance(source, tuple | list):
+        elif isinstance(source, Sequence) and not isinstance(source, str):
             self._impl.string_set_from_list(self.index, list(source))
         elif isinstance(source, str):
             if not source.strip():

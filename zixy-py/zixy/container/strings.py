@@ -120,16 +120,34 @@ class String[ImplT: ImplArray, SpecT](ViewableItem[ImplT], StringRepresentable):
         """Return a string representation of ``self``."""
         return self._impl.string_to_string(self.index)
 
-    @abstractmethod
-    def set(self, source: SpecT | Self) -> None:
+    def set(self, source: SpecT | String[ImplT, SpecT]) -> None:
         """Set the value of the string.
 
         Args:
-            source: Specification for the new value.
+            source: Specification or compatible string to copy. Parent and subclass instances
+                with the same backing implementation are supported.
 
         Note:
-            This method operates in-place.
+            This method operates in-place. Copying checks mode-space compatibility in the
+            backing implementation.
         """
+        if isinstance(source, String):
+            self._set_copy(source)
+        else:
+            self._set_spec(source)
+
+    def _set_copy(self, source: String[ImplT, SpecT]) -> None:
+        """Copy a compatible string, preserving the source and checking its family."""
+        if not isinstance(source._impl, self.impl_type):
+            self.raise_spec_type_error(source)
+        if self._impl.same_as(source._impl):
+            self._impl.string_copy_internal(self.index, source.index)
+        else:
+            self._impl.string_copy_external(self.index, source._impl, source.index)
+
+    @abstractmethod
+    def _set_spec(self, source: SpecT) -> None:
+        """Set the string from a domain-specific specification."""
         pass
 
     def clear(self) -> None:
@@ -507,7 +525,8 @@ class Strings[ImplT: ImplArray, SpecT](
         Returns:
             New owning instance containing only ``string``.
         """
-        assert isinstance(string, cls.string_type), type(string)
+        if not isinstance(string._impl, cls.string_type.impl_type):
+            cls.string_type.raise_spec_type_error(string)
         return cls._create(string.clone()._impl)
 
     def clone(self) -> Self:
@@ -550,6 +569,16 @@ class Strings[ImplT: ImplArray, SpecT](
             return type(self)._create(
                 self._impl, slice_of_slice(self.slice, indexer, len(self._impl))
             )
+
+    @overload
+    def __setitem__(self, indexer: int, source: SpecT | String[ImplT, SpecT]) -> None: ...
+
+    @overload
+    def __setitem__(
+        self,
+        indexer: builtins.slice,
+        source: SpecT | String[ImplT, SpecT] | Strings[ImplT, SpecT],
+    ) -> None: ...
 
     def __setitem__(
         self,

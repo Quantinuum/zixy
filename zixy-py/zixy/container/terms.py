@@ -39,7 +39,7 @@ import pandas as pd
 from sympy import Expr, simplify, sympify
 
 from zixy.container.base import (
-    StringRepresentable,
+    Representable,
     ViewableBase,
     ViewableItem,
     ViewableSequence,
@@ -152,7 +152,7 @@ def _coeffs_from_str[C: (float, complex, Sign, ComplexSign, Expr)](
 
 class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
     ViewableItem[_TermData[ImplT, SpecT, C]],
-    StringRepresentable,
+    Representable,
 ):
     """A term consisting of a string and a coefficient.
 
@@ -366,7 +366,7 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
 
 class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
     ViewableSequence[Term[ImplT, SpecT, C], _TermData[ImplT, SpecT, C]],
-    StringRepresentable,
+    Representable,
 ):
     """A collection of terms consisting of strings and coefficients.
 
@@ -803,9 +803,7 @@ class NumericTerms[ImplT: ImplArray, SpecT, C: (float, complex)](Terms[ImplT, Sp
         return out
 
 
-class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
-    StringRepresentable
-):
+class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](Representable):
     """A collection of unique terms consisting of strings and coefficients.
 
     A set-like container of terms that may be used to store unique terms and perform set-like

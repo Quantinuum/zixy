@@ -35,7 +35,7 @@ import numpy as np
 from sympy import Expr, Float, I, Integer, Symbol, diff, sympify
 
 from zixy import _zixy
-from zixy.container.base import StringRepresentable, ViewableSequence, requires_ownership
+from zixy.container.base import Representable, ViewableSequence, requires_ownership
 from zixy.utils import (
     DEFAULT_ATOL,
     DEFAULT_RTOL,
@@ -71,7 +71,7 @@ def _convert_error(source: Any, t: type) -> ValueError:
     )
 
 
-class RootOfUnity(StringRepresentable, ABC):
+class RootOfUnity(Representable, ABC):
     """Abstract base class for types representing roots of unity."""
 
     _impl: _zixy.RootOfUnity
@@ -731,7 +731,7 @@ else:
 
 
 class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
-    ViewableSequence[C, BaseVec], StringRepresentable
+    ViewableSequence[C, BaseVec], Representable
 ):
     """A collection of coefficients.
 

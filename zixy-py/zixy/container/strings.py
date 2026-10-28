@@ -36,7 +36,7 @@ from typing import TYPE_CHECKING, Any, Self, cast, overload
 
 from zixy._zixy import Map
 from zixy.container.base import (
-    StringRepresentable,
+    Representable,
     ViewableItem,
     ViewableSequence,
     requires_ownership,
@@ -55,7 +55,7 @@ if TYPE_CHECKING:
     )
 
 
-class String[ImplT: ImplArray, SpecT](ViewableItem[ImplT], StringRepresentable):
+class String[ImplT: ImplArray, SpecT](ViewableItem[ImplT], Representable):
     """A string.
 
     A single string that may be an owning instance referencing a single element in a Rust-bound
@@ -188,7 +188,7 @@ class String[ImplT: ImplArray, SpecT](ViewableItem[ImplT], StringRepresentable):
             )
 
 
-class StringSet[ImplT: ImplArray, SpecT](StringRepresentable):
+class StringSet[ImplT: ImplArray, SpecT](Representable):
     """A collection of unique strings.
 
     A set-like container of strings that may be used to store unique strings and perform
@@ -471,7 +471,7 @@ class StringSet[ImplT: ImplArray, SpecT](StringRepresentable):
 
 
 class Strings[ImplT: ImplArray, SpecT](
-    ViewableSequence[String[ImplT, SpecT], ImplT], StringRepresentable
+    ViewableSequence[String[ImplT, SpecT], ImplT], Representable
 ):
     """A collection of strings.
 

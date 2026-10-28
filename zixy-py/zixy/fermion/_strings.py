@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Base fermionic mode-based string components and collections of such strings."""
+"""Base fermionic mode-based strings and collections of such strings."""
 
 from __future__ import annotations
 
@@ -20,7 +20,11 @@ from abc import abstractmethod
 from typing import TYPE_CHECKING, Self, overload
 
 from zixy._zixy import Modes
-from zixy.container.cmpnts import Cmpnt, Cmpnts, CmpntSet
+from zixy.container.strings import (
+    String as BaseString,
+    Strings as BaseStrings,
+    StringSet as BaseStringSet,
+)
 
 if TYPE_CHECKING:
     from zixy._zixy import FermionArray
@@ -32,7 +36,7 @@ def _check_modes_compatibility(*modes: Modes) -> None:
         raise ValueError("Objects are defined over different modes.")
 
 
-class String[ImplT: FermionArray, SpecT, ElemT](Cmpnt[ImplT, SpecT]):
+class String[ImplT: FermionArray, SpecT, ElemT](BaseString[ImplT, SpecT]):
     """A fermionic string.
 
     A single mode-based string that may be an owning instance referencing a single element in a
@@ -89,14 +93,14 @@ class String[ImplT: FermionArray, SpecT, ElemT](Cmpnt[ImplT, SpecT]):
         pass
 
 
-class Strings[ImplT: FermionArray, SpecT, ElemT](Cmpnts[ImplT, SpecT]):
+class Strings[ImplT: FermionArray, SpecT, ElemT](BaseStrings[ImplT, SpecT]):
     """A collection of fermionic strings.
 
     An array-like container of mode-based strings that may be an owning instance referencing a
     contiguous Rust-bound data object, or a view on a slice of the elements in another collection.
     """
 
-    cmpnt_type: type[String[ImplT, SpecT, ElemT]]
+    string_type: type[String[ImplT, SpecT, ElemT]]
     _set_type: type[StringSet[ImplT, SpecT, ElemT]]
 
     def __init__(self, modes: int | Modes = 0, n: int = 0):
@@ -107,7 +111,7 @@ class Strings[ImplT: FermionArray, SpecT, ElemT](Cmpnts[ImplT, SpecT]):
             n: Number of default elements with which to create the instance.
         """
         super().__init__(
-            self.cmpnt_type.impl_type(Modes.from_count(modes) if isinstance(modes, int) else modes)
+            self.string_type.impl_type(Modes.from_count(modes) if isinstance(modes, int) else modes)
         )
         self.resize(n)
 
@@ -131,19 +135,19 @@ class Strings[ImplT: FermionArray, SpecT, ElemT](Cmpnts[ImplT, SpecT]):
         """
         return super().__getitem__(indexer)  # type: ignore[return-value]
 
-    def filter_unique(self) -> Cmpnts[ImplT, SpecT]:
+    def filter_unique(self) -> BaseStrings[ImplT, SpecT]:
         """Get a new instance containing the unique strings of ``self``."""
-        return self._set_type._create(self._impl).to_cmpnts()
+        return self._set_type._create(self._impl).to_strings()
 
 
-class StringSet[ImplT: FermionArray, SpecT, ElemT](CmpntSet[ImplT, SpecT]):
+class StringSet[ImplT: FermionArray, SpecT, ElemT](BaseStringSet[ImplT, SpecT]):
     """A collection of unique fermionic strings.
 
-    A set-like container of mode-based strings that may be used to store unique components and
+    A set-like container of mode-based strings that may be used to store unique strings and
     perform set-like operations on them.
     """
 
-    cmpnts_type: type[Strings[ImplT, SpecT, ElemT]]
+    strings_type: type[Strings[ImplT, SpecT, ElemT]]
 
     def __init__(self, modes: int | Modes = 0):
         """Initialize the string set.
@@ -151,7 +155,7 @@ class StringSet[ImplT: FermionArray, SpecT, ElemT](CmpntSet[ImplT, SpecT]):
         Args:
             modes: The mode space or number of modes.
         """
-        CmpntSet.__init__(
+        BaseStringSet.__init__(
             self,
-            self.cmpnts_type(Modes.from_count(modes) if isinstance(modes, int) else modes)._impl,
+            self.strings_type(Modes.from_count(modes) if isinstance(modes, int) else modes)._impl,
         )

@@ -37,8 +37,8 @@ The base containers in the Python interface are defined in a general fashion.
 The user-facing API separates these objects into three important classes:
 
 - `Coeff`: a **coefficient**, defining a scalar value of varying types.
-- `Cmpnt`: a **component**, defining a basic algebraic building block.
-- `Term`: a **term**, consisting of a `Cmpnt` scaled by a `Coeff`.
+- `String`: a **string**, defining a basic algebraic building block.
+- `Term`: a **term**, consisting of a `String` scaled by a `Coeff`.
 
 Coefficients are separated into built-in Python types such as `float` or `complex`, symbolic `sympy` expressions,
 and roots of unity such as `Sign` and `ComplexSign`,
@@ -73,7 +73,7 @@ further [example notebooks](https://github.com/quantinuum/zixy/tree/main/zixy-py
 
 ### Rust
 
-The trait `NumRepr` (meaning "number representation") is implemented by all types that can represent the numbers multiplying components.
+The trait `NumRepr` (meaning "number representation") is implemented by all types that can represent the numbers multiplying strings.
 In collections, these are stored contiguously in vector-like structures.
 Values of `NumRepr` types are closed under multiplication, but do not implement addition.
 Implementers of `NumRepr` are
@@ -91,12 +91,12 @@ Implementers of both `NumRepr` and `FieldElem` use `Vec<T>` for collection stora
 The Python interface further supports symbolic types via SymPy,
 which are not currently available within the Rust library.
 
-On the Rust side, components are stored contiguously in `CmpntList` types.
+On the Rust side, strings are stored contiguously in `CmpntList` types.
 These implement the business logic applicable to their elements.
 There are three main kinds of container that encapsulate `CmpntList` with generic coefficient type `C`
 
-- `Terms<C: NumRepr>`: stores a `C::Vector` of the same length as the `CmpntList`, offers mutable access to the components and coefficients.
-- `TermSet<C: NumRepr>`: stores a `C::Vector` of the same length as the `CmpntList` and via an indirect hash map, provides constant complexity lookup and enforces uniqueness among components. Offers mutable access only to the coefficients.
+- `Terms<C: NumRepr>`: stores a `C::Vector` of the same length as the `CmpntList`, offers mutable access to the strings and coefficients.
+- `TermSet<C: NumRepr>`: stores a `C::Vector` of the same length as the `CmpntList` and via an indirect hash map, provides constant complexity lookup and enforces uniqueness among strings. Offers mutable access only to the coefficients.
 - `TermSum<C: FieldElem>`: works like `Set<C>` but with linear combination semantics and is only defined for `FieldElem`-implementing coefficient types.
 
 

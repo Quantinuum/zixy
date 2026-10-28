@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Pauli string components and collections of such strings.
+"""Pauli strings and collections of such strings.
 
-Pauli strings are components representing tensor products of single-qubit Pauli matrices, acting
+Pauli strings represent tensor products of single-qubit Pauli matrices, acting
 on a register of qubits.
 
-The structure of this module parallels that of :mod:`~zixy.container.cmpnts` and
+The structure of this module parallels that of :mod:`~zixy.container.strings` and
 :mod:`~zixy.qubit._strings`.
 """
 
@@ -174,7 +174,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
             product, phase = self._impl.cmpnt_mul(self.index, rhs._impl, rhs.index)
             phases = ComplexSignCoeffs.from_scalar(ComplexSign(phase))
             return ComplexSignTerm._create(TermData(Strings._create(product), phases))
-        return get_term_type(type(rhs)).from_cmpnt_coeff(self, rhs)
+        return get_term_type(type(rhs)).from_string_coeff(self, rhs)
 
     def __rmul__[C: (float, complex, Sign, ComplexSign, Expr)](self, lhs: C) -> Term[C]:
         """Return the product of ``lhs`` and ``self``."""
@@ -183,7 +183,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         from zixy.qubit.pauli._terms import get_term_type  # noqa: PLC0415
 
         term_type = get_term_type(type(lhs))
-        return term_type.from_cmpnt_coeff(self, lhs)
+        return term_type.from_string_coeff(self, lhs)
 
     def __imul__(self, rhs: String) -> Self:  # type: ignore
         """In-place multiplication of ``self`` by ``rhs``."""
@@ -257,7 +257,7 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
     a contiguous Rust-bound data object, or a view on a slice of the elements in another collection.
     """
 
-    cmpnt_type = String
+    string_type = String
 
     _set_type: type[StringSet]
     _springs_type = PauliSprings
@@ -277,10 +277,10 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
         if isinstance(qubits, int):
             qubits = Qubits.from_count(qubits)
         if not source.strip():
-            out = cls._create(cls.cmpnt_type.impl_type(qubits))
+            out = cls._create(cls.string_type.impl_type(qubits))
             out.resize(0)
             return out
-        return cls._create(cls.cmpnt_type.impl_type(qubits, PauliSprings(source)))
+        return cls._create(cls.string_type.impl_type(qubits, PauliSprings(source)))
 
     @overload
     def __getitem__(self, indexer: int) -> String: ...
@@ -341,11 +341,11 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
 class StringSet(StringSetBase[ImplT, SpecT, ElemT]):
     """A collection of unique Pauli strings.
 
-    A set-like container of qubit-based Pauli strings that may be used to store unique components
+    A set-like container of qubit-based Pauli strings that may be used to store unique strings
     and perform set-like operations on them.
     """
 
-    cmpnts_type = Strings
+    strings_type = Strings
 
 
 Strings._set_type = StringSet

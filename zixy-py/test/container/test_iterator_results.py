@@ -43,7 +43,7 @@ def test_component_set_retains_distinct_views(family):
 def test_component_filter_map_retains_distinct_copies(family, as_set):
     api, specs, kwargs = family
     array = api.Strings.from_iterable(specs, 2, **kwargs)
-    source = api.StringSet.from_cmpnts(array) if as_set else array[::-1]
+    source = api.StringSet.from_strings(array) if as_set else array[::-1]
     expected = [str(string) for string in source]
     collected = list(source.iter_filter_map(lambda string: True))
 

@@ -16,7 +16,7 @@ from zixy.container.coeffs import (
 from zixy.container.data import TermData
 from zixy.container.terms import NumericTerms, NumericTermSum, Term, Terms, TermSet, TermSum
 
-from .mock_cmpnts import String, Strings, StringSet, StringsImplArray
+from .mock_strings import String, Strings, StringSet, StringsImplArray
 
 
 @pytest.mark.parametrize("pattern", ((), (0, 0), (1, 2), (0, 1, 0, 2, 0)))
@@ -35,14 +35,14 @@ def test_filter_nonzero_preserves_order_and_independence(kind, pattern):
     source = cls.from_terms(
         cls.terms_type.from_iterable([(str(i), nonzero * value) for i, value in enumerate(pattern)])
     )
-    expected = [(str(t.cmpnt), t.coeff) for t in source if t.coeff != 0]
-    before = [(str(t.cmpnt), t.coeff) for t in source]
+    expected = [(str(t.string), t.coeff) for t in source if t.coeff != 0]
+    before = [(str(t.string), t.coeff) for t in source]
 
     result = source.filter_nonzero()
 
     assert type(result) is cls
-    assert [(str(t.cmpnt), t.coeff) for t in result] == expected
-    assert [(str(t.cmpnt), t.coeff) for t in source] == before
+    assert [(str(t.string), t.coeff) for t in result] == expected
+    assert [(str(t.string), t.coeff) for t in source] == before
     for key, coeff in expected:
         assert result.lookup_coeff(key) == coeff
     if expected:
@@ -57,9 +57,9 @@ def test_filter_nonzero_preserves_order_and_independence(kind, pattern):
 def _mock_term_from_str(cls: type[Term[StringsImplArray, str, object]], source: str) -> object:
     if not source.startswith("(") or not source.endswith(")"):
         raise ValueError(f"String {source} is not a valid representation of a term.")
-    coeff_str, cmpnt_str = source[1:-1].split(",", 1)
+    coeff_str, string_str = source[1:-1].split(",", 1)
     coeff_str = coeff_str.strip()
-    cmpnt_str = cmpnt_str.strip()
+    string_str = string_str.strip()
     if cls.coeff_type is Sign:
         coeff = Sign.from_str(coeff_str)
     elif cls.coeff_type is float:
@@ -68,11 +68,11 @@ def _mock_term_from_str(cls: type[Term[StringsImplArray, str, object]], source: 
         coeff = complex(coeff_str)
     else:
         raise TypeError(f"Unsupported mock coefficient type {cls.coeff_type}.")
-    return cls.from_cmpnt_coeff(String.from_str(cmpnt_str), coeff)
+    return cls.from_string_coeff(String.from_str(string_str), coeff)
 
 
 class RealMockTerm(Term[StringsImplArray, str, float]):
-    cmpnts_type = Strings
+    strings_type = Strings
     coeff_type = float
 
     @classmethod
@@ -99,7 +99,7 @@ class RealMockTermSum(NumericTermSum[StringsImplArray, str, float]):
 
 
 class ComplexMockTerm(Term[StringsImplArray, str, complex]):
-    cmpnts_type = Strings
+    strings_type = Strings
     coeff_type = complex
 
     @classmethod
@@ -126,7 +126,7 @@ class ComplexMockTermSum(NumericTermSum[StringsImplArray, str, complex]):
 
 
 class SymbolicMockTerm(Term[StringsImplArray, str, Expr]):
-    cmpnts_type = Strings
+    strings_type = Strings
     coeff_type = Expr
 
     @classmethod
@@ -159,7 +159,7 @@ class SymbolicMockTermSum(TermSum[StringsImplArray, str, Expr]):
 )
 def test_termsum_subtraction_negates_new_term(term_sum_type, term_type, coeff):
     term_sum = term_sum_type()
-    term = term_type.from_cmpnt_coeff(String.from_str("alpha"), coeff)
+    term = term_type.from_string_coeff(String.from_str("alpha"), coeff)
 
     result = term_sum - term
     assert len(term_sum) == 0
@@ -171,7 +171,7 @@ def test_termsum_subtraction_negates_new_term(term_sum_type, term_type, coeff):
 
 def test_sign_terms():
     class MockTerm(Term[StringsImplArray, str, Sign]):
-        cmpnts_type = Strings
+        strings_type = Strings
         coeff_type = Sign
 
         @classmethod
@@ -191,24 +191,24 @@ def test_sign_terms():
         _set_type = StringSet
 
     terms = MockTerms(TermData(Strings(0), SignCoeffs.from_size(0)))
-    assert (len(terms), len(terms.cmpnts), len(terms.coeffs)) == (0,) * 3
+    assert (len(terms), len(terms.strings), len(terms.coeffs)) == (0,) * 3
     assert str(terms) == ""
     assert len(MockTermSet(terms)) == 0
 
     terms = MockTerms(TermData(Strings(1), SignCoeffs.from_scalar(Sign(False), 1)))
-    assert (len(terms), len(terms.cmpnts), len(terms.coeffs)) == (1,) * 3
+    assert (len(terms), len(terms.strings), len(terms.coeffs)) == (1,) * 3
     assert str(terms) == "(+1, )"
     assert len(MockTermSet(terms)) == 1
 
     terms = MockTerms(TermData(Strings(6), SignCoeffs.from_scalar(Sign(False), 6)))
-    assert (len(terms), len(terms.cmpnts), len(terms.coeffs)) == (6,) * 3
+    assert (len(terms), len(terms.strings), len(terms.coeffs)) == (6,) * 3
     assert str(terms) == "(+1, ), (+1, ), (+1, ), (+1, ), (+1, ), (+1, )"
 
     assert terms[2].aliases(terms[2])
     assert not terms[2].aliases(terms[3])
-    assert terms[2].cmpnt.aliases(terms.cmpnts[2])
-    assert not terms[2].cmpnt.aliases(terms.cmpnts[3])
-    assert not terms[2].cmpnt.aliases(terms.cmpnts[2].clone())
+    assert terms[2].string.aliases(terms.strings[2])
+    assert not terms[2].string.aliases(terms.strings[3])
+    assert not terms[2].string.aliases(terms.strings[2].clone())
 
     assert not terms[2].aliases(terms[2].clone())
     assert not terms[2].aliases(terms[2].clone())
@@ -220,10 +220,10 @@ def test_sign_terms():
     terms[2].coeff = Sign(True)
     assert str(terms) == "(+1, ), (+1, ), (-1, ), (+1, ), (-1, ), (+1, )"
 
-    terms.cmpnts[2].set("hello")
+    terms.strings[2].set("hello")
     assert str(terms) == "(+1, ), (+1, ), (-1, hello), (+1, ), (-1, ), (+1, )"
 
-    terms[3].cmpnt.set("world!")
+    terms[3].string.set("world!")
     assert str(terms) == "(+1, ), (+1, ), (-1, hello), (+1, world!), (-1, ), (+1, )"
 
     terms[1] = "Pauli", Sign(True)
@@ -237,23 +237,23 @@ def test_sign_terms():
     with pytest.raises(TypeError):
         terms[1] = None, Sign(True)
 
-    terms[1] = terms[3].cmpnt, Sign(False)
+    terms[1] = terms[3].string, Sign(False)
     assert str(terms) == "(+1, ), (+1, world!), (-1, hello), (+1, world!), (-1, ), (+1, )"
 
-    terms[1] = terms[2].cmpnt, Sign(True)
+    terms[1] = terms[2].string, Sign(True)
     assert str(terms) == "(+1, ), (-1, hello), (-1, hello), (+1, world!), (-1, ), (+1, )"
 
-    terms.cmpnts[1] = "Pauli"
+    terms.strings[1] = "Pauli"
     terms[-3] = terms[1]
     assert str(terms) == "(+1, ), (-1, Pauli), (-1, hello), (-1, Pauli), (-1, ), (+1, )"
 
-    terms[::-2].cmpnts[1] = "Fermi"
+    terms[::-2].strings[1] = "Fermi"
     assert str(terms) == "(+1, ), (-1, Pauli), (-1, hello), (-1, Fermi), (-1, ), (+1, )"
 
-    terms[::-2].cmpnts[0] = "Fermi"
+    terms[::-2].strings[0] = "Fermi"
     assert str(terms) == "(+1, ), (-1, Pauli), (-1, hello), (-1, Fermi), (-1, ), (+1, Fermi)"
 
-    terms[::-2].cmpnts[-1] = "Fermi"
+    terms[::-2].strings[-1] = "Fermi"
     assert str(terms) == "(+1, ), (-1, Fermi), (-1, hello), (-1, Fermi), (-1, ), (+1, Fermi)"
 
     terms.resize(3)
@@ -264,7 +264,7 @@ def test_sign_terms():
     assert str(terms) == "(+1, ), (-1, Fermi), (-1, hello), (+1, ), (+1, ), (+1, )"
     with pytest.raises(TypeError):
         terms.append(None)
-    assert str(terms.cmpnts[2::-1]) == "hello, Fermi, "
+    assert str(terms.strings[2::-1]) == "hello, Fermi, "
 
     owning = terms.clone()
     assert owning == terms
@@ -299,7 +299,7 @@ def test_sign_terms():
 
 def test_real_terms():
     class MockTerm(Term[StringsImplArray, str, float]):
-        cmpnts_type = Strings
+        strings_type = Strings
         coeff_type = float
 
         @classmethod
@@ -310,22 +310,22 @@ def test_real_terms():
         term_type = MockTerm
 
     terms = MockTerms(TermData(Strings(0), RealCoeffs.from_size(0)))
-    assert (len(terms), len(terms.cmpnts), len(terms.coeffs)) == (0,) * 3
+    assert (len(terms), len(terms.strings), len(terms.coeffs)) == (0,) * 3
     assert str(terms) == ""
 
     terms = MockTerms(TermData(Strings(1), RealCoeffs.from_scalar(1.0, 1)))
-    assert (len(terms), len(terms.cmpnts), len(terms.coeffs)) == (1,) * 3
+    assert (len(terms), len(terms.strings), len(terms.coeffs)) == (1,) * 3
     assert str(terms) == "(1.0, )"
 
     terms = MockTerms(TermData(Strings(6), RealCoeffs.from_scalar(1.0, 6)))
-    assert (len(terms), len(terms.cmpnts), len(terms.coeffs)) == (6,) * 3
+    assert (len(terms), len(terms.strings), len(terms.coeffs)) == (6,) * 3
     assert str(terms) == "(1.0, ), (1.0, ), (1.0, ), (1.0, ), (1.0, ), (1.0, )"
 
     assert terms[2].aliases(terms[2])
     assert not terms[2].aliases(terms[3])
-    assert terms[2].cmpnt.aliases(terms.cmpnts[2])
-    assert not terms[2].cmpnt.aliases(terms.cmpnts[3])
-    assert not terms[2].cmpnt.aliases(terms.cmpnts[2].clone())
+    assert terms[2].string.aliases(terms.strings[2])
+    assert not terms[2].string.aliases(terms.strings[3])
+    assert not terms[2].string.aliases(terms.strings[2].clone())
 
     assert not terms[2].aliases(terms[2].clone())
     assert not terms[2].aliases(terms[2].clone())
@@ -340,10 +340,10 @@ def test_real_terms():
     terms[1].coeff = 1.234
     assert str(terms) == "(1.0, ), (1.234, ), (-1.0, ), (1.0, ), (-1.0, ), (1.0, )"
 
-    terms.cmpnts[2].set("hello")
+    terms.strings[2].set("hello")
     assert str(terms) == "(1.0, ), (1.234, ), (-1.0, hello), (1.0, ), (-1.0, ), (1.0, )"
 
-    terms[3].cmpnt.set("world!")
+    terms[3].string.set("world!")
     assert str(terms) == "(1.0, ), (1.234, ), (-1.0, hello), (1.0, world!), (-1.0, ), (1.0, )"
 
     terms[1] = "Pauli", 4.567
@@ -357,7 +357,7 @@ def test_real_terms():
     with pytest.raises(TypeError):
         terms[1] = None, ComplexSign(2)
 
-    terms[1] = terms[3].cmpnt, 9
+    terms[1] = terms[3].string, 9
     assert str(terms) == "(1.0, ), (9.0, world!), (-1.0, hello), (1.0, world!), (-1.0, ), (1.0, )"
 
     terms_1 = MockTerms(TermData(Strings(6), RealCoeffs.from_scalar(1.0, 6)))
@@ -414,7 +414,7 @@ def test_termsum_vectorised_coeff_multiplication():
 
 
 def test_unary_term_algebra():
-    term = RealMockTerm.from_cmpnt_coeff(String.from_str("alpha"), 2.0)
+    term = RealMockTerm.from_string_coeff(String.from_str("alpha"), 2.0)
     assert +term is term
     assert str(-term) == "(-2.0, alpha)"
     assert str(term) == "(2.0, alpha)"
@@ -433,7 +433,7 @@ def test_unary_term_algebra():
 
 def test_terms_vectorised_coeff_multiplication():
     class MockTerm(Term[StringsImplArray, str, float]):
-        cmpnts_type = Strings
+        strings_type = Strings
         coeff_type = float
 
         @classmethod
@@ -464,7 +464,7 @@ def test_terms_vectorised_coeff_multiplication():
 
 def test_sign_terms_vectorised_coeff_multiplication():
     class MockTerm(Term[StringsImplArray, str, Sign]):
-        cmpnts_type = Strings
+        strings_type = Strings
         coeff_type = Sign
 
         @classmethod
@@ -597,17 +597,17 @@ def test_str():
 
 
 def test_container_into_shape_conversions():
-    cmpnts = Strings.from_iterable(("alpha", "beta", "alpha"))
-    terms = cmpnts.into(RealMockTerms)
+    strings = Strings.from_iterable(("alpha", "beta", "alpha"))
+    terms = strings.into(RealMockTerms)
     assert type(terms) is RealMockTerms
-    assert terms.cmpnts == cmpnts
+    assert terms.strings == strings
     assert tuple(terms.coeffs) == (1.0, 1.0, 1.0)
-    assert terms.cmpnts is not cmpnts
+    assert terms.strings is not strings
 
-    cmpnt_set = StringSet.from_cmpnts(cmpnts)
-    assert type(cmpnt_set) is StringSet
-    assert len(cmpnt_set) == 2
-    assert str(cmpnt_set.to_cmpnts()) == "alpha, beta"
+    string_set = StringSet.from_strings(strings)
+    assert type(string_set) is StringSet
+    assert len(string_set) == 2
+    assert str(string_set.to_strings()) == "alpha, beta"
 
     term_set = RealMockTermSet.from_terms(terms)
     assert type(term_set) is RealMockTermSet
@@ -621,26 +621,26 @@ def test_container_into_shape_conversions():
     assert complex_term_set["alpha"] == 1.0 + 0j
     assert complex_term_set["beta"] == 1.0 + 0j
 
-    round_trip_cmpnts = term_set.to_terms().into(Strings)
-    assert type(round_trip_cmpnts) is Strings
-    assert str(round_trip_cmpnts) == "alpha, beta"
-    round_trip_cmpnts[0] = "changed"
+    round_trip_strings = term_set.to_terms().into(Strings)
+    assert type(round_trip_strings) is Strings
+    assert str(round_trip_strings) == "alpha, beta"
+    round_trip_strings[0] = "changed"
     assert str(term_set.to_terms().into(Strings)) == "alpha, beta"
 
 
 def test_single_container_into_shape_conversions():
-    cmpnt = String("alpha")
-    term = cmpnt.into(ComplexMockTerm)
+    string = String("alpha")
+    term = string.into(ComplexMockTerm)
     assert type(term) is ComplexMockTerm
-    assert term.cmpnt == cmpnt
+    assert term.string == string
     assert term.coeff == 1 + 0j
-    assert not term.cmpnt.aliases(cmpnt)
+    assert not term.string.aliases(string)
 
-    converted_cmpnt = term.into(String)
-    assert type(converted_cmpnt) is String
-    assert converted_cmpnt == cmpnt
-    converted_cmpnt.set("changed")
-    assert term.cmpnt == cmpnt
+    converted_string = term.into(String)
+    assert type(converted_string) is String
+    assert converted_string == string
+    converted_string.set("changed")
+    assert term.string == string
 
 
 def test_terms_into_converts_coefficients_and_clones_once_at_surface():
@@ -652,9 +652,9 @@ def test_terms_into_converts_coefficients_and_clones_once_at_surface():
     )
     complex_terms = terms.into(ComplexMockTerms)
     assert type(complex_terms) is ComplexMockTerms
-    assert complex_terms.cmpnts == terms.cmpnts
+    assert complex_terms.strings == terms.strings
     assert tuple(complex_terms.coeffs) == (1.5 + 0j, -2.0 + 0j)
-    assert complex_terms.cmpnts is not terms.cmpnts
+    assert complex_terms.strings is not terms.strings
 
     complex_terms.coeffs[0] = 1.5j
     with pytest.raises(ValueError):
@@ -662,9 +662,9 @@ def test_terms_into_converts_coefficients_and_clones_once_at_surface():
 
 
 def test_into_rejects_unsupported_targets():
-    cmpnts = Strings.from_iterable(("alpha", "beta"))
+    strings = Strings.from_iterable(("alpha", "beta"))
     with pytest.raises(TypeError):
-        cmpnts.into(dict)
+        strings.into(dict)
     with pytest.raises(TypeError):
-        cmpnts.into(StringSet)
+        strings.into(StringSet)
     assert not hasattr(StringSet, "into")

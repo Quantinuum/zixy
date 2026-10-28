@@ -20,7 +20,6 @@ from typing import TYPE_CHECKING, Any, cast
 
 from sympy import Expr
 
-from zixy.container.cmpnts import Cmpnt, Cmpnts
 from zixy.container.coeffs import (
     Coeffs,
     ComplexSign,
@@ -31,6 +30,7 @@ from zixy.container.coeffs import (
     unit,
 )
 from zixy.container.data import TermData
+from zixy.container.strings import String, Strings
 from zixy.container.terms import Term, Terms
 
 if TYPE_CHECKING:
@@ -51,15 +51,15 @@ def into[T](source: ViewableBase[Any, Any], t: type[T]) -> T:
         An owning clone represented as ``t``.
 
     Raises:
-        TypeError: If the source-target pair is unsupported or has incompatible component types.
+        TypeError: If the source-target pair is unsupported or has incompatible string types.
         ValueError: If a coefficient value cannot be represented by the target coefficient type.
     """
     if not isinstance(t, type):
         raise TypeError(f"Conversion target must be a type, got {type(t)}.")
-    if issubclass(t, Cmpnt):
-        return cast("T", _into_cmpnt(source, t))
-    if issubclass(t, Cmpnts):
-        return cast("T", _into_cmpnts(source, t))
+    if issubclass(t, String):
+        return cast("T", _into_string(source, t))
+    if issubclass(t, Strings):
+        return cast("T", _into_strings(source, t))
     if issubclass(t, Term):
         return cast("T", _into_term(source, t))
     if issubclass(t, Terms):
@@ -69,14 +69,14 @@ def into[T](source: ViewableBase[Any, Any], t: type[T]) -> T:
     raise TypeError(f"Cannot convert {type(source)} into unsupported target type {t}.")
 
 
-def _check_cmpnt_compatibility[ImplT: ImplArray, SpecT, TargetSpecT](
-    source_type: type[Cmpnt[ImplT, SpecT]], target_type: type[Cmpnt[ImplT, TargetSpecT]]
+def _check_string_compatibility[ImplT: ImplArray, SpecT, TargetSpecT](
+    source_type: type[String[ImplT, SpecT]], target_type: type[String[ImplT, TargetSpecT]]
 ) -> None:
-    """Check that source and target component types are compatible for conversion."""
+    """Check that source and target string types are compatible for conversion."""
     if source_type.impl_type is not target_type.impl_type:
         raise TypeError(
-            f"Cannot convert a container with component implementation type "
-            f"{source_type.impl_type} into one with component implementation type "
+            f"Cannot convert a container with string implementation type "
+            f"{source_type.impl_type} into one with string implementation type "
             f"{target_type.impl_type}."
         )
 
@@ -124,77 +124,77 @@ def _clone_coeffs_as[
     return convert_vec(source, target_type)
 
 
-def _clone_cmpnts_as[ImplT: ImplArray, SpecT, TargetSpecT](
-    source: Cmpnts[ImplT, SpecT], target_type: type[Cmpnts[ImplT, TargetSpecT]]
-) -> Cmpnts[ImplT, TargetSpecT]:
-    """Clone component data from ``source`` as ``target_type``."""
-    _check_cmpnt_compatibility(source.cmpnt_type, target_type.cmpnt_type)
+def _clone_strings_as[ImplT: ImplArray, SpecT, TargetSpecT](
+    source: Strings[ImplT, SpecT], target_type: type[Strings[ImplT, TargetSpecT]]
+) -> Strings[ImplT, TargetSpecT]:
+    """Clone string data from ``source`` as ``target_type``."""
+    _check_string_compatibility(source.string_type, target_type.string_type)
     return target_type._create(source.clone()._impl)
 
 
-def _clone_cmpnt_as[ImplT: ImplArray, SpecT, TargetSpecT](
-    source: Cmpnt[ImplT, SpecT], target_type: type[Cmpnt[ImplT, TargetSpecT]]
-) -> Cmpnt[ImplT, TargetSpecT]:
-    """Clone component data from ``source`` as ``target_type``."""
-    _check_cmpnt_compatibility(type(source), target_type)
+def _clone_string_as[ImplT: ImplArray, SpecT, TargetSpecT](
+    source: String[ImplT, SpecT], target_type: type[String[ImplT, TargetSpecT]]
+) -> String[ImplT, TargetSpecT]:
+    """Clone string data from ``source`` as ``target_type``."""
+    _check_string_compatibility(type(source), target_type)
     return target_type._create(source.clone()._impl)
 
 
-def _into_cmpnt[ImplT: ImplArray, SpecT](
-    source: object, t: type[Cmpnt[ImplT, SpecT]]
-) -> Cmpnt[ImplT, SpecT]:
-    """Convert to a single component."""
-    if isinstance(source, Cmpnt):
-        return _clone_cmpnt_as(source, t)
-    if isinstance(source, Cmpnts):
+def _into_string[ImplT: ImplArray, SpecT](
+    source: object, t: type[String[ImplT, SpecT]]
+) -> String[ImplT, SpecT]:
+    """Convert to a single string."""
+    if isinstance(source, String):
+        return _clone_string_as(source, t)
+    if isinstance(source, Strings):
         _require_single_item(source, t)
-        return _into_cmpnt(source[0], t)
+        return _into_string(source[0], t)
     if isinstance(source, Term):
-        _check_cmpnt_compatibility(source.cmpnt_type, t)
+        _check_string_compatibility(source.string_type, t)
         _require_unit_coeff(source, t)
-        return _clone_cmpnt_as(source.cmpnt, t)
+        return _clone_string_as(source.string, t)
     if isinstance(source, Terms):
         _require_single_item(source, t)
-        return _into_cmpnt(source[0], t)
-    raise TypeError(f"Cannot convert {type(source)} into component type {t}.")
+        return _into_string(source[0], t)
+    raise TypeError(f"Cannot convert {type(source)} into string type {t}.")
 
 
-def _into_cmpnts[ImplT: ImplArray, SpecT](
-    source: object, t: type[Cmpnts[ImplT, SpecT]]
-) -> Cmpnts[ImplT, SpecT]:
-    """Convert to a component sequence."""
-    if isinstance(source, Cmpnt):
-        _check_cmpnt_compatibility(type(source), t.cmpnt_type)
+def _into_strings[ImplT: ImplArray, SpecT](
+    source: object, t: type[Strings[ImplT, SpecT]]
+) -> Strings[ImplT, SpecT]:
+    """Convert to a string sequence."""
+    if isinstance(source, String):
+        _check_string_compatibility(type(source), t.string_type)
         return t._create(source.clone()._impl)
-    if isinstance(source, Cmpnts):
-        return _clone_cmpnts_as(source, t)
+    if isinstance(source, Strings):
+        return _clone_strings_as(source, t)
     if isinstance(source, Term):
-        _check_cmpnt_compatibility(source.cmpnt_type, t.cmpnt_type)
+        _check_string_compatibility(source.string_type, t.string_type)
         _require_unit_coeff(source, t)
-        return t._create(source.cmpnt.clone()._impl)
+        return t._create(source.string.clone()._impl)
     if isinstance(source, Terms):
         _require_unit_coeffs(source, t)
-        return _clone_cmpnts_as(source.cmpnts, t)
-    raise TypeError(f"Cannot convert {type(source)} into component collection type {t}.")
+        return _clone_strings_as(source.strings, t)
+    raise TypeError(f"Cannot convert {type(source)} into string collection type {t}.")
 
 
 def _into_term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
     source: object, t: type[Term[ImplT, SpecT, C]]
 ) -> Term[ImplT, SpecT, C]:
     """Convert to a single term."""
-    if isinstance(source, Cmpnt):
-        _check_cmpnt_compatibility(type(source), t.cmpnts_type.cmpnt_type)
-        cmpnts = t.cmpnts_type._create(source.clone()._impl)
+    if isinstance(source, String):
+        _check_string_compatibility(type(source), t.strings_type.string_type)
+        strings = t.strings_type._create(source.clone()._impl)
         coeffs = get_coeffs_type(t.coeff_type).from_scalar(unit(t.coeff_type))
-        return t._create(TermData(cmpnts, coeffs))
-    if isinstance(source, Cmpnts):
+        return t._create(TermData(strings, coeffs))
+    if isinstance(source, Strings):
         _require_single_item(source, t)
         return _into_term(source[0], t)
     if isinstance(source, Term):
-        _check_cmpnt_compatibility(source.cmpnt_type, t.cmpnts_type.cmpnt_type)
-        cmpnts = t.cmpnts_type._create(source.cmpnt.clone()._impl)
+        _check_string_compatibility(source.string_type, t.strings_type.string_type)
+        strings = t.strings_type._create(source.string.clone()._impl)
         coeffs = get_coeffs_type(t.coeff_type).from_scalar(convert(source.coeff, t.coeff_type))
-        return t._create(TermData(cmpnts, coeffs))
+        return t._create(TermData(strings, coeffs))
     if isinstance(source, Terms):
         _require_single_item(source, t)
         return _into_term(source[0], t)
@@ -205,26 +205,26 @@ def _into_terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, 
     source: object, t: type[Terms[ImplT, SpecT, C]]
 ) -> Terms[ImplT, SpecT, C]:
     """Convert to a term sequence."""
-    cmpnts_type = t.term_type.cmpnts_type
+    strings_type = t.term_type.strings_type
     coeffs_type = get_coeffs_type(t.term_type.coeff_type)
-    if isinstance(source, Cmpnt):
-        _check_cmpnt_compatibility(type(source), cmpnts_type.cmpnt_type)
-        cmpnts = cmpnts_type._create(source.clone()._impl)
+    if isinstance(source, String):
+        _check_string_compatibility(type(source), strings_type.string_type)
+        strings = strings_type._create(source.clone()._impl)
         coeffs = coeffs_type.from_scalar(unit(t.term_type.coeff_type))
-        return t._create(TermData(cmpnts, coeffs))
-    if isinstance(source, Cmpnts):
-        cmpnts = _clone_cmpnts_as(source, cmpnts_type)
+        return t._create(TermData(strings, coeffs))
+    if isinstance(source, Strings):
+        strings = _clone_strings_as(source, strings_type)
         coeffs = coeffs_type.from_scalar(unit(t.term_type.coeff_type), len(source))
-        return t._create(TermData(cmpnts, coeffs))
+        return t._create(TermData(strings, coeffs))
     if isinstance(source, Term):
-        _check_cmpnt_compatibility(source.cmpnt_type, cmpnts_type.cmpnt_type)
-        cmpnts = cmpnts_type._create(source.cmpnt.clone()._impl)
+        _check_string_compatibility(source.string_type, strings_type.string_type)
+        strings = strings_type._create(source.string.clone()._impl)
         coeffs = coeffs_type.from_scalar(convert(source.coeff, t.term_type.coeff_type))
-        return t._create(TermData(cmpnts, coeffs))
+        return t._create(TermData(strings, coeffs))
     if isinstance(source, Terms):
-        cmpnts = _clone_cmpnts_as(source.cmpnts, cmpnts_type)
+        strings = _clone_strings_as(source.strings, strings_type)
         coeffs = convert_vec(source.coeffs, coeffs_type)
-        return t._create(TermData(cmpnts, coeffs))
+        return t._create(TermData(strings, coeffs))
     raise TypeError(f"Cannot convert {type(source)} into term collection type {t}.")
 
 

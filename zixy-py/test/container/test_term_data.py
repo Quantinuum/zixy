@@ -14,31 +14,31 @@ from zixy.container.coeffs import (
 )
 from zixy.container.data import TermData
 
-from .mock_cmpnts import Strings
+from .mock_strings import Strings
 
 
 class SignStringTermData(TermData):
-    cmpnts_type = Strings
+    strings_type = Strings
     coeffs_type = SignCoeffs
 
 
 class RealStringTermData(TermData):
-    cmpnts_type = Strings
+    strings_type = Strings
     coeffs_type = RealCoeffs
 
 
 class ComplexStringTermData(TermData):
-    cmpnts_type = Strings
+    strings_type = Strings
     coeffs_type = ComplexCoeffs
 
 
 def test_sign_term_data() -> None:
     td = TermData(Strings(0), SignCoeffs.from_size(0))
-    assert (len(td), len(td._cmpnts), len(td._coeffs)) == (0,) * 3
+    assert (len(td), len(td._strings), len(td._coeffs)) == (0,) * 3
     td = TermData(Strings(1), SignCoeffs.from_sequence([Sign(True)]))
-    assert (len(td), len(td._cmpnts), len(td._coeffs)) == (1,) * 3
+    assert (len(td), len(td._strings), len(td._coeffs)) == (1,) * 3
     td = TermData(Strings(6), SignCoeffs.from_sequence([Sign(False)] * 6))
-    assert (len(td), len(td._cmpnts), len(td._coeffs)) == (6,) * 3
+    assert (len(td), len(td._strings), len(td._coeffs)) == (6,) * 3
     assert type(td._coeffs) is SignCoeffs
     assert type(td._coeffs._impl) is _zixy.SignVec
     assert td._coeffs[0] == Sign(False)
@@ -59,17 +59,17 @@ def test_sign_term_data() -> None:
     assert td.clone() is not td
     assert td.clone() == td
     assert str(td) == "(-1, ), (+1, ), (-1, ), (+1, ), (-1, ), (+1, )"
-    td._cmpnts._impl._list[2] = "hello"
+    td._strings._impl._list[2] = "hello"
     assert str(td) == "(-1, ), (+1, ), (-1, hello), (+1, ), (-1, ), (+1, )"
 
 
 def test_real_term_data() -> None:
     td = TermData(Strings(0), RealCoeffs.from_sequence([]))
-    assert (len(td), len(td._cmpnts), len(td._coeffs)) == (0,) * 3
+    assert (len(td), len(td._strings), len(td._coeffs)) == (0,) * 3
     td = TermData(Strings(1), RealCoeffs.from_sequence([1.234]))
-    assert (len(td), len(td._cmpnts), len(td._coeffs)) == (1,) * 3
+    assert (len(td), len(td._strings), len(td._coeffs)) == (1,) * 3
     td = TermData(Strings(6), RealCoeffs.from_sequence([1.0] * 6))
-    assert (len(td), len(td._cmpnts), len(td._coeffs)) == (6,) * 3
+    assert (len(td), len(td._strings), len(td._coeffs)) == (6,) * 3
     assert type(td._coeffs) is RealCoeffs
     assert all(
         td._coeffs.np_array
@@ -95,17 +95,17 @@ def test_real_term_data() -> None:
     assert td.clone() is not td
     assert td.clone() == td
     assert str(td) == "(0.0, ), (1.0, ), (2.0, ), (3.0, ), (4.0, ), (5.0, )"
-    td._cmpnts._impl._list[2] = "hello"
+    td._strings._impl._list[2] = "hello"
     assert str(td) == "(0.0, ), (1.0, ), (2.0, hello), (3.0, ), (4.0, ), (5.0, )"
 
 
 def test_complex_term_data() -> None:
     td = TermData(Strings(0), ComplexCoeffs.from_sequence([]))
-    assert (len(td), len(td._cmpnts), len(td._coeffs)) == (0,) * 3
+    assert (len(td), len(td._strings), len(td._coeffs)) == (0,) * 3
     td = TermData(Strings(1), ComplexCoeffs.from_sequence([complex(1.2, -3.4)]))
-    assert (len(td), len(td._cmpnts), len(td._coeffs)) == (1,) * 3
+    assert (len(td), len(td._strings), len(td._coeffs)) == (1,) * 3
     td = TermData(Strings(6), ComplexCoeffs.from_sequence([complex(1, 0)] * 6))
-    assert (len(td), len(td._cmpnts), len(td._coeffs)) == (6,) * 3
+    assert (len(td), len(td._strings), len(td._coeffs)) == (6,) * 3
     assert type(td._coeffs) is ComplexCoeffs
     assert td._coeffs.np_array.shape == (6,)
     assert all(td._coeffs.np_array == complex(1, 0))
@@ -126,17 +126,17 @@ def test_complex_term_data() -> None:
     assert td.clone() is not td
     assert td.clone() == td
     assert str(td) == "(0j, ), ((1+0j), ), ((2+0j), ), ((3+0j), ), ((4+0j), ), ((5+0j), )"
-    td._cmpnts._impl._list[2] = "hello"
+    td._strings._impl._list[2] = "hello"
     assert str(td) == "(0j, ), ((1+0j), ), ((2+0j), hello), ((3+0j), ), ((4+0j), ), ((5+0j), )"
 
 
 def test_symbolic_term_data() -> None:
     td = TermData(Strings(0), SymbolicCoeffs.from_sequence([]))
-    assert (len(td), len(td._cmpnts), len(td._coeffs)) == (0,) * 3
+    assert (len(td), len(td._strings), len(td._coeffs)) == (0,) * 3
     td = TermData(Strings(1), SymbolicCoeffs.from_sequence([sympify(1)]))
-    assert (len(td), len(td._cmpnts), len(td._coeffs)) == (1,) * 3
+    assert (len(td), len(td._strings), len(td._coeffs)) == (1,) * 3
     td = TermData(Strings(6), SymbolicCoeffs.from_sequence([sympify(1)] * 6))
-    assert (len(td), len(td._cmpnts), len(td._coeffs)) == (6,) * 3
+    assert (len(td), len(td._strings), len(td._coeffs)) == (6,) * 3
     assert type(td._coeffs) is SymbolicCoeffs
     assert type(td._coeffs._impl) is ExprListWrapper
     assert isinstance(td._coeffs._impl, ExprListWrapper)
@@ -168,5 +168,5 @@ def test_symbolic_term_data() -> None:
     assert td.clone() is not td
     assert td.clone() == td
     assert str(td) == "(0, ), (x, ), (2*x, ), (3*x, ), (4*x, ), (5*x, )"
-    td._cmpnts._impl._list[2] = "hello"
+    td._strings._impl._list[2] = "hello"
     assert str(td) == "(0, ), (x, ), (2*x, hello), (3*x, ), (4*x, ), (5*x, )"

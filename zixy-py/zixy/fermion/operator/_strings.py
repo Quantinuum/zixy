@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Base fermionic ladder-operator string components and collections of such strings.
+"""Base fermionic ladder-operator strings and collections of such strings.
 
-Ladder-operator strings are components representing products of creation and annihilation
+Ladder-operator strings represent products of creation and annihilation
 operators, acting on a register of fermionic modes.
 """
 
@@ -87,10 +87,10 @@ class String[ImplT: FermionArray, SpecT, ElemT](FermionString[ImplT, SpecT, Elem
 class Strings[ImplT: FermionArray, SpecT, ElemT](FermionStrings[ImplT, SpecT, ElemT]):
     """A collection of fermionic ladder-operator strings."""
 
-    cmpnt_type: type[String[ImplT, SpecT, ElemT]]
+    string_type: type[String[ImplT, SpecT, ElemT]]
 
 
 class StringSet[ImplT: FermionArray, SpecT, ElemT](FermionStringSet[ImplT, SpecT, ElemT]):
     """A collection of unique fermionic ladder-operator strings."""
 
-    cmpnts_type: type[Strings[ImplT, SpecT, ElemT]]
+    strings_type: type[Strings[ImplT, SpecT, ElemT]]

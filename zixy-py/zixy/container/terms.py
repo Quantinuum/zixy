@@ -61,7 +61,7 @@ from zixy.container.coeffs import (
     unit,
     zero,
 )
-from zixy.container.data import TermData
+from zixy.container.data import TermData, _TermData
 from zixy.container.strings import String, Strings, StringSet
 from zixy.utils import DEFAULT_ATOL, DEFAULT_RTOL, slice_index_gen, slice_of_slice, split_top_level
 
@@ -151,7 +151,7 @@ def _coeffs_from_str[C: (float, complex, Sign, ComplexSign, Expr)](
 
 
 class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
-    ViewableItem[TermData[ImplT, SpecT, C]],
+    ViewableItem[_TermData[ImplT, SpecT, C]],
     StringRepresentable,
 ):
     """A term consisting of a string and a coefficient.
@@ -164,31 +164,31 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
     coeff_type: type[C]
     strings_type: type[Strings[ImplT, SpecT]]
 
-    _impl: TermData[ImplT, SpecT, C]
+    _impl: _TermData[ImplT, SpecT, C]
     _index: int | None
 
-    def __init__(self, data: TermData[ImplT, SpecT, C], indexer: int | None = None):
+    def __init__(self, data: _TermData[ImplT, SpecT, C], indexer: int | None = None):
         """Initialize the term.
 
         Args:
             data: Raw term data object, of which ``self`` views one.
             indexer: Index of the term within ``data`` that ``self`` views.
         """
-        if data.strings_type is not self.strings_type:
+        if type(data.strings) is not self.strings_type:
             raise TypeError(
-                f"Term data strings type {data.strings_type} does not match "
+                f"Term data strings type {type(data.strings)} does not match "
                 f"the strings type {self.strings_type} of this {type(self)}."
             )
-        if data.coeff_type is not self.coeff_type:
+        if data.coeffs.coeff_type is not self.coeff_type:
             raise TypeError(
-                f"Term data coeff type {data.coeff_type} does not match "
+                f"Term data coeff type {data.coeffs.coeff_type} does not match "
                 f"the coeff type {self.coeff_type} of this {type(self)}."
             )
         self._impl = data
         self._index = indexer
 
     @property
-    def _data(self) -> TermData[ImplT, SpecT, C]:
+    def _data(self) -> _TermData[ImplT, SpecT, C]:
         """The raw term data object underlying ``self``."""
         return self._impl
 
@@ -206,7 +206,7 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         return get_coeffs_type(self.coeff_type)
 
     @classmethod
-    def _create(cls, data: TermData[ImplT, SpecT, C], indexer: int | None = None) -> Self:
+    def _create(cls, data: _TermData[ImplT, SpecT, C], indexer: int | None = None) -> Self:
         """Create an instance of ``cls``.
 
         Args:
@@ -235,7 +235,8 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         strings = cls.strings_type.from_string(string)
         coeffs = get_coeffs_type(cls.coeff_type)()
         coeffs.append(coeff)
-        return cls._create(TermData(strings, coeffs))
+        term_data = TermData(strings, coeffs)
+        return cls._create(term_data)
 
     @classmethod
     def from_str(cls, source: str, *args: Any, **kwargs: Any) -> Self:
@@ -286,7 +287,7 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         Note:
             This method operates in-place.
         """
-        self._data.coeffs[self.index] = convert(value, self._data.coeff_type)
+        self._data.coeffs[self.index] = convert(value, self._data.coeffs.coeff_type)
 
     def aliases(self, other: Term[Any, Any, Any]) -> bool:
         """Determine whether ``self`` is a view of the same string as ``other``."""
@@ -299,10 +300,10 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         if not isinstance(other, Term):
             return NotImplemented
         result: bool = (
-            self._impl._strings._impl.strings_eq(
-                [self.index], other._impl._strings._impl, [other.index]
+            self._impl.strings._impl.strings_eq(
+                [self.index], other._impl.strings._impl, [other.index]
             )
-            and self._impl._coeffs[self.index] == other._impl._coeffs[other.index]
+            and self._impl.coeffs[self.index] == other._impl.coeffs[other.index]
         )
         return result
 
@@ -366,7 +367,7 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
 
 
 class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
-    ViewableSequence[Term[ImplT, SpecT, C], TermData[ImplT, SpecT, C]],
+    ViewableSequence[Term[ImplT, SpecT, C], _TermData[ImplT, SpecT, C]],
     StringRepresentable,
 ):
     """A collection of terms consisting of strings and coefficients.
@@ -378,9 +379,9 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
 
     term_type: type[Term[ImplT, SpecT, C]]
 
-    _impl: TermData[ImplT, SpecT, C]
+    _impl: _TermData[ImplT, SpecT, C]
 
-    def __init__(self, data: TermData[ImplT, SpecT, C], indexer: slice = slice(None)):
+    def __init__(self, data: _TermData[ImplT, SpecT, C], indexer: slice = slice(None)):
         """Initialize the term array.
 
         Args:
@@ -388,18 +389,18 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
             indexer: Slice of the data in ``data`` that ``self`` will view. The default value of
                 ``slice(None)`` indicates that this instance is considered to be owning.
         """
-        if data.strings_type is not self.term_type.strings_type:
+        if type(data.strings) is not self.term_type.strings_type:
             raise TypeError("String storage does not match its factory")
         self._impl = data
         self._slice = indexer
 
     @property
-    def _data(self) -> TermData[ImplT, SpecT, C]:
+    def _data(self) -> _TermData[ImplT, SpecT, C]:
         """The raw term data object underlying ``self``."""
         return self._impl
 
     @classmethod
-    def _create(cls, data: TermData[ImplT, SpecT, C], indexer: slice = slice(None)) -> Self:
+    def _create(cls, data: _TermData[ImplT, SpecT, C], indexer: slice = slice(None)) -> Self:
         """Create a new instance of ``cls``.
 
         Args:
@@ -427,12 +428,12 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
     @property
     def coeffs_type(self) -> type[Coeffs[C]]:
         """The coefficient container type of ``self``."""
-        return get_coeffs_type(self._data.coeff_type)
+        return get_coeffs_type(self._data.coeffs.coeff_type)
 
     @property
     def coeff_type(self) -> type[C]:
         """The coefficient type of ``self``."""
-        return self._impl.coeff_type
+        return self._impl.coeffs.coeff_type
 
     @property
     def strings_type[StringsT: Strings[Any, Any]](
@@ -440,7 +441,7 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
     ) -> type[StringsT]:
         """The concrete string container type of ``self``."""
         terms = cast("Terms[Any, Any, Any]", self)
-        return cast("type[StringsT]", terms._data.strings_type)
+        return cast("type[StringsT]", type(terms._data.strings))
 
     @property
     def string_type[StringT: String[Any, Any]](
@@ -448,7 +449,7 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
     ) -> type[StringT]:
         """The concrete string type of ``self``."""
         terms = cast("Terms[Any, Any, Any]", self)
-        return cast("type[StringT]", terms._impl.string_type)
+        return cast("type[StringT]", terms._impl.strings.string_type)
 
     @property
     def strings[StringsT: Strings[Any, Any]](
@@ -561,7 +562,7 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
                 f"{type(coeffs)} of length {len(coeffs)}."
             )
 
-        if type(coeffs) is self.coeffs_type and coeffs._impl.same_as(self._impl._coeffs._impl):
+        if type(coeffs) is self.coeffs_type and coeffs._impl.same_as(self._impl.coeffs._impl):
             coeffs = coeffs.clone()
 
         for item, coeff in zip(self, coeffs):
@@ -767,7 +768,8 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         source_coeff, source_strings = _parse_term_str(source)
         strings = cls.term_type.strings_type.from_str(source_strings, *args, **kwargs)
         coeffs = _coeffs_from_str(source_coeff, cls.term_type.coeff_type, len(strings))
-        return cls._create(TermData(strings, coeffs))
+        term_data = TermData(strings, coeffs)
+        return cls._create(term_data)
 
 
 class NumericTerms[ImplT: ImplArray, SpecT, C: (float, complex)](Terms[ImplT, SpecT, C]):
@@ -812,7 +814,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
 
     terms_type: type[Terms[ImplT, SpecT, C]]
 
-    _impl: TermData[ImplT, SpecT, C]
+    _impl: _TermData[ImplT, SpecT, C]
     _string_set: StringSet[ImplT, SpecT]
     _working_term: Term[ImplT, SpecT, C]
 
@@ -827,16 +829,16 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             Strings which appear multiple times in ``terms`` will appear only once in
                 ``self``.
         """
-        if terms._data.strings_type is not self.terms_type.term_type.strings_type:
+        if type(terms._data.strings) is not self.terms_type.term_type.strings_type:
             raise TypeError("String storage does not match its factory")
         self._impl = terms._empty_clone()._impl
         string_set_type = terms.strings_type._set_type
         self._string_set = string_set_type.__new__(string_set_type)
-        StringSet.__init__(self._string_set, self._impl._strings._impl)
+        StringSet.__init__(self._string_set, self._impl.strings._impl)
         # data and set should point at the same strings
-        self._impl._strings._impl = self._string_set._impl
+        self._impl.strings._impl = self._string_set._impl
         self._working_term = terms.new_clear_term()
-        if isinstance(terms._impl._coeffs, RealCoeffs | ComplexCoeffs):
+        if isinstance(terms._impl.coeffs, RealCoeffs | ComplexCoeffs):
             self._collect_terms(terms, sum_duplicates=False)
         else:
             self.insert_iterable(terms)
@@ -845,13 +847,13 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         """Collect numeric terms in Rust, normalizing sliced inputs first."""
         if (
             not terms.is_owning()
-            or not terms._impl._strings.is_owning()
-            or not terms._impl._coeffs.is_owning()
+            or not terms._impl.strings.is_owning()
+            or not terms._impl.coeffs.is_owning()
         ):
             terms = terms.clone()
-        source = terms._impl._strings._impl
-        coeffs = terms._impl._coeffs
-        out_coeffs = self._impl._coeffs
+        source = terms._impl.strings._impl
+        coeffs = terms._impl.coeffs
+        out_coeffs = self._impl.coeffs
         if isinstance(coeffs, RealCoeffs):
             assert isinstance(out_coeffs, RealCoeffs)
             array, mapping, values = source.collect_terms_real(coeffs._impl, sum_duplicates)
@@ -863,24 +865,24 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
                 coeffs._impl, sum_duplicates
             )
             out_coeffs._impl = complex_values
-        self._impl._strings._impl = array
+        self._impl.strings._impl = array
         self._string_set._impl = array
         self._string_set._map = mapping
 
     @property
-    def _data(self) -> TermData[ImplT, SpecT, C]:
+    def _data(self) -> _TermData[ImplT, SpecT, C]:
         """The raw term data object underlying ``self``."""
         return self._impl
 
     @property
     def coeffs_type(self) -> type[Coeffs[C]]:
         """The coefficient container type of ``self``."""
-        return self._impl.coeffs_type
+        return type(self._impl.coeffs)
 
     @property
     def coeff_type(self) -> type[C]:
         """The coefficient type of ``self``."""
-        return self._data.coeff_type
+        return self._data.coeffs.coeff_type
 
     @property
     def strings_type[StringsT: Strings[Any, Any]](
@@ -888,7 +890,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
     ) -> type[StringsT]:
         """The concrete string container type of ``self``."""
         terms = cast("TermSet[Any, Any, Any]", self)
-        return cast("type[StringsT]", terms._impl.strings_type)
+        return cast("type[StringsT]", type(terms._impl.strings))
 
     @property
     def string_type[StringT: String[Any, Any]](
@@ -896,7 +898,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
     ) -> type[StringT]:
         """The concrete string type of ``self``."""
         terms = cast("TermSet[Any, Any, Any]", self)
-        return cast("type[StringT]", terms._data.string_type)
+        return cast("type[StringT]", terms._data.strings.string_type)
 
     @property
     def strings[StringsT: Strings[Any, Any]](
@@ -904,10 +906,10 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
     ) -> StringsT:
         """The strings of ``self``, preserving their concrete container type."""
         terms = cast("TermSet[Any, Any, Any]", self)
-        return cast("StringsT", terms._impl._strings)
+        return cast("StringsT", terms._impl.strings)
 
     @classmethod
-    def _create(cls, data: TermData[ImplT, SpecT, C], map_: Map | None = None) -> Self:
+    def _create(cls, data: _TermData[ImplT, SpecT, C], map_: Map | None = None) -> Self:
         """Create a new instance of ``cls``.
 
         Args:
@@ -921,24 +923,23 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         if map_ is None:
             TermSet.__init__(out, cls.terms_type._create(data))
         else:
-            if data.strings_type is not cls.terms_type.term_type.strings_type:
+            if type(data.strings) is not cls.terms_type.term_type.strings_type:
                 raise TypeError("String storage does not match its factory")
             assert len(data) == len(map_)
             out._impl = data
-            string_set_type = data.strings_type._set_type
-            out._string_set = string_set_type._create(data._strings._impl, map_)
+            string_set_type = type(data.strings)._set_type
+            out._string_set = string_set_type._create(data.strings._impl, map_)
             out._working_term = cls.terms_type._create(data).new_clear_term()
         return out
 
     def _empty_clone(self) -> Self:
         """Get an empty (owning, contiguous) clone of ``self``."""
-        return self._create(
-            TermData(self._impl._strings._empty_clone(), self._impl._coeffs._empty_clone())
-        )
+        term_data = TermData(self._impl.strings._empty_clone(), self._impl.coeffs._empty_clone())
+        return self._create(term_data)
 
     def clone(self) -> Self:
         """Return a deep copy of ``self``."""
-        if isinstance(self._impl._coeffs, RealCoeffs | ComplexCoeffs):
+        if isinstance(self._impl.coeffs, RealCoeffs | ComplexCoeffs):
             return self._copy_terms(nonzero=False)
         out = self._empty_clone()
         out.insert_iterable(self)
@@ -947,22 +948,20 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
     def _copy_terms(self, nonzero: bool) -> Self:
         """Copy numeric terms in Rust, optionally omitting exact zeros."""
         out = self._empty_clone()
-        coeffs = self._impl._coeffs
-        out_coeffs = out._impl._coeffs
+        coeffs = self._impl.coeffs
+        out_coeffs = out._impl.coeffs
         if isinstance(coeffs, RealCoeffs):
             assert isinstance(out_coeffs, RealCoeffs)
-            array, mapping, values = self._impl._strings._impl.copy_terms_real(
-                coeffs._impl, nonzero
-            )
+            array, mapping, values = self._impl.strings._impl.copy_terms_real(coeffs._impl, nonzero)
             out_coeffs._impl = values
         else:
             assert isinstance(coeffs, ComplexCoeffs)
             assert isinstance(out_coeffs, ComplexCoeffs)
-            array, mapping, complex_values = self._impl._strings._impl.copy_terms_complex(
+            array, mapping, complex_values = self._impl.strings._impl.copy_terms_complex(
                 coeffs._impl, nonzero
             )
             out_coeffs._impl = complex_values
-        out._impl._strings._impl = array
+        out._impl.strings._impl = array
         out._string_set._impl = array
         out._string_set._map = mapping
         return out
@@ -1021,7 +1020,8 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             coeffs_type = get_coeffs_type(coeff_type)
             strings = self._impl.strings
             coeffs = convert_vec(self._impl.coeffs, coeffs_type)
-            return t._create(TermData(strings, coeffs))
+            term_data = TermData(strings, coeffs)
+            return t._create(term_data)
         try:
             return self.to_terms().into(t)
         except (TypeError, ValueError) as e:
@@ -1076,7 +1076,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             it. Otherwise, set the string of the internally-allocated working term to the data
             specified by ``value`` and return that string.
         """
-        string_type = self._impl.string_type
+        string_type = self._impl.strings.string_type
         assert issubclass(string_type, String)
         if isinstance(value, string_type):
             string = value
@@ -1101,8 +1101,8 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         """
         term = self._get_working_term(key)
         index = self._string_set.insert(term.string)
-        self._impl._coeffs.resize(len(self._impl._strings))
-        self._impl._coeffs[index] = term.coeff
+        self._impl.coeffs.resize(len(self._impl.strings))
+        self._impl.coeffs[index] = term.coeff
         return index
 
     def soft_insert(self, key: TermSpecT[ImplT, SpecT, C]) -> tuple[int, bool]:
@@ -1171,7 +1171,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         index = self.lookup_index(value)
         if index is None:
             return None
-        return self._impl._coeffs[index]
+        return self._impl.coeffs[index]
 
     def lookup(
         self, value: SpecT | String[ImplT, SpecT] | Term[ImplT, SpecT, C]
@@ -1187,7 +1187,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         index = self.lookup_index(value)
         if index is None:
             return None
-        return index, self._impl._coeffs[index]
+        return index, self._impl.coeffs[index]
 
     def contains(self, value: SpecT | String[ImplT, SpecT] | Term[ImplT, SpecT, C]) -> bool:
         """Check whether the string specified by ``value`` is stored in ``self``.
@@ -1218,7 +1218,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         i = self._string_set.remove(value.string)
         if i is None:
             raise KeyError(f"Value {value} not found in {self.__class__}.")
-        self._impl._coeffs.swap_remove(i)
+        self._impl.coeffs.swap_remove(i)
         return i
 
     def __getitem__(self, value: SpecT | String[ImplT, SpecT] | Term[ImplT, SpecT, C]) -> C:
@@ -1240,7 +1240,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
 
     def __setitem__(self, key: SpecT | Term[ImplT, SpecT, C], coeff: C) -> None:
         """Set the coefficient of the term with string specified by ``key``."""
-        self._impl._coeffs[self.insert(key)] = coeff
+        self._impl.coeffs[self.insert(key)] = coeff
 
     def __eq__(self, other: object) -> bool:
         """Return whether ``self`` and ``other`` are equal."""
@@ -1341,16 +1341,16 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
 
     def filter_nonzero(self) -> Self:
         """Filter ``self`` to only the non-zero terms."""
-        if isinstance(self._impl._coeffs, RealCoeffs | ComplexCoeffs):
+        if isinstance(self._impl.coeffs, RealCoeffs | ComplexCoeffs):
             return self._copy_terms(nonzero=True)
         out = self._empty_clone()
         strings = out._string_set
-        coeffs = out._impl._coeffs
+        coeffs = out._impl.coeffs
         # Strings are already unique: copy them without constructing term views
         # or repeating coefficient conversion and string compatibility checks.
-        for index, coeff in enumerate(self._impl._coeffs):
+        for index, coeff in enumerate(self._impl.coeffs):
             if coeff != 0:
-                strings._impl.mapped_insert(strings._map, self._impl._strings._impl, index)
+                strings._impl.mapped_insert(strings._map, self._impl.strings._impl, index)
                 coeffs.append(coeff)
         return out
 
@@ -1382,21 +1382,21 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             scaled_coeff = rhs.coeff * convert(scalar, self.coeff_type)
             index, inserted = self.soft_insert(rhs)
             if inserted:
-                self._impl._coeffs[index] = scaled_coeff
+                self._impl.coeffs[index] = scaled_coeff
             else:
-                self._impl._coeffs[index] += scaled_coeff
+                self._impl.coeffs[index] += scaled_coeff
         else:
             if rhs is self:
                 rhs = rhs.clone()
-            coeffs = self._impl._coeffs
-            rhs_coeffs = rhs._impl._coeffs
-            array = self._impl._strings._impl
+            coeffs = self._impl.coeffs
+            rhs_coeffs = rhs._impl.coeffs
+            array = self._impl.strings._impl
             if isinstance(coeffs, RealCoeffs):
                 assert isinstance(rhs_coeffs, RealCoeffs)
                 array.scaled_iadd_real(
                     coeffs._impl,
                     self._string_set._map,
-                    rhs._impl._strings._impl,
+                    rhs._impl.strings._impl,
                     rhs_coeffs._impl,
                     convert(scalar, float),
                 )
@@ -1405,7 +1405,7 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
                 array.scaled_iadd_complex(
                     coeffs._impl,
                     self._string_set._map,
-                    rhs._impl._strings._impl,
+                    rhs._impl.strings._impl,
                     rhs_coeffs._impl,
                     convert(scalar, complex),
                 )
@@ -1451,7 +1451,8 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         """Multiply ``self`` in-place by a scalar or coefficient vector."""
         if not isinstance(other, Coeff | Coeffs):
             return NotImplemented
-        self._impl._coeffs *= other
+        coeffs = self._impl.coeffs
+        coeffs *= other
         return self
 
     def __itruediv__(self, scalar: Coeff) -> Self:
@@ -1506,7 +1507,7 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         terms = cls.terms_type.from_str(source, *args, **kwargs)
         out = cls.__new__(cls)
         TermSet.__init__(out, terms._empty_clone())
-        if isinstance(terms._impl._coeffs, RealCoeffs | ComplexCoeffs):
+        if isinstance(terms._impl.coeffs, RealCoeffs | ComplexCoeffs):
             out._collect_terms(terms, sum_duplicates=True)
         else:
             out.add_iterable(terms)
@@ -1544,7 +1545,7 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             New instance of ``cls`` containing the terms specified by ``iterable``.
         """
         out = cls(*args, **kwargs)
-        if isinstance(out._impl._coeffs, RealCoeffs | ComplexCoeffs):
+        if isinstance(out._impl.coeffs, RealCoeffs | ComplexCoeffs):
             terms = cls.terms_type.from_iterable(iterable, *args, **kwargs)
             out._collect_terms(terms, sum_duplicates=True)
         else:
@@ -1566,22 +1567,22 @@ class NumericTermSum[ImplT: ImplArray, SpecT, C: (float, complex)](TermSum[ImplT
     @property
     def l1_norm(self) -> C:
         """The L1 norm of ``self``."""
-        coeffs = self._impl._coeffs
+        coeffs = self._impl.coeffs
         if isinstance(coeffs, RealCoeffs | ComplexCoeffs):
             return self.coeff_type(coeffs._impl.norm_slice(coeffs.slice, False))
         result: C = zero(self.coeff_type)
-        for coeff in self._impl._coeffs:
+        for coeff in self._impl.coeffs:
             result += self.coeff_type(abs(coeff))
         return result
 
     @property
     def l2_norm_square(self) -> C:
         """The square of the L2 norm of ``self``."""
-        coeffs = self._impl._coeffs
+        coeffs = self._impl.coeffs
         if isinstance(coeffs, RealCoeffs | ComplexCoeffs):
             return self.coeff_type(coeffs._impl.norm_slice(coeffs.slice, True))
         result: C = zero(self.coeff_type)
-        for coeff in self._impl._coeffs:
+        for coeff in self._impl.coeffs:
             result += self.coeff_type(abs(coeff)) ** 2
         return result
 
@@ -1596,7 +1597,7 @@ class NumericTermSum[ImplT: ImplArray, SpecT, C: (float, complex)](TermSum[ImplT
         Note:
             This method operates in-place.
         """
-        self._impl._coeffs.scale(1 / self.l1_norm)
+        self._impl.coeffs.scale(1 / self.l1_norm)
 
     def l2_normalize(self) -> None:
         """Divide ``self`` by its L2 norm.
@@ -1604,7 +1605,7 @@ class NumericTermSum[ImplT: ImplArray, SpecT, C: (float, complex)](TermSum[ImplT
         Note:
             This method operates in-place.
         """
-        self._impl._coeffs.scale(1 / self.l2_norm)
+        self._impl.coeffs.scale(1 / self.l2_norm)
 
     def iter_filter_significant(
         self, atol: float = DEFAULT_ATOL

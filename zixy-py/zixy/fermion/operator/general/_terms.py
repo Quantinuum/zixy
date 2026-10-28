@@ -165,7 +165,8 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerm[ImplT, Spe
         strings = self.strings_type(modes, 1, max_string_len)
         strings._impl._reserve_string_length(_max_string_len_from_source(source), warn=False)
         coeffs = get_coeffs_type(self.coeff_type).from_size(1)
-        TermBase.__init__(self, TermData(strings, coeffs))
+        term_data = TermData(strings, coeffs)
+        TermBase.__init__(self, term_data)
         self.set(source)
 
     @property
@@ -207,7 +208,8 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerms[ImplT, S
         """
         strings = self.term_type.strings_type(modes, n, max_string_len)
         coeffs = get_coeffs_type(self.term_type.coeff_type).from_size(n)
-        TermsBase.__init__(self, TermData(strings, coeffs))
+        term_data = TermData(strings, coeffs)
+        TermsBase.__init__(self, term_data)
 
     @property
     def max_string_len(self) -> int:
@@ -278,7 +280,7 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
     @property
     def coeffs(self) -> Any:
         """The coefficients of ``self``."""
-        return self._impl._coeffs
+        return self._impl.coeffs
 
     @property
     def max_string_len(self) -> int:
@@ -348,7 +350,7 @@ class TermSum[C: (float, complex, Sign, ComplexSign, Expr)](
         """Create a new instance of ``cls`` from an iterable of terms."""
         terms = cls.terms_type.from_iterable(source, modes, max_string_len=max_string_len)
         out = cls(modes, max_string_len=max_string_len)
-        if isinstance(terms._impl._coeffs, RealCoeffs | ComplexCoeffs):
+        if isinstance(terms._impl.coeffs, RealCoeffs | ComplexCoeffs):
             out._collect_terms(terms, sum_duplicates=True)
         else:
             out.strings._impl._reserve_string_length(terms.max_string_len, warn=False)
@@ -509,12 +511,12 @@ class RealTermSum(NumericTermSum[GeneralFermionOperatorArray, StringSpec, float]
             return super().__mul__(rhs)
         elif not isinstance(rhs, RealTermSum):
             return NotImplemented
-        assert isinstance(self._impl._coeffs, RealCoeffs)
-        assert isinstance(rhs._impl._coeffs, RealCoeffs)
-        lhs_impl = self._impl._strings._impl
-        lhs_coeffs = self._impl._coeffs._impl
-        rhs_impl = rhs._impl._strings._impl
-        rhs_coeffs = rhs._impl._coeffs._impl
+        assert isinstance(self._impl.coeffs, RealCoeffs)
+        assert isinstance(rhs._impl.coeffs, RealCoeffs)
+        lhs_impl = self._impl.strings._impl
+        lhs_coeffs = self._impl.coeffs._impl
+        rhs_impl = rhs._impl.strings._impl
+        rhs_coeffs = rhs._impl.coeffs._impl
         # TODO: support output by reference
         impl, coeffs = lhs_impl.lincomb_mul_real(lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs)
         data = TermData(Strings._create(impl), RealCoeffs._create(coeffs))
@@ -530,12 +532,11 @@ class RealTermSum(NumericTermSum[GeneralFermionOperatorArray, StringSpec, float]
         impl, coeffs = self.strings._impl.lincomb_to_normal_order_real(
             self.strings._impl, self.coeffs._impl
         )
-        return NormalRealTermSum._create(
-            TermData(
-                NormalStrings._create(impl),
-                RealCoeffs._create(coeffs),
-            )
+        term_data = TermData(
+            NormalStrings._create(impl),
+            RealCoeffs._create(coeffs),
         )
+        return NormalRealTermSum._create(term_data)
 
 
 class ComplexTerm(Term[complex]):
@@ -660,12 +661,12 @@ class ComplexTermSum(
             return super().__mul__(rhs)
         elif not isinstance(rhs, ComplexTermSum):
             return NotImplemented
-        assert isinstance(self._impl._coeffs, ComplexCoeffs)
-        assert isinstance(rhs._impl._coeffs, ComplexCoeffs)
-        lhs_impl = self._impl._strings._impl
-        lhs_coeffs = self._impl._coeffs._impl
-        rhs_impl = rhs._impl._strings._impl
-        rhs_coeffs = rhs._impl._coeffs._impl
+        assert isinstance(self._impl.coeffs, ComplexCoeffs)
+        assert isinstance(rhs._impl.coeffs, ComplexCoeffs)
+        lhs_impl = self._impl.strings._impl
+        lhs_coeffs = self._impl.coeffs._impl
+        rhs_impl = rhs._impl.strings._impl
+        rhs_coeffs = rhs._impl.coeffs._impl
         # TODO: support output by reference
         impl, coeffs = lhs_impl.lincomb_mul_complex(lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs)
         data = TermData(Strings._create(impl), ComplexCoeffs._create(coeffs))
@@ -681,12 +682,11 @@ class ComplexTermSum(
         impl, coeffs = self.strings._impl.lincomb_to_normal_order_complex(
             self.strings._impl, self.coeffs._impl
         )
-        return NormalComplexTermSum._create(
-            TermData(
-                NormalStrings._create(impl),
-                ComplexCoeffs._create(coeffs),
-            )
+        term_data = TermData(
+            NormalStrings._create(impl),
+            ComplexCoeffs._create(coeffs),
         )
+        return NormalComplexTermSum._create(term_data)
 
 
 class SymbolicTerm(Term[Expr]):
@@ -818,7 +818,8 @@ class SymbolicTerms(Terms[Expr]):
         Returns:
             A new contiguously stored instance with the substitution applied.
         """
-        return SymbolicTerms._create(TermData(self.strings.clone(), self.coeffs.subs(values)))
+        term_data = TermData(self.strings.clone(), self.coeffs.subs(values))
+        return SymbolicTerms._create(term_data)
 
 
 class SymbolicTermSet(TermSet[Expr]):

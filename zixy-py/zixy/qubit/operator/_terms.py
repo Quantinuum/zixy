@@ -188,7 +188,8 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](
             This method operates in-place.
         """
         signs = self._data.strings._impl.conj_clifford_list(gates._impl)
-        self._impl._coeffs *= SignCoeffs._create(signs)
+        coeffs = self._impl.coeffs
+        coeffs *= SignCoeffs._create(signs)
 
 
 class Terms[C: (float, complex, Sign, ComplexSign, Expr)](
@@ -239,7 +240,8 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](
             :meth:`~zixy.qubit.operator._terms.Term.conj_clifford_list`
         """
         signs = self._data.strings._impl.conj_clifford_list(gates._impl)
-        self._impl._coeffs *= SignCoeffs._create(signs)
+        coeffs = self._impl.coeffs
+        coeffs *= SignCoeffs._create(signs)
 
     def relabel(self, qubits: Qubits) -> Self:
         """Relabel the strings using a new register of qubits.
@@ -333,11 +335,11 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](
         """
         coeffs = self._data.coeffs
         if isinstance(coeffs, SignCoeffs):
-            return self._data._strings._impl.canonicalize_sign(
+            return self._data.strings._impl.canonicalize_sign(
                 coeffs._impl, mode_order, to_solve, additional_reduces
             )
         elif isinstance(coeffs, ComplexSignCoeffs):
-            return self._data._strings._impl.canonicalize_complex_sign(
+            return self._data.strings._impl.canonicalize_complex_sign(
                 coeffs._impl, mode_order, to_solve, additional_reduces
             )
         else:
@@ -354,9 +356,9 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](
         """
         coeffs = self._data.coeffs
         if isinstance(coeffs, SignCoeffs):
-            return self._data._strings._impl.canonicalize_all_sign(coeffs._impl)
+            return self._data.strings._impl.canonicalize_all_sign(coeffs._impl)
         elif isinstance(coeffs, ComplexSignCoeffs):
-            return self._data._strings._impl.canonicalize_all_complex_sign(coeffs._impl)
+            return self._data.strings._impl.canonicalize_all_complex_sign(coeffs._impl)
         else:
             raise TypeError(f"Canonicalization not valid for coefficient type {type(coeffs)}")
 
@@ -790,10 +792,10 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         Returns:
             The resulting sparse matrix.
         """
-        assert isinstance(self._impl._coeffs, RealCoeffs)
+        assert isinstance(self._impl.coeffs, RealCoeffs)
         return QubitPauliArray.lincomb_to_sparse_real(
-            self._impl._strings._impl,
-            self._impl._coeffs._impl,
+            self._impl.strings._impl,
+            self._impl.coeffs._impl,
             big_endian,
         )
 
@@ -808,17 +810,18 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
             return super().__mul__(other)
         elif not isinstance(other, RealTermSum):
             return NotImplemented
-        assert isinstance(self._impl._coeffs, RealCoeffs)
-        assert isinstance(other._impl._coeffs, RealCoeffs)
-        lhs_impl = self._impl._strings._impl
-        lhs_coeffs = self._impl._coeffs._impl
-        rhs_impl = other._impl._strings._impl
-        rhs_coeffs = other._impl._coeffs._impl
-        out = ComplexTermSum._create(TermData(other._impl._strings._empty_clone(), ComplexCoeffs()))
-        assert isinstance(out._impl._coeffs, ComplexCoeffs)
-        out_impl = out._impl._strings._impl
+        assert isinstance(self._impl.coeffs, RealCoeffs)
+        assert isinstance(other._impl.coeffs, RealCoeffs)
+        lhs_impl = self._impl.strings._impl
+        lhs_coeffs = self._impl.coeffs._impl
+        rhs_impl = other._impl.strings._impl
+        rhs_coeffs = other._impl.coeffs._impl
+        term_data = TermData(other._impl.strings._empty_clone(), ComplexCoeffs())
+        out = ComplexTermSum._create(term_data)
+        assert isinstance(out._impl.coeffs, ComplexCoeffs)
+        out_impl = out._impl.strings._impl
         out_map = out._string_set._map
-        out_coeffs = out._impl._coeffs._impl
+        out_coeffs = out._impl.coeffs._impl
         QubitPauliArray.lincomb_mul_real(
             lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs, out_impl, out_map, out_coeffs
         )
@@ -833,10 +836,10 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         Returns:
             The resulting vector of coefficients in the subspace basis.
         """
-        assert isinstance(self._impl._coeffs, RealCoeffs)
+        assert isinstance(self._impl.coeffs, RealCoeffs)
         return QubitPauliArray.lincomb_project_into_ortho_subspace_real(
-            self._impl._strings._impl,
-            self._impl._coeffs._impl,
+            self._impl.strings._impl,
+            self._impl.coeffs._impl,
             subspace._impl,
         )
 
@@ -852,16 +855,16 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
             A tuple containing the resulting vector of coefficients in the subspace basis and the
             overlap matrix of the subspace states.
         """
-        assert isinstance(self._impl._coeffs, RealCoeffs)
+        assert isinstance(self._impl.coeffs, RealCoeffs)
         strings = tuple(item._string_set._impl for item in subspace)
         maps = tuple(item._string_set._map for item in subspace)
         coeffs = []
         for item in subspace:
-            assert isinstance(item._impl._coeffs, RealCoeffs)
-            coeffs.append(item._impl._coeffs._impl)
+            assert isinstance(item._impl.coeffs, RealCoeffs)
+            coeffs.append(item._impl.coeffs._impl)
         return QubitPauliArray.lincomb_project_into_nonortho_subspace_real(
-            self._impl._strings._impl,
-            self._impl._coeffs._impl,
+            self._impl.strings._impl,
+            self._impl.coeffs._impl,
             strings,
             maps,
             tuple(coeffs),
@@ -897,16 +900,16 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         if isinstance(state, SymbolicState):
             return self.into(SymbolicTermSum).apply(state)
         out = ComplexState(self.qubits)
-        assert isinstance(self._impl._coeffs, RealCoeffs)
-        assert isinstance(state._impl._coeffs, RealCoeffs)
-        assert isinstance(out._impl._coeffs, ComplexCoeffs)
-        self._impl._strings._impl.apply_to_state_real(
-            self._impl._coeffs._impl,
-            state._impl._strings._impl,
-            state._impl._coeffs._impl,
-            out._impl._strings._impl,
+        assert isinstance(self._impl.coeffs, RealCoeffs)
+        assert isinstance(state._impl.coeffs, RealCoeffs)
+        assert isinstance(out._impl.coeffs, ComplexCoeffs)
+        self._impl.strings._impl.apply_to_state_real(
+            self._impl.coeffs._impl,
+            state._impl.strings._impl,
+            state._impl.coeffs._impl,
+            out._impl.strings._impl,
             out._string_set._map,
-            out._impl._coeffs._impl,
+            out._impl.coeffs._impl,
         )
         return out.filter_nonzero()
 
@@ -945,16 +948,16 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         if real:
             if not isinstance(bra, RealState) or not isinstance(ket, RealState):
                 raise TypeError("real=True requires real bra and ket states.")
-            assert isinstance(self._impl._coeffs, RealCoeffs)
-            assert isinstance(bra._impl._coeffs, RealCoeffs)
-            assert isinstance(ket._impl._coeffs, RealCoeffs)
+            assert isinstance(self._impl.coeffs, RealCoeffs)
+            assert isinstance(bra._impl.coeffs, RealCoeffs)
+            assert isinstance(ket._impl.coeffs, RealCoeffs)
             return float(
-                self._impl._strings._impl.mat_elem_real(
-                    self._impl._coeffs._impl,
-                    bra._impl._strings._impl,
-                    bra._impl._coeffs._impl,
-                    ket._impl._strings._impl,
-                    ket._impl._coeffs._impl,
+                self._impl.strings._impl.mat_elem_real(
+                    self._impl.coeffs._impl,
+                    bra._impl.strings._impl,
+                    bra._impl.coeffs._impl,
+                    ket._impl.strings._impl,
+                    ket._impl.coeffs._impl,
                 )
             )
         if isinstance(bra, SymbolicState) or isinstance(ket, SymbolicState):
@@ -1143,10 +1146,10 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         Returns:
             The resulting sparse matrix.
         """
-        assert isinstance(self._impl._coeffs, ComplexCoeffs)
+        assert isinstance(self._impl.coeffs, ComplexCoeffs)
         return QubitPauliArray.lincomb_to_sparse_complex(
-            self._impl._strings._impl,
-            self._impl._coeffs._impl,
+            self._impl.strings._impl,
+            self._impl.coeffs._impl,
             big_endian,
         )
 
@@ -1161,17 +1164,18 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
             return super().__mul__(other)
         elif not isinstance(other, ComplexTermSum):
             return NotImplemented
-        assert isinstance(self._impl._coeffs, ComplexCoeffs)
-        assert isinstance(other._impl._coeffs, ComplexCoeffs)
-        lhs_impl = self._impl._strings._impl
-        lhs_coeffs = self._impl._coeffs._impl
-        rhs_impl = other._impl._strings._impl
-        rhs_coeffs = other._impl._coeffs._impl
-        out = ComplexTermSum._create(TermData(other._impl._strings._empty_clone(), ComplexCoeffs()))
-        assert isinstance(out._impl._coeffs, ComplexCoeffs)
-        out_impl = out._impl._strings._impl
+        assert isinstance(self._impl.coeffs, ComplexCoeffs)
+        assert isinstance(other._impl.coeffs, ComplexCoeffs)
+        lhs_impl = self._impl.strings._impl
+        lhs_coeffs = self._impl.coeffs._impl
+        rhs_impl = other._impl.strings._impl
+        rhs_coeffs = other._impl.coeffs._impl
+        term_data = TermData(other._impl.strings._empty_clone(), ComplexCoeffs())
+        out = ComplexTermSum._create(term_data)
+        assert isinstance(out._impl.coeffs, ComplexCoeffs)
+        out_impl = out._impl.strings._impl
         out_map = out._string_set._map
-        out_coeffs = out._impl._coeffs._impl
+        out_coeffs = out._impl.coeffs._impl
         QubitPauliArray.lincomb_mul_complex(
             lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs, out_impl, out_map, out_coeffs
         )
@@ -1186,10 +1190,10 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         Returns:
             The resulting vector of coefficients in the subspace basis.
         """
-        assert isinstance(self._impl._coeffs, ComplexCoeffs)
+        assert isinstance(self._impl.coeffs, ComplexCoeffs)
         return QubitPauliArray.lincomb_project_into_ortho_subspace_complex(
-            self._impl._strings._impl,
-            self._impl._coeffs._impl,
+            self._impl.strings._impl,
+            self._impl.coeffs._impl,
             subspace._impl,
         )
 
@@ -1223,16 +1227,16 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         elif isinstance(state, SymbolicState):
             return self.into(SymbolicTermSum).apply(state)
         out = ComplexState(self.qubits)
-        assert isinstance(self._impl._coeffs, ComplexCoeffs)
-        assert isinstance(state._impl._coeffs, ComplexCoeffs)
-        assert isinstance(out._impl._coeffs, ComplexCoeffs)
-        self._impl._strings._impl.apply_to_state_complex(
-            self._impl._coeffs._impl,
-            state._impl._strings._impl,
-            state._impl._coeffs._impl,
-            out._impl._strings._impl,
+        assert isinstance(self._impl.coeffs, ComplexCoeffs)
+        assert isinstance(state._impl.coeffs, ComplexCoeffs)
+        assert isinstance(out._impl.coeffs, ComplexCoeffs)
+        self._impl.strings._impl.apply_to_state_complex(
+            self._impl.coeffs._impl,
+            state._impl.strings._impl,
+            state._impl.coeffs._impl,
+            out._impl.strings._impl,
             out._string_set._map,
-            out._impl._coeffs._impl,
+            out._impl.coeffs._impl,
         )
         return out.filter_nonzero()
 
@@ -1260,16 +1264,16 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
             bra = bra.into(ComplexState)
         if isinstance(ket, RealState):
             ket = ket.into(ComplexState)
-        assert isinstance(self._impl._coeffs, ComplexCoeffs)
-        assert isinstance(bra._impl._coeffs, ComplexCoeffs)
-        assert isinstance(ket._impl._coeffs, ComplexCoeffs)
+        assert isinstance(self._impl.coeffs, ComplexCoeffs)
+        assert isinstance(bra._impl.coeffs, ComplexCoeffs)
+        assert isinstance(ket._impl.coeffs, ComplexCoeffs)
         return complex(
-            self._impl._strings._impl.mat_elem_complex(
-                self._impl._coeffs._impl,
-                bra._impl._strings._impl,
-                bra._impl._coeffs._impl,
-                ket._impl._strings._impl,
-                ket._impl._coeffs._impl,
+            self._impl.strings._impl.mat_elem_complex(
+                self._impl.coeffs._impl,
+                bra._impl.strings._impl,
+                bra._impl.coeffs._impl,
+                ket._impl.strings._impl,
+                ket._impl.coeffs._impl,
             )
         )
 
@@ -1401,7 +1405,8 @@ class SymbolicTerm(Term[Expr]):
         """
         strings = RealTerm.strings_type.from_string(self.string.clone())
         coeffs = get_coeffs_type(RealTerm.coeff_type).from_scalar(float(self.coeff.evalf()))
-        return RealTerm._create(TermData(strings, coeffs))
+        term_data = TermData(strings, coeffs)
+        return RealTerm._create(term_data)
 
     def try_to_complex(self) -> ComplexTerm:
         """Try to evaluate ``self`` as a term containing a vector of complex coefficients.
@@ -1418,7 +1423,8 @@ class SymbolicTerm(Term[Expr]):
         """
         strings = ComplexTerm.strings_type.from_string(self.string.clone())
         coeffs = get_coeffs_type(ComplexTerm.coeff_type).from_scalar(complex(self.coeff.evalf()))
-        return ComplexTerm._create(TermData(strings, coeffs))
+        term_data = TermData(strings, coeffs)
+        return ComplexTerm._create(term_data)
 
 
 class SymbolicTerms(Terms[Expr]):
@@ -1466,7 +1472,8 @@ class SymbolicTerms(Terms[Expr]):
         Returns:
             A new contiguously stored instance with the substitution applied.
         """
-        return SymbolicTerms._create(TermData(self.strings.clone(), self.coeffs.subs(values)))
+        term_data = TermData(self.strings.clone(), self.coeffs.subs(values))
+        return SymbolicTerms._create(term_data)
 
     def idiff(self, variable: Symbol | str) -> None:
         """Differentiate partially with respect to ``variable`` in-place.
@@ -1490,7 +1497,8 @@ class SymbolicTerms(Terms[Expr]):
         Returns:
             A new contiguously stored instance with the differentiation applied.
         """
-        return SymbolicTerms._create(TermData(self.strings.clone(), self.coeffs.diff(variable)))
+        term_data = TermData(self.strings.clone(), self.coeffs.diff(variable))
+        return SymbolicTerms._create(term_data)
 
     def try_to_real(self) -> RealTerms:
         """Try to evaluate ``self`` as terms containing a vector of real coefficients.
@@ -1502,7 +1510,8 @@ class SymbolicTerms(Terms[Expr]):
         Raises:
             TypeError: A coefficient is not representable as real or there are free symbols.
         """
-        return RealTerms._create(TermData(self.strings.clone(), self.coeffs.try_to_real()))
+        term_data = TermData(self.strings.clone(), self.coeffs.try_to_real())
+        return RealTerms._create(term_data)
 
     def try_to_complex(self) -> ComplexTerms:
         """Try to evaluate ``self`` as terms containing a vector of complex coefficients.
@@ -1514,7 +1523,8 @@ class SymbolicTerms(Terms[Expr]):
         Raises:
             TypeError: A coefficient is not representable as complex or there are free symbols.
         """
-        return ComplexTerms._create(TermData(self.strings.clone(), self.coeffs.try_to_complex()))
+        term_data = TermData(self.strings.clone(), self.coeffs.try_to_complex())
+        return ComplexTerms._create(term_data)
 
 
 class SymbolicTermSet(TermSet[Expr]):
@@ -1557,9 +1567,8 @@ class SymbolicTermSum(TermSum[Expr]):
             return super().__mul__(other)
         elif not isinstance(other, SymbolicTermSum):
             return NotImplemented
-        out = SymbolicTermSum._create(
-            TermData(other._impl._strings._empty_clone(), SymbolicCoeffs())
-        )
+        term_data = TermData(other._impl.strings._empty_clone(), SymbolicCoeffs())
+        out = SymbolicTermSum._create(term_data)
         for l_term in self:
             assert isinstance(l_term, SymbolicTerm)
             for r_term in other:

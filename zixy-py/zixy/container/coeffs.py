@@ -35,7 +35,12 @@ import numpy as np
 from sympy import Expr, Float, I, Integer, Symbol, diff, sympify
 
 from zixy import _zixy
-from zixy.container.base import Representable, ViewableSequence, requires_ownership
+from zixy.container.base import (
+    SerializableContainer,
+    Representable,
+    ViewableSequence,
+    requires_ownership,
+)
 from zixy.utils import (
     DEFAULT_ATOL,
     DEFAULT_RTOL,
@@ -731,7 +736,9 @@ else:
 
 
 class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
-    ViewableSequence[C, BaseVec], Representable
+    ViewableSequence[C, BaseVec],
+    Representable,
+    SerializableContainer,
 ):
     """A collection of coefficients.
 

@@ -1,19 +1,19 @@
 import pytest
 
+import zixy.qubit.operator as zqo
 from zixy.container.coeffs import unit
-from zixy.qubit import pauli
 
 
 @pytest.fixture(
     params=[
-        pauli.SignTermSet,
-        pauli.ComplexSignTermSet,
-        pauli.RealTermSet,
-        pauli.ComplexTermSet,
-        pauli.SymbolicTermSet,
-        pauli.RealTermSum,
-        pauli.ComplexTermSum,
-        pauli.SymbolicTermSum,
+        zqo.SignTermSet,
+        zqo.ComplexSignTermSet,
+        zqo.RealTermSet,
+        zqo.ComplexTermSet,
+        zqo.SymbolicTermSet,
+        zqo.RealTermSum,
+        zqo.ComplexTermSum,
+        zqo.SymbolicTermSum,
     ],
     ids=lambda cls: cls.__name__,
 )
@@ -25,7 +25,7 @@ def terms(request):
 
 
 def test_sign_term_set_issue_262():
-    terms = pauli.SignTermSet.from_str("(+1, X0), (+1, Z0)")
+    terms = zqo.SignTermSet.from_str("(+1, X0), (+1, Z0)")
     collected = list(terms)
     assert [str(term) for term in collected] == ["(+1, X0)", "(+1, Z0)"]
     assert collected[0] is not collected[1]

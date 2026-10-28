@@ -2,7 +2,7 @@ import pytest
 from sympy import Expr, Symbol, sympify
 
 from zixy.container.coeffs import ComplexSign, Sign
-from zixy.qubit.pauli import (
+from zixy.qubit.operator import (
     ComplexSignTerm,
     ComplexSignTerms,
     ComplexSignTermSet,
@@ -185,8 +185,8 @@ def test_real_term():
         lhs *= rhs.string
     assert (
         str(err.value)
-        == "Cannot multiply <class 'zixy.qubit.pauli._terms.RealTerm'> (2.0, X0 Y1 Z2 X3 Y4 Z5) "
-        "in-place by <class 'zixy.qubit.pauli._strings.String'> Y0 Y1 X2 Y3 Z4 Y5. Pauli string "
+        == "Cannot multiply <class 'zixy.qubit.operator._terms.RealTerm'> (2.0, X0 Y1 Z2 X3 Y4 Z5) "
+        "in-place by <class 'zixy.qubit.operator._strings.String'> Y0 Y1 X2 Y3 Z4 Y5. Pauli string "
         "multiplication gives a ComplexSign factor that is not <class 'float'> representable."
     )
     assert lhs.string.get_tuple() == (X, Y, Z, X, Y, Z)
@@ -194,8 +194,8 @@ def test_real_term():
         lhs *= rhs
     assert (
         str(err.value)
-        == "Cannot multiply <class 'zixy.qubit.pauli._terms.RealTerm'> (2.0, X0 Y1 Z2 X3 Y4 Z5) "
-        "in-place by <class 'zixy.qubit.pauli._terms.RealTerm'> (4.0, Y0 Y1 X2 Y3 Z4 Y5). Pauli "
+        == "Cannot multiply <class 'zixy.qubit.operator._terms.RealTerm'> (2.0, X0 Y1 Z2 X3 Y4 Z5) "
+        "in-place by <class 'zixy.qubit.operator._terms.RealTerm'> (4.0, Y0 Y1 X2 Y3 Z4 Y5). Pauli "
         "string multiplication gives a ComplexSign factor that is not <class 'float'> representable."
     )
     assert lhs.string.get_tuple() == (X, Y, Z, X, Y, Z)
@@ -204,7 +204,7 @@ def test_real_term():
         lhs *= ComplexSign(3)
     assert (
         str(err.value)
-        == "Cannot multiply <class 'zixy.qubit.pauli._terms.RealTerm'> (2.0, X0 Y1 Z2 X3 Y4 Z5) "
+        == "Cannot multiply <class 'zixy.qubit.operator._terms.RealTerm'> (2.0, X0 Y1 Z2 X3 Y4 Z5) "
         "in-place by <class 'zixy.container.coeffs.ComplexSign'> -i. Coefficient -i is not "
         "<class 'float'> representable."
     )

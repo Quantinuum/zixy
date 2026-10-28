@@ -7,10 +7,10 @@ from zixy.container.data import TermData
 from zixy.container.terms import TermSet
 from zixy.fermion import state as fermion_state
 from zixy.fermion.operator import general, normal
-from zixy.qubit import pauli, state as qubit_state
+from zixy.qubit import operator as qubit_operator, state as qubit_state
 
 DOMAINS = (
-    (pauli, ("X0", "Y1", "Z2"), {}),
+    (qubit_operator, ("X0", "Y1", "Z2"), {}),
     (general, ("F0^", "F1 F2^", "F2^ F0 F1^"), {"max_string_len": 5}),
     (normal, ("F0^", "F1", "F2^"), {}),
     (fermion_state, ("[1, 0, 0]", "[0, 1, 0]", "[0, 0, 1]"), {}),
@@ -71,7 +71,7 @@ def test_numeric_vector_views(cls, indexer):
     assert list(vector) == expected
 
 
-@pytest.mark.parametrize("cls", (pauli.RealTermSum, pauli.ComplexTermSum))
+@pytest.mark.parametrize("cls", (qubit_operator.RealTermSum, qubit_operator.ComplexTermSum))
 def test_bulk_addition(cls):
     lhs = cls.from_iterable([("X0", 1), ("Y0", 2), ("Z0", 0)], 2)
     rhs = cls.from_iterable([("Y0", -2), ("X1", 3), ("Z1", 1e-20)], 2)

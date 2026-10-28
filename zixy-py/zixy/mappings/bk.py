@@ -23,8 +23,8 @@ from zixy.container.data import TermData
 from zixy.fermion.operator._strings import String as FermionOperatorString
 from zixy.fermion.state import String as FermionStateString
 from zixy.mappings.base import Mapper
-from zixy.qubit.pauli._strings import Strings as PauliStrings
-from zixy.qubit.pauli._terms import (
+from zixy.qubit.operator._strings import Strings as PauliStrings
+from zixy.qubit.operator._terms import (
     ComplexTermSum as PauliComplexTermSum,
     RealTermSum as PauliRealTermSum,
 )

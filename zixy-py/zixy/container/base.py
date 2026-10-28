@@ -62,6 +62,30 @@ class _HasStringsType[StringsT](Protocol):
     def strings_type(self) -> type[StringsT]: ...
 
 
+class _HasEmptyClone[ContainerT](Protocol):
+    """A container whose empty clone preserves its concrete type."""
+
+    def _empty_clone(self) -> ContainerT: ...
+
+
+class _FilterableStrings[ContainerT, StringT](
+    _HasStringType[StringT], _HasEmptyClone[ContainerT], Protocol
+):
+    """String factories and clones used to infer filter inputs and results together."""
+
+    def iter_filter_map(self, f: Callable[[StringT], bool]) -> Iterator[StringT]: ...
+
+    def iter_filter_populated(self) -> Iterator[StringT]: ...
+
+
+class _FilterableStringSet[ContainerT, StringT](
+    _HasStringsType[_HasStringType[StringT]], _HasEmptyClone[ContainerT], Protocol
+):
+    """String-set factories and clones used to infer filter inputs and results together."""
+
+    def iter_filter_map(self, f: Callable[[StringT], bool]) -> Iterator[StringT]: ...
+
+
 class _HasTermType[TermT](Protocol):
     """A container exposing its term factory."""
 

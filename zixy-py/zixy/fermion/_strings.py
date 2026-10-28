@@ -120,10 +120,6 @@ class Strings[ImplT: FermionArray, SpecT, ElemT](BaseStrings[ImplT, SpecT]):
         """The modes corresponding to ``self``."""
         return self._impl.modes
 
-    def filter_unique(self) -> BaseStrings[ImplT, SpecT]:
-        """Get a new instance containing the unique strings of ``self``."""
-        return self._set_type._create(self._impl).to_strings()
-
 
 class StringSet[ImplT: FermionArray, SpecT, ElemT](BaseStringSet[ImplT, SpecT]):
     """A collection of unique fermionic strings.

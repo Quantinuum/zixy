@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import assert_type
+from collections.abc import Iterator
+from typing import Self, assert_type
 
 import pytest
 
@@ -85,6 +86,27 @@ def test_qubit_operator_overridden_factories() -> None:
     assert_type(next(iter(total)), CustomTerm)
     assert_type(total.strings_type, type[CustomStrings])
     assert_type(total.string_type, type[CustomString])
+
+    def keep(string: CustomString) -> bool:
+        return string == strings[0]
+
+    assert_type(strings.new_clear_string(), CustomString)
+    assert_type(strings.iter_filter_non_identity(), Iterator[CustomString])
+    assert_type(strings.filter_non_identity(), CustomStrings)
+    assert_type(strings.iter_filter_populated(), Iterator[CustomString])
+    assert_type(strings.iter_filter_map(keep), Iterator[CustomString])
+    assert_type(strings.filter_map(keep), CustomStrings)
+    assert_type(strings.filter_unique(), CustomStrings)
+    assert_type(strings.filter_populated(), CustomStrings)
+    assert_type(string_set.iter_filter_map(keep), Iterator[CustomString])
+    assert_type(string_set.filter_map(keep), CustomStringSet)
+    strings.filter_map(lambda item: assert_type(item, CustomString) == strings[0])
+    string_set.filter_map(lambda item: assert_type(item, CustomString) == strings[0])
+    assert type(strings.new_clear_string()) is CustomString
+    assert type(next(strings.iter_filter_map(keep))) is CustomString
+    assert type(strings.filter_map(keep)) is CustomStrings
+    assert type(strings.filter_unique()) is CustomStrings
+    assert type(string_set.filter_map(keep)) is CustomStringSet
 
     assert type(strings[0]) is CustomString
     assert type(strings[:]) is CustomStrings
@@ -207,6 +229,25 @@ def test_qubit_state_overridden_factories() -> None:
     assert_type(total.strings_type, type[CustomStrings])
     assert_type(total.string_type, type[CustomString])
 
+    def keep(string: CustomString) -> bool:
+        return string == strings[0]
+
+    assert_type(strings.new_clear_string(), CustomString)
+    assert_type(strings.iter_filter_populated(), Iterator[CustomString])
+    assert_type(strings.iter_filter_map(keep), Iterator[CustomString])
+    assert_type(strings.filter_map(keep), CustomStrings)
+    assert_type(strings.filter_unique(), CustomStrings)
+    assert_type(strings.filter_populated(), CustomStrings)
+    assert_type(string_set.iter_filter_map(keep), Iterator[CustomString])
+    assert_type(string_set.filter_map(keep), CustomStringSet)
+    strings.filter_map(lambda item: assert_type(item, CustomString) == strings[0])
+    string_set.filter_map(lambda item: assert_type(item, CustomString) == strings[0])
+    assert type(strings.new_clear_string()) is CustomString
+    assert type(next(strings.iter_filter_map(keep))) is CustomString
+    assert type(strings.filter_map(keep)) is CustomStrings
+    assert type(strings.filter_unique()) is CustomStrings
+    assert type(string_set.filter_map(keep)) is CustomStringSet
+
     assert type(strings[0]) is CustomString
     assert type(strings[:]) is CustomStrings
     assert type(next(iter(strings))) is CustomString
@@ -327,6 +368,25 @@ def test_fermion_general_overridden_factories() -> None:
     assert_type(next(iter(total)), CustomTerm)
     assert_type(total.strings_type, type[CustomStrings])
     assert_type(total.string_type, type[CustomString])
+
+    def keep(string: CustomString) -> bool:
+        return string == strings[0]
+
+    assert_type(strings.new_clear_string(), CustomString)
+    assert_type(strings.iter_filter_populated(), Iterator[CustomString])
+    assert_type(strings.iter_filter_map(keep), Iterator[CustomString])
+    assert_type(strings.filter_map(keep), CustomStrings)
+    assert_type(strings.filter_unique(), CustomStrings)
+    assert_type(strings.filter_populated(), CustomStrings)
+    assert_type(string_set.iter_filter_map(keep), Iterator[CustomString])
+    assert_type(string_set.filter_map(keep), CustomStringSet)
+    strings.filter_map(lambda item: assert_type(item, CustomString) == strings[0])
+    string_set.filter_map(lambda item: assert_type(item, CustomString) == strings[0])
+    assert type(strings.new_clear_string()) is CustomString
+    assert type(next(strings.iter_filter_map(keep))) is CustomString
+    assert type(strings.filter_map(keep)) is CustomStrings
+    assert type(strings.filter_unique()) is CustomStrings
+    assert type(string_set.filter_map(keep)) is CustomStringSet
 
     assert type(strings[0]) is CustomString
     assert type(strings[:]) is CustomStrings
@@ -449,6 +509,25 @@ def test_fermion_normal_overridden_factories() -> None:
     assert_type(total.strings_type, type[CustomStrings])
     assert_type(total.string_type, type[CustomString])
 
+    def keep(string: CustomString) -> bool:
+        return string == strings[0]
+
+    assert_type(strings.new_clear_string(), CustomString)
+    assert_type(strings.iter_filter_populated(), Iterator[CustomString])
+    assert_type(strings.iter_filter_map(keep), Iterator[CustomString])
+    assert_type(strings.filter_map(keep), CustomStrings)
+    assert_type(strings.filter_unique(), CustomStrings)
+    assert_type(strings.filter_populated(), CustomStrings)
+    assert_type(string_set.iter_filter_map(keep), Iterator[CustomString])
+    assert_type(string_set.filter_map(keep), CustomStringSet)
+    strings.filter_map(lambda item: assert_type(item, CustomString) == strings[0])
+    string_set.filter_map(lambda item: assert_type(item, CustomString) == strings[0])
+    assert type(strings.new_clear_string()) is CustomString
+    assert type(next(strings.iter_filter_map(keep))) is CustomString
+    assert type(strings.filter_map(keep)) is CustomStrings
+    assert type(strings.filter_unique()) is CustomStrings
+    assert type(string_set.filter_map(keep)) is CustomStringSet
+
     assert type(strings[0]) is CustomString
     assert type(strings[:]) is CustomStrings
     assert type(next(iter(strings))) is CustomString
@@ -570,6 +649,25 @@ def test_fermion_state_overridden_factories() -> None:
     assert_type(total.strings_type, type[CustomStrings])
     assert_type(total.string_type, type[CustomString])
 
+    def keep(string: CustomString) -> bool:
+        return string == strings[0]
+
+    assert_type(strings.new_clear_string(), CustomString)
+    assert_type(strings.iter_filter_populated(), Iterator[CustomString])
+    assert_type(strings.iter_filter_map(keep), Iterator[CustomString])
+    assert_type(strings.filter_map(keep), CustomStrings)
+    assert_type(strings.filter_unique(), CustomStrings)
+    assert_type(strings.filter_populated(), CustomStrings)
+    assert_type(string_set.iter_filter_map(keep), Iterator[CustomString])
+    assert_type(string_set.filter_map(keep), CustomStringSet)
+    strings.filter_map(lambda item: assert_type(item, CustomString) == strings[0])
+    string_set.filter_map(lambda item: assert_type(item, CustomString) == strings[0])
+    assert type(strings.new_clear_string()) is CustomString
+    assert type(next(strings.iter_filter_map(keep))) is CustomString
+    assert type(strings.filter_map(keep)) is CustomStrings
+    assert type(strings.filter_unique()) is CustomStrings
+    assert type(string_set.filter_map(keep)) is CustomStringSet
+
     assert type(strings[0]) is CustomString
     assert type(strings[:]) is CustomStrings
     assert type(next(iter(strings))) is CustomString
@@ -614,3 +712,46 @@ def test_fermion_state_overridden_factories() -> None:
     with pytest.raises(TypeError, match="String storage does not match its factory"):
         CustomSum._create(ordinary_sum._impl, ordinary_sum._string_set._map)
     assert len(ordinary) == 1
+
+
+def test_non_identity_filters_dispatch_to_overrides() -> None:
+    class CustomString(qubit_operator.String):
+        pass
+
+    class CustomStrings(qubit_operator.Strings):
+        string_type = CustomString
+        _set_type: type[CustomStringSet]
+        lazy_calls = 0
+        eager_calls = 0
+
+        def iter_filter_populated(self) -> Iterator[CustomString]:
+            self.lazy_calls += 1
+            return iter((self[1],))
+
+        def filter_populated(self) -> Self:
+            self.eager_calls += 1
+            return self[2:].clone()
+
+    class CustomStringSet(qubit_operator.StringSet):
+        strings_type = CustomStrings
+
+    CustomStrings._set_type = CustomStringSet
+    strings = CustomStrings.from_iterable(["X0", "Y0", "Z0"], 1)
+    lazy = strings.iter_filter_non_identity()
+    eager = strings.filter_non_identity()
+
+    assert_type(lazy, Iterator[CustomString])
+    assert_type(eager, CustomStrings)
+    assert strings.lazy_calls == 1
+    assert strings.eager_calls == 1
+    collected = list(lazy)
+    assert [str(string) for string in collected] == ["Y0"]
+    assert [str(string) for string in eager] == ["Z0"]
+    assert type(collected[0]) is CustomString
+    assert type(eager) is CustomStrings
+
+    # Forwarding preserves the lazy override's views and the eager override's copied storage.
+    collected[0].set("X0")
+    assert str(strings[1]) == "X0"
+    eager[0].set("X0")
+    assert str(strings[2]) == "Z0"

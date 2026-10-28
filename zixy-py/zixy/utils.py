@@ -18,9 +18,19 @@ from __future__ import annotations
 
 import inspect
 from collections.abc import Iterator
-from typing import Final
+from typing import Final, TypeGuard
 
 import numpy
+
+
+def isclass[T](cls: type[object], target: type[T]) -> TypeGuard[type[T]]:
+    """Check exact class identity at runtime and narrow the class during type checking.
+
+    This helper provides a joint runtime and type-checking-time check: it returns whether
+    ``cls is target`` and narrows ``cls`` to ``type[T]`` when true. Subclasses do not match,
+    and a false result does not narrow the type.
+    """
+    return cls is target
 
 
 def slice_index(s: slice, i: int, length: int) -> int:

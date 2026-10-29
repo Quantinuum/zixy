@@ -19,7 +19,7 @@ from __future__ import annotations
 import json
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Hashable, Sequence, Sized
+from collections.abc import Sequence, Sized
 from functools import wraps
 from typing import (
     TYPE_CHECKING,
@@ -33,7 +33,7 @@ from zixy.utils import slice_index, slice_len
 
 if TYPE_CHECKING:
     import builtins
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Iterator, Mapping
     from typing import Any, Concatenate, NotRequired, Self
 
     from zixy.container.coeffs import Coeffs
@@ -467,30 +467,20 @@ class Representable(ABC):
         return cls.from_str(source)
 
 
-def to_hashable(value: Any) -> Hashable:
-    """Convert a value to a hashable representation."""
-    if isinstance(value, dict):
-        return frozenset((to_hashable(k), to_hashable(v)) for k, v in value.items())
-    elif isinstance(value, (list, tuple)):
-        return tuple(to_hashable(v) for v in value)
-    elif isinstance(value, set):
-        return frozenset(to_hashable(v) for v in value)
-    if not isinstance(value, Hashable):
-        raise TypeError(f"value of type {type(value)} is not hashable")
-    return value
-
-
 class SerializedContainer(TypedDict):
     """Serialized representation of a container."""
 
-    version: str
+    schema_version: str
+    """Version of the schema."""
+
+    package_version: str
     """Version of the package."""
 
-    type_name: str
-    """Name of the type of the container."""
+    family: str
+    """Family of the container."""
 
-    type_module: str
-    """Module where the type of the container is defined."""
+    container: str
+    """Name of the container."""
 
     strings: NotRequired[dict[str, Any]]
     """List of strings in the container."""
@@ -502,7 +492,7 @@ class SerializedContainer(TypedDict):
     """Space for the domain of the container."""
 
 
-class Serializable[SerializedT: dict[str, Any]](ABC):
+class Serializable[SerializedT: Mapping[str, object]](ABC):
     """Abstract base class for classes that can be serialized to and deserialized from JSON."""
 
     @abstractmethod
@@ -527,29 +517,31 @@ class Serializable[SerializedT: dict[str, Any]](ABC):
         """
         pass
 
-    def to_json(self) -> str:
+    def to_json(self, **kwargs: Any) -> str:
         """Return a JSON string representation of ``self``.
+
+        Args:
+            **kwargs: Keyword arguments to forward to ``json.dumps``.
 
         Returns:
             A JSON string representation of ``self``.
         """
-        return json.dumps(self.to_dict())
+        kwargs = dict(kwargs)
+        kwargs.setdefault("allow_nan", False)
+        return json.dumps(self.to_dict(), **kwargs)
 
     @classmethod
-    def from_json(cls, source: str) -> Self:
+    def from_json(cls, source: str, **kwargs: Any) -> Self:
         """Create an instance of ``cls`` from a JSON string representation.
 
         Args:
             source: JSON string representation to parse.
+            **kwargs: Keyword arguments to forward to ``json.loads``.
 
         Returns:
             An instance of ``cls`` parsed from ``source``.
         """
-        return cls.from_dict(json.loads(source))
-
-    def __hash__(self) -> int:
-        """Return a hash of the object based on its dictionary representation."""
-        return hash(to_hashable(self.to_dict()))
+        return cls.from_dict(json.loads(source, **kwargs))
 
 
 class SerializableContainer(Serializable[SerializedContainer], ABC):

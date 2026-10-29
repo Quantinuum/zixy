@@ -36,8 +36,8 @@ from sympy import Expr, Float, I, Integer, Symbol, diff, sympify
 
 from zixy import _zixy
 from zixy.container.base import (
-    SerializableContainer,
     Representable,
+    SerializableContainer,
     ViewableSequence,
     requires_ownership,
 )

@@ -28,10 +28,10 @@ itertools = "0.15.0"
 rand = "0.9.1"
 indexmap = "2.9.0"
 num-complex = { version = "0.4", features = ["serde"] }
-rstest = "0.27.0"
+rstest = "0.28.0"
 serde = { version = "1.0.219", features = ["derive"] }
 bincode = { version = "2.0.1", features = ["derive", "serde"] }
-pluralizer = "0.5.0"
+pluralizer = "0.6.0"
 numpy = "0.27.1"
 enum_dispatch = "0.3.13"
 

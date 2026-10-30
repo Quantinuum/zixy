@@ -29,6 +29,8 @@ from typing import (
     overload,
 )
 
+import numpy as np
+
 from zixy.utils import slice_index, slice_len
 
 if TYPE_CHECKING:
@@ -36,7 +38,12 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Mapping
     from typing import Any, Concatenate, NotRequired, Self
 
+    from numpy import complex128, float64, int64
+    from numpy.typing import NDArray
+
     from zixy.container.coeffs import Coeffs
+
+__schema_version__ = "1.0.0"
 
 
 class _Indexable[T](Protocol):
@@ -467,6 +474,34 @@ class Representable(ABC):
         return cls.from_str(source)
 
 
+def check_schema_version(source: SerializedContainer) -> None:
+    """Check that the serialized container is valid."""
+    if source["schema_version"] != __schema_version__:
+        raise ValueError(
+            f"schema version mismatch: expected {__schema_version__}, got "
+            f"{source['schema_version']}"
+        )
+
+
+@overload
+def serialize_numpy_array(array: NDArray[int64]) -> list[int]: ...
+@overload
+def serialize_numpy_array(array: NDArray[float64]) -> list[float]: ...
+@overload
+def serialize_numpy_array(array: NDArray[complex128]) -> list[list[float]]: ...
+
+
+def serialize_numpy_array[T: (int64, float64, complex128)](
+    array: NDArray[T],
+) -> list[int] | list[float] | list[list[float]]:
+    """Serialize a NumPy array to a JSON-serializable list."""
+    if array.dtype == np.int64:
+        return [int(x) for x in array.tolist()]
+    elif array.dtype == np.float64:
+        return [float(x) for x in array.tolist()]
+    return [[float(x.real), float(x.imag)] for x in array.tolist()]
+
+
 class SerializedContainer(TypedDict):
     """Serialized representation of a container."""
 
@@ -482,13 +517,13 @@ class SerializedContainer(TypedDict):
     container: str
     """Name of the container."""
 
-    strings: NotRequired[dict[str, Any]]
+    strings: NotRequired[list[Any]]
     """List of strings in the container."""
 
-    coeffs: NotRequired[dict[str, Any]]
+    coeffs: NotRequired[list[Any]]
     """List of coefficients in the container."""
 
-    space: NotRequired[dict[str, Any]]
+    space: NotRequired[list[Any]]
     """Space for the domain of the container."""
 
 

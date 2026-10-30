@@ -34,12 +34,15 @@ from typing import TYPE_CHECKING, Any, Self, TypeAlias, overload
 import numpy as np
 from sympy import Expr, Float, I, Integer, Symbol, diff, sympify
 
-from zixy import _zixy
+from zixy import __version__, _zixy
 from zixy.container.base import (
     Representable,
     SerializableContainer,
     ViewableSequence,
+    __schema_version__,
+    check_schema_version,
     requires_ownership,
+    serialize_numpy_array,
 )
 from zixy.utils import (
     DEFAULT_ATOL,
@@ -50,6 +53,9 @@ from zixy.utils import (
     slice_of_slice,
     split_top_level,
 )
+
+if TYPE_CHECKING:
+    from zixy.container.base import SerializedContainer
 
 Number: TypeAlias = int | float | complex  # noqa: UP040
 
@@ -1087,7 +1093,7 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
 
     @property
     @abstractmethod
-    def np_array(self) -> NDArray[np.generic]:
+    def np_array(self) -> NDArray[np.int64] | NDArray[np.float64] | NDArray[np.complex128]:
         """The contents of ``self`` as a flat NumPy array copy.
 
         Returns:
@@ -1149,6 +1155,20 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
         assert len(out) == len(source)
         return out
 
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            A JSON-serializable dictionary representation of ``self``.
+        """
+        return dict(
+            schema_version=__schema_version__,
+            package_version=__version__,
+            family="container",
+            container=self.__class__.__name__,
+            coeffs=serialize_numpy_array(self.np_array),
+        )
+
 
 class RootOfUnityCoeffs[C: (float, complex, Sign, ComplexSign, Expr)](Coeffs[C]):
     """A collection of :class:`RootOfUnity` coefficients.
@@ -1199,7 +1219,20 @@ class SignCoeffs(RootOfUnityCoeffs[Sign]):
         Returns:
             NumPy array containing all elements of ``self``.
         """
-        return np.array([int(s) for s in self], dtype=np.int64)[self.slice].ravel()
+        return np.array([int(s) for s in self], dtype=np.int64).ravel()
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        check_schema_version(source)
+        return cls.from_sequence([cls.coeff_type.from_int(value) for value in source["coeffs"]])
 
 
 class ComplexSignCoeffs(RootOfUnityCoeffs[ComplexSign]):
@@ -1241,7 +1274,22 @@ class ComplexSignCoeffs(RootOfUnityCoeffs[ComplexSign]):
         Returns:
             NumPy array containing all elements of ``self``.
         """
-        return np.array([complex(s) for s in self], dtype=np.complex128)[self.slice].ravel()
+        return np.array([complex(s) for s in self], dtype=np.complex128).ravel()
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        check_schema_version(source)
+        return cls.from_sequence(
+            [cls.coeff_type.from_complex(complex(real, imag)) for real, imag in source["coeffs"]]
+        )
 
 
 class NumericalCoeffs[C: (float, complex)](Coeffs[C]):
@@ -1322,6 +1370,19 @@ class RealCoeffs(NumericalCoeffs[float]):
         """
         return np.asarray(self._impl.to_array(), dtype=np.float64)[self.slice].ravel()
 
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        check_schema_version(source)
+        return cls.from_sequence([cls.coeff_type(value) for value in source["coeffs"]])
+
 
 class ComplexCoeffs(NumericalCoeffs[complex]):
     """A collection of ``complex``.
@@ -1363,6 +1424,24 @@ class ComplexCoeffs(NumericalCoeffs[complex]):
     def imag_part(self) -> RealCoeffs:
         """The imaginary part of ``self`` as a new instance of :class:`RealCoeffs`."""
         return RealCoeffs.from_sequence(self.np_array.imag)
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        check_schema_version(source)
+        return cls.from_sequence(
+            [
+                cls.coeff_type(*value) if isinstance(value, Sequence) else cls.coeff_type(value)
+                for value in source["coeffs"]
+            ]
+        )
 
 
 class ExprListWrapper(BaseVec):
@@ -1673,7 +1752,7 @@ class SymbolicCoeffs(Coeffs[Expr]):
     from_str.__doc__ = Coeffs.from_str.__doc__
 
     @property
-    def np_array(self) -> NDArray[np.float64 | np.complex128]:
+    def np_array(self) -> NDArray[np.float64] | NDArray[np.complex128]:
         """The contents of ``self`` as a flat NumPy array copy.
 
         Returns:
@@ -1683,6 +1762,33 @@ class SymbolicCoeffs(Coeffs[Expr]):
             return self.try_to_real().np_array
         except TypeError:
             return self.try_to_complex().np_array
+
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            A JSON-serializable dictionary representation of ``self``.
+        """
+        return dict(
+            schema_version=__schema_version__,
+            package_version=__version__,
+            family="container",
+            container=self.__class__.__name__,
+            coeffs=[str(c) for c in self],
+        )
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        check_schema_version(source)
+        return cls.from_sequence([sympify(c) for c in source["coeffs"]])
 
 
 def convert_vec[Cs: Coeffs[Any]](source: Coeffs[Any], t: type[Cs]) -> Cs:

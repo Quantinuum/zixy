@@ -28,15 +28,19 @@ from typing import TYPE_CHECKING, Self
 from sympy import Expr
 
 from zixy._zixy import BinarySprings, FermionStateArray, Modes
+from zixy.container.base import check_schema_version
 from zixy.container.coeffs import Coeff, ComplexSign, Sign
 from zixy.fermion._strings import (
     String as FermionString,
     Strings as FermionStrings,
     StringSet as FermionStringSet,
     _check_modes_compatibility,
+    _deserialize_modes,
+    _serialize_modes,
 )
 
 if TYPE_CHECKING:
+    from zixy.container.base import SerializedContainer
     from zixy.fermion.state._terms import Term
 
 type StringSpec = Sequence[bool] | set[int] | str
@@ -64,6 +68,35 @@ class String(FermionString[ImplT, SpecT, ElemT]):
     impl_type = ImplT
     _clear_spec = ""
     _get_default_modes = staticmethod(_default_modes)
+
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            A dictionary containing container metadata, the string, and the full mode space.
+        """
+        data = super().to_dict()
+        data["family"] = "fermion.state"
+        data["space"] = _serialize_modes(self.modes)
+        data["strings"] = [self.get_list()]
+        return data
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
+            the source dictionary and any existing containers.
+        """
+        check_schema_version(source)
+        if len(source["strings"]) != 1:
+            raise ValueError("A serialized String must contain exactly one string.")
+        strings = Strings.from_dict(source)
+        return cls._create(strings._impl)
 
     @classmethod
     def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
@@ -191,6 +224,41 @@ class Strings(FermionStrings[ImplT, SpecT, ElemT]):
     string_type = String
     _set_type: type[StringSet]
 
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            A dictionary containing container metadata, the visible strings, and the full mode
+            space.
+        """
+        data = super().to_dict()
+        data["family"] = "fermion.state"
+        data["space"] = _serialize_modes(self.modes)
+        data["strings"] = [string.get_list() for string in self]
+        return data
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
+            the source dictionary and any existing containers.
+        """
+        check_schema_version(source)
+        space = _deserialize_modes(source["space"])
+        rows = source["strings"]
+        out = cls(space, len(rows))
+        for i, row in enumerate(rows):
+            if len(row) != len(space):
+                raise ValueError("Serialized string length must match the space.")
+            if row:
+                out[i].set(row)
+        return out
+
     @classmethod
     def new(cls, modes: int | Modes = 0, n: int = 0) -> Self:
         """Create a new instance with a given mode count and number of vacuum strings.
@@ -236,6 +304,18 @@ class StringSet(FermionStringSet[ImplT, SpecT, ElemT]):
     """
 
     strings_type = Strings
+
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            A dictionary containing container metadata, the unique strings, and the full mode space.
+        """
+        data = super().to_dict()
+        data["family"] = "fermion.state"
+        data["space"] = _serialize_modes(self._impl.modes)
+        data["strings"] = [string.get_list() for string in self]
+        return data
 
 
 Strings._set_type = StringSet

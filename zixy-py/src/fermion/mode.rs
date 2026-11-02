@@ -3,7 +3,7 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use zixy::container::traits::Elements;
-use zixy::fermion::mode::Modes as Modes_;
+use zixy::fermion::mode::{Kind, Modes as Modes_};
 
 /// Python wrapper for fermionic mode spaces.
 #[pyclass]
@@ -45,6 +45,18 @@ impl Modes {
     /// Return number of modes.
     pub fn __len__(&self) -> usize {
         self.len()
+    }
+
+    /// Return the spin-pair ordering.
+    ///
+    /// Returns "major" for spin-major pairs (all spin-up modes followed by spin-down
+    /// modes), "minor" for interleaved spin pairs, or None for modes without spin labels.
+    pub fn get_spin_ordering(&self) -> Option<&'static str> {
+        match &(self.0).0 {
+            Kind::Count(_) => None,
+            Kind::SpinMajorPairs(_) => Some("major"),
+            Kind::SpinMinorPairs(_) => Some("minor"),
+        }
     }
 
     /// Return whether self is equal to other.

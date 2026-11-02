@@ -24,11 +24,12 @@ The structure of this module parallels that of :mod:`~zixy.container.strings` an
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from sympy import Expr
 
 from zixy._zixy import BinarySprings, Qubits, QubitStateArray
+from zixy.container.base import check_schema_version
 from zixy.container.coeffs import Coeff, ComplexSign, Sign
 from zixy.qubit._strings import (
     String as StringBase,
@@ -39,6 +40,7 @@ from zixy.qubit._strings import (
 )
 
 if TYPE_CHECKING:
+    from zixy.container.base import SerializedContainer
     from zixy.qubit.operator import String as PauliString
     from zixy.qubit.state._terms import Term
 
@@ -69,6 +71,35 @@ class String(StringBase[ImplT, SpecT, ElemT]):
 
     _clear_spec = ""
     _springs_type = BinarySprings
+
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            A dictionary containing container metadata, the string, and the full qubit register.
+        """
+        data = super().to_dict()
+        data["family"] = "qubit.state"
+        data["space"] = {"qubits": self.qubits.get_inds()}
+        data["strings"] = [self.get_list()]
+        return data
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
+            the source dictionary and any existing containers.
+        """
+        check_schema_version(source)
+        if len(source["strings"]) != 1:
+            raise ValueError("A serialized String must contain exactly one string.")
+        strings = Strings.from_dict(source)
+        return cls._create(strings._impl)
 
     @staticmethod
     def _get_default_qubits(source: SpecT) -> Qubits:
@@ -181,6 +212,41 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
     _set_type: type[StringSet]
     _springs_type = BinarySprings
 
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            A dictionary containing container metadata, the visible strings, and the full qubit
+            register.
+        """
+        data = super().to_dict()
+        data["family"] = "qubit.state"
+        data["space"] = {"qubits": self.qubits.get_inds()}
+        data["strings"] = [string.get_list() for string in self]
+        return data
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
+            the source dictionary and any existing containers.
+        """
+        check_schema_version(source)
+        space = Qubits.from_inds(source["space"]["qubits"])
+        rows = source["strings"]
+        out = cls(space, len(rows))
+        for i, row in enumerate(rows):
+            if len(row) != len(space):
+                raise ValueError("Serialized string length must match the space.")
+            if row:
+                out[i].set(row)
+        return out
+
     @classmethod
     def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Strings:
         """Create an instance of ``cls`` from a string.
@@ -228,6 +294,19 @@ class StringSet(StringSetBase[ImplT, SpecT, ElemT]):
     """
 
     strings_type = Strings
+
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            A dictionary containing container metadata, the unique strings, and the full qubit
+            register.
+        """
+        data = super().to_dict()
+        data["family"] = "qubit.state"
+        data["space"] = {"qubits": self._impl.qubits.get_inds()}
+        data["strings"] = [string.get_list() for string in self]
+        return data
 
 
 Strings._set_type = StringSet

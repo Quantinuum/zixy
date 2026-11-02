@@ -27,7 +27,49 @@ from zixy.container.strings import (
 )
 
 if TYPE_CHECKING:
+    from typing import Any
+
     from zixy._zixy import FermionArray
+
+
+def _serialize_modes(modes: Modes) -> dict[str, Any]:
+    """Return a JSON-serializable dictionary representation of a mode space.
+
+    Args:
+        modes: Mode space to serialize.
+
+    Returns:
+        A new dictionary with the total mode count in ``modes`` and the spin-pair ordering
+        in ``spin_ordering``: ``None`` for unlabelled modes, ``"major"`` for spin-major
+        pairs, or ``"minor"`` for spin-minor pairs.
+    """
+    return {"modes": len(modes), "spin_ordering": modes.get_spin_ordering()}
+
+
+def _deserialize_modes(source: dict[str, Any]) -> Modes:
+    """Create a mode space from a JSON-serializable dictionary representation.
+
+    Args:
+        source: Dictionary containing the total ``modes`` count and ``spin_ordering``.
+            The ordering is ``None``, ``"major"``, or ``"minor"``. Spin-paired spaces must
+            contain an even number of modes.
+
+    Returns:
+        The mode space parsed from ``source``.
+    """
+    count = source["modes"]
+    ordering = source["spin_ordering"]
+    if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+        raise ValueError("Mode count must be a non-negative integer.")
+    if ordering is None:
+        return Modes.from_count(count)
+    if count % 2:
+        raise ValueError("A spin-paired space must have an even number of modes.")
+    if ordering == "major":
+        return Modes.from_pair_count_spin_major(count // 2)
+    if ordering == "minor":
+        return Modes.from_pair_count_spin_minor(count // 2)
+    raise ValueError(f"Unknown spin-pair ordering: {ordering!r}.")
 
 
 def _check_modes_compatibility(*modes: Modes) -> None:

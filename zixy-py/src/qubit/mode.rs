@@ -56,6 +56,14 @@ impl Qubits {
         self.len()
     }
 
+    /// Return the qubit indices in register order.
+    ///
+    /// Each entry gives the index in the standard register for that position in this register.
+    /// The returned vector owns its data; modifying it does not change the register.
+    pub fn get_inds(&self) -> Vec<usize> {
+        self.0.inds()
+    }
+
     /// Return whether self is equal to other.
     pub fn __eq__(&self, other: Qubits) -> bool {
         self.0 == other.0

@@ -40,9 +40,11 @@ from sympy import Expr, simplify, sympify
 
 from zixy.container.base import (
     Representable,
+    SerializableContainer,
     ViewableBase,
     ViewableItem,
     ViewableSequence,
+    check_schema_version,
     requires_ownership,
 )
 from zixy.container.coeffs import (
@@ -69,6 +71,7 @@ if TYPE_CHECKING:
 
     from zixy._zixy import ImplArray, Map
     from zixy.container.base import (
+        SerializedContainer,
         _HasStringsType,
         _HasStringType,
         _HasTermsType,
@@ -153,6 +156,7 @@ def _coeffs_from_str[C: (float, complex, Sign, ComplexSign, Expr)](
 class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
     ViewableItem[_TermData[ImplT, SpecT, C]],
     Representable,
+    SerializableContainer,
 ):
     """A term consisting of a string and a coefficient.
 
@@ -167,6 +171,37 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
 
     _impl: _TermData[ImplT, SpecT, C]
     _index: int | None
+
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            An independent dictionary containing the container metadata, full space, and
+            one string with its coefficient, using their respective serialization formats.
+        """
+        data = self.string.to_dict()
+        data["container"] = type(self).__name__
+        data["coeffs"] = self._data.coeffs[self.index : self.index + 1].to_dict()["coeffs"]
+        return data
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: Dictionary containing the schema version, space, strings, and coefficients.
+                String and coefficient values must be compatible with the factories of ``cls``.
+
+        Returns:
+            A new owning instance of ``cls`` with independent string and coefficient storage.
+        """
+        check_schema_version(source)
+        strings = cls.strings_type.from_dict(source)
+        coeffs = cls.coeffs_type.from_dict(source)
+        data = TermData(strings, coeffs)
+        if len(data) != 1:
+            raise ValueError("A serialized Term must contain exactly one term.")
+        return cls._create(data)
 
     def __init__(self, data: _TermData[ImplT, SpecT, C], indexer: int | None = None):
         """Initialize the term.
@@ -367,6 +402,7 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
 class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
     ViewableSequence[Term[ImplT, SpecT, C], _TermData[ImplT, SpecT, C]],
     Representable,
+    SerializableContainer,
 ):
     """A collection of terms consisting of strings and coefficients.
 
@@ -378,6 +414,50 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
     term_type: type[Term[ImplT, SpecT, C]]
 
     _impl: _TermData[ImplT, SpecT, C]
+
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            An independent dictionary containing the container metadata, full space, and aligned
+            lists of strings and coefficients, using their respective serialization formats.
+
+        Note:
+            For a view, only the selected terms are included, in iteration order. Empty
+            collections retain their space. View metadata is not serialized.
+        """
+        data = self.strings.to_dict()
+        data["container"] = type(self).__name__
+        data["coeffs"] = self.coeffs.to_dict()["coeffs"]
+        return data
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: Dictionary containing the schema version, space, strings, and coefficients.
+                String and coefficient values must be compatible with the factories of ``cls``.
+
+        Returns:
+            A new owning instance of ``cls`` with independent string and coefficient storage.
+
+        Raises:
+            KeyError: A required field is missing.
+            TypeError: A string, coefficient, or space value has an incompatible type.
+            ValueError: The schema version or contents are invalid, or the string and
+                coefficient counts differ.
+            IndexError: A serialized mode index is outside its space.
+
+        Note:
+            The family and container tags are not checked. The term factory determines the
+            decoded string and coefficient types; view metadata is not restored.
+        """
+        check_schema_version(source)
+        strings = cls.term_type.strings_type.from_dict(source)
+        coeffs = cls.term_type.coeffs_type.from_dict(source)
+        data = TermData(strings, coeffs)
+        return cls._create(data)
 
     def __init__(self, data: _TermData[ImplT, SpecT, C], indexer: slice = slice(None)):
         """Initialize the term array.
@@ -803,7 +883,9 @@ class NumericTerms[ImplT: ImplArray, SpecT, C: (float, complex)](Terms[ImplT, Sp
         return out
 
 
-class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](Representable):
+class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
+    Representable, SerializableContainer
+):
     """A collection of unique terms consisting of strings and coefficients.
 
     A set-like container of terms that may be used to store unique terms and perform set-like
@@ -819,6 +901,48 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
     _impl: _TermData[ImplT, SpecT, C]
     _string_set: StringSet[ImplT, SpecT]
     _working_term: Term[ImplT, SpecT, C]
+
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            An independent dictionary containing the container metadata, full space, and aligned
+            lists of unique strings and coefficients, using their serialization formats.
+
+        Note:
+            Terms are stored in iteration order, including terms with zero coefficients. The
+            string lookup map is not serialized. Term sums use the same representation.
+        """
+        data = self.strings.to_dict()
+        data["container"] = type(self).__name__
+        data["coeffs"] = self.coeffs.to_dict()["coeffs"]
+        return data
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: Dictionary containing the schema version, space, strings, and coefficients.
+                Values must be compatible with the factories of ``terms_type``.
+
+        Returns:
+            A new instance of ``cls`` owning independent string and coefficient storage and
+            a rebuilt string lookup map.
+
+        Raises:
+            KeyError: A required field is missing.
+            TypeError: A string, coefficient, or space value has an incompatible type.
+            ValueError: The schema version or contents are invalid, or the string and
+                coefficient counts differ.
+            IndexError: A serialized mode index is outside its space.
+
+        Note:
+            The family and container tags are not checked. Duplicate strings follow
+            ``from_terms`` semantics: the last coefficient is retained. This also applies
+            to term sums; deserialization does not add duplicate coefficients together.
+        """
+        return cls.from_terms(cls.terms_type.from_dict(source))
 
     def __init__(self, terms: Terms[ImplT, SpecT, C]):
         """Initialize the term set.

@@ -37,6 +37,7 @@ from typing import TYPE_CHECKING, Any, Self, cast, overload
 from zixy._zixy import Map
 from zixy.container.base import (
     Representable,
+    SerializableContainer,
     ViewableItem,
     ViewableSequence,
     requires_ownership,
@@ -48,6 +49,7 @@ if TYPE_CHECKING:
 
     from zixy._zixy import ImplArray
     from zixy.container.base import (
+        SerializedContainer,
         _FilterableStrings,
         _FilterableStringSet,
         _HasStringsType,
@@ -55,7 +57,7 @@ if TYPE_CHECKING:
     )
 
 
-class String[ImplT: ImplArray, SpecT](ViewableItem[ImplT], Representable):
+class String[ImplT: ImplArray, SpecT](ViewableItem[ImplT], Representable, SerializableContainer):
     """A string.
 
     A single string that may be an owning instance referencing a single element in a Rust-bound
@@ -67,6 +69,20 @@ class String[ImplT: ImplArray, SpecT](ViewableItem[ImplT], Representable):
 
     _impl: ImplT
     _index: int | None
+
+    @classmethod
+    @abstractmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
+            the source dictionary and any existing containers.
+        """
+        pass
 
     def __init__(self, impl: ImplT, indexer: int | None = None):
         """Initialize the string.
@@ -188,7 +204,7 @@ class String[ImplT: ImplArray, SpecT](ViewableItem[ImplT], Representable):
             )
 
 
-class StringSet[ImplT: ImplArray, SpecT](Representable):
+class StringSet[ImplT: ImplArray, SpecT](Representable, SerializableContainer):
     """A collection of unique strings.
 
     A set-like container of strings that may be used to store unique strings and perform
@@ -200,6 +216,19 @@ class StringSet[ImplT: ImplArray, SpecT](Representable):
 
     _impl: ImplT
     _map: Map
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
+            the source dictionary and any existing containers.
+        """
+        return cls.from_strings(cls.strings_type.from_dict(source))
 
     def __init__(self, impl: ImplT):
         """Initialize the string set.
@@ -471,7 +500,7 @@ class StringSet[ImplT: ImplArray, SpecT](Representable):
 
 
 class Strings[ImplT: ImplArray, SpecT](
-    ViewableSequence[String[ImplT, SpecT], ImplT], Representable
+    ViewableSequence[String[ImplT, SpecT], ImplT], Representable, SerializableContainer
 ):
     """A collection of strings.
 
@@ -483,6 +512,20 @@ class Strings[ImplT: ImplArray, SpecT](
 
     _impl: ImplT
     _set_type: type[StringSet[ImplT, SpecT]] = StringSet
+
+    @classmethod
+    @abstractmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
+            the source dictionary and any existing containers.
+        """
+        pass
 
     def __init__(self, impl: ImplT, indexer: slice = slice(None)):
         """Initialize the string array.

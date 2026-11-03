@@ -32,14 +32,14 @@ from typing import TYPE_CHECKING, Self, overload
 from sympy import Expr
 
 from zixy._zixy import FermionSprings, GeneralFermionOperatorArray, Modes
-from zixy.container.base import requires_ownership
+from zixy.container.base import check_schema_version, requires_ownership
 from zixy.container.coeffs import Coeff, ComplexSign, Sign
 from zixy.container.strings import (
     String as BaseString,
     Strings as BaseStrings,
     StringSet as BaseStringSet,
 )
-from zixy.fermion._strings import _check_modes_compatibility
+from zixy.fermion._strings import _check_modes_compatibility, _deserialize_modes, _serialize_modes
 from zixy.fermion.operator._strings import (
     LadderOp,
     String as OperatorString,
@@ -50,6 +50,7 @@ from zixy.fermion.operator._strings import (
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+    from zixy.container.base import SerializedContainer
     from zixy.fermion.operator.general._terms import Term
 
 type StringSpec = str | Sequence[LadderOp]
@@ -91,6 +92,35 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
 
     impl_type = ImplT
     _clear_spec = ""
+
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            A dictionary containing container metadata, the string, and the full mode space.
+        """
+        data = super().to_dict()
+        data["family"] = "fermion.operator.general"
+        data["space"] = _serialize_modes(self.modes)
+        data["strings"] = [[list(op) for op in self.get_ops()]]
+        return data
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
+            the source dictionary and any existing containers.
+        """
+        check_schema_version(source)
+        if len(source["strings"]) != 1:
+            raise ValueError("A serialized String must contain exactly one string.")
+        strings = Strings.from_dict(source)
+        return cls._create(strings._impl)
 
     def __init__(
         self,
@@ -257,6 +287,35 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
     string_type = String
     _set_type: type[StringSet]
 
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            A dictionary containing container metadata, the visible strings, and the full mode
+            space.
+        """
+        data = super().to_dict()
+        data["family"] = "fermion.operator.general"
+        data["space"] = _serialize_modes(self.modes)
+        data["strings"] = [[list(op) for op in string.get_ops()] for string in self]
+        return data
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
+            the source dictionary and any existing containers.
+        """
+        check_schema_version(source)
+        space = _deserialize_modes(source["space"])
+        rows = [[(mode, creation) for mode, creation in row] for row in source["strings"]]
+        return cls.from_iterable(rows, space)
+
     def __init__(self, modes: int | Modes = 0, n: int = 0, max_string_len: int = 0):
         """Initialize the string array.
 
@@ -338,6 +397,18 @@ class StringSet(OperatorStringSet[ImplT, SpecT, ElemT]):
     """
 
     strings_type = Strings
+
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            A dictionary containing container metadata, the unique strings, and the full mode space.
+        """
+        data = super().to_dict()
+        data["family"] = "fermion.operator.general"
+        data["space"] = _serialize_modes(self._impl.modes)
+        data["strings"] = [[list(op) for op in string.get_ops()] for string in self]
+        return data
 
     def __init__(self, modes: int | Modes = 0, max_string_len: int = 0):
         """Initialize the string set.

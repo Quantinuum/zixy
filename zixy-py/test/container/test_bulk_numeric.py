@@ -2,19 +2,21 @@
 
 import pytest
 
+import zixy.fermion.operator.general as zfog
+import zixy.fermion.operator.normal as zfon
+import zixy.fermion.state as zfs
+import zixy.qubit.operator as zqo
+import zixy.qubit.state as zqs
 from zixy.container.coeffs import ComplexCoeffs, RealCoeffs
 from zixy.container.data import TermData
 from zixy.container.terms import TermSet
-from zixy.fermion import state as fermion_state
-from zixy.fermion.operator import general, normal
-from zixy.qubit import operator as qubit_operator, state as qubit_state
 
 DOMAINS = (
-    (qubit_operator, ("X0", "Y1", "Z2"), {}),
-    (general, ("F0^", "F1 F2^", "F2^ F0 F1^"), {"max_string_len": 5}),
-    (normal, ("F0^", "F1", "F2^"), {}),
-    (fermion_state, ("[1, 0, 0]", "[0, 1, 0]", "[0, 0, 1]"), {}),
-    (qubit_state, ("[1, 0, 0]", "[0, 1, 0]", "[0, 0, 1]"), {}),
+    (zqo, ("X0", "Y1", "Z2"), {}),
+    (zfog, ("F0^", "F1 F2^", "F2^ F0 F1^"), {"max_string_len": 5}),
+    (zfon, ("F0^", "F1", "F2^"), {}),
+    (zfs, ("[1, 0, 0]", "[0, 1, 0]", "[0, 0, 1]"), {}),
+    (zqs, ("[1, 0, 0]", "[0, 1, 0]", "[0, 0, 1]"), {}),
 )
 
 
@@ -71,7 +73,7 @@ def test_numeric_vector_views(cls, indexer):
     assert list(vector) == expected
 
 
-@pytest.mark.parametrize("cls", (qubit_operator.RealTermSum, qubit_operator.ComplexTermSum))
+@pytest.mark.parametrize("cls", (zqo.RealTermSum, zqo.ComplexTermSum))
 def test_bulk_addition(cls):
     lhs = cls.from_iterable([("X0", 1), ("Y0", 2), ("Z0", 0)], 2)
     rhs = cls.from_iterable([("Y0", -2), ("X1", 3), ("Z1", 1e-20)], 2)
@@ -90,7 +92,7 @@ def test_bulk_addition(cls):
         lhs += cls.from_iterable([("X0", 1)], 3)
 
 
-@pytest.mark.parametrize("cls", (general.RealTermSum, general.ComplexTermSum))
+@pytest.mark.parametrize("cls", (zfog.RealTermSum, zfog.ComplexTermSum))
 def test_product_preserves_lengths_and_lookup(cls):
     lhs = cls.from_iterable([("F0^", 2), ("F1 F2^", 3)], 3, max_string_len=4)
     rhs = cls.from_iterable([("F2", 5), ("F0^ F1", 7)], 3, max_string_len=3)
@@ -131,7 +133,7 @@ def test_native_slice_validation(cls):
     assert list(vector) == [1, 2, 3]
 
 
-@pytest.mark.parametrize("domain", (fermion_state, qubit_state))
+@pytest.mark.parametrize("domain", (zfs, zqs))
 def test_reused_state_string_assignment(domain):
     state = domain.String.from_str("[1, 0, 0]", 3)
     state.set("[0, 1, 0]")
@@ -175,7 +177,7 @@ def test_required_numeric_bulk_api(domain, keys, kwargs, name, monkeypatch):
     assert len(lhs) == 0
 
 
-@pytest.mark.parametrize("cls", (general.RealTermSum, general.ComplexTermSum))
+@pytest.mark.parametrize("cls", (zfog.RealTermSum, zfog.ComplexTermSum))
 def test_general_bulk_addition_different_storage_layouts(cls):
     lhs = cls.from_iterable([("F1^", 2)], 3, max_string_len=5)
     rhs = cls.from_iterable([("F1^", 3), ("F2 F1^", 4)], 3, max_string_len=128)

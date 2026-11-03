@@ -1,31 +1,21 @@
 import pytest
 from sympy import sympify
 
-from zixy.qubit.operator import (
-    ComplexTermSum,
-    I,
-    RealTerm,
-    RealTermSet,
-    RealTermSum,
-    String,
-    SymbolicTermSum,
-    X,
-    Y,
-    Z,
-)
-from zixy.qubit.state import RealTerm as StateRealTerm, String as StateString
+import zixy.qubit.operator as zqo
+import zixy.qubit.state as zqs
+from zixy.qubit.operator import I, X, Y, Z
 
 
 def test_real_term_sum():
-    lc = RealTermSum(6)
+    lc = zqo.RealTermSum(6)
     assert len(lc) == 0
-    lc += RealTerm(6, (X, X, X, I, I, I))
+    lc += zqo.RealTerm(6, (X, X, X, I, I, I))
     assert len(lc) == 1
     assert lc[(X, X, X, I, I, I)] == 1.0
-    lc += RealTerm(6, ((X, X, X, I, I, I), 2.0))
+    lc += zqo.RealTerm(6, ((X, X, X, I, I, I), 2.0))
     assert len(lc) == 1
     assert lc[(X, X, X, I, I, I)] == 3.0
-    lc += RealTerm(6, ((X, X, Y, I, I, I), -4.0))
+    lc += zqo.RealTerm(6, ((X, X, Y, I, I, I), -4.0))
     assert lc.l1_norm == 7.0
     assert lc.l2_norm == 5.0
     lc.l2_normalize()
@@ -33,17 +23,17 @@ def test_real_term_sum():
     lc *= 5.0
     assert lc[(X, X, Y, I, I, I)] == -4.0
     assert len(lc) == 2
-    term_set = RealTermSet.from_terms(
-        RealTermSum.from_iterable(
+    term_set = zqo.RealTermSet.from_terms(
+        zqo.RealTermSum.from_iterable(
             (((X, I, I, I, I, X), 3.0), ((X, X, Y, I, I, I), -4.0)), 6
         ).to_terms()
     )
-    assert RealTermSet.from_str(str(term_set)) == term_set
-    assert RealTermSum.from_str(str(lc), 6) == lc
+    assert zqo.RealTermSet.from_str(str(term_set)) == term_set
+    assert zqo.RealTermSum.from_str(str(lc), 6) == lc
 
 
 def test_real_term_add_iterable():
-    lc = RealTermSum(6)
+    lc = zqo.RealTermSum(6)
     lc.add_iterable(
         (
             ((X, X, X, I, I, I), 0.5),
@@ -57,7 +47,7 @@ def test_real_term_add_iterable():
     assert len(lc) == 4
     assert str(lc) == "(-0.5, X0 X1 X2), (3.1, X0 X1 Y2), (-1.0, X0 X1 Y2 Z3), (1.3, Z0 X1 X2)"
 
-    lc = RealTermSum.from_iterable(
+    lc = zqo.RealTermSum.from_iterable(
         (
             ((X, X, X, I, I, I), 0.5),
             ((X, X, Y, I, I, I), 1.5),
@@ -73,42 +63,42 @@ def test_real_term_add_iterable():
 
 
 def test_term_sum_rejects_term_over_different_qubits():
-    term_sum = RealTermSum(2)
-    term = RealTerm.from_string_coeff(String(3, (X, I, I)), 1.0)
+    term_sum = zqo.RealTermSum(2)
+    term = zqo.RealTerm.from_string_coeff(zqo.String(3, (X, I, I)), 1.0)
 
     with pytest.raises(ValueError, match="different qubits"):
         term_sum += term
 
 
 def test_term_set_check_term():
-    term_set = RealTermSet(3)
-    term = RealTerm.from_string_coeff(String(3, (X, I, I)), 1.0)
+    term_set = zqo.RealTermSet(3)
+    term = zqo.RealTerm.from_string_coeff(zqo.String(3, (X, I, I)), 1.0)
 
     assert term_set.insert(term) == 0
     term_set._check_term(term)
 
     with pytest.raises(ValueError, match="different qubits"):
-        term_set._check_term(RealTerm.from_string_coeff(String(4, (X, I, I, I)), 1.0))
+        term_set._check_term(zqo.RealTerm.from_string_coeff(zqo.String(4, (X, I, I, I)), 1.0))
 
     with pytest.raises(TypeError, match="Expected a RealTerm instance"):
-        term_set._check_term(StateRealTerm(3, ((1, 0, 0), 1.0)))
+        term_set._check_term(zqs.RealTerm(3, ((1, 0, 0), 1.0)))
 
 
 def test_term_set_check_string():
-    term_set = RealTermSet(3)
-    string = String(3, (X, I, I))
+    term_set = zqo.RealTermSet(3)
+    string = zqo.String(3, (X, I, I))
 
     term_set._check_string(string)
 
     with pytest.raises(ValueError, match="different qubits"):
-        term_set._check_string(String(4, (X, I, I, I)))
+        term_set._check_string(zqo.String(4, (X, I, I, I)))
 
     with pytest.raises(TypeError, match="Expected a String instance"):
-        term_set._check_string(StateString(3, (1, 0, 0)))
+        term_set._check_string(zqs.String(3, (1, 0, 0)))
 
 
 def test_real_term_into_other_types():
-    lc = RealTermSum.from_iterable(
+    lc = zqo.RealTermSum.from_iterable(
         (
             ((X, X, X, I, I, I), 0.5),
             ((X, X, Y, I, I, I), 1.5),
@@ -116,18 +106,18 @@ def test_real_term_into_other_types():
         ),
         6,
     )
-    assert type(lc.into(ComplexTermSum) is ComplexTermSum)
-    assert all(type(c) is complex for c in lc.into(ComplexTermSum)._data.coeffs)
-    assert tuple(lc.into(ComplexTermSum)._data.coeffs) == (
+    assert type(lc.into(zqo.ComplexTermSum) is zqo.ComplexTermSum)
+    assert all(type(c) is complex for c in lc.into(zqo.ComplexTermSum)._data.coeffs)
+    assert tuple(lc.into(zqo.ComplexTermSum)._data.coeffs) == (
         complex(0.5),
         complex(1.5),
         complex(-1.0),
     )
-    lcc = lc.into(ComplexTermSum)
+    lcc = lc.into(zqo.ComplexTermSum)
     lcc._data.coeffs.scale(1j)
     assert tuple(lcc._data.coeffs) == (complex(0, 0.5), complex(0, 1.5), complex(0, -1.0))
     with pytest.raises(ValueError) as err:
-        lcc.into(RealTermSum)
+        lcc.into(zqo.RealTermSum)
     assert (
         str(err.value)
         == "Cannot represent coefficient value 0.5j of type <class 'complex'> as type <class 'float'>"
@@ -135,7 +125,7 @@ def test_real_term_into_other_types():
 
 
 def test_real_term_product():
-    lc = RealTermSum.from_iterable(
+    lc = zqo.RealTermSum.from_iterable(
         (
             ((X, X, Y, Z, I, I), -1.0),
             ((X, X, X, I, I, I), -1.0),
@@ -153,7 +143,7 @@ def test_real_term_product():
 
 
 def test_complex_term_product():
-    lc = ComplexTermSum.from_iterable(
+    lc = zqo.ComplexTermSum.from_iterable(
         (
             ((X, X, Y, Z, I, I), -1.0),
             ((X, X, X, I, I, I), -1.0 + 1j),
@@ -168,7 +158,7 @@ def test_complex_term_product():
 
 def test_symbolic_term_product():
     a, b, c = sympify("a, b, c")
-    lc = SymbolicTermSum.from_iterable(
+    lc = zqo.SymbolicTermSum.from_iterable(
         (
             ((X, X, Y, Z, I, I), a),
             ((X, X, X, I, I, I), b),
@@ -186,14 +176,14 @@ def test_symbolic_term_product():
 
 
 def test_real_term_sum_to_sparse_raises_index_error():
-    op = RealTermSum(65)
+    op = zqo.RealTermSum(65)
 
     with pytest.raises(IndexError):
         op.to_sparse_matrix()
 
 
 def test_complex_term_sum_to_sparse_raises_index_error():
-    op = ComplexTermSum(65)
+    op = zqo.ComplexTermSum(65)
 
     with pytest.raises(IndexError):
         op.to_sparse_matrix()

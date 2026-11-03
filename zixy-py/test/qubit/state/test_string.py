@@ -1,33 +1,33 @@
 import pytest
 
-from zixy.qubit.state import String, Strings, StringSet
+import zixy.qubit.state as zqs
 
 
 @pytest.mark.parametrize(
     ("string_type", "source", "qubits", "expected"),
     (
-        (String, "[1, 0, 1]", None, "[1, 0, 1]"),
-        (String, " [ 1 , 0 , 1 ] ", None, "[1, 0, 1]"),
-        (String, "[1, 0, 1]", 3, "[1, 0, 1]"),
-        (String, "", 3, "[0, 0, 0]"),
-        (Strings, "[1, 0], [0, 1], [1, 0]", None, "[1, 0], [0, 1], [1, 0]"),
+        (zqs.String, "[1, 0, 1]", None, "[1, 0, 1]"),
+        (zqs.String, " [ 1 , 0 , 1 ] ", None, "[1, 0, 1]"),
+        (zqs.String, "[1, 0, 1]", 3, "[1, 0, 1]"),
+        (zqs.String, "", 3, "[0, 0, 0]"),
+        (zqs.Strings, "[1, 0], [0, 1], [1, 0]", None, "[1, 0], [0, 1], [1, 0]"),
         (
-            Strings,
+            zqs.Strings,
             "[1, 0], [0, 1], [1, 0]",
             3,
             "[1, 0, 0], [0, 1, 0], [1, 0, 0]",
         ),
         (
-            Strings,
+            zqs.Strings,
             " [1, 0] ,   [0, 1] , [1, 0] ",
             3,
             "[1, 0, 0], [0, 1, 0], [1, 0, 0]",
         ),
-        (Strings, "", 3, ""),
-        (StringSet, "[1, 0], [0, 1], [1, 0]", None, "[1, 0], [0, 1]"),
-        (StringSet, "[1, 0], [0, 1], [1, 0]", 3, "[1, 0, 0], [0, 1, 0]"),
-        (StringSet, " [1, 0] ,   [0, 1] , [1, 0] ", 3, "[1, 0, 0], [0, 1, 0]"),
-        (StringSet, "", 3, ""),
+        (zqs.Strings, "", 3, ""),
+        (zqs.StringSet, "[1, 0], [0, 1], [1, 0]", None, "[1, 0], [0, 1]"),
+        (zqs.StringSet, "[1, 0], [0, 1], [1, 0]", 3, "[1, 0, 0], [0, 1, 0]"),
+        (zqs.StringSet, " [1, 0] ,   [0, 1] , [1, 0] ", 3, "[1, 0, 0], [0, 1, 0]"),
+        (zqs.StringSet, "", 3, ""),
     ),
 )
 def test_from_str(string_type, source, qubits, expected):
@@ -35,17 +35,17 @@ def test_from_str(string_type, source, qubits, expected):
     parsed = string_type.from_str(source, *args)
     assert str(parsed) == expected
 
-    if string_type is StringSet:
-        assert parsed == StringSet.from_strings(Strings.from_str(source, *args))
+    if string_type is zqs.StringSet:
+        assert parsed == zqs.StringSet.from_strings(zqs.Strings.from_str(source, *args))
 
 
 def test_from_tuple():
-    s = String(6, (0, 1, 1, 0, 0, 1))
+    s = zqs.String(6, (0, 1, 1, 0, 0, 1))
     assert str(s) == "[0, 1, 1, 0, 0, 1]"
-    assert String.from_str(str(s), 6) == s
+    assert zqs.String.from_str(str(s), 6) == s
     assert s.hamming_weight() == s.count(True) == 3
     with pytest.raises(ValueError) as err:
-        String.from_str("[1, 0], [0, 1]", 2)
+        zqs.String.from_str("[1, 0], [0, 1]", 2)
     assert str(err.value) == "Source string should contain one state string, got 2."
     with pytest.raises(ValueError) as err:
         s[1] = 2
@@ -58,7 +58,7 @@ def test_from_tuple():
     assert s.hamming_weight() == s.count(True) == 4
     assert s.get_tuple() == (0, 1, 1, 0, 1, 1)
     assert s.get_set() == {1, 2, 4, 5}
-    s2 = String(7, (1, 1, 1, 0, 0, 0))
+    s2 = zqs.String(7, (1, 1, 1, 0, 0, 0))
     assert s2.get_tuple() == (1, 1, 1, 0, 0, 0, 0)
     s2.set({1, 3})
     assert s2.get_tuple() == (0, 1, 0, 1, 0, 0, 0)
@@ -66,48 +66,48 @@ def test_from_tuple():
         s.set(s2)
     assert str(err.value) == "Qubits-based objects are based on different qubit spaces."
     with pytest.raises(IndexError) as err:
-        s2 = String(5, (1, 1, 1, 0, 0, 0))
+        s2 = zqs.String(5, (1, 1, 1, 0, 0, 0))
     assert str(err.value) == "Element index 5 is out-of-bounds for container of length 5."
-    s2 = String(6, (1, 1, 1, 0, 0, 0))
+    s2 = zqs.String(6, (1, 1, 1, 0, 0, 0))
     s.set(s2)
     assert s.get_tuple() == (1, 1, 1, 0, 0, 0)
-    assert String(6).is_vacuum()
-    assert not String(6, (1,)).is_vacuum()
+    assert zqs.String(6).is_vacuum()
+    assert not zqs.String(6, (1,)).is_vacuum()
 
 
 def test_string_vdot_rejects_different_qubits():
-    lhs = String(2, (1, 0))
-    rhs = String(3, (1, 0, 0))
+    lhs = zqs.String(2, (1, 0))
+    rhs = zqs.String(3, (1, 0, 0))
 
     with pytest.raises(ValueError, match="different qubits"):
         lhs.vdot(rhs)
 
 
 def test_str():
-    vacuum = String(6)
+    vacuum = zqs.String(6)
     assert vacuum.to_str() == "[0, 0, 0, 0, 0, 0]"
-    assert String.from_str(vacuum.to_str(), 6) == vacuum
-    assert String(6, "") == vacuum
+    assert zqs.String.from_str(vacuum.to_str(), 6) == vacuum
+    assert zqs.String(6, "") == vacuum
     with pytest.raises(TypeError):
-        String(6, None)
+        zqs.String(6, None)
     with pytest.raises(TypeError):
         vacuum.set(None)
 
-    single = String(1, (1,))
+    single = zqs.String(1, (1,))
     assert single.to_str() == "[1]"
-    assert String.from_str(single.to_str(), 1) == single
+    assert zqs.String.from_str(single.to_str(), 1) == single
 
-    strings = Strings(4)
+    strings = zqs.Strings(4)
     assert strings.to_str() == ""
-    assert Strings.from_str(strings.to_str(), 4) == strings
+    assert zqs.Strings.from_str(strings.to_str(), 4) == strings
 
-    string_set = StringSet.from_iterable(({1, 3},), 4)
+    string_set = zqs.StringSet.from_iterable(({1, 3},), 4)
     assert string_set.to_str() == "[0, 1, 0, 1]"
-    assert StringSet.from_str(string_set.to_str()) == string_set
+    assert zqs.StringSet.from_str(string_set.to_str()) == string_set
 
 
 def test_strings_from_iterable():
-    s = Strings.from_iterable(
+    s = zqs.Strings.from_iterable(
         (
             {1, 3, 4, 9},
             {1, 2, 6},
@@ -128,11 +128,11 @@ def test_strings_from_iterable():
         str(s[2::-1])
         == "[0, 1, 0, 1, 0, 1, 0, 1, 0, 1], [0, 1, 1, 0, 0, 0, 1, 0, 0, 0], [0, 1, 0, 1, 1, 0, 0, 0, 0, 1]"
     )
-    assert Strings.from_str(str(s), 10) == s
-    string_set = StringSet.from_iterable(({1, 3, 4, 9}, {1, 2, 6}, {1, 3, 4, 9}), 10)
-    assert StringSet.from_str(str(string_set)) == string_set
+    assert zqs.Strings.from_str(str(s), 10) == s
+    string_set = zqs.StringSet.from_iterable(({1, 3, 4, 9}, {1, 2, 6}, {1, 3, 4, 9}), 10)
+    assert zqs.StringSet.from_str(str(string_set)) == string_set
 
-    wrong_qubits = String(11, {1, 3, 4, 9})
+    wrong_qubits = zqs.String(11, {1, 3, 4, 9})
     with pytest.raises(ValueError, match="different qubit spaces"):
         string_set.insert(wrong_qubits)
     with pytest.raises(ValueError, match="different qubit spaces"):

@@ -2,35 +2,15 @@ from contextlib import nullcontext
 
 import pytest
 
+import zixy.qubit.operator as zqo
+import zixy.qubit.state as zqs
 from zixy.container.coeffs import (
     ComplexCoeffs,
     ComplexSignCoeffs,
     RealCoeffs,
     SignCoeffs,
 )
-from zixy.qubit.operator import (
-    ComplexTerms as PauliComplexTerms,
-    ComplexTermSet as PauliComplexTermSet,
-    ComplexTermSum as PauliComplexTermSum,
-    RealTerm as PauliRealTerm,
-    RealTerms as PauliRealTerms,
-    RealTermSet as PauliRealTermSet,
-    RealTermSum as PauliRealTermSum,
-    String as PauliString,
-    Strings as PauliStrings,
-    X,
-    Y,
-)
-from zixy.qubit.state import (
-    ComplexTerms as StateComplexTerms,
-    ComplexTermSum as StateComplexTermSum,
-    RealTerm as StateRealTerm,
-    RealTerms as StateRealTerms,
-    RealTermSet as StateRealTermSet,
-    RealTermSum as StateRealTermSum,
-    String as StateString,
-    Strings as StateStrings,
-)
+from zixy.qubit.operator import X, Y
 
 PAULI_XY = (X, Y)
 PAULI_YX = (Y, X)
@@ -48,94 +28,94 @@ STATE_01 = (0, 1)
         (ComplexSignCoeffs.from_phases((0, 1)), RealCoeffs, ValueError),
         (ComplexCoeffs.from_sequence((1.0 + 0j, -2.0 + 0j)), RealCoeffs, None),
         (ComplexCoeffs.from_sequence((1.0 + 1j,)), RealCoeffs, ValueError),
-        (PauliString(2, PAULI_XY), PauliStrings, None),
-        (PauliStrings.from_iterable((PAULI_XY,), 2), PauliString, None),
-        (PauliStrings.from_iterable((PAULI_XY, PAULI_YX), 2), PauliString, ValueError),
-        (PauliString(2, PAULI_XY), PauliRealTerm, None),
-        (PauliRealTerm(2, (PAULI_XY, 1.0)), PauliString, None),
-        (PauliRealTerm(2, (PAULI_XY, 2.0)), PauliString, ValueError),
-        (PauliRealTerms.from_iterable(((PAULI_XY, 1.0),), 2), PauliRealTerm, None),
+        (zqo.String(2, PAULI_XY), zqo.Strings, None),
+        (zqo.Strings.from_iterable((PAULI_XY,), 2), zqo.String, None),
+        (zqo.Strings.from_iterable((PAULI_XY, PAULI_YX), 2), zqo.String, ValueError),
+        (zqo.String(2, PAULI_XY), zqo.RealTerm, None),
+        (zqo.RealTerm(2, (PAULI_XY, 1.0)), zqo.String, None),
+        (zqo.RealTerm(2, (PAULI_XY, 2.0)), zqo.String, ValueError),
+        (zqo.RealTerms.from_iterable(((PAULI_XY, 1.0),), 2), zqo.RealTerm, None),
         (
-            PauliRealTerms.from_iterable(((PAULI_XY, 1.0), (PAULI_YX, 1.0)), 2),
-            PauliRealTerm,
+            zqo.RealTerms.from_iterable(((PAULI_XY, 1.0), (PAULI_YX, 1.0)), 2),
+            zqo.RealTerm,
             ValueError,
         ),
-        (PauliRealTerms.from_iterable(((PAULI_XY, 1.0), (PAULI_YX, 1.0)), 2), PauliStrings, None),
+        (zqo.RealTerms.from_iterable(((PAULI_XY, 1.0), (PAULI_YX, 1.0)), 2), zqo.Strings, None),
         (
-            PauliRealTerms.from_iterable(((PAULI_XY, 1.0), (PAULI_YX, 2.0)), 2),
-            PauliStrings,
+            zqo.RealTerms.from_iterable(((PAULI_XY, 1.0), (PAULI_YX, 2.0)), 2),
+            zqo.Strings,
             ValueError,
         ),
-        (PauliComplexTerms.from_iterable(((PAULI_XY, 1.0 + 0j),), 2), PauliRealTerms, None),
-        (PauliComplexTerms.from_iterable(((PAULI_XY, 1.0 + 1j),), 2), PauliRealTerms, ValueError),
-        (StateString(2, STATE_10), StateStrings, None),
-        (StateStrings.from_iterable((STATE_10,), 2), StateString, None),
-        (StateStrings.from_iterable((STATE_10, STATE_01), 2), StateString, ValueError),
-        (StateRealTerm(2, (STATE_10, 1.0)), StateString, None),
-        (StateRealTerm(2, (STATE_10, 2.0)), StateString, ValueError),
-        (StateRealTerms.from_iterable(((STATE_10, 3.25),), 2), StateRealTerm, None),
-        (StateRealTerms.from_iterable(((STATE_10, 1.0),), 2), StateString, None),
-        (StateRealTerms.from_iterable(((STATE_10, 2.0),), 2), StateString, ValueError),
-        (StateRealTerms.from_iterable(((STATE_10, 1.0), (STATE_01, 1.0)), 2), StateStrings, None),
+        (zqo.ComplexTerms.from_iterable(((PAULI_XY, 1.0 + 0j),), 2), zqo.RealTerms, None),
+        (zqo.ComplexTerms.from_iterable(((PAULI_XY, 1.0 + 1j),), 2), zqo.RealTerms, ValueError),
+        (zqs.String(2, STATE_10), zqs.Strings, None),
+        (zqs.Strings.from_iterable((STATE_10,), 2), zqs.String, None),
+        (zqs.Strings.from_iterable((STATE_10, STATE_01), 2), zqs.String, ValueError),
+        (zqs.RealTerm(2, (STATE_10, 1.0)), zqs.String, None),
+        (zqs.RealTerm(2, (STATE_10, 2.0)), zqs.String, ValueError),
+        (zqs.RealTerms.from_iterable(((STATE_10, 3.25),), 2), zqs.RealTerm, None),
+        (zqs.RealTerms.from_iterable(((STATE_10, 1.0),), 2), zqs.String, None),
+        (zqs.RealTerms.from_iterable(((STATE_10, 2.0),), 2), zqs.String, ValueError),
+        (zqs.RealTerms.from_iterable(((STATE_10, 1.0), (STATE_01, 1.0)), 2), zqs.Strings, None),
         (
-            StateRealTerms.from_iterable(((STATE_10, 1.0), (STATE_01, 2.0)), 2),
-            StateStrings,
+            zqs.RealTerms.from_iterable(((STATE_10, 1.0), (STATE_01, 2.0)), 2),
+            zqs.Strings,
             ValueError,
         ),
-        (StateComplexTerms.from_iterable(((STATE_10, 1.0 + 0j),), 2), StateRealTerms, None),
-        (StateComplexTerms.from_iterable(((STATE_10, 1.0 + 1j),), 2), StateRealTerms, ValueError),
+        (zqs.ComplexTerms.from_iterable(((STATE_10, 1.0 + 0j),), 2), zqs.RealTerms, None),
+        (zqs.ComplexTerms.from_iterable(((STATE_10, 1.0 + 1j),), 2), zqs.RealTerms, ValueError),
         (
-            StateRealTermSet.from_terms(
-                StateRealTerms.from_iterable(((STATE_10, 1.0), (STATE_01, 2.0)), 2)
+            zqs.RealTermSet.from_terms(
+                zqs.RealTerms.from_iterable(((STATE_10, 1.0), (STATE_01, 2.0)), 2)
             ),
-            StateRealTermSet,
+            zqs.RealTermSet,
             None,
         ),
         (
-            StateRealTermSet.from_terms(
-                StateRealTerms.from_iterable(((STATE_10, 1.0), (STATE_01, 2.0)), 2)
+            zqs.RealTermSet.from_terms(
+                zqs.RealTerms.from_iterable(((STATE_10, 1.0), (STATE_01, 2.0)), 2)
             ),
-            StateRealTermSum,
+            zqs.RealTermSum,
             None,
         ),
         (
-            StateRealTermSum.from_iterable(((STATE_10, 1.0), (STATE_01, 2.0)), 2),
-            StateRealTermSet,
+            zqs.RealTermSum.from_iterable(((STATE_10, 1.0), (STATE_01, 2.0)), 2),
+            zqs.RealTermSet,
             None,
         ),
         (
-            StateRealTermSum.from_iterable(((STATE_10, 1.0), (STATE_01, 2.0)), 2),
-            StateRealTermSum,
+            zqs.RealTermSum.from_iterable(((STATE_10, 1.0), (STATE_01, 2.0)), 2),
+            zqs.RealTermSum,
             None,
         ),
         (
-            PauliRealTermSet.from_terms(
-                PauliRealTerms.from_iterable(((PAULI_XY, 1.0), (PAULI_YX, 1.0)), 2)
+            zqo.RealTermSet.from_terms(
+                zqo.RealTerms.from_iterable(((PAULI_XY, 1.0), (PAULI_YX, 1.0)), 2)
             ),
-            PauliComplexTermSet,
+            zqo.ComplexTermSet,
             None,
         ),
         (
-            PauliRealTermSet.from_terms(PauliRealTerms.from_iterable(((PAULI_XY, 1.0),), 2)),
-            PauliComplexTermSum,
+            zqo.RealTermSet.from_terms(zqo.RealTerms.from_iterable(((PAULI_XY, 1.0),), 2)),
+            zqo.ComplexTermSum,
             None,
         ),
         (
-            PauliRealTermSum.from_iterable(((PAULI_XY, 1.0), (PAULI_YX, 1.0)), 2),
-            PauliComplexTermSum,
+            zqo.RealTermSum.from_iterable(((PAULI_XY, 1.0), (PAULI_YX, 1.0)), 2),
+            zqo.ComplexTermSum,
             None,
         ),
         (
-            StateRealTermSum.from_iterable(((STATE_10, 1.0), (STATE_01, 2.0)), 2),
-            StateComplexTermSum,
+            zqs.RealTermSum.from_iterable(((STATE_10, 1.0), (STATE_01, 2.0)), 2),
+            zqs.ComplexTermSum,
             None,
         ),
         (
-            StateComplexTermSum.from_iterable(((STATE_10, 1.0 + 1j),), 2),
-            StateRealTermSet,
+            zqs.ComplexTermSum.from_iterable(((STATE_10, 1.0 + 1j),), 2),
+            zqs.RealTermSet,
             ValueError,
         ),
-        (PauliString(2, PAULI_XY), StateString, TypeError),
+        (zqo.String(2, PAULI_XY), zqs.String, TypeError),
     ],
 )
 def test_into_conversions(source, target_type, exc_type):

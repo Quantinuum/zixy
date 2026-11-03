@@ -2,10 +2,12 @@
 
 import pytest
 
-from zixy.qubit.operator import ComplexTermSet, ComplexTermSum, RealTermSet, RealTermSum
+import zixy.qubit.operator as zqo
 
 
-@pytest.mark.parametrize("cls", (RealTermSet, RealTermSum, ComplexTermSet, ComplexTermSum))
+@pytest.mark.parametrize(
+    "cls", (zqo.RealTermSet, zqo.RealTermSum, zqo.ComplexTermSet, zqo.ComplexTermSum)
+)
 @pytest.mark.parametrize("values", ((), (0, 0, 0), (1, 2, 3), (0, 1e-20, 0)))
 @pytest.mark.parametrize("nonzero", (False, True))
 def test_copy_terms(cls, values, nonzero):
@@ -31,7 +33,7 @@ def test_copy_terms(cls, values, nonzero):
 
 
 def test_filter_complex_imaginary_and_nonfinite():
-    source = ComplexTermSum.from_iterable([("X0", 1e-20j), ("Y0", 1j), ("Z0", 0j)], 2)
+    source = zqo.ComplexTermSum.from_iterable([("X0", 1e-20j), ("Y0", 1j), ("Z0", 0j)], 2)
     source._data.coeffs[1] = complex(float("inf"))
     result = source.filter_nonzero()
     assert result.lookup_coeff("X0") == 1e-20j

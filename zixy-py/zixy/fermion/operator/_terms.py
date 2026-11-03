@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Self
 
 from sympy import Expr
 
+import zixy.qubit.operator as zqo
 from zixy._zixy import Qubits
 from zixy.container.coeffs import ComplexSign, Sign, convert
 from zixy.fermion._terms import (
@@ -31,7 +32,6 @@ from zixy.fermion._terms import (
     TermSum as FermionTermSum,
 )
 from zixy.mappings.base import Mapper
-from zixy.qubit.operator._terms import ComplexTermSum as PauliComplexTermSum
 
 if TYPE_CHECKING:
     from zixy._zixy import FermionArray
@@ -107,7 +107,7 @@ class TermSum[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign,
         self,
         mapper: MapperType | None = None,
         qubits: int | Qubits | None = None,
-    ) -> PauliComplexTermSum:
+    ) -> zqo.ComplexTermSum:
         """Map the term sum to a qubit Pauli term sum.
 
         Args:
@@ -132,7 +132,7 @@ class TermSum[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign,
         elif isinstance(qubits, int):
             qubits = Qubits.from_count(qubits)
         mapper_instance = mapper_type(qubits)
-        out = PauliComplexTermSum(qubits)
+        out = zqo.ComplexTermSum(qubits)
         for term in self:
             string_type = self.terms_type.term_type.strings_type.string_type
             out += convert(term.coeff, complex) * mapper_instance.apply(

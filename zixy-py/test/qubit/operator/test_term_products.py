@@ -1,71 +1,59 @@
 import pytest
 from sympy import sympify
 
+import zixy.qubit.operator as zqo
 from zixy.container.coeffs import ComplexSign, Sign
-from zixy.qubit.operator import (
-    ComplexSignTerm,
-    ComplexTerm,
-    I,
-    RealTerm,
-    SignTerm,
-    SignTerms,
-    String,
-    SymbolicTerm,
-    SymplecticPart,
-    X,
-    Y,
-    Z,
-)
+from zixy.qubit.operator import I, SymplecticPart, X, Y, Z
 
 
 @pytest.mark.parametrize(
     "types",
     [
-        (String, String, ComplexSignTerm),
-        (String, SignTerm, ComplexSignTerm),
-        (String, ComplexSignTerm, ComplexSignTerm),
-        (String, RealTerm, ComplexTerm),
-        (String, ComplexTerm, ComplexTerm),
-        (String, int, RealTerm),
-        (String, float, RealTerm),
-        (String, complex, ComplexTerm),
-        (String, sympify, SymbolicTerm),
-        (String, Sign, SignTerm),
-        (String, ComplexSign, ComplexSignTerm),
-        (SignTerm, SignTerm, ComplexSignTerm),
-        (SignTerm, ComplexSignTerm, ComplexSignTerm),
-        (SignTerm, RealTerm, ComplexTerm),
-        (SignTerm, ComplexTerm, ComplexTerm),
-        (SignTerm, int, RealTerm),
-        (SignTerm, float, RealTerm),
-        (SignTerm, complex, ComplexTerm),
-        (SignTerm, sympify, SymbolicTerm),
-        (SignTerm, Sign, SignTerm),
-        (SignTerm, ComplexSign, ComplexSignTerm),
-        (ComplexSignTerm, ComplexSignTerm, ComplexSignTerm),
-        (ComplexSignTerm, RealTerm, ComplexTerm),
-        (ComplexSignTerm, ComplexTerm, ComplexTerm),
-        (ComplexSignTerm, int, ComplexTerm),
-        (ComplexSignTerm, float, ComplexTerm),
-        (ComplexSignTerm, complex, ComplexTerm),
-        (ComplexSignTerm, sympify, SymbolicTerm),
-        (ComplexSignTerm, Sign, ComplexSignTerm),
-        (ComplexSignTerm, ComplexSign, ComplexSignTerm),
-        (RealTerm, RealTerm, ComplexTerm),
-        (RealTerm, ComplexTerm, ComplexTerm),
-        (RealTerm, int, RealTerm),
-        (RealTerm, float, RealTerm),
-        (RealTerm, complex, ComplexTerm),
-        (RealTerm, sympify, SymbolicTerm),
-        (RealTerm, Sign, RealTerm),
-        (RealTerm, ComplexSign, ComplexTerm),
-        (ComplexTerm, ComplexTerm, ComplexTerm),
-        (ComplexTerm, int, ComplexTerm),
-        (ComplexTerm, float, ComplexTerm),
-        (ComplexTerm, complex, ComplexTerm),
-        (ComplexTerm, sympify, SymbolicTerm),
-        (ComplexTerm, Sign, ComplexTerm),
-        (ComplexTerm, ComplexSign, ComplexTerm),
+        (zqo.String, zqo.String, zqo.ComplexSignTerm),
+        (zqo.String, zqo.SignTerm, zqo.ComplexSignTerm),
+        (zqo.String, zqo.ComplexSignTerm, zqo.ComplexSignTerm),
+        (zqo.String, zqo.RealTerm, zqo.ComplexTerm),
+        (zqo.String, zqo.ComplexTerm, zqo.ComplexTerm),
+        (zqo.String, int, zqo.RealTerm),
+        (zqo.String, float, zqo.RealTerm),
+        (zqo.String, complex, zqo.ComplexTerm),
+        (zqo.String, sympify, zqo.SymbolicTerm),
+        (zqo.String, Sign, zqo.SignTerm),
+        (zqo.String, ComplexSign, zqo.ComplexSignTerm),
+        (zqo.SignTerm, zqo.SignTerm, zqo.ComplexSignTerm),
+        (zqo.SignTerm, zqo.ComplexSignTerm, zqo.ComplexSignTerm),
+        (zqo.SignTerm, zqo.RealTerm, zqo.ComplexTerm),
+        (zqo.SignTerm, zqo.ComplexTerm, zqo.ComplexTerm),
+        (zqo.SignTerm, int, zqo.RealTerm),
+        (zqo.SignTerm, float, zqo.RealTerm),
+        (zqo.SignTerm, complex, zqo.ComplexTerm),
+        (zqo.SignTerm, sympify, zqo.SymbolicTerm),
+        (zqo.SignTerm, Sign, zqo.SignTerm),
+        (zqo.SignTerm, ComplexSign, zqo.ComplexSignTerm),
+        (zqo.ComplexSignTerm, zqo.ComplexSignTerm, zqo.ComplexSignTerm),
+        (zqo.ComplexSignTerm, zqo.RealTerm, zqo.ComplexTerm),
+        (zqo.ComplexSignTerm, zqo.ComplexTerm, zqo.ComplexTerm),
+        (zqo.ComplexSignTerm, int, zqo.ComplexTerm),
+        (zqo.ComplexSignTerm, float, zqo.ComplexTerm),
+        (zqo.ComplexSignTerm, complex, zqo.ComplexTerm),
+        (zqo.ComplexSignTerm, sympify, zqo.SymbolicTerm),
+        (zqo.ComplexSignTerm, Sign, zqo.ComplexSignTerm),
+        (zqo.ComplexSignTerm, ComplexSign, zqo.ComplexSignTerm),
+        (zqo.RealTerm, zqo.RealTerm, zqo.ComplexTerm),
+        (zqo.RealTerm, zqo.ComplexTerm, zqo.ComplexTerm),
+        (zqo.RealTerm, int, zqo.RealTerm),
+        (zqo.RealTerm, float, zqo.RealTerm),
+        (zqo.RealTerm, complex, zqo.ComplexTerm),
+        (zqo.RealTerm, sympify, zqo.SymbolicTerm),
+        (zqo.RealTerm, Sign, zqo.RealTerm),
+        (zqo.RealTerm, ComplexSign, zqo.ComplexTerm),
+        (zqo.ComplexTerm, zqo.ComplexTerm, zqo.ComplexTerm),
+        (zqo.ComplexTerm, int, zqo.ComplexTerm),
+        (zqo.ComplexTerm, float, zqo.ComplexTerm),
+        (zqo.ComplexTerm, complex, zqo.ComplexTerm),
+        (zqo.ComplexTerm, sympify, zqo.SymbolicTerm),
+        (zqo.ComplexTerm, Sign, zqo.ComplexTerm),
+        (zqo.ComplexTerm, ComplexSign, zqo.ComplexTerm),
     ],
 )
 def test_out_of_place(types):
@@ -79,10 +67,10 @@ def test_out_of_place(types):
 @pytest.mark.parametrize(
     "test_case",
     [
-        (String(6, (X,) * 6), String(6, (X,) * 6), String(6, (I,) * 6)),
-        (String(6, (X,) * 6), String(6, (Y,) + (X,) * 5), None),
-        (SignTerm(6, (X,) * 6), SignTerm(6, (X,) * 6), SignTerm(6, (I,) * 6)),
-        (SignTerm(6, (X,) * 6), SignTerm(6, (Y,) + (X,) * 5), None),
+        (zqo.String(6, (X,) * 6), zqo.String(6, (X,) * 6), zqo.String(6, (I,) * 6)),
+        (zqo.String(6, (X,) * 6), zqo.String(6, (Y,) + (X,) * 5), None),
+        (zqo.SignTerm(6, (X,) * 6), zqo.SignTerm(6, (X,) * 6), zqo.SignTerm(6, (I,) * 6)),
+        (zqo.SignTerm(6, (X,) * 6), zqo.SignTerm(6, (Y,) + (X,) * 5), None),
     ],
 )
 def test_in_place(test_case):
@@ -98,17 +86,17 @@ def test_in_place(test_case):
 
 
 def test_sign_term_products():
-    prod = SignTerm(2, (X, X))
-    prod *= SignTerm(2, (Z, Z))
-    assert type(prod) is SignTerm
+    prod = zqo.SignTerm(2, (X, X))
+    prod *= zqo.SignTerm(2, (Z, Z))
+    assert type(prod) is zqo.SignTerm
     assert str(prod) == "(-1, Y0 Y1)"
 
-    prod = SignTerm(2, (X, X)).string * SignTerm(2, (Z, Z)).string
-    assert type(prod) is ComplexSignTerm
+    prod = zqo.SignTerm(2, (X, X)).string * zqo.SignTerm(2, (Z, Z)).string
+    assert type(prod) is zqo.ComplexSignTerm
     assert str(prod) == "(-1, Y0 Y1)"
 
-    prod = SignTerm(2, (X, X)) * SignTerm(2, (Z, Z))
-    assert type(prod) is ComplexSignTerm
+    prod = zqo.SignTerm(2, (X, X)) * zqo.SignTerm(2, (Z, Z))
+    assert type(prod) is zqo.ComplexSignTerm
     assert str(prod) == "(-1, Y0 Y1)"
 
 
@@ -118,7 +106,7 @@ def test_sign_terms_canonicalize():
         (X, X, I),
         (I, X, X),
     )
-    terms = SignTerms(3)
+    terms = zqo.SignTerms(3)
     terms.append_iterable(tuples)
     imul_ops = terms.canonicalize_all()
     # check imul ops are done in the right order
@@ -165,10 +153,10 @@ def test_sign_terms_canonicalize():
     assert terms[1].string.get_tuple() == tuples[1]
     assert terms[2].string.get_tuple() == tuples[2]
 
-    null = SignTerms(0)
+    null = zqo.SignTerms(0)
     # the unique tableau with 0 qubits is in canonical form, so no imuls
     assert null.canonicalize_all() == []
 
-    empty = SignTerms(3)
+    empty = zqo.SignTerms(3)
     # the unique tableau with no strings is in canonical form, so no imuls
     assert empty.canonicalize_all() == []

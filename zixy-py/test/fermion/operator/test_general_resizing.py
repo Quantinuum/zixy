@@ -5,29 +5,12 @@ import warnings
 import pytest
 from sympy import Symbol
 
-from zixy.fermion.operator.general import (
-    ComplexTerm,
-    ComplexTerms,
-    ComplexTermSet,
-    ComplexTermSum,
-    GeneralFermionOperatorArray,
-    Modes,
-    RealTerm,
-    RealTerms,
-    RealTermSet,
-    RealTermSum,
-    String,
-    Strings,
-    StringSet,
-    SymbolicTerm,
-    SymbolicTerms,
-    SymbolicTermSet,
-    SymbolicTermSum,
-)
+import zixy.fermion.operator.general as zfog
+from zixy.fermion.operator.general import GeneralFermionOperatorArray, Modes
 
 
 def test_string_growth_and_no_shrinking():
-    string = String(2)
+    string = zfog.String(2)
     for length in (1, 2, 65):
         with pytest.warns(UserWarning, match=f"to {length} to fit") as caught:
             string.set([(0, False)] * length)
@@ -41,7 +24,7 @@ def test_string_growth_and_no_shrinking():
     assert string.max_string_len == 65
 
 
-@pytest.mark.parametrize("cls", (String, Strings, StringSet))
+@pytest.mark.parametrize("cls", (zfog.String, zfog.Strings, zfog.StringSet))
 def test_parsed_initial_capacity_is_silent(cls):
     with warnings.catch_warnings():
         warnings.simplefilter("error")
@@ -50,7 +33,9 @@ def test_parsed_initial_capacity_is_silent(cls):
         assert cls.from_str("", 2, max_string_len=80).max_string_len == 80
 
 
-@pytest.mark.parametrize("cls", (Strings, StringSet, RealTerms, RealTermSet, RealTermSum))
+@pytest.mark.parametrize(
+    "cls", (zfog.Strings, zfog.StringSet, zfog.RealTerms, zfog.RealTermSet, zfog.RealTermSum)
+)
 def test_sequence_preallocation_and_streaming(cls):
     source = ["F0", "F0 F1", "F1"]
     with warnings.catch_warnings():
@@ -73,7 +58,7 @@ def test_sequence_preallocation_and_streaming(cls):
 
 @pytest.mark.parametrize("n_modes", (1, 3, 65, 257))
 def test_views_survive_packed_width_growth(n_modes):
-    strings = Strings.from_iterable(["F0", "", "F0^"], n_modes)
+    strings = zfog.Strings.from_iterable(["F0", "", "F0^"], n_modes)
     element = strings[0]
     view = strings[::2]
     for length in (2, 11, 32, 64, 65, 129):
@@ -94,12 +79,12 @@ def test_views_survive_packed_width_growth(n_modes):
 
 def test_keys_include_length_and_ignore_capacity():
     values = ["", "F0", "F0 F0", "F1", "F1 F0"]
-    small = StringSet.from_iterable(values, 2)
-    large = StringSet.from_iterable(values, 2, max_string_len=129)
+    small = zfog.StringSet.from_iterable(values, 2)
+    large = zfog.StringSet.from_iterable(values, 2, max_string_len=129)
     assert len(small) == 5
     assert small == large
     for index, spec in enumerate(values):
-        source = String(2, spec, max_string_len=256)
+        source = zfog.String(2, spec, max_string_len=256)
         assert small.lookup(source) == index
         assert small.insert(source) == index
     with pytest.warns(UserWarning) as caught:
@@ -118,9 +103,15 @@ def test_keys_include_length_and_ignore_capacity():
 @pytest.mark.parametrize(
     ("term_type", "array_type", "set_type", "sum_type", "coeff"),
     (
-        (RealTerm, RealTerms, RealTermSet, RealTermSum, 2.5),
-        (ComplexTerm, ComplexTerms, ComplexTermSet, ComplexTermSum, 2 + 3j),
-        (SymbolicTerm, SymbolicTerms, SymbolicTermSet, SymbolicTermSum, Symbol("x")),
+        (zfog.RealTerm, zfog.RealTerms, zfog.RealTermSet, zfog.RealTermSum, 2.5),
+        (zfog.ComplexTerm, zfog.ComplexTerms, zfog.ComplexTermSet, zfog.ComplexTermSum, 2 + 3j),
+        (
+            zfog.SymbolicTerm,
+            zfog.SymbolicTerms,
+            zfog.SymbolicTermSet,
+            zfog.SymbolicTermSum,
+            Symbol("x"),
+        ),
     ),
 )
 def test_term_growth(term_type, array_type, set_type, sum_type, coeff):
@@ -148,16 +139,18 @@ def test_term_growth(term_type, array_type, set_type, sum_type, coeff):
         assert list(value.coeffs) == [coeff, coeff]
 
 
-@pytest.mark.parametrize("cls", (Strings, StringSet, RealTerms, RealTermSet, RealTermSum))
+@pytest.mark.parametrize(
+    "cls", (zfog.Strings, zfog.StringSet, zfog.RealTerms, zfog.RealTermSet, zfog.RealTermSum)
+)
 def test_warning_as_error_does_not_mutate(cls):
     value = cls.from_iterable(["F0"], 2)
     before = str(value)
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         with pytest.raises(UserWarning):
-            if cls in (Strings, RealTerms):
+            if cls in (zfog.Strings, zfog.RealTerms):
                 value.append("F0 F1")
-            elif cls is RealTermSum:
+            elif cls is zfog.RealTermSum:
                 value += "F0 F1"
             else:
                 value.insert("F0 F1")
@@ -167,7 +160,7 @@ def test_warning_as_error_does_not_mutate(cls):
 
 
 def test_invalid_assignment_and_warning_error_are_atomic():
-    string = String(2, "F0")
+    string = zfog.String(2, "F0")
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         with pytest.raises(UserWarning):
@@ -183,7 +176,15 @@ def test_invalid_assignment_and_warning_error_are_atomic():
 
 
 def test_negative_capacity_and_removed_keyword():
-    for cls in (String, Strings, StringSet, RealTerm, RealTerms, RealTermSet, RealTermSum):
+    for cls in (
+        zfog.String,
+        zfog.Strings,
+        zfog.StringSet,
+        zfog.RealTerm,
+        zfog.RealTerms,
+        zfog.RealTermSet,
+        zfog.RealTermSum,
+    ):
         with pytest.raises((OverflowError, ValueError)):
             cls(2, max_string_len=-1)
         with pytest.raises(TypeError):
@@ -201,8 +202,8 @@ def test_binding_growth_and_silent_initial_allocation():
 
 
 def test_product_preallocation_is_silent():
-    left = RealTermSum.from_iterable([("F0", 2.0), ("F1", 3.0)], 2)
-    right = RealTermSum.from_iterable([("F1 F0", 4.0)], 2)
+    left = zfog.RealTermSum.from_iterable([("F0", 2.0), ("F1", 3.0)], 2)
+    right = zfog.RealTermSum.from_iterable([("F1 F0", 4.0)], 2)
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         product = left * right
@@ -211,8 +212,8 @@ def test_product_preallocation_is_silent():
 
 
 def test_sum_preallocation_is_silent_and_refreshes_keys():
-    left = RealTermSum.from_iterable([("F0", 2.0)], 2)
-    right = RealTermSum.from_iterable([("F0 F1", 4.0)], 2, max_string_len=129)
+    left = zfog.RealTermSum.from_iterable([("F0", 2.0)], 2)
+    right = zfog.RealTermSum.from_iterable([("F0 F1", 4.0)], 2, max_string_len=129)
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         added = left + right

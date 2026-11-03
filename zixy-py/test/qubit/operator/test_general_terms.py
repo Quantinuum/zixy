@@ -1,85 +1,74 @@
 import pytest
 from sympy import Expr, Symbol, sympify
 
+import zixy.qubit.operator as zqo
+import zixy.qubit.state as zqs
 from zixy.container.coeffs import ComplexSign, Sign
-from zixy.qubit.operator import (
-    ComplexSignTerm,
-    ComplexSignTerms,
-    ComplexSignTermSet,
-    ComplexTerm,
-    ComplexTerms,
-    ComplexTermSet,
-    ComplexTermSum as PauliComplexTermSum,
-    I,
-    RealTerm,
-    RealTerms,
-    RealTermSet,
-    RealTermSum as PauliRealTermSum,
-    SignTerm,
-    SignTerms,
-    SignTermSet,
-    String,
-    SymbolicTerm,
-    SymbolicTerms,
-    SymbolicTermSet,
-    SymbolicTermSum,
-    X,
-    Y,
-    Z,
-)
-from zixy.qubit.state import ComplexTermSum as ComplexState, RealTermSum as RealState
+from zixy.qubit.operator import I, X, Y, Z
 
 
 @pytest.mark.parametrize(
     ("term_type", "source", "qubits", "expected", "terms_type"),
     (
-        (SignTerm, "(1, X0)", 2, "(+1, X0)", None),
-        (SignTerms, "(1, X0), (-1, Z1), (1, X0)", 2, "(+1, X0), (-1, Z1), (+1, X0)", None),
-        (SignTermSet, "(1, X0), (-1, Z1), (1, X0)", 2, "(+1, X0), (-1, Z1)", SignTerms),
-        (ComplexSignTerm, "(1j, X0)", 2, "(+i, X0)", None),
-        (ComplexSignTerms, "(1j, X0), (-1, Z1), (1, X0)", 2, "(+i, X0), (-1, Z1), (+1, X0)", None),
+        (zqo.SignTerm, "(1, X0)", 2, "(+1, X0)", None),
+        (zqo.SignTerms, "(1, X0), (-1, Z1), (1, X0)", 2, "(+1, X0), (-1, Z1), (+1, X0)", None),
+        (zqo.SignTermSet, "(1, X0), (-1, Z1), (1, X0)", 2, "(+1, X0), (-1, Z1)", zqo.SignTerms),
+        (zqo.ComplexSignTerm, "(1j, X0)", 2, "(+i, X0)", None),
         (
-            ComplexSignTermSet,
+            zqo.ComplexSignTerms,
+            "(1j, X0), (-1, Z1), (1, X0)",
+            2,
+            "(+i, X0), (-1, Z1), (+1, X0)",
+            None,
+        ),
+        (
+            zqo.ComplexSignTermSet,
             "(1j, X0), (-1, Z1), (1, X0)",
             2,
             "(+1, X0), (-1, Z1)",
-            ComplexSignTerms,
+            zqo.ComplexSignTerms,
         ),
-        (RealTerm, " ( 2.5 , X0 ) ", 2, "(2.5, X0)", None),
+        (zqo.RealTerm, " ( 2.5 , X0 ) ", 2, "(2.5, X0)", None),
         (
-            RealTerms,
+            zqo.RealTerms,
             " (2.0, X0) , (-0.5, Z1) , (3.0, X0) ",
             2,
             "(2.0, X0), (-0.5, Z1), (3.0, X0)",
             None,
         ),
-        (RealTermSet, "(2.0, X0), (-0.5, Z1), (3.0, X0)", 2, "(3.0, X0), (-0.5, Z1)", RealTerms),
-        (PauliRealTermSum, "(2.0, X0), (-0.5, Z1), (3.0, X0)", 2, "(5.0, X0), (-0.5, Z1)", None),
-        (ComplexTerm, "(1j, X0)", 2, "(1j, X0)", None),
         (
-            ComplexTerms,
+            zqo.RealTermSet,
+            "(2.0, X0), (-0.5, Z1), (3.0, X0)",
+            2,
+            "(3.0, X0), (-0.5, Z1)",
+            zqo.RealTerms,
+        ),
+        (zqo.RealTermSum, "(2.0, X0), (-0.5, Z1), (3.0, X0)", 2, "(5.0, X0), (-0.5, Z1)", None),
+        (zqo.ComplexTerm, "(1j, X0)", 2, "(1j, X0)", None),
+        (
+            zqo.ComplexTerms,
             "((1j), X0), ((2), Z1), ((3), X0)",
             2,
             "(1j, X0), ((2+0j), Z1), ((3+0j), X0)",
             None,
         ),
         (
-            ComplexTermSet,
+            zqo.ComplexTermSet,
             "((1j), X0), ((2), Z1), ((3), X0)",
             2,
             "((3+0j), X0), ((2+0j), Z1)",
-            ComplexTerms,
+            zqo.ComplexTerms,
         ),
         (
-            PauliComplexTermSum,
+            zqo.ComplexTermSum,
             "((1j), X0), ((2), Z1), ((3), X0)",
             2,
             "((3+1j), X0), ((2+0j), Z1)",
             None,
         ),
-        (RealTerm, "(2, X0 Y1 Z2)", 3, "(2.0, X0 Y1 Z2)", None),
-        (RealTerms, "\n(1, X0),\n(2, Y1)\n", 2, "(1.0, X0), (2.0, Y1)", None),
-        (PauliRealTermSum, "(2, X0 Y1 Z2), (-2, X0 Y1 Z2)", 3, "(0.0, X0 Y1 Z2)", None),
+        (zqo.RealTerm, "(2, X0 Y1 Z2)", 3, "(2.0, X0 Y1 Z2)", None),
+        (zqo.RealTerms, "\n(1, X0),\n(2, Y1)\n", 2, "(1.0, X0), (2.0, Y1)", None),
+        (zqo.RealTermSum, "(2, X0 Y1 Z2), (-2, X0 Y1 Z2)", 3, "(0.0, X0 Y1 Z2)", None),
     ),
 )
 def test_from_str(term_type, source, qubits, expected, terms_type):
@@ -93,16 +82,16 @@ def test_from_str(term_type, source, qubits, expected, terms_type):
 @pytest.mark.parametrize(
     "term_type",
     (
-        SignTerms,
-        SignTermSet,
-        ComplexSignTerms,
-        ComplexSignTermSet,
-        RealTerms,
-        RealTermSet,
-        PauliRealTermSum,
-        ComplexTerms,
-        ComplexTermSet,
-        PauliComplexTermSum,
+        zqo.SignTerms,
+        zqo.SignTermSet,
+        zqo.ComplexSignTerms,
+        zqo.ComplexSignTermSet,
+        zqo.RealTerms,
+        zqo.RealTermSet,
+        zqo.RealTermSum,
+        zqo.ComplexTerms,
+        zqo.ComplexTermSet,
+        zqo.ComplexTermSum,
     ),
 )
 def test_from_str_empty_containers(term_type):
@@ -112,10 +101,10 @@ def test_from_str_empty_containers(term_type):
 @pytest.mark.parametrize(
     ("term_type", "source"),
     (
-        (ComplexTerm, "((1j), X0 Y1)"),
-        (ComplexTerms, "((1j), X0), ((2), Y1)"),
-        (ComplexTermSet, "((1j), X0), ((2), Y1)"),
-        (PauliComplexTermSum, "((1j), X0), ((2), Y1)"),
+        (zqo.ComplexTerm, "((1j), X0 Y1)"),
+        (zqo.ComplexTerms, "((1j), X0), ((2), Y1)"),
+        (zqo.ComplexTermSet, "((1j), X0), ((2), Y1)"),
+        (zqo.ComplexTermSum, "((1j), X0), ((2), Y1)"),
     ),
 )
 def test_from_str_round_trip(term_type, source):
@@ -124,7 +113,7 @@ def test_from_str_round_trip(term_type, source):
 
 
 @pytest.mark.parametrize(
-    "term_type", (SymbolicTerm, SymbolicTerms, SymbolicTermSet, SymbolicTermSum)
+    "term_type", (zqo.SymbolicTerm, zqo.SymbolicTerms, zqo.SymbolicTermSet, zqo.SymbolicTermSum)
 )
 def test_from_str_symbolic_not_implemented(term_type):
     with pytest.raises(NotImplementedError):
@@ -134,32 +123,32 @@ def test_from_str_symbolic_not_implemented(term_type):
 @pytest.mark.parametrize("source", ("1, X0", "(1 X0)", "(1, X0, extra)", "(, X0)", "(1, )"))
 def test_from_str_errors(source):
     with pytest.raises(ValueError):
-        RealTerm.from_str(source, 2)
+        zqo.RealTerm.from_str(source, 2)
 
     with pytest.raises(IndexError):
-        RealTerm.from_str("(1, X2)", 2)
+        zqo.RealTerm.from_str("(1, X2)", 2)
 
     with pytest.raises(ValueError):
-        SignTerm.from_str("(2, X0)", 2)
+        zqo.SignTerm.from_str("(2, X0)", 2)
 
     with pytest.raises(ValueError):
-        ComplexSignTerm.from_str("(2, X0)", 2)
+        zqo.ComplexSignTerm.from_str("(2, X0)", 2)
 
     with pytest.raises(ValueError):
-        RealTerm.from_str("(1j, X0)", 2)
+        zqo.RealTerm.from_str("(1j, X0)", 2)
 
 
 def test_real_term():
     with pytest.raises(IndexError):
-        RealTerm(5, ((X, Y, Z, X, Y, Z), 2.0))
-    lhs = RealTerm(6, ((X, Y, Z, X, Y, Z), 2.0))
+        zqo.RealTerm(5, ((X, Y, Z, X, Y, Z), 2.0))
+    lhs = zqo.RealTerm(6, ((X, Y, Z, X, Y, Z), 2.0))
     # in-place mul by non-complex scalar types is valid
     lhs *= 1
     lhs *= float(1)
     lhs *= Sign()
     assert type(lhs.coeff) is float
     assert lhs.coeff == 2.0
-    rhs = RealTerm(6, ((Y, Y, X, Y, Z, Y), 4.0))
+    rhs = zqo.RealTerm(6, ((Y, Y, X, Y, Z, Y), 4.0))
     assert type(rhs.coeff) is float
     assert rhs.coeff == 4.0
     # can't in-place multiply by imag complex
@@ -216,26 +205,26 @@ def test_real_term():
     with pytest.raises(ValueError):
         lhs.coeff *= complex(1, 0.1)
 
-    tmp = ComplexTerm(6, (Y, Y, X, Y, Z, Y))
+    tmp = zqo.ComplexTerm(6, (Y, Y, X, Y, Z, Y))
     assert str(tmp) == "((1+0j), Y0 Y1 X2 Y3 Z4 Y5)"
     tmp.coeff *= 12
     assert type(tmp.coeff) is complex
     assert tmp.coeff == complex(12, 0)
 
     product = lhs * rhs
-    assert type(product) is ComplexTerm
+    assert type(product) is zqo.ComplexTerm
     assert type(product.coeff) is complex
     assert product.coeff == -8.0j
 
     assert str(product) == "(-8j, Z0 Y2 Z3 X4 X5)"
 
-    term = RealTerm.from_str("X0 Y1")
+    term = zqo.RealTerm.from_str("X0 Y1")
     assert str(term) == "(1.0, X0 Y1)"
     assert term.coeff == 1.0
 
 
 def test_term_scalar_mul_preserves_viewed_string():
-    terms = RealTerms.from_str("X0, Z1", 2)
+    terms = zqo.RealTerms.from_str("X0, Z1", 2)
 
     right_scaled = terms[1] * 3.0
     left_scaled = 3.0 * terms[1]
@@ -254,8 +243,8 @@ def test_term_scalar_mul_preserves_viewed_string():
 
 def test_complex_term():
     with pytest.raises(IndexError):
-        ComplexTerm(5, ((X, Y, Z, X, Y, Z), 2.0j))
-    lhs = ComplexTerm(6, ((X, Y, Z, X, Y, Z), 2.0j))
+        zqo.ComplexTerm(5, ((X, Y, Z, X, Y, Z), 2.0j))
+    lhs = zqo.ComplexTerm(6, ((X, Y, Z, X, Y, Z), 2.0j))
     assert type(lhs.coeff) is complex
     assert lhs.coeff == complex(0, 2)
     # in-place mul by any of the scalar types is valid
@@ -271,41 +260,41 @@ def test_complex_term():
 
 
 def test_real_apply_rejects_different_qubits():
-    op = PauliRealTermSum.from_str("X0", 2)
-    state = RealState.from_str("[1, 0, 0]", 3)
+    op = zqo.RealTermSum.from_str("X0", 2)
+    state = zqs.RealTermSum.from_str("[1, 0, 0]", 3)
 
     with pytest.raises(ValueError, match="different qubits"):
         op.apply(state)
 
 
 def test_real_mat_elem_rejects_different_qubits():
-    op = PauliRealTermSum.from_str("X0", 2)
-    bra = RealState.from_str("[1, 0]", 2)
-    ket = RealState.from_str("[1, 0, 0]", 3)
+    op = zqo.RealTermSum.from_str("X0", 2)
+    bra = zqs.RealTermSum.from_str("[1, 0]", 2)
+    ket = zqs.RealTermSum.from_str("[1, 0, 0]", 3)
 
     with pytest.raises(ValueError, match="different qubits"):
         op.mat_elem(bra, ket)
 
 
 def test_complex_apply_rejects_different_qubits():
-    op = PauliComplexTermSum.from_str("X0", 2)
-    state = ComplexState.from_str("[1, 0, 0]", 3)
+    op = zqo.ComplexTermSum.from_str("X0", 2)
+    state = zqs.ComplexTermSum.from_str("[1, 0, 0]", 3)
 
     with pytest.raises(ValueError, match="different qubits"):
         op.apply(state)
 
 
 def test_complex_mat_elem_rejects_different_qubits():
-    op = PauliComplexTermSum.from_str("X0", 2)
-    bra = ComplexState.from_str("[1, 0]", 2)
-    ket = ComplexState.from_str("[1, 0, 0]", 3)
+    op = zqo.ComplexTermSum.from_str("X0", 2)
+    bra = zqs.ComplexTermSum.from_str("[1, 0]", 2)
+    ket = zqs.ComplexTermSum.from_str("[1, 0, 0]", 3)
 
     with pytest.raises(ValueError, match="different qubits"):
         op.mat_elem(bra, ket)
 
 
 def test_real_terms():
-    terms = RealTerms(6)
+    terms = zqo.RealTerms(6)
     assert len(terms) == 0
     terms.resize(10)
     assert sum(terms.coeffs) == 10
@@ -313,7 +302,7 @@ def test_real_terms():
     assert terms[0].string.is_identity()
     assert terms[0].string.is_identity()
     assert terms[0] is not terms[0]
-    assert type(terms[:4]) is RealTerms
+    assert type(terms[:4]) is zqo.RealTerms
     assert len(terms[:4]) == 4
     assert len(terms[:4].strings) == 4
     assert len(terms[:4].coeffs) == 4
@@ -327,19 +316,19 @@ def test_real_terms():
             assert term.string.is_identity()
     terms[0].coeff = 1.23
     assert terms[0].coeff == 1.23
-    terms[0] = String(6, (X,) * 6)
+    terms[0] = zqo.String(6, (X,) * 6)
     assert terms[0].coeff == 1.0
-    terms[0] = RealTerm(6, (X,) * 6)
+    terms[0] = zqo.RealTerm(6, (X,) * 6)
     assert terms[0].string.get_tuple() == (X,) * 6
-    assert type(terms.into(ComplexTerms)) is ComplexTerms
-    assert all(terms.into(ComplexTerms).coeffs.np_array == 1)
+    assert type(terms.into(zqo.ComplexTerms)) is zqo.ComplexTerms
+    assert all(terms.into(zqo.ComplexTerms).coeffs.np_array == 1)
     terms[1:4].scale(-1)
-    assert type(terms.into(SignTerms)) is SignTerms
-    assert str(terms.into(SignTerms).coeffs) == "[+1, -1, -1, -1, +1, +1, +1, +1, +1, +1]"
+    assert type(terms.into(zqo.SignTerms)) is zqo.SignTerms
+    assert str(terms.into(zqo.SignTerms).coeffs) == "[+1, -1, -1, -1, +1, +1, +1, +1, +1, +1]"
 
 
 def test_complex_terms():
-    terms = ComplexTerms(6)
+    terms = zqo.ComplexTerms(6)
     assert len(terms) == 0
     terms.resize(10)
     assert sum(terms.coeffs) == 10
@@ -347,7 +336,7 @@ def test_complex_terms():
     assert terms[0].string.is_identity()
     assert terms[0].string.is_identity()
     assert terms[0] is not terms[0]
-    assert type(terms[:4]) is ComplexTerms
+    assert type(terms[:4]) is zqo.ComplexTerms
     assert len(terms[:4]) == 4
     assert len(terms[:4].strings) == 4
     assert len(terms[:4].coeffs) == 4
@@ -359,27 +348,27 @@ def test_complex_terms():
             assert term.string.get_tuple() == (X, Y, Z, Z, Y, X)
         else:
             assert term.string.is_identity()
-    terms[0] = ComplexTerm(6, (X,) * 6)
+    terms[0] = zqo.ComplexTerm(6, (X,) * 6)
     assert terms[0].string.get_tuple() == (X,) * 6
     terms[0].coeff = 1.23
     assert terms[0].coeff == 1.23
-    terms[0] = String(6, (X,) * 6)
+    terms[0] = zqo.String(6, (X,) * 6)
     assert terms[0].coeff == 1.0
-    terms[0] = ComplexTerm(6, ((X,) * 6, 1.23))
+    terms[0] = zqo.ComplexTerm(6, ((X,) * 6, 1.23))
     assert terms[0].string.get_tuple() == (X,) * 6
-    assert type(terms[0].into(RealTerm)) is RealTerm
-    assert terms[0].into(RealTerm).coeff == 1.23
-    assert terms[0].into(RealTerm).string.get_tuple() == (X,) * 6
-    assert type(terms.into(RealTerms)) is RealTerms
-    assert type(terms.into(RealTerms).strings) is type(terms.strings)
-    assert terms.into(RealTerms).strings is not terms.strings
+    assert type(terms[0].into(zqo.RealTerm)) is zqo.RealTerm
+    assert terms[0].into(zqo.RealTerm).coeff == 1.23
+    assert terms[0].into(zqo.RealTerm).string.get_tuple() == (X,) * 6
+    assert type(terms.into(zqo.RealTerms)) is zqo.RealTerms
+    assert type(terms.into(zqo.RealTerms).strings) is type(terms.strings)
+    assert terms.into(zqo.RealTerms).strings is not terms.strings
     terms.coeffs[-1] *= 1j
     with pytest.raises(ValueError):
-        terms.into(RealTerms)
+        terms.into(zqo.RealTerms)
 
 
 def test_symbolic_terms():
-    terms = SymbolicTerms(6)
+    terms = zqo.SymbolicTerms(6)
     assert len(terms) == 0
     terms.resize(10)
     assert sum(terms.coeffs) == 10
@@ -395,7 +384,7 @@ def test_symbolic_terms():
     assert terms[0].string.is_identity()
     assert terms[0].string.is_identity()
     assert terms[0] is not terms[0]
-    assert type(terms[:4]) is SymbolicTerms
+    assert type(terms[:4]) is zqo.SymbolicTerms
     assert len(terms[:4]) == 4
     assert len(terms[:4].strings) == 4
     assert len(terms[:4].coeffs) == 4
@@ -410,12 +399,12 @@ def test_symbolic_terms():
     terms[0].coeff = 1.23
     assert isinstance(terms[0].coeff, Expr)
     assert terms[0].coeff == sympify(1.23)
-    terms[0] = String(6, (X,) * 6)
+    terms[0] = zqo.String(6, (X,) * 6)
     assert terms[0].coeff == 1
-    terms[0] = SymbolicTerm(6, (X,) * 6)
+    terms[0] = zqo.SymbolicTerm(6, (X,) * 6)
     assert terms[0].string.get_tuple() == (X,) * 6
     real_terms = terms.try_to_real()
-    assert type(real_terms) is RealTerms
+    assert type(real_terms) is zqo.RealTerms
     assert len(real_terms) == len(terms)
     terms[0] *= sympify(1j)
     # now with the imag unit, should not be able to convert to real
@@ -430,7 +419,7 @@ def test_symbolic_terms():
         + [1] * 9
     )
     v = terms[-1].clone()
-    assert isinstance(v, SymbolicTerm)
+    assert isinstance(v, zqo.SymbolicTerm)
     assert len(v._impl) == 1
     assert bool(v.coeff)
     assert v.coeff == terms.coeffs[-1]
@@ -461,7 +450,7 @@ def test_append_iterable():
         (X, Y, Z, Z, Y, X),
         (Y, Z, Z, I, X, Z),
     )
-    a = RealTerms(n_qubit)
+    a = zqo.RealTerms(n_qubit)
     a.append_iterable(tuples)
     assert a[0].string.get_tuple() == (X, Y, Z, Z, Y, X)
     assert a[1].string.get_tuple() == (Y, Z, Z, I, X, Z)

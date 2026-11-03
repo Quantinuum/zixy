@@ -4,6 +4,11 @@ from types import MappingProxyType
 import pytest
 from sympy import sympify
 
+import zixy.fermion.operator.general as zfog
+import zixy.fermion.operator.normal as zfon
+import zixy.fermion.state as zfs
+import zixy.qubit.operator as zqo
+import zixy.qubit.state as zqs
 from zixy import __version__, deserialize, serialize
 from zixy._zixy import Modes, Qubits
 from zixy.container.coeffs import (
@@ -19,9 +24,6 @@ from zixy.container.coeffs import (
 from zixy.container.data import TermData
 from zixy.container.serialization import __schema_version__
 from zixy.container.terms import Term
-from zixy.fermion import state as zfs
-from zixy.fermion.operator import general as zfog, normal as zfon
-from zixy.qubit import operator as zqo, state as zqs
 
 
 @pytest.fixture(

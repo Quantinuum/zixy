@@ -5,35 +5,55 @@ from typing import assert_type
 import pytest
 from sympy import Expr, I, Symbol, symbols
 
-from zixy.qubit.operator import (
-    ComplexTermSum,
-    RealTermSum,
-    SymbolicTermSum,
-)
-from zixy.qubit.state import (
-    ComplexTermSum as ComplexState,
-    RealTermSum as RealState,
-    SymbolicTermSum as SymbolicState,
-)
+import zixy.qubit.operator as zqo
+import zixy.qubit.state as zqs
 
 
 @pytest.mark.parametrize(
     ("operator_type", "operator_coeff", "state_type", "state_coeff", "result_type", "coeff"),
     (
-        (RealTermSum, 2.0, RealState, 3.0, ComplexState, 6j),
-        (RealTermSum, 2.0, ComplexState, 3j, ComplexState, -6),
-        (RealTermSum, 2.0, SymbolicState, Symbol("b"), SymbolicState, 2 * I * Symbol("b")),
-        (ComplexTermSum, 2j, RealState, 3.0, ComplexState, -6),
-        (ComplexTermSum, 2j, ComplexState, 3j, ComplexState, -6j),
-        (ComplexTermSum, 2j, SymbolicState, Symbol("b"), SymbolicState, -2 * Symbol("b")),
-        (SymbolicTermSum, Symbol("a"), RealState, 3.0, SymbolicState, 3 * I * Symbol("a")),
-        (SymbolicTermSum, Symbol("a"), ComplexState, 3j, SymbolicState, -3 * Symbol("a")),
+        (zqo.RealTermSum, 2.0, zqs.RealTermSum, 3.0, zqs.ComplexTermSum, 6j),
+        (zqo.RealTermSum, 2.0, zqs.ComplexTermSum, 3j, zqs.ComplexTermSum, -6),
         (
-            SymbolicTermSum,
-            Symbol("a"),
-            SymbolicState,
+            zqo.RealTermSum,
+            2.0,
+            zqs.SymbolicTermSum,
             Symbol("b"),
-            SymbolicState,
+            zqs.SymbolicTermSum,
+            2 * I * Symbol("b"),
+        ),
+        (zqo.ComplexTermSum, 2j, zqs.RealTermSum, 3.0, zqs.ComplexTermSum, -6),
+        (zqo.ComplexTermSum, 2j, zqs.ComplexTermSum, 3j, zqs.ComplexTermSum, -6j),
+        (
+            zqo.ComplexTermSum,
+            2j,
+            zqs.SymbolicTermSum,
+            Symbol("b"),
+            zqs.SymbolicTermSum,
+            -2 * Symbol("b"),
+        ),
+        (
+            zqo.SymbolicTermSum,
+            Symbol("a"),
+            zqs.RealTermSum,
+            3.0,
+            zqs.SymbolicTermSum,
+            3 * I * Symbol("a"),
+        ),
+        (
+            zqo.SymbolicTermSum,
+            Symbol("a"),
+            zqs.ComplexTermSum,
+            3j,
+            zqs.SymbolicTermSum,
+            -3 * Symbol("a"),
+        ),
+        (
+            zqo.SymbolicTermSum,
+            Symbol("a"),
+            zqs.SymbolicTermSum,
+            Symbol("b"),
+            zqs.SymbolicTermSum,
             I * Symbol("a") * Symbol("b"),
         ),
     ),
@@ -61,8 +81,8 @@ def test_apply_coefficient_combinations(
     ),
 )
 def test_symbolic_apply_pauli_actions(pauli, ket, result_string, coeff):
-    operator = SymbolicTermSum.from_iterable([(pauli, Symbol("a"))], 2)
-    state = SymbolicState.from_iterable([(ket, Symbol("b"))], 2)
+    operator = zqo.SymbolicTermSum.from_iterable([(pauli, Symbol("a"))], 2)
+    state = zqs.SymbolicTermSum.from_iterable([(ket, Symbol("b"))], 2)
 
     result = operator.apply(state)
 
@@ -72,9 +92,9 @@ def test_symbolic_apply_pauli_actions(pauli, ket, result_string, coeff):
 @pytest.mark.parametrize(
     ("operator_type", "state_type"),
     (
-        (RealTermSum, RealState),
-        (ComplexTermSum, ComplexState),
-        (SymbolicTermSum, SymbolicState),
+        (zqo.RealTermSum, zqs.RealTermSum),
+        (zqo.ComplexTermSum, zqs.ComplexTermSum),
+        (zqo.SymbolicTermSum, zqs.SymbolicTermSum),
     ),
 )
 def test_apply_consolidates_and_cancels(operator_type, state_type):
@@ -85,8 +105,8 @@ def test_apply_consolidates_and_cancels(operator_type, state_type):
 
 
 def test_apply_consolidates_duplicate_outputs():
-    operator = SymbolicTermSum.from_iterable([("X0", 1), ("Z0", 1)], 1)
-    state = SymbolicState.from_iterable([("[0]", 1), ("[1]", 1)], 1)
+    operator = zqo.SymbolicTermSum.from_iterable([("X0", 1), ("Z0", 1)], 1)
+    state = zqs.SymbolicTermSum.from_iterable([("[0]", 1), ("[1]", 1)], 1)
 
     result = operator.apply(state)
 
@@ -98,9 +118,9 @@ def test_apply_consolidates_duplicate_outputs():
 @pytest.mark.parametrize(
     ("operator", "state"),
     (
-        (RealTermSum(2), RealState.from_str("[0, 0]", 2)),
-        (ComplexTermSum.from_str("X0", 2), ComplexState(2)),
-        (SymbolicTermSum(2), SymbolicState.from_str("[0, 0]", 2)),
+        (zqo.RealTermSum(2), zqs.RealTermSum.from_str("[0, 0]", 2)),
+        (zqo.ComplexTermSum.from_str("X0", 2), zqs.ComplexTermSum(2)),
+        (zqo.SymbolicTermSum(2), zqs.SymbolicTermSum.from_str("[0, 0]", 2)),
     ),
 )
 def test_apply_empty_inputs(operator, state):
@@ -108,16 +128,16 @@ def test_apply_empty_inputs(operator, state):
 
 
 def test_symbolic_apply_rejects_different_qubits():
-    operator = SymbolicTermSum.from_str("X0", 2)
-    state = SymbolicState.from_str("[0, 0, 0]", 3)
+    operator = zqo.SymbolicTermSum.from_str("X0", 2)
+    state = zqs.SymbolicTermSum.from_str("[0, 0, 0]", 3)
 
     with pytest.raises(ValueError, match="different qubits"):
         operator.apply(state)
 
 
 def test_apply_does_not_mutate_or_alias_inputs():
-    operator = SymbolicTermSum.from_iterable([("I0", Symbol("a"))], 1)
-    state = SymbolicState.from_iterable([("[0]", Symbol("b"))], 1)
+    operator = zqo.SymbolicTermSum.from_iterable([("I0", Symbol("a"))], 1)
+    state = zqs.SymbolicTermSum.from_iterable([("[0]", Symbol("b"))], 1)
     operator_before = operator.clone()
     state_before = state.clone()
 
@@ -135,13 +155,13 @@ def test_apply_does_not_mutate_or_alias_inputs():
 
 def test_mixed_matrix_elements_and_expectation_values():
     a, b = symbols("a b")
-    real_operator = RealTermSum.from_iterable([("Y0", 2)], 1)
-    symbolic_operator = SymbolicTermSum.from_iterable([("Y0", a)], 1)
-    real_bra = RealState.from_iterable([("[1]", 1)], 1)
-    real_ket = RealState.from_iterable([("[0]", 3)], 1)
-    complex_ket = ComplexState.from_iterable([("[0]", 3j)], 1)
-    symbolic_bra = SymbolicState.from_iterable([("[1]", b)], 1)
-    symbolic_zero = SymbolicState.from_iterable([("[0]", b)], 1)
+    real_operator = zqo.RealTermSum.from_iterable([("Y0", 2)], 1)
+    symbolic_operator = zqo.SymbolicTermSum.from_iterable([("Y0", a)], 1)
+    real_bra = zqs.RealTermSum.from_iterable([("[1]", 1)], 1)
+    real_ket = zqs.RealTermSum.from_iterable([("[0]", 3)], 1)
+    complex_ket = zqs.ComplexTermSum.from_iterable([("[0]", 3j)], 1)
+    symbolic_bra = zqs.SymbolicTermSum.from_iterable([("[1]", b)], 1)
+    symbolic_zero = zqs.SymbolicTermSum.from_iterable([("[0]", b)], 1)
 
     assert real_operator.mat_elem(real_bra, real_ket) == 6j
     assert real_operator.mat_elem(symbolic_bra, complex_ket) == -6 * b.conjugate()
@@ -151,9 +171,9 @@ def test_mixed_matrix_elements_and_expectation_values():
 
 
 def test_real_matrix_element_path():
-    operator = RealTermSum.from_iterable([("X0", 2)], 1)
-    bra = RealState.from_iterable([("[1]", 1)], 1)
-    ket = RealState.from_iterable([("[0]", 3)], 1)
+    operator = zqo.RealTermSum.from_iterable([("X0", 2)], 1)
+    bra = zqs.RealTermSum.from_iterable([("[1]", 1)], 1)
+    ket = zqs.RealTermSum.from_iterable([("[0]", 3)], 1)
 
     result = operator.mat_elem(bra, ket, real=True)
 
@@ -162,8 +182,8 @@ def test_real_matrix_element_path():
 
 
 def test_real_expectation_value_path():
-    operator = RealTermSum.from_iterable([("Z0", 2)], 1)
-    state = RealState.from_iterable([("[0]", 3)], 1)
+    operator = zqo.RealTermSum.from_iterable([("Z0", 2)], 1)
+    state = zqs.RealTermSum.from_iterable([("[0]", 3)], 1)
 
     result = operator.exp_val(state, real=True)
 
@@ -174,35 +194,35 @@ def test_real_expectation_value_path():
 @pytest.mark.parametrize(
     ("bra", "ket"),
     (
-        (ComplexState.from_str("[1]", 1), RealState.from_str("[0]", 1)),
-        (RealState.from_str("[1]", 1), ComplexState.from_str("[0]", 1)),
-        (SymbolicState.from_str("[1]", 1), RealState.from_str("[0]", 1)),
+        (zqs.ComplexTermSum.from_str("[1]", 1), zqs.RealTermSum.from_str("[0]", 1)),
+        (zqs.RealTermSum.from_str("[1]", 1), zqs.ComplexTermSum.from_str("[0]", 1)),
+        (zqs.SymbolicTermSum.from_str("[1]", 1), zqs.RealTermSum.from_str("[0]", 1)),
     ),
 )
 def test_real_matrix_element_path_requires_real_states(bra, ket):
-    operator = RealTermSum.from_str("X0", 1)
+    operator = zqo.RealTermSum.from_str("X0", 1)
 
     with pytest.raises(TypeError, match="real=True requires real bra and ket states"):
         operator.mat_elem(bra, ket, real=True)
 
 
 def test_operation_types():
-    real_operator = RealTermSum(1)
-    complex_operator = ComplexTermSum(1)
-    symbolic_operator = SymbolicTermSum(1)
-    real_state = RealState(1)
-    complex_state = ComplexState(1)
-    symbolic_state = SymbolicState(1)
+    real_operator = zqo.RealTermSum(1)
+    complex_operator = zqo.ComplexTermSum(1)
+    symbolic_operator = zqo.SymbolicTermSum(1)
+    real_state = zqs.RealTermSum(1)
+    complex_state = zqs.ComplexTermSum(1)
+    symbolic_state = zqs.SymbolicTermSum(1)
 
-    assert_type(real_operator.apply(real_state), ComplexState)
-    assert_type(real_operator.apply(complex_state), ComplexState)
-    assert_type(real_operator.apply(symbolic_state), SymbolicState)
-    assert_type(complex_operator.apply(real_state), ComplexState)
-    assert_type(complex_operator.apply(complex_state), ComplexState)
-    assert_type(complex_operator.apply(symbolic_state), SymbolicState)
-    assert_type(symbolic_operator.apply(real_state), SymbolicState)
-    assert_type(symbolic_operator.apply(complex_state), SymbolicState)
-    assert_type(symbolic_operator.apply(symbolic_state), SymbolicState)
+    assert_type(real_operator.apply(real_state), zqs.ComplexTermSum)
+    assert_type(real_operator.apply(complex_state), zqs.ComplexTermSum)
+    assert_type(real_operator.apply(symbolic_state), zqs.SymbolicTermSum)
+    assert_type(complex_operator.apply(real_state), zqs.ComplexTermSum)
+    assert_type(complex_operator.apply(complex_state), zqs.ComplexTermSum)
+    assert_type(complex_operator.apply(symbolic_state), zqs.SymbolicTermSum)
+    assert_type(symbolic_operator.apply(real_state), zqs.SymbolicTermSum)
+    assert_type(symbolic_operator.apply(complex_state), zqs.SymbolicTermSum)
+    assert_type(symbolic_operator.apply(symbolic_state), zqs.SymbolicTermSum)
     assert_type(real_operator.mat_elem(real_state, complex_state), complex)
     assert_type(real_operator.mat_elem(real_state, real_state, real=True), float)
     assert_type(real_operator.mat_elem(symbolic_state, complex_state), Expr)

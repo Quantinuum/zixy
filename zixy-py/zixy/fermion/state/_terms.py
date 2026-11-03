@@ -26,6 +26,7 @@ from typing import TYPE_CHECKING, Any, Protocol, Self, overload
 import numpy as np
 from sympy import Expr
 
+import zixy.qubit.state as zqs
 from zixy._zixy import FermionStateArray, Modes, Qubits
 from zixy.container.coeffs import (
     Coeff,
@@ -51,11 +52,6 @@ from zixy.fermion._terms import (
     TermSum as FermionTermSum,
 )
 from zixy.fermion.state._strings import String, Strings, StringSpec
-from zixy.qubit.state._terms import (
-    ComplexTermSum as QubitComplexTermSum,
-    RealTermSum as QubitRealTermSum,
-    SymbolicTermSum as QubitSymbolicTermSum,
-)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -64,7 +60,6 @@ if TYPE_CHECKING:
     from sympy import Symbol
 
     from zixy.container.coeffs import Number
-    from zixy.qubit.state._strings import String as QubitStateString
 
 type TermSpec[C: (float, complex, Sign, ComplexSign, Expr)] = TermSpecT[
     FermionStateArray, StringSpec, C
@@ -81,7 +76,7 @@ SymbolicTermSpec = TermSpec[Expr]
 class _StateMapperProtocol(Protocol):
     """Interface required from a mapper used by state ``to_qubit`` methods."""
 
-    def apply(self, value: String, /) -> QubitStateString:
+    def apply(self, value: String, /) -> zqs.String:
         """Map a fermionic occupation-number state string."""
         ...
 
@@ -330,7 +325,7 @@ class RealTermSum(NumericTermSum[FermionStateArray, StringSpec, float], TermSum[
         self,
         mapper: StateMapperType | None = None,
         qubits: int | Qubits | None = None,
-    ) -> QubitRealTermSum:
+    ) -> zqs.RealTermSum:
         """Map this fermionic state to a real qubit state.
 
         Args:
@@ -345,7 +340,7 @@ class RealTermSum(NumericTermSum[FermionStateArray, StringSpec, float], TermSum[
             the state by applying mapped creation operators.
         """
         mapper_instance, qubits = _make_state_mapper(mapper, qubits, self.modes)
-        out = QubitRealTermSum(qubits)
+        out = zqs.RealTermSum(qubits)
         for term in self:
             out += mapper_instance.apply(term.string.into(String)) * term.coeff
         return out
@@ -501,7 +496,7 @@ class ComplexTermSum(NumericTermSum[FermionStateArray, StringSpec, complex], Ter
         self,
         mapper: StateMapperType | None = None,
         qubits: int | Qubits | None = None,
-    ) -> QubitComplexTermSum:
+    ) -> zqs.ComplexTermSum:
         """Map this fermionic state to a complex qubit state.
 
         Args:
@@ -516,7 +511,7 @@ class ComplexTermSum(NumericTermSum[FermionStateArray, StringSpec, complex], Ter
             the state by applying mapped creation operators.
         """
         mapper_instance, qubits = _make_state_mapper(mapper, qubits, self.modes)
-        out = QubitComplexTermSum(qubits)
+        out = zqs.ComplexTermSum(qubits)
         for term in self:
             out += mapper_instance.apply(term.string.into(String)) * term.coeff
         return out
@@ -837,7 +832,7 @@ class SymbolicTermSum(TermSum[Expr]):
         self,
         mapper: StateMapperType | None = None,
         qubits: int | Qubits | None = None,
-    ) -> QubitSymbolicTermSum:
+    ) -> zqs.SymbolicTermSum:
         """Map this fermionic state to a symbolic qubit state.
 
         Args:
@@ -852,7 +847,7 @@ class SymbolicTermSum(TermSum[Expr]):
             the state by applying mapped creation operators.
         """
         mapper_instance, qubits = _make_state_mapper(mapper, qubits, self.modes)
-        out = QubitSymbolicTermSum(qubits)
+        out = zqs.SymbolicTermSum(qubits)
         for term in self:
             out += mapper_instance.apply(term.string.into(String)) * term.coeff
         return out

@@ -4,96 +4,74 @@ import numpy as np
 import pytest
 from sympy import Expr, I as imaginary_unit, S, symbols
 
-from zixy.fermion.operator.normal import (
-    ComplexTermSum as ComplexOperator,
-    RealTerm as RealOperatorTerm,
-    RealTermSum as RealOperator,
-    String as OperatorString,
-)
-from zixy.fermion.state import (
-    ComplexTerm,
-    ComplexTerms,
-    ComplexTermSet,
-    ComplexTermSum,
-    RealTerm,
-    RealTerms,
-    RealTermSet,
-    RealTermSum,
-    SignTerm,
-    SignTerms,
-    SignTermSet,
-    String,
-    SymbolicTerm,
-    SymbolicTerms,
-    SymbolicTermSet,
-    SymbolicTermSum,
-)
+import zixy.fermion.operator.normal as zfon
+import zixy.fermion.state as zfs
 
 
 @pytest.mark.parametrize(
     ("term_type", "source", "modes", "expected", "terms_type"),
     (
-        (SignTerm, "(1, [1, 0])", 2, "(+1, [1, 0])", None),
+        (zfs.SignTerm, "(1, [1, 0])", 2, "(+1, [1, 0])", None),
         (
-            SignTerms,
+            zfs.SignTerms,
             "(1, [1, 0]), (-1, [0, 1]), (1, [1, 0])",
             2,
             "(+1, [1, 0]), (-1, [0, 1]), (+1, [1, 0])",
             None,
         ),
         (
-            SignTermSet,
+            zfs.SignTermSet,
             "(1, [1, 0]), (-1, [0, 1]), (1, [1, 0])",
             2,
             "(+1, [1, 0]), (-1, [0, 1])",
-            SignTerms,
+            zfs.SignTerms,
         ),
-        (RealTerm, " ( 2.5 , [1, 0] ) ", 2, "(2.5, [1, 0])", None),
+        (zfs.RealTerm, " ( 2.5 , [1, 0] ) ", 2, "(2.5, [1, 0])", None),
         (
-            RealTerms,
+            zfs.RealTerms,
             " (2.0, [1, 0]) , (-0.5, [0, 1]) , (3.0, [1, 0]) ",
             2,
             "(2.0, [1, 0]), (-0.5, [0, 1]), (3.0, [1, 0])",
             None,
         ),
         (
-            RealTermSet,
+            zfs.RealTermSet,
             "(2.0, [1, 0]), (-0.5, [0, 1]), (3.0, [1, 0])",
             2,
             "(3.0, [1, 0]), (-0.5, [0, 1])",
-            RealTerms,
+            zfs.RealTerms,
         ),
         (
-            RealTermSum,
+            zfs.RealTermSum,
             "(2.0, [1, 0]), (-0.5, [0, 1]), (3.0, [1, 0])",
             2,
             "(5.0, [1, 0]), (-0.5, [0, 1])",
             None,
         ),
-        (ComplexTerm, "(1j, [1, 0])", 2, "(1j, [1, 0])", None),
+        (zfs.ComplexTerm, "(1j, [1, 0])", 2, "(1j, [1, 0])", None),
         (
-            ComplexTerms,
+            zfs.ComplexTerms,
             "((1j), [1, 0]), ((2), [0, 1]), ((3), [1, 0])",
             2,
             "(1j, [1, 0]), ((2+0j), [0, 1]), ((3+0j), [1, 0])",
             None,
         ),
         (
-            ComplexTermSet,
+            zfs.ComplexTermSet,
             "((1j), [1, 0]), ((2), [0, 1]), ((3), [1, 0])",
             2,
             "((3+0j), [1, 0]), ((2+0j), [0, 1])",
-            ComplexTerms,
+            zfs.ComplexTerms,
         ),
         (
-            ComplexTermSum,
+            zfs.ComplexTermSum,
             "((1j), [1, 0]), ((2), [0, 1]), ((3), [1, 0])",
             2,
             "((3+1j), [1, 0]), ((2+0j), [0, 1])",
             None,
         ),
-        (RealTerm, "(2, [1, 0, 1, 0])", 4, "(2.0, [1, 0, 1, 0])", None),
-        (RealTermSum, "(2, [1, 0]), (-2, [1, 0])", 2, "(0.0, [1, 0])", None),
+        (zfs.RealTerm, "(2, [1, 0, 1, 0])", 4, "(2.0, [1, 0, 1, 0])", None),
+        (zfs.RealTermSum, "(2, [1, 0]), (-2, [1, 0])", 2, "(0.0, [1, 0])", None),
     ),
 )
 def test_from_str(term_type, source, modes, expected, terms_type):
@@ -107,14 +85,14 @@ def test_from_str(term_type, source, modes, expected, terms_type):
 @pytest.mark.parametrize(
     "term_type",
     (
-        SignTerms,
-        SignTermSet,
-        RealTerms,
-        RealTermSet,
-        RealTermSum,
-        ComplexTerms,
-        ComplexTermSet,
-        ComplexTermSum,
+        zfs.SignTerms,
+        zfs.SignTermSet,
+        zfs.RealTerms,
+        zfs.RealTermSet,
+        zfs.RealTermSum,
+        zfs.ComplexTerms,
+        zfs.ComplexTermSet,
+        zfs.ComplexTermSum,
     ),
 )
 def test_from_str_empty_containers(term_type):
@@ -124,10 +102,10 @@ def test_from_str_empty_containers(term_type):
 @pytest.mark.parametrize(
     ("term_type", "source"),
     (
-        (RealTerm, "(2.5, [1, 0])"),
-        (RealTerms, "(2.0, [1, 0]), (-0.5, [0, 1])"),
-        (RealTermSet, "(2.0, [1, 0]), (-0.5, [0, 1])"),
-        (RealTermSum, "(2.0, [1, 0]), (-0.5, [0, 1])"),
+        (zfs.RealTerm, "(2.5, [1, 0])"),
+        (zfs.RealTerms, "(2.0, [1, 0]), (-0.5, [0, 1])"),
+        (zfs.RealTermSet, "(2.0, [1, 0]), (-0.5, [0, 1])"),
+        (zfs.RealTermSum, "(2.0, [1, 0]), (-0.5, [0, 1])"),
     ),
 )
 def test_from_str_round_trip(term_type, source):
@@ -136,7 +114,7 @@ def test_from_str_round_trip(term_type, source):
 
 
 @pytest.mark.parametrize(
-    "term_type", (SymbolicTerm, SymbolicTerms, SymbolicTermSet, SymbolicTermSum)
+    "term_type", (zfs.SymbolicTerm, zfs.SymbolicTerms, zfs.SymbolicTermSet, zfs.SymbolicTermSum)
 )
 def test_from_str_symbolic_not_implemented(term_type):
     with pytest.raises(NotImplementedError):
@@ -148,27 +126,27 @@ def test_from_str_symbolic_not_implemented(term_type):
 )
 def test_from_str_errors(source):
     with pytest.raises(ValueError):
-        RealTerm.from_str(source, 2)
+        zfs.RealTerm.from_str(source, 2)
 
     with pytest.raises(IndexError):
-        RealTerm.from_str("(1, [1, 0, 1])", 2)
+        zfs.RealTerm.from_str("(1, [1, 0, 1])", 2)
 
     with pytest.raises(ValueError):
-        SignTerm.from_str("(2, [1, 0])", 2)
+        zfs.SignTerm.from_str("(2, [1, 0])", 2)
 
     with pytest.raises(ValueError):
-        RealTerm.from_str("(1j, [1, 0])", 2)
+        zfs.RealTerm.from_str("(1j, [1, 0])", 2)
 
 
 def test_term_from_str():
-    term = RealTerm.from_str("(2.0, [1, 0, 1])", 3)
+    term = zfs.RealTerm.from_str("(2.0, [1, 0, 1])", 3)
 
-    assert term.string == String(3, {0, 2})
+    assert term.string == zfs.String(3, {0, 2})
     assert term.coeff == 2.0
 
 
 def test_terms_from_str():
-    terms = RealTerms.from_str("(2.0, [1, 0]), (-3.0, [0, 1])", 2)
+    terms = zfs.RealTerms.from_str("(2.0, [1, 0]), (-3.0, [0, 1])", 2)
 
     assert len(terms) == 2
     assert [term.string.get_set() for term in terms] == [{0}, {1}]
@@ -176,14 +154,14 @@ def test_terms_from_str():
 
 
 def test_term_sum_from_str():
-    terms = RealTermSum.from_str("(2.0, [1, 0]), (-3.0, [0, 1])", 2)
+    terms = zfs.RealTermSum.from_str("(2.0, [1, 0]), (-3.0, [0, 1])", 2)
 
     assert len(terms) == 2
     assert terms.strings.get_sets() == ({0}, {1})
 
 
 def test_term_scalar_mul_preserves_viewed_string():
-    terms = RealTerms.from_str("(1.0, [0, 0]), (2.0, [1, 1])", 2)
+    terms = zfs.RealTerms.from_str("(1.0, [0, 0]), (2.0, [1, 1])", 2)
 
     right_scaled = terms[1] * 3.0
     left_scaled = 3.0 * terms[1]
@@ -201,41 +179,41 @@ def test_term_scalar_mul_preserves_viewed_string():
 
 
 def test_term_set_check_term():
-    term_set = RealTermSet(3)
-    term = RealTerm.from_str("[1, 0, 0]", 3)
+    term_set = zfs.RealTermSet(3)
+    term = zfs.RealTerm.from_str("[1, 0, 0]", 3)
 
     assert term_set.insert(term) == 0
     term_set._check_term(term)
 
     with pytest.raises(ValueError, match="different modes"):
-        term_set._check_term(RealTerm.from_str("[1, 0, 0, 0]", 4))
+        term_set._check_term(zfs.RealTerm.from_str("[1, 0, 0, 0]", 4))
 
     with pytest.raises(TypeError, match="Expected a RealTerm instance"):
-        term_set._check_term(RealOperatorTerm.from_str("F0^ F1", 3))
+        term_set._check_term(zfon.RealTerm.from_str("F0^ F1", 3))
 
 
 def test_term_set_check_string():
-    term_set = RealTermSet(3)
-    string = String(3, {0})
+    term_set = zfs.RealTermSet(3)
+    string = zfs.String(3, {0})
 
     term_set._check_string(string)
 
     with pytest.raises(ValueError, match="different modes"):
-        term_set._check_string(String(4, {0}))
+        term_set._check_string(zfs.String(4, {0}))
 
     with pytest.raises(TypeError, match="Expected a String instance"):
-        term_set._check_string(OperatorString(3, "F0^ F1"))
+        term_set._check_string(zfon.String(3, "F0^ F1"))
 
 
 def test_real_dense_round_trip():
-    state = RealTermSum.from_dense(2, [0.0, 1.0, 2.0, 0.0])
+    state = zfs.RealTermSum.from_dense(2, [0.0, 1.0, 2.0, 0.0])
 
     assert state.strings.get_sets() == ({0}, {1})
     np.testing.assert_allclose(state.to_dense(), np.array([0.0, 1.0, 2.0, 0.0]))
 
 
 def test_real_dense_infers_modes_from_fock_space_dim():
-    state = RealTermSum.from_dense(source=[0.0, 1.0, 2.0])
+    state = zfs.RealTermSum.from_dense(source=[0.0, 1.0, 2.0])
 
     assert len(state.modes) == 2
     assert state.strings.get_sets() == ({0}, {1})
@@ -243,14 +221,14 @@ def test_real_dense_infers_modes_from_fock_space_dim():
 
 
 def test_real_dense_big_endian():
-    state = RealTermSum.from_dense(2, [0.0, 1.0, 0.0, 0.0], big_endian=True)
+    state = zfs.RealTermSum.from_dense(2, [0.0, 1.0, 0.0, 0.0], big_endian=True)
 
     assert state.strings.get_sets() == ({1},)
     np.testing.assert_allclose(state.to_dense(big_endian=True), np.array([0.0, 1.0, 0.0, 0.0]))
 
 
 def test_complex_dense_round_trip():
-    state = ComplexTermSum.from_dense(2, [0.0, 1.0 + 2.0j, 0.0, -1.0j])
+    state = zfs.ComplexTermSum.from_dense(2, [0.0, 1.0 + 2.0j, 0.0, -1.0j])
 
     assert state.strings.get_sets() == ({0}, {0, 1})
     np.testing.assert_allclose(state.to_dense(), np.array([0.0, 1.0 + 2.0j, 0.0, -1.0j]))
@@ -259,30 +237,30 @@ def test_complex_dense_round_trip():
 
 
 def test_vdot():
-    lhs = RealTermSum.from_str("(2.0, [1, 0]), (3.0, [0, 1])", 2)
-    rhs = RealTermSum.from_str("(-1.0, [1, 0]), (4.0, [0, 1])", 2)
+    lhs = zfs.RealTermSum.from_str("(2.0, [1, 0]), (3.0, [0, 1])", 2)
+    rhs = zfs.RealTermSum.from_str("(-1.0, [1, 0]), (4.0, [0, 1])", 2)
 
     assert lhs.vdot(rhs) == 10.0
 
 
 def test_vdot_rejects_different_modes():
-    lhs = RealTermSum.from_str("[1, 0]", 2)
-    rhs = RealTermSum.from_str("[1, 0, 0]", 3)
+    lhs = zfs.RealTermSum.from_str("[1, 0]", 2)
+    rhs = zfs.RealTermSum.from_str("[1, 0, 0]", 3)
 
     with pytest.raises(ValueError, match="different modes"):
         lhs.vdot(rhs)
 
 
 def test_complex_vdot():
-    lhs = ComplexTermSum.from_str("((1+1j), [1, 0]), ((2j), [0, 1])", 2)
-    rhs = ComplexTermSum.from_str("((3j), [1, 0]), ((1), [0, 1])", 2)
+    lhs = zfs.ComplexTermSum.from_str("((1+1j), [1, 0]), ((2j), [0, 1])", 2)
+    rhs = zfs.ComplexTermSum.from_str("((3j), [1, 0]), ((1), [0, 1])", 2)
 
     assert lhs.vdot(rhs) == 3.0 + 1.0j
 
 
 def test_complex_vdot_rejects_different_modes():
-    lhs = ComplexTermSum.from_str("[1, 0]", 2)
-    rhs = ComplexTermSum.from_str("[1, 0, 0]", 3)
+    lhs = zfs.ComplexTermSum.from_str("[1, 0]", 2)
+    rhs = zfs.ComplexTermSum.from_str("[1, 0, 0]", 3)
 
     with pytest.raises(ValueError, match="different modes"):
         lhs.vdot(rhs)
@@ -290,7 +268,7 @@ def test_complex_vdot_rejects_different_modes():
 
 def test_symbolic_vdot():
     x, y, z = symbols("x y z", real=True)
-    lhs = SymbolicTermSum.from_iterable(
+    lhs = zfs.SymbolicTermSum.from_iterable(
         [
             ("[1, 0, 0]", x + imaginary_unit * y),
             ("[0, 1, 0]", 2 * x),
@@ -298,7 +276,9 @@ def test_symbolic_vdot():
         ],
         3,
     )
-    rhs = SymbolicTermSum.from_iterable([("[1, 0, 0]", z), ("[0, 1, 0]", 3), ("[1, 1, 0]", y)], 3)
+    rhs = zfs.SymbolicTermSum.from_iterable(
+        [("[1, 0, 0]", z), ("[0, 1, 0]", 3), ("[1, 1, 0]", y)], 3
+    )
     lhs_before = lhs.clone()
     rhs_before = rhs.clone()
 
@@ -316,9 +296,9 @@ def test_symbolic_vdot():
 
 def test_symbolic_vdot_empty_and_disjoint():
     x = symbols("x")
-    empty = SymbolicTermSum(2)
-    lhs = SymbolicTermSum.from_iterable([("[1, 0]", x)], 2)
-    rhs = SymbolicTermSum.from_iterable([("[0, 1]", x)], 2)
+    empty = zfs.SymbolicTermSum(2)
+    lhs = zfs.SymbolicTermSum.from_iterable([("[1, 0]", x)], 2)
+    rhs = zfs.SymbolicTermSum.from_iterable([("[0, 1]", x)], 2)
 
     assert empty.vdot(empty) is S.Zero
     assert empty.vdot(lhs) is S.Zero
@@ -327,104 +307,104 @@ def test_symbolic_vdot_empty_and_disjoint():
 
 
 def test_symbolic_vdot_rejects_different_modes():
-    lhs = SymbolicTermSum.from_str("[1, 0]", 2)
-    rhs = SymbolicTermSum.from_str("[1, 0, 0]", 3)
+    lhs = zfs.SymbolicTermSum.from_str("[1, 0]", 2)
+    rhs = zfs.SymbolicTermSum.from_str("[1, 0, 0]", 3)
 
     with pytest.raises(ValueError, match="different modes"):
         lhs.vdot(rhs)
 
 
 def test_real_operator_apply():
-    op = RealOperator.from_str("F1^ F0", 2)
-    state = RealTermSum.from_str("[1, 0]", 2)
+    op = zfon.RealTermSum.from_str("F1^ F0", 2)
+    state = zfs.RealTermSum.from_str("[1, 0]", 2)
 
     out = op.apply(state)
 
-    assert isinstance(out, RealTermSum)
+    assert isinstance(out, zfs.RealTermSum)
     assert str(out) == "(1.0, [0, 1])"
 
 
 def test_real_operator_mat_elem():
-    op = RealOperator.from_str("F1^ F0", 2)
-    bra = RealTermSum.from_str("[0, 1]", 2)
-    ket = RealTermSum.from_str("[1, 0]", 2)
+    op = zfon.RealTermSum.from_str("F1^ F0", 2)
+    bra = zfs.RealTermSum.from_str("[0, 1]", 2)
+    ket = zfs.RealTermSum.from_str("[1, 0]", 2)
 
     assert op.mat_elem(bra, ket) == 1.0
     assert op.exp_val(ket) == 0.0
 
 
 def test_real_operator_apply_rejects_different_modes():
-    op = RealOperator.from_str("F1^ F0", 2)
-    state = RealTermSum.from_str("[1, 0, 0]", 3)
+    op = zfon.RealTermSum.from_str("F1^ F0", 2)
+    state = zfs.RealTermSum.from_str("[1, 0, 0]", 3)
 
     with pytest.raises(ValueError, match="different modes"):
         op.apply(state)
 
 
 def test_real_operator_mat_elem_rejects_different_modes():
-    op = RealOperator.from_str("F1^ F0", 2)
-    bra = RealTermSum.from_str("[0, 1]", 2)
-    ket = RealTermSum.from_str("[1, 0, 0]", 3)
+    op = zfon.RealTermSum.from_str("F1^ F0", 2)
+    bra = zfs.RealTermSum.from_str("[0, 1]", 2)
+    ket = zfs.RealTermSum.from_str("[1, 0, 0]", 3)
 
     with pytest.raises(ValueError, match="different modes"):
         op.mat_elem(bra, ket)
 
 
 def test_complex_operator_apply():
-    op = ComplexOperator.from_str("((1j), F1^ F0)", 2)
-    state = ComplexTermSum.from_str("[1, 0]", 2)
+    op = zfon.ComplexTermSum.from_str("((1j), F1^ F0)", 2)
+    state = zfs.ComplexTermSum.from_str("[1, 0]", 2)
 
     out = op.apply(state)
 
-    assert isinstance(out, ComplexTermSum)
+    assert isinstance(out, zfs.ComplexTermSum)
     assert str(out) == "(1j, [0, 1])"
 
 
 def test_complex_operator_mat_elem():
-    op = ComplexOperator.from_str("((1j), F1^ F0)", 2)
-    bra = ComplexTermSum.from_str("[0, 1]", 2)
-    ket = ComplexTermSum.from_str("[1, 0]", 2)
+    op = zfon.ComplexTermSum.from_str("((1j), F1^ F0)", 2)
+    bra = zfs.ComplexTermSum.from_str("[0, 1]", 2)
+    ket = zfs.ComplexTermSum.from_str("[1, 0]", 2)
 
     assert op.mat_elem(bra, ket) == 1.0j
     assert op.exp_val(ket) == 0.0j
 
 
 def test_complex_operator_apply_rejects_different_modes():
-    op = ComplexOperator.from_str("((1j), F1^ F0)", 2)
-    state = ComplexTermSum.from_str("[1, 0, 0]", 3)
+    op = zfon.ComplexTermSum.from_str("((1j), F1^ F0)", 2)
+    state = zfs.ComplexTermSum.from_str("[1, 0, 0]", 3)
 
     with pytest.raises(ValueError, match="different modes"):
         op.apply(state)
 
 
 def test_complex_operator_mat_elem_rejects_different_modes():
-    op = ComplexOperator.from_str("((1j), F1^ F0)", 2)
-    bra = ComplexTermSum.from_str("[0, 1]", 2)
-    ket = ComplexTermSum.from_str("[1, 0, 0]", 3)
+    op = zfon.ComplexTermSum.from_str("((1j), F1^ F0)", 2)
+    bra = zfs.ComplexTermSum.from_str("[0, 1]", 2)
+    ket = zfs.ComplexTermSum.from_str("[1, 0, 0]", 3)
 
     with pytest.raises(ValueError, match="different modes"):
         op.mat_elem(bra, ket)
 
 
 def test_string_scalar_mul_promotes_to_term():
-    term = 2.0 * String(2, {0})
+    term = 2.0 * zfs.String(2, {0})
 
-    assert isinstance(term, RealTerm)
+    assert isinstance(term, zfs.RealTerm)
     assert term.string.get_set() == {0}
     assert term.coeff == 2.0
 
 
 def test_complex_term_scalar_mul():
-    term = ComplexTerm.from_str("((1j), [1, 0])", 2)
+    term = zfs.ComplexTerm.from_str("((1j), [1, 0])", 2)
 
     out = term * 2.0
 
-    assert isinstance(out, ComplexTerm)
+    assert isinstance(out, zfs.ComplexTerm)
     assert out.coeff == 2.0j
 
 
 def test_terms_slice():
-    terms = ComplexTerms.from_str("((1j), [1, 0]), ((2j), [0, 1])", 2)
+    terms = zfs.ComplexTerms.from_str("((1j), [1, 0]), ((2j), [0, 1])", 2)
 
     assert len(terms[1:]) == 1
     assert terms[1].coeff == 2.0j

@@ -1,12 +1,13 @@
 import numpy as np
 import pytest
 
+import zixy.qubit.operator as zqo
 from zixy.container.coeffs import ComplexSign, Sign
-from zixy.qubit.operator import ComplexSignTerm, I, SignTerm, SignTerms, SignTermSet, X, Y, Z
+from zixy.qubit.operator import I, X, Y, Z
 
 
 def test_term():
-    term = SignTerm(6)
+    term = zqo.SignTerm(6)
     assert len(term._impl) == 1
     assert len(term._impl._strings) == 1
     assert len(term._impl._coeffs) == 1
@@ -28,7 +29,7 @@ def test_term():
     term.string.imul_get_phase(term.string)
     assert str(term) == "(-1, )"
 
-    other = SignTerm(7)
+    other = zqo.SignTerm(7)
     with pytest.raises(ValueError) as err:
         term * other
     assert str(err.value) == "Qubits-based objects are based on different qubit spaces."
@@ -37,20 +38,20 @@ def test_term():
     assert str(err.value) == "Qubits-based objects are based on different qubit spaces."
 
     term.string.set((X, Y) * 3)
-    other = SignTerm(6)
+    other = zqo.SignTerm(6)
     other.string.set((X, Y, Z) * 2)
     assert term.string.imul_get_phase(other.string) == ComplexSign(0)
     assert term.string.get_tuple() == (I, I, Y, Z, Z, X)
-    assert type(term * other) is ComplexSignTerm
+    assert type(term * other) is zqo.ComplexSignTerm
     # out-of-place mul should return a string equal to the original value of term
     assert (term * other).string.get_tuple() == (X, Y) * 3
 
 
 def test_sign_term_to_sparse_matrix():
-    mat = SignTerm(1, (Y,)).to_sparse_matrix()
+    mat = zqo.SignTerm(1, (Y,)).to_sparse_matrix()
     assert np.allclose(mat.toarray(), np.array([[0, -1j], [1j, 0]]))
 
-    mat = SignTerm(2, (Y, X)).to_sparse_matrix()
+    mat = zqo.SignTerm(2, (Y, X)).to_sparse_matrix()
     assert np.allclose(
         mat.toarray(),
         np.array(
@@ -63,7 +64,7 @@ def test_sign_term_to_sparse_matrix():
         ),
     )
 
-    mat = SignTerm(4, (Z, I, X, Y)).to_sparse_matrix()
+    mat = zqo.SignTerm(4, (Z, I, X, Y)).to_sparse_matrix()
     mat_i = np.eye(2)
     mat_x = np.array([[0, 1], [1, 0]])
     mat_y = np.array([[0, -1j], [1j, 0]])
@@ -71,7 +72,7 @@ def test_sign_term_to_sparse_matrix():
     expected = np.kron(np.kron(np.kron(mat_y, mat_x), mat_i), mat_z)
     assert np.allclose(mat.toarray(), expected)
 
-    mat = SignTerm(4, ((Z, I, X, Y), -1)).to_sparse_matrix()
+    mat = zqo.SignTerm(4, ((Z, I, X, Y), -1)).to_sparse_matrix()
     assert np.allclose(mat.toarray(), -expected)
 
 
@@ -81,7 +82,7 @@ def test_append_iterable():
         (X, Y, Z, Z, Y, X),
         (Y, Z, Z, I, X, Z),
     )
-    a = SignTerms(n_qubit)
+    a = zqo.SignTerms(n_qubit)
     a.append_iterable(tuples)
     assert a[0].string.get_tuple() == (X, Y, Z, Z, Y, X)
     assert a[1].string.get_tuple() == (Y, Z, Z, I, X, Z)
@@ -103,7 +104,7 @@ def test_sign_term_set_strings_only():
         (Y, X, X, I, X, Z),
         (X, X, I, X, Z, X),
     )
-    a = SignTermSet(n_qubit)
+    a = zqo.SignTermSet(n_qubit)
     a.insert_iterable(tuples)
     for i in range(len(tuples)):
         assert a.insert(tuples[i]) == i
@@ -122,7 +123,7 @@ def test_sign_term_set():
         ((Y, X, X, I, X, Z), Sign(False)),
         ((X, X, I, X, Z, X), Sign(True)),
     )
-    a = SignTermSet(n_qubit)
+    a = zqo.SignTermSet(n_qubit)
     a.insert_iterable(tuples)
     assert len(a._impl._strings) == len(a._impl._coeffs)
     assert len(a._impl._strings) == len(tuples)

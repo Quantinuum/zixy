@@ -1,99 +1,76 @@
 import pytest
 from sympy import sympify
 
+import zixy.fermion.operator.general as zfog
+import zixy.fermion.operator.normal as zfon
 from zixy.container.coeffs import ComplexSign, Sign
-from zixy.fermion.operator.general import (
-    ComplexTermSum as GeneralComplexTermSum,
-    RealTerm as GeneralRealTerm,
-    RealTermSum as GeneralRealTermSum,
-    String as GeneralString,
-)
-from zixy.fermion.operator.normal import (
-    ComplexTerm,
-    ComplexTerms,
-    ComplexTermSet,
-    ComplexTermSum,
-    RealTerm,
-    RealTerms,
-    RealTermSet,
-    RealTermSum,
-    SignTerm,
-    SignTerms,
-    SignTermSet,
-    SignTermSum,
-    String,
-    SymbolicTerm,
-    SymbolicTerms,
-    SymbolicTermSet,
-    SymbolicTermSum,
-)
 
 
 @pytest.mark.parametrize(
     ("term_type", "source", "modes", "expected", "terms_type"),
     (
-        (SignTerm, "(1, F0^ F1)", 2, "(+1, F0^ F1)", None),
+        (zfon.SignTerm, "(1, F0^ F1)", 2, "(+1, F0^ F1)", None),
         (
-            SignTerms,
+            zfon.SignTerms,
             "(1, F0^ F1), (-1, F1^ F0), (1, F0^ F1)",
             2,
             "(+1, F0^ F1), (-1, F1^ F0), (+1, F0^ F1)",
             None,
         ),
         (
-            SignTermSet,
+            zfon.SignTermSet,
             "(1, F0^ F1), (-1, F1^ F0), (1, F0^ F1)",
             2,
             "(+1, F0^ F1), (-1, F1^ F0)",
-            SignTerms,
+            zfon.SignTerms,
         ),
-        (RealTerm, " ( 2.5 , F0^ F1 ) ", 2, "(2.5, F0^ F1)", None),
+        (zfon.RealTerm, " ( 2.5 , F0^ F1 ) ", 2, "(2.5, F0^ F1)", None),
         (
-            RealTerms,
+            zfon.RealTerms,
             " (2.0, F0^ F1) , (-0.5, F1^ F0) , (3.0, F0^ F1) ",
             2,
             "(2.0, F0^ F1), (-0.5, F1^ F0), (3.0, F0^ F1)",
             None,
         ),
         (
-            RealTermSet,
+            zfon.RealTermSet,
             "(2.0, F0^ F1), (-0.5, F1^ F0), (3.0, F0^ F1)",
             2,
             "(3.0, F0^ F1), (-0.5, F1^ F0)",
-            RealTerms,
+            zfon.RealTerms,
         ),
         (
-            RealTermSum,
+            zfon.RealTermSum,
             "(2.0, F0^ F1), (-0.5, F1^ F0), (3.0, F0^ F1)",
             2,
             "(5.0, F0^ F1), (-0.5, F1^ F0)",
             None,
         ),
-        (ComplexTerm, "(1j, F0^ F1)", 2, "(1j, F0^ F1)", None),
+        (zfon.ComplexTerm, "(1j, F0^ F1)", 2, "(1j, F0^ F1)", None),
         (
-            ComplexTerms,
+            zfon.ComplexTerms,
             "((1j), F0^ F1), ((2), F1^ F0), ((3), F0^ F1)",
             2,
             "(1j, F0^ F1), ((2+0j), F1^ F0), ((3+0j), F0^ F1)",
             None,
         ),
         (
-            ComplexTermSet,
+            zfon.ComplexTermSet,
             "((1j), F0^ F1), ((2), F1^ F0), ((3), F0^ F1)",
             2,
             "((3+0j), F0^ F1), ((2+0j), F1^ F0)",
-            ComplexTerms,
+            zfon.ComplexTerms,
         ),
         (
-            ComplexTermSum,
+            zfon.ComplexTermSum,
             "((1j), F0^ F1), ((2), F1^ F0), ((3), F0^ F1)",
             2,
             "((3+1j), F0^ F1), ((2+0j), F1^ F0)",
             None,
         ),
-        (RealTerm, "(2, F0^ F1^ F2 F3)", 4, "(2.0, F0^ F1^ F2 F3)", None),
-        (RealTerms, "\n(1, F0^ F1),\n(2, F1^ F0)\n", 2, "(1.0, F0^ F1), (2.0, F1^ F0)", None),
-        (RealTermSum, "(2, F0^ F1^ F2), (-2, F0^ F1^ F2)", 3, "(0.0, F0^ F1^ F2)", None),
+        (zfon.RealTerm, "(2, F0^ F1^ F2 F3)", 4, "(2.0, F0^ F1^ F2 F3)", None),
+        (zfon.RealTerms, "\n(1, F0^ F1),\n(2, F1^ F0)\n", 2, "(1.0, F0^ F1), (2.0, F1^ F0)", None),
+        (zfon.RealTermSum, "(2, F0^ F1^ F2), (-2, F0^ F1^ F2)", 3, "(0.0, F0^ F1^ F2)", None),
     ),
 )
 def test_from_str(term_type, source, modes, expected, terms_type):
@@ -107,14 +84,14 @@ def test_from_str(term_type, source, modes, expected, terms_type):
 @pytest.mark.parametrize(
     "term_type",
     (
-        SignTerms,
-        SignTermSet,
-        RealTerms,
-        RealTermSet,
-        RealTermSum,
-        ComplexTerms,
-        ComplexTermSet,
-        ComplexTermSum,
+        zfon.SignTerms,
+        zfon.SignTermSet,
+        zfon.RealTerms,
+        zfon.RealTermSet,
+        zfon.RealTermSum,
+        zfon.ComplexTerms,
+        zfon.ComplexTermSet,
+        zfon.ComplexTermSum,
     ),
 )
 def test_from_str_empty_containers(term_type):
@@ -124,10 +101,10 @@ def test_from_str_empty_containers(term_type):
 @pytest.mark.parametrize(
     ("term_type", "source"),
     (
-        (ComplexTerm, "((1j), F0^ F1)"),
-        (ComplexTerms, "((1j), F0^ F1), ((2), F1^ F0)"),
-        (ComplexTermSet, "((1j), F0^ F1), ((2), F1^ F0)"),
-        (ComplexTermSum, "((1j), F0^ F1), ((2), F1^ F0)"),
+        (zfon.ComplexTerm, "((1j), F0^ F1)"),
+        (zfon.ComplexTerms, "((1j), F0^ F1), ((2), F1^ F0)"),
+        (zfon.ComplexTermSet, "((1j), F0^ F1), ((2), F1^ F0)"),
+        (zfon.ComplexTermSum, "((1j), F0^ F1), ((2), F1^ F0)"),
     ),
 )
 def test_from_str_round_trip(term_type, source):
@@ -136,7 +113,7 @@ def test_from_str_round_trip(term_type, source):
 
 
 @pytest.mark.parametrize(
-    "term_type", (SymbolicTerm, SymbolicTerms, SymbolicTermSet, SymbolicTermSum)
+    "term_type", (zfon.SymbolicTerm, zfon.SymbolicTerms, zfon.SymbolicTermSet, zfon.SymbolicTermSum)
 )
 def test_from_str_symbolic_not_implemented(term_type):
     with pytest.raises(NotImplementedError):
@@ -148,67 +125,67 @@ def test_from_str_symbolic_not_implemented(term_type):
 )
 def test_from_str_errors(source):
     with pytest.raises(ValueError):
-        RealTerm.from_str(source, 2)
+        zfon.RealTerm.from_str(source, 2)
 
     with pytest.raises(ValueError):
-        RealTerm.from_str("(1, F2^ F0)", 2)
+        zfon.RealTerm.from_str("(1, F2^ F0)", 2)
 
     with pytest.raises(ValueError):
-        SignTerm.from_str("(2, F0^ F1)", 2)
+        zfon.SignTerm.from_str("(2, F0^ F1)", 2)
 
     with pytest.raises(ValueError):
-        RealTerm.from_str("(1j, F0^ F1)", 2)
+        zfon.RealTerm.from_str("(1j, F0^ F1)", 2)
 
     with pytest.raises(AssertionError):
-        SignTermSum.from_str("(1, F0^ F1), (-1, F1^ F0)", 2)
+        zfon.SignTermSum.from_str("(1, F0^ F1), (-1, F1^ F0)", 2)
 
 
 def test_real_term():
-    term = RealTerm(4, ("F0^ F1", 2.0))
+    term = zfon.RealTerm(4, ("F0^ F1", 2.0))
     assert type(term.coeff) is float
     assert term.coeff == 2.0
     assert term.string.get_sets() == ([0], [1])
 
     scaled = term * 3
-    assert type(scaled) is RealTerm
+    assert type(scaled) is zfon.RealTerm
     assert str(scaled) == "(6.0, F0^ F1)"
 
     complex_scaled = term * 1j
-    assert type(complex_scaled) is ComplexTerm
+    assert type(complex_scaled) is zfon.ComplexTerm
     assert str(complex_scaled) == "(2j, F0^ F1)"
 
     symbolic_scaled = term * sympify("a")
-    assert type(symbolic_scaled) is SymbolicTerm
+    assert type(symbolic_scaled) is zfon.SymbolicTerm
     assert str(symbolic_scaled) == "(2.0*a, F0^ F1)"
 
-    sign_scaled = SignTerm(4, "F0^ F1") * Sign()
-    assert type(sign_scaled) is SignTerm
+    sign_scaled = zfon.SignTerm(4, "F0^ F1") * Sign()
+    assert type(sign_scaled) is zfon.SignTerm
     assert str(sign_scaled) == "(+1, F0^ F1)"
 
     complex_sign_scaled = term * ComplexSign(1)
-    assert type(complex_sign_scaled) is ComplexTerm
+    assert type(complex_sign_scaled) is zfon.ComplexTerm
     assert str(complex_sign_scaled) == "(2j, F0^ F1)"
 
-    ordered = RealTerm.from_str("F0^ F1", 4)
+    ordered = zfon.RealTerm.from_str("F0^ F1", 4)
     assert str(ordered) == "(1.0, F0^ F1)"
     assert str(ordered.daggered()) == "(1.0, F1^ F0)"
 
 
 def test_complex_term():
-    term = ComplexTerm(3, ("F0^ F1", 1 + 2j))
+    term = zfon.ComplexTerm(3, ("F0^ F1", 1 + 2j))
     assert type(term.coeff) is complex
     assert term.coeff == 1 + 2j
 
     scaled = term * 2
-    assert type(scaled) is ComplexTerm
+    assert type(scaled) is zfon.ComplexTerm
     assert str(scaled) == "((2+4j), F0^ F1)"
 
-    adjoint = ComplexTerm.from_str("((1j), F0^ F1)", 2).daggered()
+    adjoint = zfon.ComplexTerm.from_str("((1j), F0^ F1)", 2).daggered()
     assert str(adjoint) == "(-1j, F1^ F0)"
 
 
 def test_term_scalar_mul_preserves_viewed_string():
-    terms = RealTerms.from_str("(1.0, F0^ F0), (2.0, F1^ F1)", 2)
+    terms = zfon.RealTerms.from_str("(1.0, F0^ F0), (2.0, F1^ F1)", 2)
 
     right_scaled = terms[1] * 3.0
     left_scaled = 3.0 * terms[1]
@@ -228,10 +205,10 @@ def test_term_scalar_mul_preserves_viewed_string():
 @pytest.mark.parametrize(
     ("constructor", "source"),
     (
-        (RealTerm.from_str, "F1 F0^"),
-        (RealTerms.from_str, "(1.0, F1 F0^)"),
-        (RealTermSet.from_str, "(1.0, F1 F0^)"),
-        (RealTermSum.from_str, "(1.0, F1 F0^)"),
+        (zfon.RealTerm.from_str, "F1 F0^"),
+        (zfon.RealTerms.from_str, "(1.0, F1 F0^)"),
+        (zfon.RealTermSet.from_str, "(1.0, F1 F0^)"),
+        (zfon.RealTermSum.from_str, "(1.0, F1 F0^)"),
     ),
 )
 def test_rejects_non_normal_ordered_inputs(constructor, source):
@@ -242,15 +219,15 @@ def test_rejects_non_normal_ordered_inputs(constructor, source):
 @pytest.mark.parametrize(
     ("term", "expected"),
     (
-        (SignTerm.from_str("F0^ F1", 2), "(+1, F1^ F0)"),
-        (SignTerm.from_str("F0^ F1^ F2", 3), "(-1, F2^ F0 F1)"),
-        (RealTerm.from_str("(2, F0^ F1)", 2), "(2.0, F1^ F0)"),
-        (RealTerm.from_str("F0^ F1^ F2", 3), "(-1.0, F2^ F0 F1)"),
-        (RealTerm.from_str("(2, F0^ F1^ F2 F3)", 4), "(2.0, F2^ F3^ F0 F1)"),
-        (ComplexTerm.from_str("((1j), F0^ F1)", 2), "(-1j, F1^ F0)"),
-        (ComplexTerm.from_str("((1j), F0^ F1^ F2)", 3), "(1j, F2^ F0 F1)"),
-        (SymbolicTerm(2, ("F0^ F1", sympify("a"))), "(conjugate(a), F1^ F0)"),
-        (SymbolicTerm(3, ("F0^ F1^ F2", sympify("a"))), "(-conjugate(a), F2^ F0 F1)"),
+        (zfon.SignTerm.from_str("F0^ F1", 2), "(+1, F1^ F0)"),
+        (zfon.SignTerm.from_str("F0^ F1^ F2", 3), "(-1, F2^ F0 F1)"),
+        (zfon.RealTerm.from_str("(2, F0^ F1)", 2), "(2.0, F1^ F0)"),
+        (zfon.RealTerm.from_str("F0^ F1^ F2", 3), "(-1.0, F2^ F0 F1)"),
+        (zfon.RealTerm.from_str("(2, F0^ F1^ F2 F3)", 4), "(2.0, F2^ F3^ F0 F1)"),
+        (zfon.ComplexTerm.from_str("((1j), F0^ F1)", 2), "(-1j, F1^ F0)"),
+        (zfon.ComplexTerm.from_str("((1j), F0^ F1^ F2)", 3), "(1j, F2^ F0 F1)"),
+        (zfon.SymbolicTerm(2, ("F0^ F1", sympify("a"))), "(conjugate(a), F1^ F0)"),
+        (zfon.SymbolicTerm(3, ("F0^ F1^ F2", sympify("a"))), "(-conjugate(a), F2^ F0 F1)"),
     ),
 )
 def test_term_dagger(term, expected):
@@ -263,28 +240,28 @@ def test_term_dagger(term, expected):
 @pytest.mark.parametrize(
     ("term", "original", "expected"),
     (
-        (SignTerm.from_str("F0^ F1", 2), "(+1, F0^ F1)", "(+1, F1^ F0)"),
-        (SignTerm.from_str("F0^ F1^ F2", 3), "(+1, F0^ F1^ F2)", "(-1, F2^ F0 F1)"),
-        (RealTerm.from_str("(2, F0^ F1)", 2), "(2.0, F0^ F1)", "(2.0, F1^ F0)"),
-        (RealTerm.from_str("F0^ F1^ F2", 3), "(1.0, F0^ F1^ F2)", "(-1.0, F2^ F0 F1)"),
+        (zfon.SignTerm.from_str("F0^ F1", 2), "(+1, F0^ F1)", "(+1, F1^ F0)"),
+        (zfon.SignTerm.from_str("F0^ F1^ F2", 3), "(+1, F0^ F1^ F2)", "(-1, F2^ F0 F1)"),
+        (zfon.RealTerm.from_str("(2, F0^ F1)", 2), "(2.0, F0^ F1)", "(2.0, F1^ F0)"),
+        (zfon.RealTerm.from_str("F0^ F1^ F2", 3), "(1.0, F0^ F1^ F2)", "(-1.0, F2^ F0 F1)"),
         (
-            RealTerm.from_str("(2, F0^ F1^ F2 F3)", 4),
+            zfon.RealTerm.from_str("(2, F0^ F1^ F2 F3)", 4),
             "(2.0, F0^ F1^ F2 F3)",
             "(2.0, F2^ F3^ F0 F1)",
         ),
-        (ComplexTerm.from_str("((1j), F0^ F1)", 2), "(1j, F0^ F1)", "(-1j, F1^ F0)"),
+        (zfon.ComplexTerm.from_str("((1j), F0^ F1)", 2), "(1j, F0^ F1)", "(-1j, F1^ F0)"),
         (
-            ComplexTerm.from_str("((1j), F0^ F1^ F2)", 3),
+            zfon.ComplexTerm.from_str("((1j), F0^ F1^ F2)", 3),
             "(1j, F0^ F1^ F2)",
             "(1j, F2^ F0 F1)",
         ),
         (
-            SymbolicTerm(2, ("F0^ F1", sympify("a"))),
+            zfon.SymbolicTerm(2, ("F0^ F1", sympify("a"))),
             "(a, F0^ F1)",
             "(conjugate(a), F1^ F0)",
         ),
         (
-            SymbolicTerm(3, ("F0^ F1^ F2", sympify("a"))),
+            zfon.SymbolicTerm(3, ("F0^ F1^ F2", sympify("a"))),
             "(a, F0^ F1^ F2)",
             "(-conjugate(a), F2^ F0 F1)",
         ),
@@ -299,88 +276,88 @@ def test_term_daggered(term, original, expected):
 
 
 def test_sign_term_mul_by_string():
-    term = SignTerm(2, "F0")
-    string = String(2, "F0^")
+    term = zfon.SignTerm(2, "F0")
+    string = zfon.String(2, "F0^")
 
     product = term * string
 
-    assert type(product) is SignTermSum
+    assert type(product) is zfon.SignTermSum
     assert str(product) == "(+1, ), (-1, F0^ F0)"
 
 
 def test_real_term_mul_by_string():
-    term = RealTerm(2, ("F0", 2.0))
-    string = String(2, "F0^")
+    term = zfon.RealTerm(2, ("F0", 2.0))
+    string = zfon.String(2, "F0^")
 
     product = term * string
 
-    assert type(product) is RealTermSum
+    assert type(product) is zfon.RealTermSum
     assert str(product) == "(2.0, ), (-2.0, F0^ F0)"
 
 
 def test_complex_term_mul_by_string():
-    term = ComplexTerm(2, ("F0", 1j))
-    string = String(2, "F0^")
+    term = zfon.ComplexTerm(2, ("F0", 1j))
+    string = zfon.String(2, "F0^")
 
     product = term * string
 
-    assert type(product) is ComplexTermSum
+    assert type(product) is zfon.ComplexTermSum
     assert str(product) == "(1j, ), (-1j, F0^ F0)"
 
 
 def test_symbolic_term_mul_by_string():
     a = sympify("a")
-    term = SymbolicTerm(2, ("F0", a))
-    string = String(2, "F0^")
+    term = zfon.SymbolicTerm(2, ("F0", a))
+    string = zfon.String(2, "F0^")
 
     product = term * string
 
-    assert type(product) is SymbolicTermSum
+    assert type(product) is zfon.SymbolicTermSum
     assert str(product) == "(a, ), (-a, F0^ F0)"
 
 
 def test_sign_term_mul_by_sign_term():
-    lhs = SignTerm(2, "F0")
-    rhs = SignTerm(2, "F0^")
+    lhs = zfon.SignTerm(2, "F0")
+    rhs = zfon.SignTerm(2, "F0^")
 
     product = lhs * rhs
 
-    assert type(product) is SignTermSum
+    assert type(product) is zfon.SignTermSum
     assert str(product) == "(+1, ), (-1, F0^ F0)"
 
 
 def test_real_term_mul_by_real_term():
-    lhs = RealTerm(2, ("F0", 2.0))
-    rhs = RealTerm(2, ("F0^", 3.0))
+    lhs = zfon.RealTerm(2, ("F0", 2.0))
+    rhs = zfon.RealTerm(2, ("F0^", 3.0))
 
     product = lhs * rhs
 
-    assert type(product) is RealTermSum
+    assert type(product) is zfon.RealTermSum
     assert str(product) == "(6.0, ), (-6.0, F0^ F0)"
 
 
 def test_real_term_mul_by_complex_term():
-    lhs = RealTerm(2, ("F0", 2.0))
-    rhs = ComplexTerm(2, ("F0^", 1j))
+    lhs = zfon.RealTerm(2, ("F0", 2.0))
+    rhs = zfon.ComplexTerm(2, ("F0^", 1j))
 
     product = lhs * rhs
 
-    assert type(product) is ComplexTermSum
+    assert type(product) is zfon.ComplexTermSum
     assert str(product) == "(2j, ), (-2j, F0^ F0)"
 
 
 def test_symbolic_term_mul_by_symbolic_term():
-    lhs = SymbolicTerm(2, ("F0", sympify("a")))
-    rhs = SymbolicTerm(2, ("F0^", sympify("b")))
+    lhs = zfon.SymbolicTerm(2, ("F0", sympify("a")))
+    rhs = zfon.SymbolicTerm(2, ("F0^", sympify("b")))
 
     product = lhs * rhs
 
-    assert type(product) is SymbolicTermSum
+    assert type(product) is zfon.SymbolicTermSum
     assert str(product) == "(a*b, ), (-a*b, F0^ F0)"
 
 
 def test_real_terms():
-    terms = RealTerms(4)
+    terms = zfon.RealTerms(4)
     assert len(terms) == 0
     terms.resize(5)
 
@@ -391,12 +368,12 @@ def test_real_terms():
 
     terms[1].string.set("F0^ F1")
     terms[1].coeff = 2.5
-    terms[2] = String(4, "F2^")
-    terms[3] = RealTerm(4, ("F3", -1.0))
+    terms[2] = zfon.String(4, "F2^")
+    terms[3] = zfon.RealTerm(4, ("F3", -1.0))
 
     assert str(terms[1:4]) == "(2.5, F0^ F1), (1.0, F2^), (-1.0, F3)"
-    assert type(terms.into(ComplexTerms)) is ComplexTerms
-    assert tuple(terms.into(ComplexTerms).coeffs) == (
+    assert type(terms.into(zfon.ComplexTerms)) is zfon.ComplexTerms
+    assert tuple(terms.into(zfon.ComplexTerms).coeffs) == (
         1 + 0j,
         2.5 + 0j,
         1 + 0j,
@@ -406,7 +383,7 @@ def test_real_terms():
 
 
 def test_complex_terms():
-    terms = ComplexTerms(3)
+    terms = zfon.ComplexTerms(3)
     terms.append_iterable(
         (
             ("F0^ F1", 1 + 2j),
@@ -414,20 +391,20 @@ def test_complex_terms():
         )
     )
 
-    assert type(terms[0]) is ComplexTerm
+    assert type(terms[0]) is zfon.ComplexTerm
     assert str(terms) == "((1+2j), F0^ F1), ((-0-1j), F2)"
 
     terms[0].coeff = 1.25
     terms[1].coeff = -2.0
     assert terms[0].coeff == 1.25 + 0j
-    assert type(terms.into(RealTerms)) is RealTerms
+    assert type(terms.into(zfon.RealTerms)) is zfon.RealTerms
     terms[1].coeff = 1j
     with pytest.raises(ValueError):
-        terms.into(RealTerms)
+        terms.into(zfon.RealTerms)
 
 
 def test_append_iterable():
-    terms = RealTerms(4)
+    terms = zfon.RealTerms(4)
     terms.append_iterable(
         (
             ("F0^ F1", 2.0),
@@ -442,10 +419,10 @@ def test_append_iterable():
 
 
 def test_real_term_sum():
-    term_sum = RealTermSum(4)
-    term_sum += RealTerm(4, ("F0^ F1", 2.0))
-    term_sum += RealTerm(4, ("F0^ F1", -0.5))
-    term_sum += RealTerm(4, ("F2^", 1.0))
+    term_sum = zfon.RealTermSum(4)
+    term_sum += zfon.RealTerm(4, ("F0^ F1", 2.0))
+    term_sum += zfon.RealTerm(4, ("F0^ F1", -0.5))
+    term_sum += zfon.RealTerm(4, ("F2^", 1.0))
 
     assert len(term_sum) == 2
     assert term_sum["F0^ F1"] == 1.5
@@ -454,16 +431,16 @@ def test_real_term_sum():
     assert term_sum.l2_norm == pytest.approx((1.5**2 + 1.0**2) ** 0.5)
     assert str(term_sum.filter_significant(atol=1.1)) == "(1.5, F0^ F1)"
 
-    number = RealTermSum.from_str("F0^ F0", 2)
+    number = zfon.RealTermSum.from_str("F0^ F0", 2)
     assert str(number) == "(1.0, F0^ F0)"
 
 
 def test_real_term_add_iterable():
-    term_sum = RealTermSum.from_iterable(
+    term_sum = zfon.RealTermSum.from_iterable(
         (
-            RealTerm(4, ("F0^ F1", 1.0)),
-            RealTerm(4, ("F0^ F1", -1.0)),
-            RealTerm(4, ("F2", 0.25)),
+            zfon.RealTerm(4, ("F0^ F1", 1.0)),
+            zfon.RealTerm(4, ("F0^ F1", -1.0)),
+            zfon.RealTerm(4, ("F2", 0.25)),
         ),
         4,
     )
@@ -475,7 +452,7 @@ def test_real_term_add_iterable():
 
 
 def test_real_term_into_other_types():
-    term_set = RealTermSet(4)
+    term_set = zfon.RealTermSet(4)
 
     assert term_set.insert(("F0^ F1", 2.0)) == 0
     assert term_set.insert(("F2", -1.0)) == 1
@@ -486,9 +463,9 @@ def test_real_term_into_other_types():
     assert term_set.contains("F2")
 
     terms = term_set.to_terms()
-    assert type(terms) is RealTerms
-    assert RealTermSet.from_terms(terms) == term_set
-    assert type(term_set.into(ComplexTermSet)) is ComplexTermSet
+    assert type(terms) is zfon.RealTerms
+    assert zfon.RealTermSet.from_terms(terms) == term_set
+    assert type(term_set.into(zfon.ComplexTermSet)) is zfon.ComplexTermSet
 
     assert term_set.remove("F0^ F1") == 0
     assert not term_set.contains("F0^ F1")
@@ -497,35 +474,35 @@ def test_real_term_into_other_types():
 
 
 def test_term_set_check_term():
-    term_set = RealTermSet(3)
-    term = RealTerm.from_str("F0^ F1", 3)
+    term_set = zfon.RealTermSet(3)
+    term = zfon.RealTerm.from_str("F0^ F1", 3)
 
     assert term_set.insert(term) == 0
     term_set._check_term(term)
 
     with pytest.raises(ValueError, match="different modes"):
-        term_set._check_term(RealTerm.from_str("F0^ F1", 4))
+        term_set._check_term(zfon.RealTerm.from_str("F0^ F1", 4))
 
     with pytest.raises(TypeError, match="Expected a RealTerm instance"):
-        term_set._check_term(GeneralRealTerm.from_str("F0^ F1", 3))
+        term_set._check_term(zfog.RealTerm.from_str("F0^ F1", 3))
 
 
 def test_term_set_check_string():
-    term_set = RealTermSet(3)
-    string = String(3, "F0^ F1")
+    term_set = zfon.RealTermSet(3)
+    string = zfon.String(3, "F0^ F1")
 
     term_set._check_string(string)
 
     with pytest.raises(ValueError, match="different modes"):
-        term_set._check_string(String(4, "F0^ F1"))
+        term_set._check_string(zfon.String(4, "F0^ F1"))
 
     with pytest.raises(TypeError, match="Expected a String instance"):
-        term_set._check_string(GeneralString(3, "F0^ F1"))
+        term_set._check_string(zfog.String(3, "F0^ F1"))
 
 
 def test_real_term_product():
-    creation = RealTermSum.from_str("F0^", 2)
-    annihilation = RealTermSum.from_str("F0", 2)
+    creation = zfon.RealTermSum.from_str("F0^", 2)
+    annihilation = zfon.RealTermSum.from_str("F0", 2)
 
     assert str(creation * annihilation) == "(1.0, F0^ F0)"
     assert str(annihilation * creation) == "(1.0, ), (-1.0, F0^ F0)"
@@ -537,19 +514,19 @@ def test_real_term_product():
     ("product", "expected"),
     (
         (
-            RealTerm.from_str("F1", 3) * RealTerm.from_str("F0^", 3),
+            zfon.RealTerm.from_str("F1", 3) * zfon.RealTerm.from_str("F0^", 3),
             "(-1.0, F0^ F1)",
         ),
         (
-            RealTerm.from_str("F1 F2", 3) * RealTerm.from_str("F0^ F1^", 3),
+            zfon.RealTerm.from_str("F1 F2", 3) * zfon.RealTerm.from_str("F0^ F1^", 3),
             "(-1.0, F0^ F2), (1.0, F0^ F1^ F1 F2)",
         ),
         (
-            RealTerm.from_str("F0 F1", 3) * String(3, "F1^ F2^"),
+            zfon.RealTerm.from_str("F0 F1", 3) * zfon.String(3, "F1^ F2^"),
             "(-1.0, F2^ F0), (1.0, F1^ F2^ F0 F1)",
         ),
         (
-            RealTermSum.from_str("F1 F2", 3) * RealTermSum.from_str("F0^ F1^", 3),
+            zfon.RealTermSum.from_str("F1 F2", 3) * zfon.RealTermSum.from_str("F0^ F1^", 3),
             "(-1.0, F0^ F2), (1.0, F0^ F1^ F1 F2)",
         ),
     ),
@@ -565,16 +542,16 @@ def test_products_remain_normal_ordered(product, expected):
 
 
 def test_complex_term_product():
-    lhs = ComplexTermSum.from_str("((1j), F0)", 2)
-    rhs = ComplexTermSum.from_str("((2), F0^)", 2)
+    lhs = zfon.ComplexTermSum.from_str("((1j), F0)", 2)
+    rhs = zfon.ComplexTermSum.from_str("((2), F0^)", 2)
 
     assert str(lhs * rhs) == "(2j, ), (-2j, F0^ F0)"
 
 
 def test_operator_properties():
-    number_op = RealTermSum.from_str("F0^ F0", 2)
-    hopping = RealTermSum.from_str("F0^ F1, F1^ F0", 2)
-    creation = RealTermSum.from_str("F0^", 2)
+    number_op = zfon.RealTermSum.from_str("F0^ F0", 2)
+    hopping = zfon.RealTermSum.from_str("F0^ F1, F1^ F0", 2)
+    creation = zfon.RealTermSum.from_str("F0^", 2)
 
     assert number_op.is_hermitian()
     assert hopping.is_hermitian()
@@ -590,15 +567,15 @@ def test_operator_properties():
     ("term_sum_type", "expected_type", "source", "expected", "expected_ops"),
     (
         (
-            RealTermSum,
-            GeneralRealTermSum,
+            zfon.RealTermSum,
+            zfog.RealTermSum,
             "F2^ F0 F1",
             "(1.0, F2^ F0 F1)",
             [(2, True), (0, False), (1, False)],
         ),
         (
-            ComplexTermSum,
-            GeneralComplexTermSum,
+            zfon.ComplexTermSum,
+            zfog.ComplexTermSum,
             "((1j), F0^ F1)",
             "(1j, F0^ F1)",
             [(0, True), (1, False)],

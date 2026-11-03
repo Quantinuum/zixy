@@ -1,14 +1,15 @@
 import numpy as np
 import pytest
 
+import zixy.qubit.operator as zqo
 from zixy.container.coeffs import ComplexSign
-from zixy.qubit.operator import I, String, Strings, StringSet, X, Y, Z
+from zixy.qubit.operator import I, X, Y, Z
 
 
 def test_array_sizing():
-    a = Strings(0)
+    a = zqo.Strings(0)
     assert len(a.qubits) == 0
-    a = Strings(20)
+    a = zqo.Strings(20)
     assert len(a.qubits) == 20
     # empty array
     assert len(a) == 0
@@ -27,7 +28,7 @@ def test_array_sizing():
 
 def test_string_access():
     n_qubit = 6
-    a = Strings(n_qubit)
+    a = zqo.Strings(n_qubit)
     valid_content = (
         (X, Y, Z, Z, Y, X),
         (X, Z, Y, X),
@@ -44,8 +45,8 @@ def test_string_access():
     padded = lambda tup: tup + (I,) * (n_qubit - len(tup))
 
     for i, source in enumerate(valid_content):
-        assert type(a[i]) is String
-        assert type(a[i]) is String
+        assert type(a[i]) is zqo.String
+        assert type(a[i]) is zqo.String
         if isinstance(source, tuple):
             # viewing access
             assert a[i].get_tuple() == padded(source)
@@ -61,7 +62,7 @@ def test_string_access():
 
     tuples = a.get_tuples()
     s = slice(1, 6, 2)
-    assert type(a[s]) is Strings, type(a[s])
+    assert type(a[s]) is zqo.Strings, type(a[s])
     assert len(a[s]) == 3
     # getting all tuples from a sliced view should be the same as slicing
     # the sequence of all tuples from the full view.
@@ -70,10 +71,10 @@ def test_string_access():
 
 def test_string_modification():
     n_qubit = 6
-    a = String(n_qubit, (X, Y, Z, Z, Y, X))
-    a = String(n_qubit, (X, Y, Z, Z, Y, X))
+    a = zqo.String(n_qubit, (X, Y, Z, Z, Y, X))
+    a = zqo.String(n_qubit, (X, Y, Z, Z, Y, X))
     a[4] = I
-    assert a == String(n_qubit, (X, Y, Z, Z, I, X))
+    assert a == zqo.String(n_qubit, (X, Y, Z, Z, I, X))
     a[2] = I
     a[-1] = Y
     assert tuple(a[i] for i in range(n_qubit)) == (X, Y, I, Z, I, Y)
@@ -82,18 +83,18 @@ def test_string_modification():
 @pytest.mark.parametrize(
     ("string_type", "source", "qubits", "expected"),
     (
-        (String, "X0 Y2", None, "X0 Y2"),
-        (String, "  X0   Y2  ", None, "X0 Y2"),
-        (String, "X0 Y2", 3, "X0 Y2"),
-        (String, "", 3, ""),
-        (Strings, "X0, Y1, X0", None, "X0, Y1, X0"),
-        (Strings, " X0 ,   Y1 , X0 ", None, "X0, Y1, X0"),
-        (Strings, "X0, Y1, X0", 3, "X0, Y1, X0"),
-        (Strings, "", 3, ""),
-        (StringSet, "X0, Y1, X0", None, "X0, Y1"),
-        (StringSet, " X0 ,   Y1 , X0 ", None, "X0, Y1"),
-        (StringSet, "X0, Y1, X0", 3, "X0, Y1"),
-        (StringSet, "", 3, ""),
+        (zqo.String, "X0 Y2", None, "X0 Y2"),
+        (zqo.String, "  X0   Y2  ", None, "X0 Y2"),
+        (zqo.String, "X0 Y2", 3, "X0 Y2"),
+        (zqo.String, "", 3, ""),
+        (zqo.Strings, "X0, Y1, X0", None, "X0, Y1, X0"),
+        (zqo.Strings, " X0 ,   Y1 , X0 ", None, "X0, Y1, X0"),
+        (zqo.Strings, "X0, Y1, X0", 3, "X0, Y1, X0"),
+        (zqo.Strings, "", 3, ""),
+        (zqo.StringSet, "X0, Y1, X0", None, "X0, Y1"),
+        (zqo.StringSet, " X0 ,   Y1 , X0 ", None, "X0, Y1"),
+        (zqo.StringSet, "X0, Y1, X0", 3, "X0, Y1"),
+        (zqo.StringSet, "", 3, ""),
     ),
 )
 def test_from_str(string_type, source, qubits, expected):
@@ -101,37 +102,37 @@ def test_from_str(string_type, source, qubits, expected):
     parsed = string_type.from_str(source, *args)
     assert str(parsed) == expected
 
-    if string_type is StringSet:
-        assert parsed == StringSet.from_strings(Strings.from_str(source, *args))
+    if string_type is zqo.StringSet:
+        assert parsed == zqo.StringSet.from_strings(zqo.Strings.from_str(source, *args))
 
     with pytest.raises(ValueError) as err:
-        String.from_str("X0 Y2, Y3, X2 Y3, X3, Z0 Z1 Z2 Z3", 4)
+        zqo.String.from_str("X0 Y2, Y3, X2 Y3, X3, Z0 Z1 Z2 Z3", 4)
     assert str(err.value) == "Source string should contain one Pauli string, got 5."
-    a = String.from_str("X0 Z1 Y2 Z3", 4)
+    a = zqo.String.from_str("X0 Z1 Y2 Z3", 4)
     assert a.get_tuple() == (X, Z, Y, Z)
-    assert String.from_str(str(a), 4) == a
+    assert zqo.String.from_str(str(a), 4) == a
 
 
 def test_str():
-    empty = String(4)
+    empty = zqo.String(4)
     assert empty.to_str() == ""
-    assert String.from_str(empty.to_str(), 4) == empty
-    assert String(4, "") == empty
+    assert zqo.String.from_str(empty.to_str(), 4) == empty
+    assert zqo.String(4, "") == empty
     with pytest.raises(TypeError):
-        String(4, None)
+        zqo.String(4, None)
     with pytest.raises(TypeError):
         empty.set(None)
 
-    single = String.from_str("X0", 1)
+    single = zqo.String.from_str("X0", 1)
     assert single.to_str() == "X0"
-    assert String.from_str(single.to_str(), 1) == single
+    assert zqo.String.from_str(single.to_str(), 1) == single
 
 
 def test_string_to_sparse_matrix():
-    mat = String(1, (Y,)).to_sparse_matrix()
+    mat = zqo.String(1, (Y,)).to_sparse_matrix()
     assert np.allclose(mat.toarray(), np.array([[0, -1j], [1j, 0]]))
 
-    mat = String(2, (Y, X)).to_sparse_matrix()
+    mat = zqo.String(2, (Y, X)).to_sparse_matrix()
     assert np.allclose(
         mat.toarray(),
         np.array(
@@ -144,7 +145,7 @@ def test_string_to_sparse_matrix():
         ),
     )
 
-    mat = String(4, (Z, I, X, Y)).to_sparse_matrix()
+    mat = zqo.String(4, (Z, I, X, Y)).to_sparse_matrix()
     mat_i = np.eye(2)
     mat_x = np.array([[0, 1], [1, 0]])
     mat_y = np.array([[0, -1j], [1j, 0]])
@@ -155,28 +156,28 @@ def test_string_to_sparse_matrix():
 
 def test_from_str_errors():
     with pytest.raises(ValueError) as err:
-        Strings.from_str("X0 Y2, oops! Y3, X2 Y3, Z0 Z1 Z2 Z3", 4)
+        zqo.Strings.from_str("X0 Y2, oops! Y3, X2 Y3, Z0 Z1 Z2 Z3", 4)
     assert str(err.value) == 'Bad parse: "oops!" is not a valid Pauli matrix in a sparse string.'
     with pytest.raises(IndexError) as err:
-        Strings.from_str("X0 Y2, Y3, X2 Y3, Z0 Z1 Z2 Z6", 4)
+        zqo.Strings.from_str("X0 Y2, Y3, X2 Y3, Z0 Z1 Z2 Z6", 4)
     assert (
         str(err.value) == "Mode index 6 is out-of-bounds for string list with 4 modes per string."
     )
 
 
 def test_strings_str():
-    empty = Strings(4)
+    empty = zqo.Strings(4)
     assert empty.to_str() == ""
-    assert Strings.from_str(empty.to_str(), 4) == empty
+    assert zqo.Strings.from_str(empty.to_str(), 4) == empty
 
-    single = Strings.from_str("X0", 1)
+    single = zqo.Strings.from_str("X0", 1)
     assert single.to_str() == "X0"
-    assert Strings.from_str(single.to_str(), 1) == single
+    assert zqo.Strings.from_str(single.to_str(), 1) == single
 
 
 def test_array_modification():
     n_qubit = 6
-    a = Strings(n_qubit)
+    a = zqo.Strings(n_qubit)
     tuples = (
         (X, Y, Z, Z, Y, X),
         (X, Z, Y, X, I, I),
@@ -192,20 +193,20 @@ def test_array_modification():
 
 
 def test_append_n():
-    a = Strings(6)
+    a = zqo.Strings(6)
     a.append_n(5, [I, X, Y, Z])
     assert str(a) == ", ".join(("X1 Y2 Z3",) * 5)
 
 
 def test_errors():
-    a = Strings(4)
+    a = zqo.Strings(4)
     with pytest.raises(IndexError):
         a[0]
 
 
 def test_pauli_counts():
     n_qubit = 6
-    a = Strings(n_qubit)
+    a = zqo.Strings(n_qubit)
     tuples = (
         (X, Y, Z, Z, Y, X),
         (X, Z, Y, X, I, I),
@@ -225,7 +226,7 @@ def test_pauli_counts():
 
 def test_out_of_place_products():
     n_qubit = 6
-    a = Strings(n_qubit)
+    a = zqo.Strings(n_qubit)
     tuples = (
         (X, Y, Z, Z, Y, X),
         (X, Z, Y, X, I, I),
@@ -248,7 +249,7 @@ def test_out_of_place_products():
 
 def test_in_place_products():
     n_qubit = 6
-    a = Strings(n_qubit)
+    a = zqo.Strings(n_qubit)
     tuples = (
         (X, Y, Z, Z, Y, X),
         (Y, Z, Z, I, X, X),
@@ -262,7 +263,7 @@ def test_in_place_products():
 
 def test_string_copy():
     n_qubit = 6
-    a = Strings(n_qubit)
+    a = zqo.Strings(n_qubit)
     tuples = (
         (X, Y, Z, Z, Y, X),
         (X, Z, Y, X, I, I),
@@ -277,7 +278,7 @@ def test_string_copy():
 
 def test_mapped_insert():
     n_qubit = 6
-    a = StringSet(n_qubit)
+    a = zqo.StringSet(n_qubit)
     tuples = (
         (X, Y, Z, Z, Y, X),
         (X, Z, Y, X, I, I),
@@ -295,7 +296,7 @@ def test_mapped_insert():
         assert a.insert(string) == i
         assert a.lookup(string) == i
 
-    wrong_qubits = String(n_qubit + 1, (X, I, I, I, I, I, I))
+    wrong_qubits = zqo.String(n_qubit + 1, (X, I, I, I, I, I, I))
     with pytest.raises(ValueError, match="different qubit spaces"):
         a.insert(wrong_qubits)
     with pytest.raises(ValueError, match="different qubit spaces"):
@@ -312,12 +313,12 @@ def test_mapped_equal():
         (X, Y, Z, Z, I, X),
         (Y, Z, Z, I, X, Z),
     )
-    a = Strings.from_iterable(tuples, n_qubit)
-    b = Strings.from_iterable(tuples[::-1], n_qubit)
+    a = zqo.Strings.from_iterable(tuples, n_qubit)
+    b = zqo.Strings.from_iterable(tuples[::-1], n_qubit)
     assert a != b
 
-    assert StringSet.from_iterable(a, n_qubit) == StringSet.from_iterable(b, n_qubit)
-    assert StringSet.from_iterable(b, n_qubit) == StringSet.from_iterable(a, n_qubit)
+    assert zqo.StringSet.from_iterable(a, n_qubit) == zqo.StringSet.from_iterable(b, n_qubit)
+    assert zqo.StringSet.from_iterable(b, n_qubit) == zqo.StringSet.from_iterable(a, n_qubit)
 
 
 def test_mapped_remove():
@@ -328,26 +329,26 @@ def test_mapped_remove():
         (X, Y, Z, Z, I, X),
         (Y, Z, Z, I, X, Z),
     )
-    a = StringSet.from_iterable(tuples, n_qubit)
+    a = zqo.StringSet.from_iterable(tuples, n_qubit)
 
     with pytest.raises(KeyError):
-        a.remove(String(n_qubit))
+        a.remove(zqo.String(n_qubit))
 
     assert len(a) == len(tuples)
     # [0, 1, 2, 3]
-    assert a.remove(String(n_qubit, tuples[0])) == 0
+    assert a.remove(zqo.String(n_qubit, tuples[0])) == 0
     assert len(a) == len(tuples) - 1
     # [3, 1, 2]
-    assert a.remove(String(n_qubit, tuples[3])) == 0
+    assert a.remove(zqo.String(n_qubit, tuples[3])) == 0
     assert len(a) == len(tuples) - 2
     # [2, 1]
-    assert a.remove(String(n_qubit, tuples[1])) == 1
+    assert a.remove(zqo.String(n_qubit, tuples[1])) == 1
     assert len(a) == len(tuples) - 3
 
 
 def test_string_set():
     n_qubit = 4
-    s = StringSet(n_qubit)
+    s = zqo.StringSet(n_qubit)
     assert len(s) == 0
 
     assert s.insert((X, Y, Z, I)) == 0
@@ -367,38 +368,38 @@ def test_string_set():
         s.remove((X, X, X, Z))
     assert str(err.value) == "'Value X0 X1 X2 Z3 not found in StringSet.'"
 
-    assert len(Strings.from_iterable(s, n_qubit)._impl) == len(s._impl)
-    assert s.to_strings() == Strings.from_iterable(s, n_qubit)
-    assert Strings.from_iterable(s, n_qubit)._impl == s._impl
-    strings = Strings.from_iterable(s, n_qubit)
-    assert StringSet.from_strings(strings).to_strings() == strings
+    assert len(zqo.Strings.from_iterable(s, n_qubit)._impl) == len(s._impl)
+    assert s.to_strings() == zqo.Strings.from_iterable(s, n_qubit)
+    assert zqo.Strings.from_iterable(s, n_qubit)._impl == s._impl
+    strings = zqo.Strings.from_iterable(s, n_qubit)
+    assert zqo.StringSet.from_strings(strings).to_strings() == strings
 
 
 @pytest.mark.filterwarnings("error::DeprecationWarning")
 def test_string_set_string_conversions():
-    strings = Strings.from_iterable(((X,), (Y,)), 1)
-    string_set = StringSet.from_strings(strings)
+    strings = zqo.Strings.from_iterable(((X,), (Y,)), 1)
+    string_set = zqo.StringSet.from_strings(strings)
     round_tripped = string_set.to_strings()
 
-    assert isinstance(round_tripped, Strings)
+    assert isinstance(round_tripped, zqo.Strings)
     assert round_tripped == strings
     round_tripped[0].set((Z,))
     assert string_set.to_strings() == strings
 
 
 def test_string_set_from_iterable():
-    s = StringSet.from_iterable(((X,), (Y,), (X,), (I,), (Z,), (Y,), (X,)), 1)
+    s = zqo.StringSet.from_iterable(((X,), (Y,), (X,), (I,), (Z,), (Y,), (X,)), 1)
     assert len(s) == 4
-    assert StringSet.from_str(str(s)) == s
+    assert zqo.StringSet.from_str(str(s)) == s
 
 
 def test_string_set_str():
-    empty = StringSet(4)
+    empty = zqo.StringSet(4)
     assert empty.to_str() == ""
-    empty_round_trip = StringSet.from_str(empty.to_str())
+    empty_round_trip = zqo.StringSet.from_str(empty.to_str())
     assert len(empty_round_trip) == 0
     assert empty_round_trip.to_str() == ""
 
-    single = StringSet.from_iterable(((X,),), 1)
+    single = zqo.StringSet.from_iterable(((X,),), 1)
     assert single.to_str() == "X0"
-    assert StringSet.from_str(single.to_str()) == single
+    assert zqo.StringSet.from_str(single.to_str()) == single

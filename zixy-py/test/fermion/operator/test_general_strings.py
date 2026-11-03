@@ -1,17 +1,11 @@
 import pytest
 
-from zixy.fermion.operator.general import (
-    GeneralFermionOperatorArray,
-    Modes,
-    RealTerm,
-    String,
-    Strings,
-    StringSet,
-)
+import zixy.fermion.operator.general as zfog
+from zixy.fermion.operator.general import GeneralFermionOperatorArray, Modes
 
 
 def test_string_access():
-    string = String(3, "F1 F0^ F2")
+    string = zfog.String(3, "F1 F0^ F2")
 
     assert str(string) == "F1 F0^ F2"
     assert string.get_ops() == [(1, False), (0, True), (2, False)]
@@ -25,7 +19,7 @@ def test_string_access():
 
 
 def test_string_modification():
-    string = String(4, [(0, True), (2, False)])
+    string = zfog.String(4, [(0, True), (2, False)])
 
     assert string.max_string_len == 2
     assert string.get_ops() == [(0, True), (2, False)]
@@ -38,28 +32,28 @@ def test_string_modification():
 @pytest.mark.parametrize(
     ("string_type", "source", "modes", "expected"),
     (
-        (String, "F0^ F1", None, "F0^ F1"),
-        (String, "  F0^   F1  ", None, "F0^ F1"),
-        (String, "F0^ F1", 3, "F0^ F1"),
-        (String, "", 3, ""),
-        (Strings, "F0^ F1, F1 F0^, F0^ F1", None, "F0^ F1, F1 F0^, F0^ F1"),
+        (zfog.String, "F0^ F1", None, "F0^ F1"),
+        (zfog.String, "  F0^   F1  ", None, "F0^ F1"),
+        (zfog.String, "F0^ F1", 3, "F0^ F1"),
+        (zfog.String, "", 3, ""),
+        (zfog.Strings, "F0^ F1, F1 F0^, F0^ F1", None, "F0^ F1, F1 F0^, F0^ F1"),
         (
-            Strings,
+            zfog.Strings,
             " F0^ F1 ,   F1 F0^ , F0^ F1 ",
             None,
             "F0^ F1, F1 F0^, F0^ F1",
         ),
-        (Strings, "F0^ F1, F1 F0^, F0^ F1", 3, "F0^ F1, F1 F0^, F0^ F1"),
-        (Strings, "", 3, ""),
-        (StringSet, "F0^ F1, F1 F0^, F0^ F1", None, "F0^ F1, F1 F0^"),
+        (zfog.Strings, "F0^ F1, F1 F0^, F0^ F1", 3, "F0^ F1, F1 F0^, F0^ F1"),
+        (zfog.Strings, "", 3, ""),
+        (zfog.StringSet, "F0^ F1, F1 F0^, F0^ F1", None, "F0^ F1, F1 F0^"),
         (
-            StringSet,
+            zfog.StringSet,
             " F0^ F1 ,   F1 F0^ , F0^ F1 ",
             None,
             "F0^ F1, F1 F0^",
         ),
-        (StringSet, "F0^ F1, F1 F0^, F0^ F1", 3, "F0^ F1, F1 F0^"),
-        (StringSet, "", 3, ""),
+        (zfog.StringSet, "F0^ F1, F1 F0^, F0^ F1", 3, "F0^ F1, F1 F0^"),
+        (zfog.StringSet, "", 3, ""),
     ),
 )
 def test_from_str(string_type, source, modes, expected):
@@ -67,12 +61,12 @@ def test_from_str(string_type, source, modes, expected):
     parsed = string_type.from_str(source, *args)
     assert str(parsed) == expected
 
-    if string_type is StringSet:
-        assert parsed == StringSet.from_strings(Strings.from_str(source, *args))
+    if string_type is zfog.StringSet:
+        assert parsed == zfog.StringSet.from_strings(zfog.Strings.from_str(source, *args))
 
 
 def test_string_dagger():
-    string = String(4, "F0^ F1 F2^")
+    string = zfog.String(4, "F0^ F1 F2^")
 
     daggered = string.daggered()
 
@@ -86,36 +80,36 @@ def test_string_dagger():
 
 
 def test_string_scalar_mul():
-    string = String(4, "F0^ F1")
+    string = zfog.String(4, "F0^ F1")
 
     term = string * 2.0
 
-    assert isinstance(term, RealTerm)
+    assert isinstance(term, zfog.RealTerm)
     assert term.string == string
     assert term.coeff == 2.0
 
 
 def test_string_mul():
-    lhs = String(3, "F1 F0^")
-    rhs = String(3, "F2")
+    lhs = zfog.String(3, "F1 F0^")
+    rhs = zfog.String(3, "F2")
 
     product = lhs * rhs
 
-    assert isinstance(product, RealTerm)
+    assert isinstance(product, zfog.RealTerm)
     assert str(product) == "(1.0, F1 F0^ F2)"
     assert product.string.get_ops() == [(1, False), (0, True), (2, False)]
 
 
 def test_string_mul_errors():
-    lhs = String(2, "F0")
-    rhs = String(3, "F0")
+    lhs = zfog.String(2, "F0")
+    rhs = zfog.String(3, "F0")
 
     with pytest.raises(ValueError, match="different modes"):
         lhs * rhs
 
 
 def test_array_sizing():
-    strings = Strings(5, max_string_len=3)
+    strings = zfog.Strings(5, max_string_len=3)
     specs = (
         [(0, True), (1, False)],
         [(2, False), (0, True), (4, False)],
@@ -128,24 +122,24 @@ def test_array_sizing():
     assert len(strings) == len(specs)
     assert strings.max_string_len == 3
     assert [string.get_ops() for string in strings] == [list(spec) for spec in specs]
-    assert strings[1:3].clone() == Strings.from_iterable(specs[1:3], 5, max_string_len=3)
+    assert strings[1:3].clone() == zfog.Strings.from_iterable(specs[1:3], 5, max_string_len=3)
 
 
 def test_string_from_str_errors():
-    string = String(4, "F0")
+    string = zfog.String(4, "F0")
 
     with pytest.warns(UserWarning, match="from 1 to 2"):
         string.set("F0 F1")
 
     with pytest.raises(ValueError, match="mode index out of bounds"):
-        String.from_str("F2", 2)
+        zfog.String.from_str("F2", 2)
 
     with pytest.raises(ValueError, match="mode index out of bounds"):
         GeneralFermionOperatorArray.from_ladder_product(Modes.from_count(2), [(2, True)])
 
 
 def test_string_array_from_str():
-    strings = Strings.from_str("F0 F0^, F1^ F2, F2 F1^ F0", 3)
+    strings = zfog.Strings.from_str("F0 F0^, F1^ F2, F2 F1^ F0", 3)
 
     assert len(strings) == 3
     assert strings.max_string_len == 3
@@ -158,7 +152,7 @@ def test_string_array_from_str():
 
 
 def test_array_modification():
-    strings = Strings.from_iterable(
+    strings = zfog.Strings.from_iterable(
         (
             [(0, True), (1, False)],
             [(2, False)],
@@ -179,25 +173,25 @@ def test_array_modification():
 
 
 def test_errors():
-    strings = Strings(4, max_string_len=1)
+    strings = zfog.Strings(4, max_string_len=1)
 
     with pytest.raises(IndexError):
         strings[0]
 
     with pytest.raises(ValueError):
-        String.from_str("bad", 4)
+        zfog.String.from_str("bad", 4)
 
 
 def test_string_set():
-    strings = Strings.from_str("F1 F0^, F1 F0^, F0^ F1", 2)
-    string_set = StringSet.from_strings(strings)
+    strings = zfog.Strings.from_str("F1 F0^, F1 F0^, F0^ F1", 2)
+    string_set = zfog.StringSet.from_strings(strings)
 
     assert len(string_set) == 2
     assert str(string_set.to_strings()) == "F1 F0^, F0^ F1"
 
 
 def test_mapped_insert():
-    string_set = StringSet(4, max_string_len=3)
+    string_set = zfog.StringSet(4, max_string_len=3)
     specs = (
         [(0, True), (1, False)],
         [(1, False), (0, True)],
@@ -214,7 +208,7 @@ def test_mapped_insert():
     assert string_set.insert(specs[1]) == 1
     assert len(string_set) == len(specs)
 
-    wrong_modes = String(5, [(0, True), (1, False)])
+    wrong_modes = zfog.String(5, [(0, True), (1, False)])
     with pytest.raises(ValueError, match="different .*spaces"):
         string_set.insert(wrong_modes)
     with pytest.raises(ValueError, match="different .*spaces"):
@@ -231,17 +225,17 @@ def test_mapped_equal():
         [(2, True), (3, False), (1, True)],
     )
 
-    strings = Strings.from_iterable(specs, 4, max_string_len=3)
-    reversed_strings = Strings.from_iterable(reversed(specs), 4, max_string_len=3)
+    strings = zfog.Strings.from_iterable(specs, 4, max_string_len=3)
+    reversed_strings = zfog.Strings.from_iterable(reversed(specs), 4, max_string_len=3)
 
     assert strings != reversed_strings
-    assert StringSet.from_iterable(strings, 4, max_string_len=3) == StringSet.from_iterable(
-        reversed_strings, 4, max_string_len=3
-    )
+    assert zfog.StringSet.from_iterable(
+        strings, 4, max_string_len=3
+    ) == zfog.StringSet.from_iterable(reversed_strings, 4, max_string_len=3)
 
 
 def test_mapped_remove():
-    string_set = StringSet(4, max_string_len=3)
+    string_set = zfog.StringSet(4, max_string_len=3)
     specs = (
         [(0, True), (1, False)],
         [(1, False), (0, True)],
@@ -266,7 +260,9 @@ def test_string_set_from_iterable():
         [],
     )
 
-    string_set = StringSet.from_iterable(specs, 2, max_string_len=2)
+    string_set = zfog.StringSet.from_iterable(specs, 2, max_string_len=2)
     assert len(string_set) == 3
-    assert StringSet.from_iterable(reversed(specs), 2, max_string_len=2) == string_set
-    assert StringSet.from_strings(string_set.to_strings()).to_strings() == string_set.to_strings()
+    assert zfog.StringSet.from_iterable(reversed(specs), 2, max_string_len=2) == string_set
+    assert (
+        zfog.StringSet.from_strings(string_set.to_strings()).to_strings() == string_set.to_strings()
+    )

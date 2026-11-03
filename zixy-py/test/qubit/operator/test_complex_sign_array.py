@@ -1,11 +1,12 @@
 import pytest
 
+import zixy.qubit.operator as zqo
 from zixy.container.coeffs import ComplexSign, Sign
-from zixy.qubit.operator import ComplexSignTerm, ComplexSignTerms, I, X, Y, Z
+from zixy.qubit.operator import I, X, Y, Z
 
 
 def test_term():
-    term = ComplexSignTerm(6)
+    term = zqo.ComplexSignTerm(6)
     assert len(term._impl) == 1
     assert len(term._impl._strings) == 1
     assert len(term._impl._coeffs) == 1
@@ -27,16 +28,16 @@ def test_term():
     term *= ComplexSign(1)
     assert str(term) == "(+1, X0 Y1 X2 Y3 X4 Y5)"
     term *= term
-    assert term == ComplexSignTerm(6)
+    assert term == zqo.ComplexSignTerm(6)
     assert str(term) == "(+1, )"
 
-    other = ComplexSignTerm(7)
+    other = zqo.ComplexSignTerm(7)
     with pytest.raises(ValueError) as err:
         term *= other
     assert str(err.value) == "Qubits-based objects are based on different qubit spaces."
 
     term.string.set((X, Y) * 3)
-    other = ComplexSignTerm(6)
+    other = zqo.ComplexSignTerm(6)
     other.string.set((X, Y, Z) * 2)
     term *= other
     assert term.string.get_tuple() == (I, I, Y, Z, Z, X)
@@ -51,7 +52,7 @@ def test_append_iterable():
         (X, Y, Z, Z, Y, X),
         (Y, Z, Z, I, X, Z),
     )
-    a = ComplexSignTerms(n_qubit)
+    a = zqo.ComplexSignTerms(n_qubit)
     a.append_iterable(tuples)
     assert a[0].string.get_tuple() == (X, Y, Z, Z, Y, X)
     assert a[1].string.get_tuple() == (Y, Z, Z, I, X, Z)

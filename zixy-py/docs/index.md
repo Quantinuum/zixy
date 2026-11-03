@@ -22,6 +22,7 @@ and a minimal example.
     zixy.container
     zixy.qubit
     zixy.fermion
+    zixy.serialization
     zixy.utils
 
 .. toctree::

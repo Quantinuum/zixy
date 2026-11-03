@@ -28,8 +28,8 @@ from typing import TYPE_CHECKING, Self
 from sympy import Expr
 
 from zixy._zixy import BinarySprings, FermionStateArray, Modes
-from zixy.container.base import check_schema_version
 from zixy.container.coeffs import Coeff, ComplexSign, Sign
+from zixy.container.serialization import check_schema_version
 from zixy.fermion._strings import (
     String as FermionString,
     Strings as FermionStrings,
@@ -40,7 +40,7 @@ from zixy.fermion._strings import (
 )
 
 if TYPE_CHECKING:
-    from zixy.container.base import SerializedContainer
+    from zixy.container.serialization import SerializedContainer
     from zixy.fermion.state._terms import Term
 
 type StringSpec = Sequence[bool] | set[int] | str

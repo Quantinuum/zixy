@@ -32,8 +32,9 @@ from typing import TYPE_CHECKING, Self, overload
 from sympy import Expr
 
 from zixy._zixy import FermionSprings, GeneralFermionOperatorArray, Modes
-from zixy.container.base import check_schema_version, requires_ownership
+from zixy.container.base import requires_ownership
 from zixy.container.coeffs import Coeff, ComplexSign, Sign
+from zixy.container.serialization import check_schema_version
 from zixy.container.strings import (
     String as BaseString,
     Strings as BaseStrings,
@@ -50,7 +51,7 @@ from zixy.fermion.operator._strings import (
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from zixy.container.base import SerializedContainer
+    from zixy.container.serialization import SerializedContainer
     from zixy.fermion.operator.general._terms import Term
 
 type StringSpec = str | Sequence[LadderOp]

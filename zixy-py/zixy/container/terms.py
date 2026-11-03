@@ -40,11 +40,9 @@ from sympy import Expr, simplify, sympify
 
 from zixy.container.base import (
     Representable,
-    SerializableContainer,
     ViewableBase,
     ViewableItem,
     ViewableSequence,
-    check_schema_version,
     requires_ownership,
 )
 from zixy.container.coeffs import (
@@ -62,6 +60,7 @@ from zixy.container.coeffs import (
     zero,
 )
 from zixy.container.data import TermData, _TermData
+from zixy.container.serialization import SerializableContainer, check_schema_version
 from zixy.container.strings import String, Strings, StringSet
 from zixy.utils import DEFAULT_ATOL, DEFAULT_RTOL, slice_index_gen, slice_of_slice, split_top_level
 
@@ -71,7 +70,6 @@ if TYPE_CHECKING:
 
     from zixy._zixy import ImplArray, Map
     from zixy.container.base import (
-        SerializedContainer,
         _HasStringsType,
         _HasStringType,
         _HasTermsType,
@@ -80,6 +78,7 @@ if TYPE_CHECKING:
         _TermSetCoeffs,
     )
     from zixy.container.coeffs import Number
+    from zixy.container.serialization import SerializedContainer
 
 
 type _AnyCoeffTerm[ImplT: ImplArray, SpecT] = (

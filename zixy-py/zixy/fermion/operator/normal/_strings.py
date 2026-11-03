@@ -28,8 +28,8 @@ from typing import TYPE_CHECKING, Self, overload
 from sympy import Expr
 
 from zixy._zixy import FermionSprings, Modes, NormalFermionOperatorArray
-from zixy.container.base import check_schema_version
 from zixy.container.coeffs import Coeff, ComplexSign, Sign
+from zixy.container.serialization import check_schema_version
 from zixy.fermion._strings import _deserialize_modes, _serialize_modes
 from zixy.fermion.operator._strings import (
     String as OperatorString,
@@ -38,7 +38,7 @@ from zixy.fermion.operator._strings import (
 )
 
 if TYPE_CHECKING:
-    from zixy.container.base import SerializedContainer
+    from zixy.container.serialization import SerializedContainer
     from zixy.fermion.operator._strings import LadderOp
     from zixy.fermion.operator.normal._terms import RealTermSum, Term
 

@@ -35,13 +35,8 @@ from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Self, cast, overload
 
 from zixy._zixy import Map
-from zixy.container.base import (
-    Representable,
-    SerializableContainer,
-    ViewableItem,
-    ViewableSequence,
-    requires_ownership,
-)
+from zixy.container.base import Representable, ViewableItem, ViewableSequence, requires_ownership
+from zixy.container.serialization import SerializableContainer
 from zixy.utils import slice_index_gen, slice_len, slice_of_slice, slice_to_tuple
 
 if TYPE_CHECKING:
@@ -49,12 +44,12 @@ if TYPE_CHECKING:
 
     from zixy._zixy import ImplArray
     from zixy.container.base import (
-        SerializedContainer,
         _FilterableStrings,
         _FilterableStringSet,
         _HasStringsType,
         _HasStringType,
     )
+    from zixy.container.serialization import SerializedContainer
 
 
 class String[ImplT: ImplArray, SpecT](ViewableItem[ImplT], Representable, SerializableContainer):

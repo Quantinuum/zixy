@@ -6,7 +6,6 @@ from sympy import sympify
 
 from zixy import __version__, deserialize, serialize
 from zixy._zixy import Modes, Qubits
-from zixy.container.base import __schema_version__
 from zixy.container.coeffs import (
     ComplexCoeffs,
     ComplexSign,
@@ -18,6 +17,7 @@ from zixy.container.coeffs import (
     unit,
 )
 from zixy.container.data import TermData
+from zixy.container.serialization import __schema_version__
 from zixy.container.terms import Term
 from zixy.fermion import state as zfs
 from zixy.fermion.operator import general as zfog, normal as zfon

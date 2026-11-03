@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from zixy.container.base import check_schema_version
+from zixy.container.serialization import check_schema_version
 from zixy.container.strings import (
     String as BaseString,
     Strings as BaseStrings,
@@ -12,7 +12,7 @@ from zixy.container.strings import (
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from zixy.container.base import SerializedContainer
+    from zixy.container.serialization import SerializedContainer
 
 """
 Mock-up a viewable string list system with classes extending:

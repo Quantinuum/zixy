@@ -29,8 +29,8 @@ from typing import TYPE_CHECKING, Self
 from sympy import Expr
 
 from zixy._zixy import BinarySprings, Qubits, QubitStateArray
-from zixy.container.base import check_schema_version
 from zixy.container.coeffs import Coeff, ComplexSign, Sign
+from zixy.container.serialization import check_schema_version
 from zixy.qubit._strings import (
     String as StringBase,
     Strings as StringsBase,
@@ -40,7 +40,7 @@ from zixy.qubit._strings import (
 )
 
 if TYPE_CHECKING:
-    from zixy.container.base import SerializedContainer
+    from zixy.container.serialization import SerializedContainer
     from zixy.qubit.operator import String as PauliString
     from zixy.qubit.state._terms import Term
 

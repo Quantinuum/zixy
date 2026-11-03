@@ -938,8 +938,9 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
 
         Note:
             The family and container tags are not checked. Duplicate strings follow
-            ``from_terms`` semantics: the last coefficient is retained. This also applies
-            to term sums; deserialization does not add duplicate coefficients together.
+            ``from_terms`` semantics: term sets retain the last coefficient, while term sums
+            add real, complex, or symbolic coefficients together. Restricted root-of-unity
+            term sums retain the last coefficient.
         """
         return cls.from_terms(cls.terms_type.from_dict(source))
 
@@ -1505,6 +1506,32 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         are not.
     """
 
+    @classmethod
+    def from_terms(cls, terms: Terms[ImplT, SpecT, C]) -> Self:
+        """Create a term sum from a collection of terms.
+
+        Args:
+            terms: Owned or viewed terms from which to construct the sum.
+
+        Returns:
+            A new instance of ``cls`` owning independent storage, with coefficients of
+            duplicate strings added together.
+
+        Note:
+            Restricted root-of-unity term sums retain the last coefficient of each string,
+            preserving their existing collection behavior without requiring addition.
+        """
+        out = cls.__new__(cls)
+        if issubclass(terms.coeff_type, RootOfUnity):
+            TermSet.__init__(out, terms)
+            return out
+        TermSet.__init__(out, terms._empty_clone())
+        if isinstance(terms._impl.coeffs, RealCoeffs | ComplexCoeffs):
+            out._collect_terms(terms, sum_duplicates=True)
+        else:
+            out.add_iterable(terms)
+        return out
+
     def _scaled_iadd(self, rhs: Term[ImplT, SpecT, C] | Self, scalar: Coeff) -> None:
         """Add ``scalar`` times ``rhs`` to ``self`` in-place."""
         if not isinstance(rhs, Term | TermSum):
@@ -1643,12 +1670,12 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             An instance of ``cls`` parsed from ``source``.
         """
         terms = cls.terms_type.from_str(source, *args, **kwargs)
+        if not issubclass(terms.coeff_type, RootOfUnity):
+            return cls.from_terms(terms)
+        # Preserve the existing addition restrictions for root-of-unity coefficients.
         out = cls.__new__(cls)
         TermSet.__init__(out, terms._empty_clone())
-        if isinstance(terms._impl.coeffs, RealCoeffs | ComplexCoeffs):
-            out._collect_terms(terms, sum_duplicates=True)
-        else:
-            out.add_iterable(terms)
+        out.add_iterable(terms)
         return out
 
     def _from_generator(self, gen: Iterator[Term[ImplT, SpecT, C]]) -> Self:

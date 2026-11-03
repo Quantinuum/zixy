@@ -35,13 +35,11 @@ import numpy as np
 from sympy import Expr, Float, I, Integer, Symbol, diff, sympify
 
 from zixy import __version__, _zixy
-from zixy.container.base import (
-    Representable,
+from zixy.container.base import Representable, ViewableSequence, requires_ownership
+from zixy.container.serialization import (
     SerializableContainer,
-    ViewableSequence,
     __schema_version__,
     check_schema_version,
-    requires_ownership,
     serialize_numpy_array,
 )
 from zixy.utils import (
@@ -55,7 +53,7 @@ from zixy.utils import (
 )
 
 if TYPE_CHECKING:
-    from zixy.container.base import SerializedContainer
+    from zixy.container.serialization import SerializedContainer
 
 Number: TypeAlias = int | float | complex  # noqa: UP040
 

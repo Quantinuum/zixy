@@ -26,5 +26,6 @@ from zixy import container
 from zixy import fermion
 from zixy import mappings
 from zixy import qubit
+from zixy.container.serialization import deserialize, serialize
 
-__all__ = ["container", "fermion", "mappings", "qubit"]
+__all__ = ["container", "fermion", "mappings", "qubit", "serialize", "deserialize"]

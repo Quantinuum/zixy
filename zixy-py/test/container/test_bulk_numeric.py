@@ -160,8 +160,10 @@ def test_required_numeric_bulk_api(domain, keys, kwargs, name, monkeypatch):
     constructed = cls.from_iterable([(keys[0], 1), (keys[0], 2)], 3, **kwargs)
     assert constructed.lookup_coeff(keys[0]) == 3
     copied = cls.from_terms(array[::-1])
-    assert copied.lookup_coeff(keys[0]) == 1
+    assert copied.lookup_coeff(keys[0]) == 4
     assert copied.lookup_coeff(keys[1]) == 2
+    assert copied == cls.from_iterable(array[::-1], 3, **kwargs)
+    assert copied == cls.from_str(str(array[::-1]), 3, **kwargs)
     # String and coefficient views can also be nested inside an owning Terms.
     nested = cls.terms_type._create(TermData(array.strings[::-1], array.coeffs[::-1]))
     assert snapshot(cls.from_terms(nested)) == snapshot(copied)

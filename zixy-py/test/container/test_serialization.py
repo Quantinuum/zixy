@@ -1,9 +1,10 @@
 import json
+from types import MappingProxyType
 
 import pytest
 from sympy import sympify
 
-from zixy import __version__
+from zixy import __version__, deserialize, serialize
 from zixy._zixy import Modes, Qubits
 from zixy.container.base import __schema_version__
 from zixy.container.coeffs import (
@@ -697,3 +698,145 @@ def test_term_deserialization_duplicate_strings(cls):
     assert len(restored) == 2
     assert restored.lookup_coeff(strings[0]) == 3.0
     assert restored.lookup_coeff(strings[2]) == 0.0
+
+
+def test_coefficient_serialization_dispatch(coefficient_case):
+    source, _ = coefficient_case
+    encoded = serialize(source)
+    assert json.loads(encoded) == source.to_dict()
+    restored = deserialize(encoded)
+    assert type(restored) is type(source)
+    assert restored.to_dict() == source.to_dict()
+    assert restored.is_owning()
+
+
+@pytest.mark.parametrize("container", ["String", "Strings", "StringSet"])
+def test_string_serialization_dispatch(string_family, string_case, container):
+    strings, _, _ = string_case
+    if container == "String":
+        source = strings[1]
+    elif container == "StringSet":
+        source = string_family.StringSet.from_strings(strings)
+    else:
+        source = strings
+    encoded = serialize(source)
+    assert json.loads(encoded) == source.to_dict()
+    restored = deserialize(encoded)
+    assert type(restored) is type(source)
+    assert restored.to_dict() == source.to_dict()
+
+
+def test_term_serialization_dispatch(term_case):
+    source, expected = term_case
+    encoded = serialize(source)
+    assert json.loads(encoded) == expected
+    restored = deserialize(encoded)
+    assert type(restored) is type(source)
+    assert restored.to_dict() == expected
+
+
+def test_serialize_json_options():
+    source = RealCoeffs.from_sequence([1.25, -2.5])
+    encoded = serialize(source, indent=2, sort_keys=True)
+    assert encoded.startswith('{\n  "coeffs"')
+    assert json.loads(encoded) == source.to_dict()
+
+
+@pytest.mark.parametrize("source", [None, 1, {}, [1], Sign.from_int(1)])
+def test_serialize_unsupported_object(source):
+    with pytest.raises(TypeError, match="serializable Zixy container"):
+        serialize(source)
+
+
+@pytest.mark.parametrize("mapping_type", [dict, MappingProxyType])
+def test_deserialize_rejects_mapping(mapping_type):
+    source = RealCoeffs.from_sequence([1.25, -2.5])
+    payload = source.to_dict()
+    with pytest.raises(TypeError, match="JSON string"):
+        deserialize(mapping_type(payload))
+
+
+@pytest.mark.parametrize("source", [None, 1, [], {}, b"{}", bytearray(b"{}")])
+def test_deserialize_requires_string(source):
+    with pytest.raises(TypeError, match="JSON string"):
+        deserialize(source)
+
+
+@pytest.mark.parametrize("source", ["null", "[]", "1", "true", '"text"'])
+def test_deserialize_requires_object(source):
+    with pytest.raises(TypeError, match="must contain an object"):
+        deserialize(source)
+
+
+def test_deserialize_invalid_json():
+    with pytest.raises(json.JSONDecodeError):
+        deserialize("{")
+
+
+@pytest.mark.parametrize("field", ["schema_version", "package_version", "family", "container"])
+def test_deserialize_missing_metadata(field):
+    payload = RealCoeffs.from_sequence([1.0]).to_dict()
+    del payload[field]
+    with pytest.raises(ValueError, match="Missing serialization metadata"):
+        deserialize(json.dumps(payload))
+
+
+@pytest.mark.parametrize("field", ["schema_version", "package_version", "family", "container"])
+def test_deserialize_invalid_metadata_type(field):
+    payload = RealCoeffs.from_sequence([1.0]).to_dict()
+    payload[field] = None
+    with pytest.raises(TypeError, match="must be a string"):
+        deserialize(json.dumps(payload))
+
+
+def test_deserialize_schema_mismatch():
+    payload = RealCoeffs.from_sequence([1.0]).to_dict()
+    payload["schema_version"] = "unsupported"
+    with pytest.raises(ValueError, match="schema version mismatch"):
+        deserialize(json.dumps(payload))
+
+
+def test_deserialize_other_package_version():
+    source = RealCoeffs.from_sequence([1.0])
+    payload = source.to_dict()
+    payload["package_version"] = "0.0.0"
+    assert deserialize(json.dumps(payload)).to_dict() == source.to_dict()
+
+
+@pytest.mark.parametrize("family", ["unknown", "qubit", "os", "container.coeffs"])
+def test_deserialize_unknown_family(family):
+    payload = RealCoeffs.from_sequence([1.0]).to_dict()
+    payload["family"] = family
+    with pytest.raises(ValueError, match="Unknown serialization family"):
+        deserialize(json.dumps(payload))
+
+
+@pytest.mark.parametrize("container", ["Unknown", "Sign", "Coeffs", "convert_vec", "RealTerm"])
+def test_deserialize_unknown_container(container):
+    payload = RealCoeffs.from_sequence([1.0]).to_dict()
+    payload["container"] = container
+    with pytest.raises(ValueError, match="Unknown serializable container"):
+        deserialize(json.dumps(payload))
+
+
+@pytest.mark.parametrize("field,value", [("strings", {}), ("coeffs", {}), ("space", [])])
+def test_deserialize_invalid_payload_type(field, value):
+    payload = zqo.RealTerm.from_str("(1.0, X0)", 2).to_dict()
+    payload[field] = value
+    with pytest.raises(TypeError):
+        deserialize(json.dumps(payload))
+
+
+@pytest.mark.parametrize("field", ["strings", "coeffs", "space"])
+def test_deserialize_missing_payload(field):
+    payload = zqo.RealTerm.from_str("(1.0, X0)", 2).to_dict()
+    del payload[field]
+    with pytest.raises(KeyError):
+        deserialize(json.dumps(payload))
+
+
+def test_deserialize_mismatched_lengths():
+    payload = zqo.RealTerms.from_str("(1.0, X0), (2.0, Y0)", 2).to_dict()
+    payload["coeffs"].pop()
+    with pytest.raises(ValueError, match="equal lengths"):
+        deserialize(json.dumps(payload))

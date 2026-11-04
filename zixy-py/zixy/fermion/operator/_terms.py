@@ -87,7 +87,7 @@ class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign,
     terms_type: type[Terms[ImplT, SpecT, C, ElemT]]
 
 
-class TermSum[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
+class TermSum[ImplT: FermionArray, SpecT, C: (float, complex, Expr), ElemT](
     FermionTermSum[ImplT, SpecT, C, ElemT],
     TermSet[ImplT, SpecT, C, ElemT],
 ):

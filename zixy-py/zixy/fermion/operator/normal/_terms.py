@@ -33,7 +33,6 @@ from zixy.container.coeffs import (
     ComplexCoeffs,
     ComplexSign,
     RealCoeffs,
-    RootOfUnity,
     Sign,
     SignCoeffs,
     SymbolicCoeffs,
@@ -93,11 +92,8 @@ def _term_sum_from_product(
     strings = term_type.strings_type._create(impl)
     for i in range(len(impl)):
         coeff = typesafe_mul(base_coeff, Sign(signs[i]))
-        term = term_type.from_string_coeff(strings[i], coeff)
-        if issubclass(term_type.coeff_type, RootOfUnity):
-            out.insert(term)
-        else:
-            out += term
+        term = out.terms_type.term_type.from_string_coeff(strings[i], coeff)
+        out += term
     return out
 
 
@@ -146,7 +142,7 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerm[ImplT, Spe
 
     strings_type = Strings
     coeff_type: type[C]
-    _term_sum_type: type[TermSum[C]]
+    _term_sum_type: type[TermSum[Any]]
 
     def dagger(self) -> None:
         """Take the adjoint of ``self`` in-place, including the fermionic sign."""
@@ -190,9 +186,7 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
     terms_type: type[Terms[C]]
 
 
-class TermSum[C: (float, complex, Sign, ComplexSign, Expr)](
-    OperatorTermSum[ImplT, SpecT, C, ElemT], TermSet[C]
-):
+class TermSum[C: (float, complex, Expr)](OperatorTermSum[ImplT, SpecT, C, ElemT], TermSet[C]):
     """A sum of terms consisting of normal-ordered fermionic strings and coefficients.
 
     A set-like container of mode-based terms that may be used to store unique terms and perform
@@ -224,6 +218,8 @@ class SignTerm(Term[Sign]):
     :class:`~zixy.container.coeffs.Sign` that may be an owning instance referencing a single
     element in a :class:`~zixy.container.data.TermData` instance, or a view on an element in
     another collection.
+
+    Products with strings or other sign-valued terms return real-coefficient term sums.
     """
 
     coeff_type = Sign
@@ -240,9 +236,9 @@ class SignTerm(Term[Sign]):
     @overload
     def __mul__(self, rhs: Expr) -> SymbolicTerm: ...
     @overload
-    def __mul__(self, rhs: String) -> SignTermSum: ...
+    def __mul__(self, rhs: String) -> RealTermSum: ...
     @overload
-    def __mul__(self, rhs: SignTerm) -> SignTermSum: ...
+    def __mul__(self, rhs: SignTerm) -> RealTermSum: ...
     @overload
     def __mul__(self, rhs: RealTerm) -> RealTermSum: ...
     @overload
@@ -269,9 +265,9 @@ class SignTerm(Term[Sign]):
     @overload
     def __rmul__(self, lhs: Expr) -> SymbolicTerm: ...
     @overload
-    def __rmul__(self, lhs: String) -> SignTermSum: ...
+    def __rmul__(self, lhs: String) -> RealTermSum: ...
     @overload
-    def __rmul__(self, lhs: SignTerm) -> SignTermSum: ...
+    def __rmul__(self, lhs: SignTerm) -> RealTermSum: ...
     @overload
     def __rmul__(self, lhs: RealTerm) -> RealTermSum: ...
     @overload
@@ -310,12 +306,6 @@ class SignTermSet(TermSet[Sign]):
         Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
-
-    terms_type = SignTerms
-
-
-class SignTermSum(TermSum[Sign]):
-    """A sum of terms consisting of normal-ordered fermionic strings and sign coefficients."""
 
     terms_type = SignTerms
 
@@ -1164,7 +1154,7 @@ def get_term_type[C: (float, complex, Sign, ComplexSign, Expr)](
 
 
 for _term_type, _sum_type in (
-    (SignTerm, SignTermSum),
+    (SignTerm, RealTermSum),
     (RealTerm, RealTermSum),
     (ComplexTerm, ComplexTermSum),
     (SymbolicTerm, SymbolicTermSum),

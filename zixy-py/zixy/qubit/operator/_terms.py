@@ -373,7 +373,7 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
     terms_type: type[Terms[C]]
 
 
-class TermSum[C: (float, complex, Sign, ComplexSign, Expr)](
+class TermSum[C: (float, complex, Expr)](
     TermSumBase[QubitPauliArray, StringSpec, C, PauliMatrix], TermSet[C]
 ):
     """A sum of terms consisting of Pauli strings and coefficients.

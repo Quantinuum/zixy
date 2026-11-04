@@ -519,7 +519,7 @@ def _make_term_case(family, prefix, container, space_kind):
         source = getattr(family, f"{prefix}{container}").from_terms(terms)
         if len(source) == 1:
             encoded_strings = encoded_strings[:1]
-            if container == "TermSum" and prefix in ("Real", "Complex", "Symbolic"):
+            if container == "TermSum":
                 encoded_coeffs = {
                     "Real": [-1.25],
                     "Complex": [[-2, 6]],
@@ -727,6 +727,17 @@ def test_term_deserialization_duplicate_strings(family, prefix, container, forma
     assert restored.lookup_coeff(terms.strings[0]) == expected
     assert restored.lookup_coeff(terms.strings[2]) == terms.coeffs[2]
     assert terms.to_dict() == before
+
+
+def test_promoted_sign_product_serialization():
+    product = zfon.SignTerm(2, "F0") * zfon.SignTerm(2, "F0^")
+
+    payload = product.to_dict()
+    assert payload["container"] == "RealTermSum"
+    assert payload["coeffs"] == [1.0, -1.0]
+    restored = deserialize(serialize(product))
+    assert type(restored) is zfon.RealTermSum
+    assert restored == product
 
 
 def test_coefficient_serialization_dispatch(coefficient_case):

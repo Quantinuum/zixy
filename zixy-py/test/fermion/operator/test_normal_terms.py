@@ -136,9 +136,6 @@ def test_from_str_errors(source):
     with pytest.raises(ValueError):
         zfon.RealTerm.from_str("(1j, F0^ F1)", 2)
 
-    with pytest.raises(AssertionError):
-        zfon.SignTermSum.from_str("(1, F0^ F1), (-1, F1^ F0)", 2)
-
 
 def test_real_term():
     term = zfon.RealTerm(4, ("F0^ F1", 2.0))
@@ -281,8 +278,8 @@ def test_sign_term_mul_by_string():
 
     product = term * string
 
-    assert type(product) is zfon.SignTermSum
-    assert str(product) == "(+1, ), (-1, F0^ F0)"
+    assert type(product) is zfon.RealTermSum
+    assert str(product) == "(1.0, ), (-1.0, F0^ F0)"
 
 
 def test_real_term_mul_by_string():
@@ -322,8 +319,29 @@ def test_sign_term_mul_by_sign_term():
 
     product = lhs * rhs
 
-    assert type(product) is zfon.SignTermSum
-    assert str(product) == "(+1, ), (-1, F0^ F0)"
+    assert type(product) is zfon.RealTermSum
+    assert str(product) == "(1.0, ), (-1.0, F0^ F0)"
+
+
+@pytest.mark.parametrize("lhs_is_term", [False, True])
+@pytest.mark.parametrize("rhs_is_term", [False, True])
+@pytest.mark.parametrize("rhs_string", ["F0^", "F0"])
+def test_sign_product_supports_addition(lhs_is_term, rhs_is_term, rhs_string):
+    lhs_type = zfon.SignTerm if lhs_is_term else zfon.String
+    rhs_type = zfon.SignTerm if rhs_is_term else zfon.String
+    lhs = lhs_type(2, "F0")
+    rhs = rhs_type(2, rhs_string)
+    before = str(lhs), str(rhs)
+
+    product = lhs * rhs
+
+    assert type(product) is zfon.RealTermSum
+    expected = zfon.RealTermSum(2)
+    if rhs_string == "F0^":
+        expected = zfon.RealTermSum.from_str("(2, ), (-2, F0^ F0)", 2)
+    assert product + product == expected
+    assert len(product - product) == 0
+    assert (str(lhs), str(rhs)) == before
 
 
 def test_real_term_mul_by_real_term():

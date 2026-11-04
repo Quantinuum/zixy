@@ -151,7 +151,7 @@ class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign,
         _check_modes_compatibility(self.modes, value.modes)
 
 
-class TermSum[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
+class TermSum[ImplT: FermionArray, SpecT, C: (float, complex, Expr), ElemT](
     TermSet[ImplT, SpecT, C, ElemT], TermSumBase[ImplT, SpecT, C]
 ):
     """A sum of terms consisting of fermionic strings and coefficients.

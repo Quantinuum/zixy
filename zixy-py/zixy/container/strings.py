@@ -37,7 +37,7 @@ from typing import TYPE_CHECKING, Any, Self, cast, overload
 from zixy._zixy import Map
 from zixy.container.base import Representable, ViewableItem, ViewableSequence, requires_ownership
 from zixy.container.serialization import SerializableContainer
-from zixy.utils import slice_index_gen, slice_len, slice_of_slice, slice_to_tuple
+from zixy.utils import slice_index, slice_index_gen, slice_len, slice_of_slice, slice_to_tuple
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Sequence
@@ -95,19 +95,38 @@ class String[ImplT: ImplArray, SpecT](ViewableItem[ImplT], Representable, Serial
         self._check_bounds()
 
     @classmethod
-    def _create(cls, impl: ImplT, indexer: int | None = None) -> Self:
-        """Create an instance of ``cls``.
+    def _create(cls, impl: ImplT) -> Self:
+        """Create an owning instance of ``cls``.
 
         Args:
-            impl: Rust-bound object containing the data for this item.
-            indexer: Index of the item within ``impl``. If ``None``, this instance is
-                considered to be owning.
+            impl: Rust-bound object containing the data for this instance.
 
         Returns:
-            A new instance of ``cls``.
+            A new owning instance of ``cls`` sharing the supplied storage.
+
+        Raises:
+            IndexError: The storage does not contain exactly one string.
         """
         out = cls.__new__(cls)
-        String.__init__(out, impl, indexer)
+        String.__init__(out, impl)
+        return out
+
+    @classmethod
+    def _view(cls, impl: ImplT, indexer: int) -> Self:
+        """Create a view on one existing string.
+
+        Args:
+            impl: Rust-bound object containing the data for this instance.
+            indexer: Index of the string to view, allowing negative indices.
+
+        Returns:
+            A non-owning instance of ``cls`` sharing the selected string.
+
+        Raises:
+            IndexError: The index is outside the storage.
+        """
+        out = cls.__new__(cls)
+        String.__init__(out, impl, slice_index(slice(None), indexer, len(impl)))
         return out
 
     def clone(self) -> Self:
@@ -233,36 +252,35 @@ class StringSet[ImplT: ImplArray, SpecT](Representable, SerializableContainer):
             :class:`~zixy.container.strings.Strings`, this is copied from,
                 not referenced directly by ``self``.
         """
-        assert isinstance(impl, self.strings_type.string_type.impl_type), type(impl)
-        self._impl = impl.strings_clone([])
-        self._map = self.map_type()
-        self._working_string = self.strings_type._create(impl.strings_clone([])).new_clear_string()
-        self.insert_iterable(self.strings_type._create(impl))
+        self._bind(impl.strings_clone([]), self.map_type())
+        self.insert_iterable(self.strings_type._view(impl, slice(None)))
 
-    @classmethod
-    def _create(cls, impl: ImplT, map_: Map | None = None) -> Self:
-        """Create a new instance of ``cls``.
+    def _bind(self, impl: ImplT, map_: Map) -> None:
+        """Set the string data and lookup map for ``self``.
 
         Args:
-            impl: Rust-bound object storing the data. Unlike
-            :class:`~zixy.container.strings.Strings`, this is copied from,
-                not referenced directly by ``self``.
-            map_: Populated lookup map for ``impl``. If supplied, adopt both directly.
+            impl: Rust-bound object containing the data for this instance.
+            map_: Populated lookup map corresponding to the supplied data.
+        """
+        assert isinstance(impl, self.strings_type.string_type.impl_type), type(impl)
+        assert len(impl) == len(map_)
+        self._impl = impl
+        self._map = map_
+        self._working_string = self.strings_type._view(impl, slice(None)).new_string()
+
+    @classmethod
+    def _create(cls, impl: ImplT, *, map_: Map) -> Self:
+        """Create an owning instance of ``cls``.
+
+        Args:
+            impl: Rust-bound object containing the data for this instance.
+            map_: Populated lookup map corresponding to the supplied data.
 
         Returns:
-            A new instance of ``cls``.
+            A new instance of ``cls`` sharing the supplied storage and map.
         """
         out = cls.__new__(cls)
-        if map_ is None:
-            StringSet.__init__(out, impl)
-        else:
-            assert isinstance(impl, cls.strings_type.string_type.impl_type), type(impl)
-            assert len(impl) == len(map_)
-            out._impl = impl
-            out._map = map_
-            out._working_string = cls.strings_type._create(
-                impl.strings_clone([])
-            ).new_clear_string()
+        out._bind(impl, map_)
         return out
 
     @classmethod
@@ -275,7 +293,7 @@ class StringSet[ImplT: ImplArray, SpecT](Representable, SerializableContainer):
         Returns:
             A new instance of ``cls`` containing the strings in ``strings``.
         """
-        out = cls._create(strings._impl.strings_clone([]))
+        out = cls._create(strings._impl.strings_clone([]), map_=cls.map_type())
         out.insert_iterable(strings)
         return out
 
@@ -294,13 +312,13 @@ class StringSet[ImplT: ImplArray, SpecT](Representable, SerializableContainer):
         strings = cls.strings_type.from_str(source, *args, **kwargs)
         return cls.from_strings(strings)
 
-    def _empty_clone(self) -> Self:
-        """Get an empty (owning, contiguous) clone of ``self``."""
-        return self._create(self._impl.strings_clone([]))
+    def _new(self) -> Self:
+        """Allocate empty owning storage with the same concrete type and configuration."""
+        return self._create(self._impl.strings_clone([]), map_=self.map_type())
 
     def clone(self) -> Self:
         """Return a deep copy of ``self``."""
-        out = self._empty_clone()
+        out = self._new()
         out.insert_iterable(self)
         return out
 
@@ -428,7 +446,7 @@ class StringSet[ImplT: ImplArray, SpecT](Representable, SerializableContainer):
         """Iterate over the concrete strings of ``self``."""
         strings = cast("StringSet[Any, Any]", self)
         for i in range(len(strings)):
-            yield cast("StringT", strings.strings_type.string_type._create(strings._impl, i))
+            yield cast("StringT", strings.strings_type.string_type._view(strings._impl, i))
 
     def iter_filter_map[StringT: String[Any, Any]](
         self: _HasStringsType[_HasStringType[StringT]], f: Callable[[StringT], bool]
@@ -468,7 +486,7 @@ class StringSet[ImplT: ImplArray, SpecT](Representable, SerializableContainer):
             of ``self`` according to ``f``. The type of the strings is determined by
             :attr:`~zixy.container.strings.Strings.strings_type`.
         """
-        out = self._empty_clone()
+        out = self._new()
         out.insert_iterable(self.iter_filter_map(f))
         return out
 
@@ -537,19 +555,34 @@ class Strings[ImplT: ImplArray, SpecT](
         self._slice = indexer
 
     @classmethod
-    def _create(cls, impl: ImplT, indexer: slice = slice(None)) -> Self:
-        """Create a new instance of ``cls``.
+    def _create(cls, impl: ImplT) -> Self:
+        """Create an owning instance of ``cls``.
 
         Args:
-            impl: Rust-bound object containing the data for this sequence.
-            indexer: Slice of the data in ``impl`` that this instance should view. The default
-                value of ``slice(None)`` indicates that this instance is considered to be owning.
+            impl: Rust-bound object containing the data for this instance.
 
         Returns:
-            A new instance of ``cls``.
+            A new owning instance of ``cls`` sharing the supplied storage.
         """
         assert isinstance(impl, cls.string_type.impl_type)
         out = cls.__new__(cls)
+        Strings.__init__(out, impl)
+        return out
+
+    @classmethod
+    def _view(cls, impl: ImplT, indexer: slice) -> Self:
+        """Create a view on existing string storage.
+
+        Args:
+            impl: Rust-bound object containing the data for this instance.
+            indexer: Slice selecting the strings to view.
+
+        Returns:
+            A non-owning instance of ``cls``, including for a full slice.
+        """
+        out = cls.__new__(cls)
+        if indexer == slice(None):
+            indexer = slice(0, len(impl), 1)
         Strings.__init__(out, impl, indexer)
         return out
 
@@ -602,9 +635,9 @@ class Strings[ImplT: ImplArray, SpecT](
             Element or slice selected by ``indexer``.
         """
         if isinstance(indexer, int):
-            return self.string_type._create(self._impl, self.map_index(indexer))
+            return self.string_type._view(self._impl, self.map_index(indexer))
         else:
-            return type(self)._create(
+            return type(self)._view(
                 self._impl, slice_of_slice(self.slice, indexer, len(self._impl))
             )
 
@@ -655,8 +688,8 @@ class Strings[ImplT: ImplArray, SpecT](
                 )
             self[indexer].set(source)
 
-    def _empty_clone(self) -> Self:
-        """Get an empty (owning, contiguous) clone of ``self``."""
+    def _new(self) -> Self:
+        """Allocate empty owning storage with the same concrete type and configuration."""
         return self._create(self._impl.strings_clone([]))
 
     def reordered(self, inds: Sequence[int]) -> Self:
@@ -671,17 +704,22 @@ class Strings[ImplT: ImplArray, SpecT](
         """
         if not all(i < len(self) for i in inds):
             raise IndexError("Index out of bounds in reorder.")
-        out = self._empty_clone()
+        out = self._new()
         for i in inds:
             out.append(self[i])
         return out
 
-    def new_clear_string[StringT: String[Any, Any]](
+    def new_string[StringT: String[Any, Any]](
         self: _HasStringType[StringT],
     ) -> StringT:
-        """Create a cleared string using the same implementation as ``self``."""
+        """Allocate a default owning string with the same type and configuration.
+
+        Returns:
+            An independent owning string of the concrete string type of ``self``.
+        """
         strings = cast("Strings[Any, Any]", self)
-        return cast("StringT", strings._empty_clone().resize(1)[0])
+        data = strings._new().resize(1)
+        return cast("StringT", strings.string_type._create(data._impl))
 
     def iter_filter_map[StringT: String[Any, Any]](
         self: _HasStringType[StringT], f: Callable[[StringT], bool]
@@ -721,7 +759,7 @@ class Strings[ImplT: ImplArray, SpecT](
             New instance containing the occurrences of selected (and possibly mutated) strings
             of ``self`` according to ``f``.
         """
-        out = self._empty_clone()
+        out = self._new()
         out.append_iterable(self.iter_filter_map(f))
         return out
 
@@ -735,14 +773,14 @@ class Strings[ImplT: ImplArray, SpecT](
     ) -> Iterator[StringT]:
         """Lazily filter strings of ``self``, retaining only those that are not clear."""
         strings = cast("Strings[Any, Any]", self)
-        tmp = strings.new_clear_string()
+        tmp = strings.new_string()
         for view in strings:
             if view != tmp:
                 yield cast("StringT", view)
 
     def filter_populated(self) -> Self:
         """Eagerly filter strings of ``self``, retaining only those that are not clear."""
-        out = self._empty_clone()
+        out = self._new()
         out.append_iterable(self.iter_filter_populated())
         return out
 

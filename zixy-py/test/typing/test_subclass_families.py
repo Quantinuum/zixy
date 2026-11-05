@@ -99,7 +99,8 @@ def test_qubit_operator_overridden_factories() -> None:
     def keep(string: CustomString) -> bool:
         return string == strings[0]
 
-    assert_type(strings.new_clear_string(), CustomString)
+    assert_type(strings.new_string(), CustomString)
+    assert_type(terms.new_term(), CustomTerm)
     assert_type(strings.iter_filter_non_identity(), Iterator[CustomString])
     assert_type(strings.filter_non_identity(), CustomStrings)
     assert_type(strings.iter_filter_populated(), Iterator[CustomString])
@@ -111,7 +112,7 @@ def test_qubit_operator_overridden_factories() -> None:
     assert_type(string_set.filter_map(keep), CustomStringSet)
     strings.filter_map(lambda item: assert_type(item, CustomString) == strings[0])
     string_set.filter_map(lambda item: assert_type(item, CustomString) == strings[0])
-    assert type(strings.new_clear_string()) is CustomString
+    assert type(strings.new_string()) is CustomString
     assert type(next(strings.iter_filter_map(keep))) is CustomString
     assert type(strings.filter_map(keep)) is CustomStrings
     assert type(strings.filter_unique()) is CustomStrings
@@ -137,7 +138,7 @@ def test_qubit_operator_overridden_factories() -> None:
     # The inferred custom API must exist at runtime for correctly configured storage.
     assert_type(total.strings.custom_marker(), str)
     assert total.strings.custom_marker() == "custom strings"
-    adopted = CustomSum._create(total._impl, total._string_set._map)
+    adopted = CustomSum._create(total._impl, map_=total._string_set._map)
     assert adopted.strings.custom_marker() == "custom strings"
 
     class CustomSet(zqo.RealTermSet):
@@ -157,9 +158,7 @@ def test_qubit_operator_overridden_factories() -> None:
     with pytest.raises(TypeError, match="String storage does not match its factory"):
         CustomSet.from_terms(ordinary)
     with pytest.raises(TypeError, match="String storage does not match its factory"):
-        CustomSum._create(ordinary._impl)
-    with pytest.raises(TypeError, match="String storage does not match its factory"):
-        CustomSum._create(ordinary_sum._impl, ordinary_sum._string_set._map)
+        CustomSum._create(ordinary_sum._impl, map_=ordinary_sum._string_set._map)
     assert len(ordinary) == 1
 
     # Specialised factories accept compatible parent-class inputs, too.
@@ -260,7 +259,8 @@ def test_qubit_state_overridden_factories() -> None:
     def keep(string: CustomString) -> bool:
         return string == strings[0]
 
-    assert_type(strings.new_clear_string(), CustomString)
+    assert_type(strings.new_string(), CustomString)
+    assert_type(terms.new_term(), CustomTerm)
     assert_type(strings.iter_filter_populated(), Iterator[CustomString])
     assert_type(strings.iter_filter_map(keep), Iterator[CustomString])
     assert_type(strings.filter_map(keep), CustomStrings)
@@ -270,7 +270,7 @@ def test_qubit_state_overridden_factories() -> None:
     assert_type(string_set.filter_map(keep), CustomStringSet)
     strings.filter_map(lambda item: assert_type(item, CustomString) == strings[0])
     string_set.filter_map(lambda item: assert_type(item, CustomString) == strings[0])
-    assert type(strings.new_clear_string()) is CustomString
+    assert type(strings.new_string()) is CustomString
     assert type(next(strings.iter_filter_map(keep))) is CustomString
     assert type(strings.filter_map(keep)) is CustomStrings
     assert type(strings.filter_unique()) is CustomStrings
@@ -296,7 +296,7 @@ def test_qubit_state_overridden_factories() -> None:
     # The inferred custom API must exist at runtime for correctly configured storage.
     assert_type(total.strings.custom_marker(), str)
     assert total.strings.custom_marker() == "custom strings"
-    adopted = CustomSum._create(total._impl, total._string_set._map)
+    adopted = CustomSum._create(total._impl, map_=total._string_set._map)
     assert adopted.strings.custom_marker() == "custom strings"
 
     class CustomSet(zqs.RealTermSet):
@@ -316,9 +316,7 @@ def test_qubit_state_overridden_factories() -> None:
     with pytest.raises(TypeError, match="String storage does not match its factory"):
         CustomSet.from_terms(ordinary)
     with pytest.raises(TypeError, match="String storage does not match its factory"):
-        CustomSum._create(ordinary._impl)
-    with pytest.raises(TypeError, match="String storage does not match its factory"):
-        CustomSum._create(ordinary_sum._impl, ordinary_sum._string_set._map)
+        CustomSum._create(ordinary_sum._impl, map_=ordinary_sum._string_set._map)
     assert len(ordinary) == 1
 
     # Specialised factories accept compatible parent-class inputs, too.
@@ -419,7 +417,8 @@ def test_fermion_general_overridden_factories() -> None:
     def keep(string: CustomString) -> bool:
         return string == strings[0]
 
-    assert_type(strings.new_clear_string(), CustomString)
+    assert_type(strings.new_string(), CustomString)
+    assert_type(terms.new_term(), CustomTerm)
     assert_type(strings.iter_filter_populated(), Iterator[CustomString])
     assert_type(strings.iter_filter_map(keep), Iterator[CustomString])
     assert_type(strings.filter_map(keep), CustomStrings)
@@ -429,7 +428,7 @@ def test_fermion_general_overridden_factories() -> None:
     assert_type(string_set.filter_map(keep), CustomStringSet)
     strings.filter_map(lambda item: assert_type(item, CustomString) == strings[0])
     string_set.filter_map(lambda item: assert_type(item, CustomString) == strings[0])
-    assert type(strings.new_clear_string()) is CustomString
+    assert type(strings.new_string()) is CustomString
     assert type(next(strings.iter_filter_map(keep))) is CustomString
     assert type(strings.filter_map(keep)) is CustomStrings
     assert type(strings.filter_unique()) is CustomStrings
@@ -455,7 +454,7 @@ def test_fermion_general_overridden_factories() -> None:
     # The inferred custom API must exist at runtime for correctly configured storage.
     assert_type(total.strings.custom_marker(), str)
     assert total.strings.custom_marker() == "custom strings"
-    adopted = CustomSum._create(total._impl, total._string_set._map)
+    adopted = CustomSum._create(total._impl, map_=total._string_set._map)
     assert adopted.strings.custom_marker() == "custom strings"
 
     class CustomSet(zfog.RealTermSet):
@@ -475,9 +474,7 @@ def test_fermion_general_overridden_factories() -> None:
     with pytest.raises(TypeError, match="String storage does not match its factory"):
         CustomSet.from_terms(ordinary)
     with pytest.raises(TypeError, match="String storage does not match its factory"):
-        CustomSum._create(ordinary._impl)
-    with pytest.raises(TypeError, match="String storage does not match its factory"):
-        CustomSum._create(ordinary_sum._impl, ordinary_sum._string_set._map)
+        CustomSum._create(ordinary_sum._impl, map_=ordinary_sum._string_set._map)
     assert len(ordinary) == 1
 
     # Specialised factories accept compatible parent-class inputs, too.
@@ -578,7 +575,8 @@ def test_fermion_normal_overridden_factories() -> None:
     def keep(string: CustomString) -> bool:
         return string == strings[0]
 
-    assert_type(strings.new_clear_string(), CustomString)
+    assert_type(strings.new_string(), CustomString)
+    assert_type(terms.new_term(), CustomTerm)
     assert_type(strings.iter_filter_populated(), Iterator[CustomString])
     assert_type(strings.iter_filter_map(keep), Iterator[CustomString])
     assert_type(strings.filter_map(keep), CustomStrings)
@@ -588,7 +586,7 @@ def test_fermion_normal_overridden_factories() -> None:
     assert_type(string_set.filter_map(keep), CustomStringSet)
     strings.filter_map(lambda item: assert_type(item, CustomString) == strings[0])
     string_set.filter_map(lambda item: assert_type(item, CustomString) == strings[0])
-    assert type(strings.new_clear_string()) is CustomString
+    assert type(strings.new_string()) is CustomString
     assert type(next(strings.iter_filter_map(keep))) is CustomString
     assert type(strings.filter_map(keep)) is CustomStrings
     assert type(strings.filter_unique()) is CustomStrings
@@ -614,7 +612,7 @@ def test_fermion_normal_overridden_factories() -> None:
     # The inferred custom API must exist at runtime for correctly configured storage.
     assert_type(total.strings.custom_marker(), str)
     assert total.strings.custom_marker() == "custom strings"
-    adopted = CustomSum._create(total._impl, total._string_set._map)
+    adopted = CustomSum._create(total._impl, map_=total._string_set._map)
     assert adopted.strings.custom_marker() == "custom strings"
 
     class CustomSet(zfon.RealTermSet):
@@ -634,9 +632,7 @@ def test_fermion_normal_overridden_factories() -> None:
     with pytest.raises(TypeError, match="String storage does not match its factory"):
         CustomSet.from_terms(ordinary)
     with pytest.raises(TypeError, match="String storage does not match its factory"):
-        CustomSum._create(ordinary._impl)
-    with pytest.raises(TypeError, match="String storage does not match its factory"):
-        CustomSum._create(ordinary_sum._impl, ordinary_sum._string_set._map)
+        CustomSum._create(ordinary_sum._impl, map_=ordinary_sum._string_set._map)
     assert len(ordinary) == 1
 
     # Specialised factories accept compatible parent-class inputs, too.
@@ -737,7 +733,8 @@ def test_fermion_state_overridden_factories() -> None:
     def keep(string: CustomString) -> bool:
         return string == strings[0]
 
-    assert_type(strings.new_clear_string(), CustomString)
+    assert_type(strings.new_string(), CustomString)
+    assert_type(terms.new_term(), CustomTerm)
     assert_type(strings.iter_filter_populated(), Iterator[CustomString])
     assert_type(strings.iter_filter_map(keep), Iterator[CustomString])
     assert_type(strings.filter_map(keep), CustomStrings)
@@ -747,7 +744,7 @@ def test_fermion_state_overridden_factories() -> None:
     assert_type(string_set.filter_map(keep), CustomStringSet)
     strings.filter_map(lambda item: assert_type(item, CustomString) == strings[0])
     string_set.filter_map(lambda item: assert_type(item, CustomString) == strings[0])
-    assert type(strings.new_clear_string()) is CustomString
+    assert type(strings.new_string()) is CustomString
     assert type(next(strings.iter_filter_map(keep))) is CustomString
     assert type(strings.filter_map(keep)) is CustomStrings
     assert type(strings.filter_unique()) is CustomStrings
@@ -773,7 +770,7 @@ def test_fermion_state_overridden_factories() -> None:
     # The inferred custom API must exist at runtime for correctly configured storage.
     assert_type(total.strings.custom_marker(), str)
     assert total.strings.custom_marker() == "custom strings"
-    adopted = CustomSum._create(total._impl, total._string_set._map)
+    adopted = CustomSum._create(total._impl, map_=total._string_set._map)
     assert adopted.strings.custom_marker() == "custom strings"
 
     class CustomSet(zfs.RealTermSet):
@@ -793,9 +790,7 @@ def test_fermion_state_overridden_factories() -> None:
     with pytest.raises(TypeError, match="String storage does not match its factory"):
         CustomSet.from_terms(ordinary)
     with pytest.raises(TypeError, match="String storage does not match its factory"):
-        CustomSum._create(ordinary._impl)
-    with pytest.raises(TypeError, match="String storage does not match its factory"):
-        CustomSum._create(ordinary_sum._impl, ordinary_sum._string_set._map)
+        CustomSum._create(ordinary_sum._impl, map_=ordinary_sum._string_set._map)
     assert len(ordinary) == 1
 
     # Specialised factories accept compatible parent-class inputs, too.

@@ -61,8 +61,15 @@ from zixy.container.coeffs import (
 )
 from zixy.container.data import TermData, _TermData
 from zixy.container.serialization import SerializableContainer, check_schema_version
-from zixy.container.strings import String, Strings, StringSet
-from zixy.utils import DEFAULT_ATOL, DEFAULT_RTOL, slice_index_gen, slice_of_slice, split_top_level
+from zixy.container.strings import String, Strings
+from zixy.utils import (
+    DEFAULT_ATOL,
+    DEFAULT_RTOL,
+    slice_index,
+    slice_index_gen,
+    slice_of_slice,
+    split_top_level,
+)
 
 if TYPE_CHECKING:
     import builtins
@@ -79,6 +86,7 @@ if TYPE_CHECKING:
     )
     from zixy.container.coeffs import Number
     from zixy.container.serialization import SerializedContainer
+    from zixy.container.strings import StringSet
 
 
 type _AnyCoeffTerm[ImplT: ImplArray, SpecT] = (
@@ -221,6 +229,10 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
             )
         if not isinstance(data.coeffs, self.coeffs_type):
             raise TypeError("Coefficient storage does not match its factory")
+        if indexer is None and len(data) != 1:
+            raise ValueError("Owning Term must have exactly one element in its storage.")
+        if indexer is not None:
+            indexer = slice_index(slice(None), indexer, len(data))
         self._impl = data
         self._index = indexer
 
@@ -238,16 +250,36 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         return cast("type[StringT]", term.strings_type.string_type)
 
     @classmethod
-    def _create(cls, data: _TermData[ImplT, SpecT, C], indexer: int | None = None) -> Self:
-        """Create an instance of ``cls``.
+    def _create(cls, data: _TermData[ImplT, SpecT, C]) -> Self:
+        """Create an owning instance of ``cls``.
 
         Args:
-            data: Raw term data object containing the data for this item.
-            indexer: Index of the item within ``data``. If ``None``, this instance is
-                considered to be owning.
+            data: Term data object containing the data for this instance.
 
         Returns:
-            A new instance of ``cls``.
+            A new owning instance of ``cls`` sharing the supplied storage.
+
+        Raises:
+            TypeError: The storage does not match the concrete container factories.
+            ValueError: The storage does not contain exactly one term.
+        """
+        out = cls.__new__(cls)
+        Term.__init__(out, data)
+        return out
+
+    @classmethod
+    def _view(cls, data: _TermData[ImplT, SpecT, C], indexer: int) -> Self:
+        """Create a view on one existing term.
+
+        Args:
+            data: Term data object containing the data for this instance.
+            indexer: Index of the term to view, allowing negative indices.
+
+        Returns:
+            A non-owning instance of ``cls`` sharing the selected term.
+
+        Raises:
+            IndexError: The index is outside the storage.
         """
         out = cls.__new__(cls)
         Term.__init__(out, data, indexer)
@@ -479,18 +511,33 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         return self._impl
 
     @classmethod
-    def _create(cls, data: _TermData[ImplT, SpecT, C], indexer: slice = slice(None)) -> Self:
-        """Create a new instance of ``cls``.
+    def _create(cls, data: _TermData[ImplT, SpecT, C]) -> Self:
+        """Create an owning instance of ``cls``.
 
         Args:
-            data: Raw term data object containing the data for this sequence.
-            indexer: Slice of the data in ``data`` that this instance should view. The default
-                value of ``slice(None)`` indicates that this instance is considered to be owning.
+            data: Term data object containing the data for this instance.
 
         Returns:
-            A new instance of ``cls``.
+            A new owning instance of ``cls`` sharing the supplied storage.
         """
         out = cls.__new__(cls)
+        Terms.__init__(out, data)
+        return out
+
+    @classmethod
+    def _view(cls, data: _TermData[ImplT, SpecT, C], indexer: slice) -> Self:
+        """Create a view on existing term storage.
+
+        Args:
+            data: Term data object containing the data for this instance.
+            indexer: Slice selecting the terms to view.
+
+        Returns:
+            A non-owning instance of ``cls``, including for a full slice.
+        """
+        out = cls.__new__(cls)
+        if indexer == slice(None):
+            indexer = slice(0, len(data), 1)
         Terms.__init__(out, data, indexer)
         return out
 
@@ -571,9 +618,9 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         if isinstance(indexer, int):
             if self.map_index(indexer) >= len(self._impl):
                 raise IndexError
-            return self.term_type._create(self._impl, self.map_index(indexer))
+            return self.term_type._view(self._impl, self.map_index(indexer))
         else:
-            return type(self)._create(
+            return type(self)._view(
                 self._data, slice_of_slice(self.slice, indexer, len(self._data))
             )
 
@@ -681,9 +728,9 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         out *= cast("C", -1)
         return out
 
-    def _empty_clone(self) -> Self:
-        """Get an empty (owning, contiguous) clone of ``self``."""
-        return self._create(self._impl._empty_clone())
+    def _new(self) -> Self:
+        """Allocate empty owning storage with the same concrete type and configuration."""
+        return self._create(self._impl._new())
 
     def reordered(self, inds: Sequence[int]) -> Self:
         """Get a new instance with the elements of ``self`` in a new order.
@@ -697,25 +744,20 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         """
         if not all(i < len(self) for i in inds):
             raise IndexError("Index out of bounds in reorder.")
-        out = self._empty_clone()
+        out = self._new()
         for i in inds:
             out.append(self[i])
         return out
 
-    def new_clear_term(self) -> Term[ImplT, SpecT, C]:
-        """Factory to make a new term with a zero string and a unit coefficient.
+    def new_term[TermT: Term[Any, Any, Any]](self: _HasTermType[TermT]) -> TermT:
+        """Allocate a default owning term with the same type and configuration.
 
         Returns:
-            A new owing term with the string and coefficient type of ``self``.
+            An independent owning term with a default string and unit coefficient.
         """
-        try:
-            tmp = self[0].clone()
-            tmp.clear()
-        except IndexError:
-            copy = self.clone()
-            copy.resize(1)
-            tmp = copy[0]
-        return tmp
+        terms = cast("Terms[Any, Any, Any]", self)
+        data = terms._new().resize(1)
+        return self.term_type._create(data._impl)
 
     def iter_filter_map(
         self, f: Callable[[Term[ImplT, SpecT, C]], bool]
@@ -748,7 +790,7 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
             New instance containing the occurrences of selected (and possibly mutated) strings
             of ``self`` according to ``f``.
         """
-        out = self._empty_clone()
+        out = self._new()
         out.append_iterable(self.iter_filter_map(f))
         return out
 
@@ -958,13 +1000,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             raise TypeError("String storage does not match its factory")
         if not isinstance(terms._data.coeffs, self.terms_type.term_type.coeffs_type):
             raise TypeError("Coefficient storage does not match its factory")
-        self._impl = terms._empty_clone()._impl
-        string_set_type = terms.strings_type._set_type
-        self._string_set = string_set_type.__new__(string_set_type)
-        StringSet.__init__(self._string_set, self._impl.strings._impl)
-        # data and set should point at the same strings
-        self._impl.strings._impl = self._string_set._impl
-        self._working_term = terms.new_clear_term()
+        self._bind(terms._new()._impl, terms.strings_type._set_type.map_type())
         if isinstance(terms._impl.coeffs, RealCoeffs | ComplexCoeffs):
             self._collect_terms(terms, sum_duplicates=False)
         else:
@@ -993,8 +1029,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             )
             out_coeffs._impl = complex_values
         self._impl.strings._impl = array
-        self._string_set._impl = array
-        self._string_set._map = mapping
+        self._bind(self._impl, mapping)
 
     @property
     def _data(self) -> _TermData[ImplT, SpecT, C]:
@@ -1044,48 +1079,57 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         terms = cast("TermSet[Any, Any, Any]", self)
         return cast("StringsT", terms._impl.strings)
 
-    @classmethod
-    def _create(cls, data: _TermData[ImplT, SpecT, C], map_: Map | None = None) -> Self:
-        """Create a new instance of ``cls``.
+    def _bind(self, data: _TermData[ImplT, SpecT, C], map_: Map) -> None:
+        """Set the term data and lookup map for ``self``.
 
         Args:
-            data: Raw term data object.
-            map_: Populated string lookup map for ``data``. If supplied, adopt both directly.
+            data: Term data object containing the data for this instance.
+            map_: Populated string lookup map corresponding to the supplied data.
+
+        Raises:
+            TypeError: The storage does not match the concrete container factories.
+        """
+        if type(data.strings) is not self.terms_type.term_type.strings_type:
+            raise TypeError("String storage does not match its factory")
+        if not isinstance(data.coeffs, self.terms_type.term_type.coeffs_type):
+            raise TypeError("Coefficient storage does not match its factory")
+        assert len(data) == len(map_)
+        self._impl = data
+        string_set_type = type(data.strings)._set_type
+        self._string_set = string_set_type._create(data.strings._impl, map_=map_)
+        self._working_term = self.terms_type._view(data, slice(None)).new_term()
+
+    @classmethod
+    def _create(cls, data: _TermData[ImplT, SpecT, C], *, map_: Map) -> Self:
+        """Create an owning instance of ``cls``.
+
+        Args:
+            data: Term data object containing the data for this instance.
+            map_: Populated string lookup map corresponding to the supplied data.
 
         Returns:
-            A new instance of ``cls``.
+            A new instance of ``cls`` sharing the supplied storage and map.
         """
         out = cls.__new__(cls)
-        if map_ is None:
-            TermSet.__init__(out, cls.terms_type._create(data))
-        else:
-            if type(data.strings) is not cls.terms_type.term_type.strings_type:
-                raise TypeError("String storage does not match its factory")
-            if not isinstance(data.coeffs, cls.terms_type.term_type.coeffs_type):
-                raise TypeError("Coefficient storage does not match its factory")
-            assert len(data) == len(map_)
-            out._impl = data
-            string_set_type = type(data.strings)._set_type
-            out._string_set = string_set_type._create(data.strings._impl, map_)
-            out._working_term = cls.terms_type._create(data).new_clear_term()
+        out._bind(data, map_)
         return out
 
-    def _empty_clone(self) -> Self:
-        """Get an empty (owning, contiguous) clone of ``self``."""
-        term_data = TermData(self._impl.strings._empty_clone(), self._impl.coeffs._empty_clone())
-        return self._create(term_data)
+    def _new(self) -> Self:
+        """Allocate empty owning storage with the same concrete type and configuration."""
+        term_data = TermData(self._impl.strings._new(), self._impl.coeffs._new())
+        return self._create(term_data, map_=self._string_set.map_type())
 
     def clone(self) -> Self:
         """Return a deep copy of ``self``."""
         if isinstance(self._impl.coeffs, RealCoeffs | ComplexCoeffs):
             return self._copy_terms(nonzero=False)
-        out = self._empty_clone()
+        out = self._new()
         out.insert_iterable(self)
         return out
 
     def _copy_terms(self, nonzero: bool) -> Self:
         """Copy numeric terms in Rust, optionally omitting exact zeros."""
-        out = self._empty_clone()
+        out = self._new()
         coeffs = self._impl.coeffs
         out_coeffs = out._impl.coeffs
         if isinstance(coeffs, RealCoeffs):
@@ -1100,8 +1144,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             )
             out_coeffs._impl = complex_values
         out._impl.strings._impl = array
-        out._string_set._impl = array
-        out._string_set._map = mapping
+        out._bind(out._impl, mapping)
         return out
 
     def to_terms(self) -> Terms[ImplT, SpecT, C]:
@@ -1158,7 +1201,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             strings = self._impl.strings
             coeffs = convert_vec(self._impl.coeffs, coeffs_type)
             term_data = TermData(strings, coeffs)
-            return t._create(term_data)
+            return t.from_terms(t.terms_type._create(term_data))
         try:
             return self.to_terms().into(t)
         except (TypeError, ValueError) as e:
@@ -1393,7 +1436,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         """Iterate over the concrete terms of ``self``."""
         terms = cast("TermSet[Any, Any, Any]", self)
         for i in range(len(terms)):
-            yield cast("TermT", terms.terms_type.term_type._create(terms._impl, i))
+            yield cast("TermT", terms.terms_type.term_type._view(terms._impl, i))
 
     def _symbolic_vdot(self: TermSet[ImplT, SpecT, Expr], rhs: TermSet[ImplT, SpecT, Expr]) -> Expr:
         """Compute a sparse symbolic inner product between compatible term sets."""
@@ -1407,7 +1450,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
 
     def _from_generator(self, gen: Iterator[Term[ImplT, SpecT, C]]) -> Self:
         """Creates a new instance from a generator yielding instances of :class:`Term`."""
-        out = self._empty_clone()
+        out = self._new()
         out.insert_iterable(gen)
         return out
 
@@ -1480,7 +1523,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         """Filter ``self`` to only the non-zero terms."""
         if isinstance(self._impl.coeffs, RealCoeffs | ComplexCoeffs):
             return self._copy_terms(nonzero=True)
-        out = self._empty_clone()
+        out = self._new()
         strings = out._string_set
         coeffs = out._impl.coeffs
         # Strings are already unique: copy them without constructing term views
@@ -1517,7 +1560,7 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Expr)](TermSet[ImplT,
             duplicate strings added together.
         """
         out = cls.__new__(cls)
-        TermSet.__init__(out, terms._empty_clone())
+        TermSet.__init__(out, terms._new())
         if isinstance(terms._impl.coeffs, RealCoeffs | ComplexCoeffs):
             out._collect_terms(terms, sum_duplicates=True)
         else:
@@ -1568,9 +1611,7 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Expr)](TermSet[ImplT,
                 for term in rhs:
                     self._scaled_iadd(term, scalar)
             filtered = self.filter_nonzero()
-            self._impl = filtered._impl
-            self._string_set = filtered._string_set
-            self._working_term = filtered._working_term
+            self._bind(filtered._impl, filtered._string_set._map)
 
     def __iadd__(self, rhs: Term[ImplT, SpecT, C] | Self) -> Self:
         """Add ``rhs`` to ``self`` in-place."""
@@ -1672,7 +1713,7 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Expr)](TermSet[ImplT,
         Returns:
             New instance with contents given by ``gen``.
         """
-        out = self._empty_clone()
+        out = self._new()
         out.add_iterable(gen)
         return out
 

@@ -101,19 +101,21 @@ fn normal_set_complex<'a>(
 
 fn normal_set_to_py_complex(
     term_set: normal::string_major::term_set::TermSet<Complex64>,
-) -> (NormalArray, ComplexVec) {
+) -> (NormalArray, ComplexVec, Map) {
     (
         NormalArray(term_set.terms.word_iters),
         ComplexVec(clean_complex_coeffs(term_set.terms.coeffs)),
+        Map(term_set.map),
     )
 }
 
 fn normal_set_to_py_real(
     term_set: normal::string_major::term_set::TermSet<f64>,
-) -> (NormalArray, RealVec) {
+) -> (NormalArray, RealVec, Map) {
     (
         NormalArray(term_set.terms.word_iters),
         RealVec(term_set.terms.coeffs),
+        Map(term_set.map),
     )
 }
 
@@ -135,7 +137,7 @@ fn normal_terms_to_py_complex(
 fn normal_order_product(
     modes: Modes_,
     ops: Vec<(usize, bool)>,
-) -> PyResult<(NormalArray, RealVec)> {
+) -> PyResult<(NormalArray, RealVec, Map)> {
     let max_string_len = ops.len();
     let (mode_inds, adj): (Vec<_>, Vec<_>) = ops.into_iter().unzip();
     check_general_ops(&modes, &mode_inds, &adj)?;
@@ -176,7 +178,7 @@ impl NormalArray {
                 .get_ladder_op_iter(i)
                 .map(|(is_cre, mode)| (usize::from(mode), is_cre))
                 .collect();
-            let (strings, coeffs) = normal_order_product(modes.0.clone(), ops)?;
+            let (strings, coeffs, _) = normal_order_product(modes.0.clone(), ops)?;
             if strings.0.len() != 1 || coeffs.0.len() != 1 || coeffs.0[0] != 1.0 {
                 return Err(PyErr::new::<PyValueError, _>(
                     "Fermion string does not normal-order to exactly one positive component",
@@ -189,7 +191,10 @@ impl NormalArray {
 
     /// Create from a single arbitrary ladder-operator product, returning normal-ordered terms.
     #[staticmethod]
-    fn from_ladder_product(modes: Modes, ops: Vec<(usize, bool)>) -> PyResult<(Self, RealVec)> {
+    fn from_ladder_product(
+        modes: Modes,
+        ops: Vec<(usize, bool)>,
+    ) -> PyResult<(Self, RealVec, Map)> {
         normal_order_product(modes.0, ops)
     }
 
@@ -257,7 +262,7 @@ impl NormalArray {
             .get_ladder_op_iter(i_src)
             .map(|(is_cre, mode)| (usize::from(mode), is_cre))
             .collect();
-        let (strings, coeffs) = normal_order_product(self.0.modes().clone(), ops)?;
+        let (strings, coeffs, _) = normal_order_product(self.0.modes().clone(), ops)?;
         if strings.0.len() != 1 || coeffs.0.len() != 1 || coeffs.0[0] != 1.0 {
             return Err(PyErr::new::<PyValueError, _>(
                 "Fermion string does not normal-order to exactly one positive component",
@@ -489,7 +494,7 @@ impl NormalArray {
         lhs_coeffs: &RealVec,
         rhs_impl: &Self,
         rhs_coeffs: &RealVec,
-    ) -> PyResult<(Self, RealVec)> {
+    ) -> PyResult<(Self, RealVec, Map)> {
         let out = normal::string_major::lincomb::mul(
             &normal_terms_real(lhs_impl, lhs_coeffs),
             &normal_terms_real(rhs_impl, rhs_coeffs),
@@ -504,7 +509,7 @@ impl NormalArray {
         lhs_coeffs: &ComplexVec,
         rhs_impl: &Self,
         rhs_coeffs: &ComplexVec,
-    ) -> PyResult<(Self, ComplexVec)> {
+    ) -> PyResult<(Self, ComplexVec, Map)> {
         let out = normal::string_major::lincomb::mul(
             &normal_terms_complex(lhs_impl, lhs_coeffs),
             &normal_terms_complex(rhs_impl, rhs_coeffs),
@@ -519,7 +524,7 @@ impl NormalArray {
         lhs_coeffs: &RealVec,
         rhs_impl: &Self,
         rhs_coeffs: &RealVec,
-    ) -> PyResult<(Self, RealVec)> {
+    ) -> PyResult<(Self, RealVec, Map)> {
         let out = normal::string_major::lincomb::commutator(
             &normal_terms_real(lhs_impl, lhs_coeffs),
             &normal_terms_real(rhs_impl, rhs_coeffs),
@@ -534,7 +539,7 @@ impl NormalArray {
         lhs_coeffs: &RealVec,
         rhs_impl: &Self,
         rhs_coeffs: &RealVec,
-    ) -> PyResult<(Self, RealVec)> {
+    ) -> PyResult<(Self, RealVec, Map)> {
         let out = normal::string_major::lincomb::anticommutator(
             &normal_terms_real(lhs_impl, lhs_coeffs),
             &normal_terms_real(rhs_impl, rhs_coeffs),
@@ -549,7 +554,7 @@ impl NormalArray {
         lhs_coeffs: &ComplexVec,
         rhs_impl: &Self,
         rhs_coeffs: &ComplexVec,
-    ) -> PyResult<(Self, ComplexVec)> {
+    ) -> PyResult<(Self, ComplexVec, Map)> {
         let out = normal::string_major::lincomb::commutator(
             &normal_terms_complex(lhs_impl, lhs_coeffs),
             &normal_terms_complex(rhs_impl, rhs_coeffs),
@@ -564,7 +569,7 @@ impl NormalArray {
         lhs_coeffs: &ComplexVec,
         rhs_impl: &Self,
         rhs_coeffs: &ComplexVec,
-    ) -> PyResult<(Self, ComplexVec)> {
+    ) -> PyResult<(Self, ComplexVec, Map)> {
         let out = normal::string_major::lincomb::anticommutator(
             &normal_terms_complex(lhs_impl, lhs_coeffs),
             &normal_terms_complex(rhs_impl, rhs_coeffs),
@@ -642,7 +647,7 @@ impl NormalArray {
         strings: &Self,
         map: &Map,
         coeffs: &RealVec,
-    ) -> (GeneralArray, RealVec) {
+    ) -> (GeneralArray, RealVec, Map) {
         let out =
             zixy::fermion::operator::lincomb::to_general(&normal_set_real(strings, map, coeffs));
         general_set_to_py_real(out)
@@ -653,7 +658,7 @@ impl NormalArray {
         strings: &Self,
         map: &Map,
         coeffs: &ComplexVec,
-    ) -> (GeneralArray, ComplexVec) {
+    ) -> (GeneralArray, ComplexVec, Map) {
         let out =
             zixy::fermion::operator::lincomb::to_general(&normal_set_complex(strings, map, coeffs));
         general_set_to_py_complex(out)
@@ -822,19 +827,23 @@ fn general_terms_complex<'a>(
     }
 }
 
-fn general_set_to_py_real(term_set: general::term_set::TermSet<f64>) -> (GeneralArray, RealVec) {
+fn general_set_to_py_real(
+    term_set: general::term_set::TermSet<f64>,
+) -> (GeneralArray, RealVec, Map) {
     (
         GeneralArray(term_set.terms.word_iters),
         RealVec(term_set.terms.coeffs),
+        Map(term_set.map),
     )
 }
 
 fn general_set_to_py_complex(
     term_set: general::term_set::TermSet<Complex64>,
-) -> (GeneralArray, ComplexVec) {
+) -> (GeneralArray, ComplexVec, Map) {
     (
         GeneralArray(term_set.terms.word_iters),
         ComplexVec(clean_complex_coeffs(term_set.terms.coeffs)),
+        Map(term_set.map),
     )
 }
 
@@ -1122,7 +1131,7 @@ impl GeneralArray {
         lhs_coeffs: &RealVec,
         rhs_impl: &Self,
         rhs_coeffs: &RealVec,
-    ) -> PyResult<(Self, RealVec)> {
+    ) -> PyResult<(Self, RealVec, Map)> {
         let lhs_map = CoreMap::default();
         let rhs_map = CoreMap::default();
         let out = general::lincomb::rmul(
@@ -1130,7 +1139,17 @@ impl GeneralArray {
             &general_terms_real(rhs_impl, &rhs_map, rhs_coeffs),
         )
         .to_py_result()?;
-        Ok(general_set_to_py_real(out))
+        let (strings, map, coeffs) = crate::container::terms::collect(
+            &out.terms.word_iters,
+            &out.terms.coeffs,
+            false,
+            Some(true),
+            |out, source, i| {
+                out.push_elem_ref(source.get_elem_ref(i));
+                Ok(())
+            },
+        )?;
+        Ok((Self(strings), RealVec(coeffs), map))
     }
 
     #[staticmethod]
@@ -1139,7 +1158,7 @@ impl GeneralArray {
         lhs_coeffs: &ComplexVec,
         rhs_impl: &Self,
         rhs_coeffs: &ComplexVec,
-    ) -> PyResult<(Self, ComplexVec)> {
+    ) -> PyResult<(Self, ComplexVec, Map)> {
         let lhs_map = CoreMap::default();
         let rhs_map = CoreMap::default();
         let out = general::lincomb::rmul(
@@ -1147,11 +1166,24 @@ impl GeneralArray {
             &general_terms_complex(rhs_impl, &rhs_map, rhs_coeffs),
         )
         .to_py_result()?;
-        Ok(general_set_to_py_complex(out))
+        let (strings, map, coeffs) = crate::container::terms::collect(
+            &out.terms.word_iters,
+            &out.terms.coeffs,
+            false,
+            Some(true),
+            |out, source, i| {
+                out.push_elem_ref(source.get_elem_ref(i));
+                Ok(())
+            },
+        )?;
+        Ok((Self(strings), ComplexVec(clean_complex_coeffs(coeffs)), map))
     }
 
     #[staticmethod]
-    fn lincomb_to_normal_order_real(strings: &Self, coeffs: &RealVec) -> (NormalArray, RealVec) {
+    fn lincomb_to_normal_order_real(
+        strings: &Self,
+        coeffs: &RealVec,
+    ) -> (NormalArray, RealVec, Map) {
         let map = CoreMap::default();
         normal_set_to_py_real(zixy::fermion::operator::lincomb::to_normal_order(
             &general_terms_real(strings, &map, coeffs),
@@ -1162,7 +1194,7 @@ impl GeneralArray {
     fn lincomb_to_normal_order_complex(
         strings: &Self,
         coeffs: &ComplexVec,
-    ) -> (NormalArray, ComplexVec) {
+    ) -> (NormalArray, ComplexVec, Map) {
         let map = CoreMap::default();
         normal_set_to_py_complex(zixy::fermion::operator::lincomb::to_normal_order(
             &general_terms_complex(strings, &map, coeffs),

@@ -4,6 +4,7 @@ from sympy import sympify
 import zixy.fermion.operator.general as zfog
 import zixy.fermion.operator.normal as zfon
 from zixy.container.coeffs import ComplexSign, Sign
+from zixy.container.terms import TermSet
 
 
 @pytest.mark.parametrize(
@@ -564,6 +565,59 @@ def test_complex_term_product():
     rhs = zfon.ComplexTermSum.from_str("((2), F0^)", 2)
 
     assert str(lhs * rhs) == "(2j, ), (-2j, F0^ F0)"
+
+
+@pytest.mark.parametrize("term_sum_type", [zfon.RealTermSum, zfon.ComplexTermSum])
+@pytest.mark.parametrize("empty_side", [None, "lhs", "rhs"])
+@pytest.mark.parametrize(
+    ("operation", "expected"),
+    [
+        ("__mul__", [("", 1.0), ("F0^ F0", -1.0)]),
+        ("commutator", [("", 1.0), ("F0^ F0", -2.0)]),
+        ("anticommutator", [("", 1.0)]),
+    ],
+)
+def test_numeric_operations_retain_rust_map(
+    term_sum_type, empty_side, operation, expected, monkeypatch
+):
+    lhs = term_sum_type.from_str("F0", 2)
+    rhs = term_sum_type.from_str("F0^", 2)
+    scale = 2j if term_sum_type is zfon.ComplexTermSum else 2.0
+    lhs *= scale
+    expected_sum = term_sum_type.from_iterable([(s, c * scale) for s, c in expected], 2)
+    if empty_side == "lhs":
+        lhs = term_sum_type(2)
+    elif empty_side == "rhs":
+        rhs = term_sum_type(2)
+    if empty_side is not None:
+        expected_sum = term_sum_type(2)
+
+    def fail_collect(*args, **kwargs):
+        raise AssertionError("The Rust result should already have its lookup map.")
+
+    monkeypatch.setattr(TermSet, "_collect_terms", fail_collect)
+    result = getattr(lhs, operation)(rhs)
+
+    assert type(result) is term_sum_type
+    assert result == expected_sum
+    assert result.strings.is_owning()
+    assert result.coeffs.is_owning()
+    assert len(result._string_set._map) == len(result)
+    for term in expected_sum:
+        assert result.lookup_coeff(term.string) == term.coeff
+        index, inserted = result.soft_insert(term)
+        assert not inserted
+        assert result._impl.coeffs[index] == term.coeff
+
+
+def test_ladder_product_retains_rust_map():
+    strings, coeffs, map_ = zfon.NormalFermionOperatorArray.from_ladder_product(
+        zfon.Modes.from_count(2), [(0, False), (0, True)]
+    )
+
+    assert len(strings) == len(coeffs) == len(map_) == 2
+    for index in range(len(strings)):
+        assert strings.mapped_lookup(map_, strings, index) == index
 
 
 def test_operator_properties():

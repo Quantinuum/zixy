@@ -939,8 +939,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         Note:
             The family and container tags are not checked. Duplicate strings follow
             ``from_terms`` semantics: term sets retain the last coefficient, while term sums
-            add real, complex, or symbolic coefficients together. Restricted root-of-unity
-            term sums retain the last coefficient.
+            add coefficients together.
         """
         return cls.from_terms(cls.terms_type.from_dict(source))
 
@@ -1493,13 +1492,13 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         return out
 
 
-class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
-    TermSet[ImplT, SpecT, C]
-):
+class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Expr)](TermSet[ImplT, SpecT, C]):
     """A sum of terms consisting of strings and coefficients.
 
     A set-like container of terms that may be used to store unique terms and perform algebraic
     operations on them.
+
+    Coefficients may be real, complex, or symbolic so that like terms can be added.
 
     Note:
         Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
@@ -1516,15 +1515,8 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         Returns:
             A new instance of ``cls`` owning independent storage, with coefficients of
             duplicate strings added together.
-
-        Note:
-            Restricted root-of-unity term sums retain the last coefficient of each string,
-            preserving their existing collection behavior without requiring addition.
         """
         out = cls.__new__(cls)
-        if issubclass(terms.coeff_type, RootOfUnity):
-            TermSet.__init__(out, terms)
-            return out
         TermSet.__init__(out, terms._empty_clone())
         if isinstance(terms._impl.coeffs, RealCoeffs | ComplexCoeffs):
             out._collect_terms(terms, sum_duplicates=True)
@@ -1541,7 +1533,6 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
                 f"Cannot add a term with coefficient type {rhs.coeff_type} "
                 f"to a TermSum with coefficient type {self.coeff_type}."
             )
-        assert not issubclass(self.coeff_type, RootOfUnity)  # TODO: reflect in typing
         if isinstance(rhs, Term):
             scaled_coeff = rhs.coeff * convert(scalar, self.coeff_type)
             index, inserted = self.soft_insert(rhs)
@@ -1670,13 +1661,7 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             An instance of ``cls`` parsed from ``source``.
         """
         terms = cls.terms_type.from_str(source, *args, **kwargs)
-        if not issubclass(terms.coeff_type, RootOfUnity):
-            return cls.from_terms(terms)
-        # Preserve the existing addition restrictions for root-of-unity coefficients.
-        out = cls.__new__(cls)
-        TermSet.__init__(out, terms._empty_clone())
-        out.add_iterable(terms)
-        return out
+        return cls.from_terms(terms)
 
     def _from_generator(self, gen: Iterator[Term[ImplT, SpecT, C]]) -> Self:
         """Create a new instance based on ``self`` with contents given by a generator.

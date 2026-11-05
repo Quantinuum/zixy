@@ -169,19 +169,19 @@ class Strings[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseStrings[ImplT, Spec
     string_type: type[String[ImplT, SpecT, ElemT]]
     _springs_type: type[Springs]
 
-    def __init__(self, qubits: int | Qubits = 0, n: int = 0):
+    def __init__(self, qubits: int | Qubits = 0, *, size: int = 0):
         """Initialize the string array.
 
         Args:
             qubits: Qubits object or number of qubits to use.
-            n: Number of default elements with which to create the instance.
+            size: Number of default elements with which to create the instance.
         """
         super().__init__(
             self.string_type.impl_type(
                 qubits if isinstance(qubits, Qubits) else Qubits.from_count(qubits)
             )
         )
-        self.resize(n)
+        self.resize(size)
 
     @classmethod
     def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Self:

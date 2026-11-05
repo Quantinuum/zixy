@@ -239,7 +239,7 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
         check_schema_version(source)
         space = Qubits.from_inds(source["space"]["qubits"])
         rows = source["strings"]
-        out = cls(space, len(rows))
+        out = cls(space, size=len(rows))
         for i, row in enumerate(rows):
             if len(row) != len(space):
                 raise ValueError("Serialized string length must match the space.")

@@ -8,8 +8,8 @@ import zixy.qubit.state as zqs
 
 
 def test_qubit_operator_relationships() -> None:
-    strings = zqo.Strings(2, 1)
-    terms = zqo.RealTerms(2, 1)
+    strings = zqo.Strings(2, size=1)
+    terms = zqo.RealTerms(2, size=1)
     total = zqo.RealTermSum.from_terms(terms)
     string_set = zqo.StringSet.from_strings(strings)
 
@@ -27,8 +27,8 @@ def test_qubit_operator_relationships() -> None:
     assert_type(terms.string_type, type[zqo.String])
     assert_type(total.strings_type, type[zqo.Strings])
     assert_type(total.string_type, type[zqo.String])
-    assert_type(zqo.ComplexTerms(2, 1)[0], zqo.ComplexTerm)
-    assert_type(zqo.SymbolicTerms(2, 1)[0], zqo.SymbolicTerm)
+    assert_type(zqo.ComplexTerms(2, size=1)[0], zqo.ComplexTerm)
+    assert_type(zqo.SymbolicTerms(2, size=1)[0], zqo.SymbolicTerm)
     assert_type(total.strings, zqo.Strings)
     assert_type(next(iter(total)), zqo.RealTerm)
     assert_type(string_set.to_strings(), zqo.Strings)
@@ -49,8 +49,8 @@ def test_qubit_operator_relationships() -> None:
 
 
 def test_qubit_state_relationships() -> None:
-    strings = zqs.Strings(2, 1)
-    terms = zqs.RealTerms(2, 1)
+    strings = zqs.Strings(2, size=1)
+    terms = zqs.RealTerms(2, size=1)
     total = zqs.RealTermSum.from_terms(terms)
     string_set = zqs.StringSet.from_strings(strings)
 
@@ -68,8 +68,8 @@ def test_qubit_state_relationships() -> None:
     assert_type(terms.string_type, type[zqs.String])
     assert_type(total.strings_type, type[zqs.Strings])
     assert_type(total.string_type, type[zqs.String])
-    assert_type(zqs.ComplexTerms(2, 1)[0], zqs.ComplexTerm)
-    assert_type(zqs.SymbolicTerms(2, 1)[0], zqs.SymbolicTerm)
+    assert_type(zqs.ComplexTerms(2, size=1)[0], zqs.ComplexTerm)
+    assert_type(zqs.SymbolicTerms(2, size=1)[0], zqs.SymbolicTerm)
     assert_type(total.strings, zqs.Strings)
     assert_type(next(iter(total)), zqs.RealTerm)
     assert_type(string_set.to_strings(), zqs.Strings)
@@ -90,8 +90,8 @@ def test_qubit_state_relationships() -> None:
 
 
 def test_fermion_general_relationships() -> None:
-    strings = zfog.Strings(2, 1)
-    terms = zfog.RealTerms(2, 1)
+    strings = zfog.Strings(2, size=1)
+    terms = zfog.RealTerms(2, size=1)
     total = zfog.RealTermSum.from_terms(terms)
     string_set = zfog.StringSet.from_strings(strings)
 
@@ -109,8 +109,8 @@ def test_fermion_general_relationships() -> None:
     assert_type(terms.string_type, type[zfog.String])
     assert_type(total.strings_type, type[zfog.Strings])
     assert_type(total.string_type, type[zfog.String])
-    assert_type(zfog.ComplexTerms(2, 1)[0], zfog.ComplexTerm)
-    assert_type(zfog.SymbolicTerms(2, 1)[0], zfog.SymbolicTerm)
+    assert_type(zfog.ComplexTerms(2, size=1)[0], zfog.ComplexTerm)
+    assert_type(zfog.SymbolicTerms(2, size=1)[0], zfog.SymbolicTerm)
     assert_type(total.strings, zfog.Strings)
     assert_type(next(iter(total)), zfog.RealTerm)
     assert_type(string_set.to_strings(), zfog.Strings)
@@ -131,8 +131,8 @@ def test_fermion_general_relationships() -> None:
 
 
 def test_fermion_normal_relationships() -> None:
-    strings = zfon.Strings(2, 1)
-    terms = zfon.RealTerms(2, 1)
+    strings = zfon.Strings(2, size=1)
+    terms = zfon.RealTerms(2, size=1)
     total = zfon.RealTermSum.from_terms(terms)
     string_set = zfon.StringSet.from_strings(strings)
 
@@ -150,8 +150,8 @@ def test_fermion_normal_relationships() -> None:
     assert_type(terms.string_type, type[zfon.String])
     assert_type(total.strings_type, type[zfon.Strings])
     assert_type(total.string_type, type[zfon.String])
-    assert_type(zfon.ComplexTerms(2, 1)[0], zfon.ComplexTerm)
-    assert_type(zfon.SymbolicTerms(2, 1)[0], zfon.SymbolicTerm)
+    assert_type(zfon.ComplexTerms(2, size=1)[0], zfon.ComplexTerm)
+    assert_type(zfon.SymbolicTerms(2, size=1)[0], zfon.SymbolicTerm)
     assert_type(total.strings, zfon.Strings)
     assert_type(next(iter(total)), zfon.RealTerm)
     assert_type(string_set.to_strings(), zfon.Strings)
@@ -172,8 +172,8 @@ def test_fermion_normal_relationships() -> None:
 
 
 def test_fermion_state_relationships() -> None:
-    strings = zfs.Strings(2, 1)
-    terms = zfs.RealTerms(2, 1)
+    strings = zfs.Strings(2, size=1)
+    terms = zfs.RealTerms(2, size=1)
     total = zfs.RealTermSum.from_terms(terms)
     string_set = zfs.StringSet.from_strings(strings)
 
@@ -191,8 +191,8 @@ def test_fermion_state_relationships() -> None:
     assert_type(terms.string_type, type[zfs.String])
     assert_type(total.strings_type, type[zfs.Strings])
     assert_type(total.string_type, type[zfs.String])
-    assert_type(zfs.ComplexTerms(2, 1)[0], zfs.ComplexTerm)
-    assert_type(zfs.SymbolicTerms(2, 1)[0], zfs.SymbolicTerm)
+    assert_type(zfs.ComplexTerms(2, size=1)[0], zfs.ComplexTerm)
+    assert_type(zfs.SymbolicTerms(2, size=1)[0], zfs.SymbolicTerm)
     assert_type(total.strings, zfs.Strings)
     assert_type(next(iter(total)), zfs.RealTerm)
     assert_type(string_set.to_strings(), zfs.Strings)

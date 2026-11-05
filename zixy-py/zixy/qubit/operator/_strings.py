@@ -323,7 +323,7 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
         check_schema_version(source)
         qubits = Qubits.from_inds(source["space"]["qubits"])
         rows = source["strings"]
-        out = cls(qubits, len(rows))
+        out = cls(qubits, size=len(rows))
         paulis = {"I": PauliMatrix.I, "X": PauliMatrix.X, "Y": PauliMatrix.Y, "Z": PauliMatrix.Z}
         for i, row in enumerate(rows):
             if len(row) != len(qubits):

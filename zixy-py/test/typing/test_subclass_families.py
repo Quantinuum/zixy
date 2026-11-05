@@ -28,7 +28,7 @@ def test_qubit_operator_inherited_factories() -> None:
     class DerivedSum(zqo.RealTermSum):
         pass
 
-    terms = DerivedTerms(2, 1)
+    terms = DerivedTerms(2, size=1)
     total = DerivedSum.from_terms(terms)
 
     assert_type(terms[0], zqo.RealTerm)
@@ -72,9 +72,9 @@ def test_qubit_operator_overridden_factories() -> None:
     class DerivedTerms(CustomTerms):
         pass
 
-    strings = CustomStrings(2, 1)
+    strings = CustomStrings(2, size=1)
     string_set = CustomStringSet.from_strings(strings)
-    terms = DerivedTerms(2, 1)
+    terms = DerivedTerms(2, size=1)
     total = CustomSum.from_terms(terms)
 
     assert_type(strings[0], CustomString)
@@ -148,7 +148,7 @@ def test_qubit_operator_overridden_factories() -> None:
     assert custom_set.strings.custom_marker() == "custom strings"
 
     # Compatible native data is insufficient when its Python wrapper lacks the promised API.
-    ordinary = zqo.RealTerms(2, 1)
+    ordinary = zqo.RealTerms(2, size=1)
     ordinary_sum = zqo.RealTermSum.from_terms(ordinary)
     with pytest.raises(TypeError, match="String storage does not match its factory"):
         CustomTerms._create(ordinary._impl)
@@ -189,7 +189,7 @@ def test_qubit_state_inherited_factories() -> None:
     class DerivedSum(zqs.RealTermSum):
         pass
 
-    terms = DerivedTerms(2, 1)
+    terms = DerivedTerms(2, size=1)
     total = DerivedSum.from_terms(terms)
 
     assert_type(terms[0], zqs.RealTerm)
@@ -233,9 +233,9 @@ def test_qubit_state_overridden_factories() -> None:
     class DerivedTerms(CustomTerms):
         pass
 
-    strings = CustomStrings(2, 1)
+    strings = CustomStrings(2, size=1)
     string_set = CustomStringSet.from_strings(strings)
-    terms = DerivedTerms(2, 1)
+    terms = DerivedTerms(2, size=1)
     total = CustomSum.from_terms(terms)
 
     assert_type(strings[0], CustomString)
@@ -307,7 +307,7 @@ def test_qubit_state_overridden_factories() -> None:
     assert custom_set.strings.custom_marker() == "custom strings"
 
     # Compatible native data is insufficient when its Python wrapper lacks the promised API.
-    ordinary = zqs.RealTerms(2, 1)
+    ordinary = zqs.RealTerms(2, size=1)
     ordinary_sum = zqs.RealTermSum.from_terms(ordinary)
     with pytest.raises(TypeError, match="String storage does not match its factory"):
         CustomTerms._create(ordinary._impl)
@@ -348,7 +348,7 @@ def test_fermion_general_inherited_factories() -> None:
     class DerivedSum(zfog.RealTermSum):
         pass
 
-    terms = DerivedTerms(2, 1)
+    terms = DerivedTerms(2, size=1)
     total = DerivedSum.from_terms(terms)
 
     assert_type(terms[0], zfog.RealTerm)
@@ -392,9 +392,9 @@ def test_fermion_general_overridden_factories() -> None:
     class DerivedTerms(CustomTerms):
         pass
 
-    strings = CustomStrings(2, 1, max_string_len=1)
+    strings = CustomStrings(2, size=1, max_string_len=1)
     string_set = CustomStringSet.from_strings(strings)
-    terms = DerivedTerms(2, 1, max_string_len=1)
+    terms = DerivedTerms(2, size=1, max_string_len=1)
     total = CustomSum.from_terms(terms)
 
     assert_type(strings[0], CustomString)
@@ -466,7 +466,7 @@ def test_fermion_general_overridden_factories() -> None:
     assert custom_set.strings.custom_marker() == "custom strings"
 
     # Compatible native data is insufficient when its Python wrapper lacks the promised API.
-    ordinary = zfog.RealTerms(2, 1)
+    ordinary = zfog.RealTerms(2, size=1)
     ordinary_sum = zfog.RealTermSum.from_terms(ordinary)
     with pytest.raises(TypeError, match="String storage does not match its factory"):
         CustomTerms._create(ordinary._impl)
@@ -507,7 +507,7 @@ def test_fermion_normal_inherited_factories() -> None:
     class DerivedSum(zfon.RealTermSum):
         pass
 
-    terms = DerivedTerms(2, 1)
+    terms = DerivedTerms(2, size=1)
     total = DerivedSum.from_terms(terms)
 
     assert_type(terms[0], zfon.RealTerm)
@@ -551,9 +551,9 @@ def test_fermion_normal_overridden_factories() -> None:
     class DerivedTerms(CustomTerms):
         pass
 
-    strings = CustomStrings(2, 1)
+    strings = CustomStrings(2, size=1)
     string_set = CustomStringSet.from_strings(strings)
-    terms = DerivedTerms(2, 1)
+    terms = DerivedTerms(2, size=1)
     total = CustomSum.from_terms(terms)
 
     assert_type(strings[0], CustomString)
@@ -625,7 +625,7 @@ def test_fermion_normal_overridden_factories() -> None:
     assert custom_set.strings.custom_marker() == "custom strings"
 
     # Compatible native data is insufficient when its Python wrapper lacks the promised API.
-    ordinary = zfon.RealTerms(2, 1)
+    ordinary = zfon.RealTerms(2, size=1)
     ordinary_sum = zfon.RealTermSum.from_terms(ordinary)
     with pytest.raises(TypeError, match="String storage does not match its factory"):
         CustomTerms._create(ordinary._impl)
@@ -666,7 +666,7 @@ def test_fermion_state_inherited_factories() -> None:
     class DerivedSum(zfs.RealTermSum):
         pass
 
-    terms = DerivedTerms(2, 1)
+    terms = DerivedTerms(2, size=1)
     total = DerivedSum.from_terms(terms)
 
     assert_type(terms[0], zfs.RealTerm)
@@ -710,9 +710,9 @@ def test_fermion_state_overridden_factories() -> None:
     class DerivedTerms(CustomTerms):
         pass
 
-    strings = CustomStrings(2, 1)
+    strings = CustomStrings(2, size=1)
     string_set = CustomStringSet.from_strings(strings)
-    terms = DerivedTerms(2, 1)
+    terms = DerivedTerms(2, size=1)
     total = CustomSum.from_terms(terms)
 
     assert_type(strings[0], CustomString)
@@ -784,7 +784,7 @@ def test_fermion_state_overridden_factories() -> None:
     assert custom_set.strings.custom_marker() == "custom strings"
 
     # Compatible native data is insufficient when its Python wrapper lacks the promised API.
-    ordinary = zfs.RealTerms(2, 1)
+    ordinary = zfs.RealTerms(2, size=1)
     ordinary_sum = zfs.RealTermSum.from_terms(ordinary)
     with pytest.raises(TypeError, match="String storage does not match its factory"):
         CustomTerms._create(ordinary._impl)

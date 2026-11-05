@@ -3,6 +3,40 @@ from sympy import sympify
 
 import zixy.fermion.operator.general as zfog
 import zixy.fermion.operator.normal as zfon
+from zixy.container.terms import TermSet
+
+
+@pytest.mark.parametrize("term_sum_type", [zfog.RealTermSum, zfog.ComplexTermSum])
+@pytest.mark.parametrize("empty_side", [None, "lhs", "rhs"])
+def test_numeric_product_retains_rust_map(term_sum_type, empty_side, monkeypatch):
+    lhs = term_sum_type.from_str("(1, ), (1, F0)", 2)
+    rhs = term_sum_type.from_str("(2, ), (3, F0)", 2)
+    scale = 2j if term_sum_type is zfog.ComplexTermSum else 2.0
+    lhs *= scale
+    expected = term_sum_type.from_str("(2, ), (5, F0), (3, F0 F0)", 2) * scale
+    if empty_side == "lhs":
+        lhs = term_sum_type(2)
+    elif empty_side == "rhs":
+        rhs = term_sum_type(2)
+    if empty_side is not None:
+        expected = term_sum_type(2)
+
+    def fail_collect(*args, **kwargs):
+        raise AssertionError("The Rust result should already have its lookup map.")
+
+    monkeypatch.setattr(TermSet, "_collect_terms", fail_collect)
+    result = lhs * rhs
+
+    assert type(result) is term_sum_type
+    assert result == expected
+    assert result.strings.is_owning()
+    assert result.coeffs.is_owning()
+    assert len(result._string_set._map) == len(result)
+    for term in expected:
+        assert result.lookup_coeff(term.string) == term.coeff
+        index, inserted = result.soft_insert(term)
+        assert not inserted
+        assert result._impl.coeffs[index] == term.coeff
 
 
 @pytest.mark.parametrize(

@@ -48,7 +48,7 @@ def test_zqo_concrete_term_data() -> None:
     cloned = data.clone()
     reversed_data = data.clone(slice(None, None, -1))
     last = data.clone(-1)
-    empty = data._empty_clone()
+    empty = data._new()
     assert_type(cloned, TermData[zqo.Strings, SignCoeffs])
     assert_type(reversed_data, TermData[zqo.Strings, SignCoeffs])
     assert_type(last, TermData[zqo.Strings, SignCoeffs])
@@ -78,7 +78,7 @@ def test_zqo_concrete_term_data() -> None:
 
     derived = DerivedData(strings, coeffs)
     assert_type(derived.clone(), DerivedData)
-    assert_type(derived._empty_clone(), DerivedData)
+    assert_type(derived._new(), DerivedData)
     assert type(derived.clone()) is DerivedData
 
     class DerivedCoeffs(SignCoeffs):
@@ -93,14 +93,14 @@ def test_zqo_concrete_term_data() -> None:
     assert_type(real_data.coeffs[0], float)
     assert_type(real_data.coeff_type, type[float])
     assert_type(_first_coeff(real_data), float)
-    term = zqo.RealTerm._create(real_data, 0)
+    term = zqo.RealTerm._view(real_data, 0)
     terms = zqo.RealTerms._create(real_data)
     assert_type(term, zqo.RealTerm)
     assert_type(terms, zqo.RealTerms)
     term.coeff = 3.0
     assert real_data.coeffs[0] == terms[0].coeff == 3.0
     with pytest.raises(TypeError):
-        zqo.RealTerm._create(data, 0)  # type: ignore[arg-type]
+        zqo.RealTerm._view(data, 0)  # type: ignore[arg-type]
 
     if TYPE_CHECKING:
         data.strings = strings  # type: ignore[misc]
@@ -126,7 +126,7 @@ def test_zqs_concrete_term_data() -> None:
     cloned = data.clone()
     reversed_data = data.clone(slice(None, None, -1))
     last = data.clone(-1)
-    empty = data._empty_clone()
+    empty = data._new()
     assert_type(cloned, TermData[zqs.Strings, SignCoeffs])
     assert_type(reversed_data, TermData[zqs.Strings, SignCoeffs])
     assert_type(last, TermData[zqs.Strings, SignCoeffs])
@@ -156,7 +156,7 @@ def test_zqs_concrete_term_data() -> None:
 
     derived = DerivedData(strings, coeffs)
     assert_type(derived.clone(), DerivedData)
-    assert_type(derived._empty_clone(), DerivedData)
+    assert_type(derived._new(), DerivedData)
     assert type(derived.clone()) is DerivedData
 
     class DerivedCoeffs(SignCoeffs):
@@ -171,14 +171,14 @@ def test_zqs_concrete_term_data() -> None:
     assert_type(real_data.coeffs[0], float)
     assert_type(real_data.coeff_type, type[float])
     assert_type(_first_coeff(real_data), float)
-    term = zqs.RealTerm._create(real_data, 0)
+    term = zqs.RealTerm._view(real_data, 0)
     terms = zqs.RealTerms._create(real_data)
     assert_type(term, zqs.RealTerm)
     assert_type(terms, zqs.RealTerms)
     term.coeff = 3.0
     assert real_data.coeffs[0] == terms[0].coeff == 3.0
     with pytest.raises(TypeError):
-        zqs.RealTerm._create(data, 0)  # type: ignore[arg-type]
+        zqs.RealTerm._view(data, 0)  # type: ignore[arg-type]
 
     if TYPE_CHECKING:
         data.strings = strings  # type: ignore[misc]
@@ -204,7 +204,7 @@ def test_zfog_concrete_term_data() -> None:
     cloned = data.clone()
     reversed_data = data.clone(slice(None, None, -1))
     last = data.clone(-1)
-    empty = data._empty_clone()
+    empty = data._new()
     assert_type(cloned, TermData[zfog.Strings, SignCoeffs])
     assert_type(reversed_data, TermData[zfog.Strings, SignCoeffs])
     assert_type(last, TermData[zfog.Strings, SignCoeffs])
@@ -234,7 +234,7 @@ def test_zfog_concrete_term_data() -> None:
 
     derived = DerivedData(strings, coeffs)
     assert_type(derived.clone(), DerivedData)
-    assert_type(derived._empty_clone(), DerivedData)
+    assert_type(derived._new(), DerivedData)
     assert type(derived.clone()) is DerivedData
 
     class DerivedCoeffs(SignCoeffs):
@@ -249,14 +249,14 @@ def test_zfog_concrete_term_data() -> None:
     assert_type(real_data.coeffs[0], float)
     assert_type(real_data.coeff_type, type[float])
     assert_type(_first_coeff(real_data), float)
-    term = zfog.RealTerm._create(real_data, 0)
+    term = zfog.RealTerm._view(real_data, 0)
     terms = zfog.RealTerms._create(real_data)
     assert_type(term, zfog.RealTerm)
     assert_type(terms, zfog.RealTerms)
     term.coeff = 3.0
     assert real_data.coeffs[0] == terms[0].coeff == 3.0
     with pytest.raises(TypeError):
-        zfog.RealTerm._create(data, 0)  # type: ignore[arg-type]
+        zfog.RealTerm._view(data, 0)  # type: ignore[arg-type]
 
     if TYPE_CHECKING:
         data.strings = strings  # type: ignore[misc]
@@ -282,7 +282,7 @@ def test_zfon_concrete_term_data() -> None:
     cloned = data.clone()
     reversed_data = data.clone(slice(None, None, -1))
     last = data.clone(-1)
-    empty = data._empty_clone()
+    empty = data._new()
     assert_type(cloned, TermData[zfon.Strings, SignCoeffs])
     assert_type(reversed_data, TermData[zfon.Strings, SignCoeffs])
     assert_type(last, TermData[zfon.Strings, SignCoeffs])
@@ -312,7 +312,7 @@ def test_zfon_concrete_term_data() -> None:
 
     derived = DerivedData(strings, coeffs)
     assert_type(derived.clone(), DerivedData)
-    assert_type(derived._empty_clone(), DerivedData)
+    assert_type(derived._new(), DerivedData)
     assert type(derived.clone()) is DerivedData
 
     class DerivedCoeffs(SignCoeffs):
@@ -327,14 +327,14 @@ def test_zfon_concrete_term_data() -> None:
     assert_type(real_data.coeffs[0], float)
     assert_type(real_data.coeff_type, type[float])
     assert_type(_first_coeff(real_data), float)
-    term = zfon.RealTerm._create(real_data, 0)
+    term = zfon.RealTerm._view(real_data, 0)
     terms = zfon.RealTerms._create(real_data)
     assert_type(term, zfon.RealTerm)
     assert_type(terms, zfon.RealTerms)
     term.coeff = 3.0
     assert real_data.coeffs[0] == terms[0].coeff == 3.0
     with pytest.raises(TypeError):
-        zfon.RealTerm._create(data, 0)  # type: ignore[arg-type]
+        zfon.RealTerm._view(data, 0)  # type: ignore[arg-type]
 
     if TYPE_CHECKING:
         data.strings = strings  # type: ignore[misc]
@@ -360,7 +360,7 @@ def test_zfs_concrete_term_data() -> None:
     cloned = data.clone()
     reversed_data = data.clone(slice(None, None, -1))
     last = data.clone(-1)
-    empty = data._empty_clone()
+    empty = data._new()
     assert_type(cloned, TermData[zfs.Strings, SignCoeffs])
     assert_type(reversed_data, TermData[zfs.Strings, SignCoeffs])
     assert_type(last, TermData[zfs.Strings, SignCoeffs])
@@ -390,7 +390,7 @@ def test_zfs_concrete_term_data() -> None:
 
     derived = DerivedData(strings, coeffs)
     assert_type(derived.clone(), DerivedData)
-    assert_type(derived._empty_clone(), DerivedData)
+    assert_type(derived._new(), DerivedData)
     assert type(derived.clone()) is DerivedData
 
     class DerivedCoeffs(SignCoeffs):
@@ -405,14 +405,14 @@ def test_zfs_concrete_term_data() -> None:
     assert_type(real_data.coeffs[0], float)
     assert_type(real_data.coeff_type, type[float])
     assert_type(_first_coeff(real_data), float)
-    term = zfs.RealTerm._create(real_data, 0)
+    term = zfs.RealTerm._view(real_data, 0)
     terms = zfs.RealTerms._create(real_data)
     assert_type(term, zfs.RealTerm)
     assert_type(terms, zfs.RealTerms)
     term.coeff = 3.0
     assert real_data.coeffs[0] == terms[0].coeff == 3.0
     with pytest.raises(TypeError):
-        zfs.RealTerm._create(data, 0)  # type: ignore[arg-type]
+        zfs.RealTerm._view(data, 0)  # type: ignore[arg-type]
 
     if TYPE_CHECKING:
         data.strings = strings  # type: ignore[misc]
@@ -422,7 +422,7 @@ def test_zfs_concrete_term_data() -> None:
 def test_storage_rejects_foreign_string_family() -> None:
     data = TermData(zqs.Strings(2, size=1), RealCoeffs.from_size(1))
     with pytest.raises(TypeError):
-        zqo.RealTerm._create(data, 0)  # type: ignore[arg-type]
+        zqo.RealTerm._view(data, 0)  # type: ignore[arg-type]
 
 
 @pytest.mark.parametrize("n_strings,n_coeffs", [(0, 1), (1, 0), (1, 2), (2, 1)])

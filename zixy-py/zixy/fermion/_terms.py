@@ -61,7 +61,7 @@ class Term[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             modes: The mode space or number of modes.
             source: The term specifier to use for initial value.
         """
-        strings = self.strings_type(modes, 1)
+        strings = self.strings_type(modes, size=1)
         coeffs = self.coeffs_type.from_size(1)
         term_data = TermData(strings, coeffs)
         TermBase.__init__(self, term_data)
@@ -85,15 +85,15 @@ class Terms[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, E
 
     term_type: type[Term[ImplT, SpecT, C, ElemT]]
 
-    def __init__(self, modes: int | Modes = 0, n: int = 0):
+    def __init__(self, modes: int | Modes = 0, *, size: int = 0):
         """Initialize the term array.
 
         Args:
             modes: The mode space or number of modes.
-            n: The number of items to initialize the array with.
+            size: The number of items to initialize the array with.
         """
-        strings = self.term_type.strings_type(modes, n)
-        coeffs = self.term_type.coeffs_type.from_size(n)
+        strings = self.term_type.strings_type(modes, size=size)
+        coeffs = self.term_type.coeffs_type.from_size(size)
         term_data = TermData(strings, coeffs)
         TermsBase.__init__(self, term_data)
 

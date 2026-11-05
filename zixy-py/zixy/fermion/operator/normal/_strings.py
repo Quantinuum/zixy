@@ -268,7 +268,7 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
         check_schema_version(source)
         space = _deserialize_modes(source["space"])
         rows = source["strings"]
-        out = cls(space, len(rows))
+        out = cls(space, size=len(rows))
         for i, (cre, ann) in enumerate(rows):
             if cre or ann:
                 out[i].set((cre, ann))

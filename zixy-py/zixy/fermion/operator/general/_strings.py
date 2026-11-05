@@ -317,17 +317,17 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
         rows = [[(mode, creation) for mode, creation in row] for row in source["strings"]]
         return cls.from_iterable(rows, space)
 
-    def __init__(self, modes: int | Modes = 0, n: int = 0, max_string_len: int = 0):
+    def __init__(self, modes: int | Modes = 0, *, size: int = 0, max_string_len: int = 0):
         """Initialize the string array.
 
         Args:
             modes: The mode space or number of modes.
-            n: Number of default elements with which to create the instance.
+            size: Number of default elements with which to create the instance.
             max_string_len: Maximum number of operators per string.
         """
         modes = Modes.from_count(modes) if isinstance(modes, int) else modes
         BaseStrings.__init__(self, self.string_type.impl_type(modes, max_string_len))
-        self.resize(n)
+        self.resize(size)
 
     @property
     def max_string_len(self) -> int:
@@ -352,10 +352,11 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
         iterable: Iterable[SpecT | BaseString[ImplT, SpecT]],
         modes: int | Modes = 0,
         n: int = 0,
+        *,
         max_string_len: int = 0,
     ) -> Self:
         """Create an array, preallocating known sequences and streaming other iterables."""
-        out = cls(modes, n, max_string_len)
+        out = cls(modes, size=n, max_string_len=max_string_len)
         if isinstance(iterable, Sequence):
             out._impl._reserve_string_length(
                 max(map(_string_length, iterable), default=0), warn=False
@@ -411,7 +412,7 @@ class StringSet(OperatorStringSet[ImplT, SpecT, ElemT]):
         data["strings"] = [[list(op) for op in string.get_ops()] for string in self]
         return data
 
-    def __init__(self, modes: int | Modes = 0, max_string_len: int = 0):
+    def __init__(self, modes: int | Modes = 0, *, max_string_len: int = 0):
         """Initialize the string set.
 
         Args:
@@ -437,10 +438,11 @@ class StringSet(OperatorStringSet[ImplT, SpecT, ElemT]):
         cls,
         iterable: Iterable[SpecT | BaseString[ImplT, SpecT]],
         modes: int | Modes = 0,
+        *,
         max_string_len: int = 0,
     ) -> Self:
         """Create a set, preallocating known sequences and streaming other iterables."""
-        out = cls(modes, max_string_len)
+        out = cls(modes, max_string_len=max_string_len)
         if isinstance(iterable, Sequence):
             out._impl._reserve_string_length(
                 max(map(_string_length, iterable), default=0), warn=False

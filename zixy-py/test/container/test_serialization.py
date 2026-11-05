@@ -264,7 +264,7 @@ def test_pauli_set_serialization_rebuilds_map(qubit_space):
 def test_pauli_serialization_empty(container_type, n_qubits):
     # Construct a zero-qubit identity through the array, avoiding the text parser.
     source = (
-        zqo.Strings(n_qubits, 1)[0].clone()
+        zqo.Strings(n_qubits, size=1)[0].clone()
         if container_type is zqo.String
         else container_type(n_qubits)
     )
@@ -276,7 +276,7 @@ def test_pauli_serialization_empty(container_type, n_qubits):
 
 @pytest.mark.parametrize("n_strings", [0, 2])
 def test_pauli_string_deserialization_requires_one_string(n_strings):
-    payload = zqo.Strings(3, n_strings).to_dict()
+    payload = zqo.Strings(3, size=n_strings).to_dict()
     with pytest.raises(ValueError, match="exactly one string"):
         zqo.String.from_dict(payload)
 
@@ -344,7 +344,7 @@ def _make_string_case(family, space_kind):
         encoded = [[[mode, creation] for mode, creation in row] for row in rows]
 
     if len(space) == 0:
-        strings = family.Strings(space, 3)
+        strings = family.Strings(space, size=3)
         encoded = [[[], []] if family is zfon else [] for _ in range(3)]
     else:
         strings = family.Strings.from_iterable(rows, space)

@@ -813,8 +813,8 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         lhs_coeffs = self._impl.coeffs._impl
         rhs_impl = other._impl.strings._impl
         rhs_coeffs = other._impl.coeffs._impl
-        term_data = TermData(other._impl.strings._empty_clone(), ComplexCoeffs())
-        out = ComplexTermSum._create(term_data)
+        term_data = TermData(other._impl.strings._new(), ComplexCoeffs())
+        out = ComplexTermSum._create(term_data, map_=other._string_set.map_type())
         assert isinstance(out._impl.coeffs, ComplexCoeffs)
         out_impl = out._impl.strings._impl
         out_map = out._string_set._map
@@ -1128,15 +1128,15 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
     def real_part(self) -> RealTermSum:
         """The real part of ``self``."""
         assert isinstance(self._data.coeffs, ComplexCoeffs)
-        data = TermData(self._data.strings, self._data.coeffs.real_part)
-        return RealTermSum._create(data)
+        data = TermData(self._data.strings.clone(), self._data.coeffs.real_part)
+        return RealTermSum._create(data, map_=self._string_set._map.clone())
 
     @property
     def imag_part(self) -> RealTermSum:
         """The imaginary part of ``self``."""
         assert isinstance(self._data.coeffs, ComplexCoeffs)
-        data = TermData(self._data.strings, self._data.coeffs.imag_part)
-        return RealTermSum._create(data)
+        data = TermData(self._data.strings.clone(), self._data.coeffs.imag_part)
+        return RealTermSum._create(data, map_=self._string_set._map.clone())
 
     def to_sparse_matrix(self, big_endian: bool = False) -> Any:
         """Convert ``self`` to a sparse matrix.
@@ -1174,8 +1174,8 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         lhs_coeffs = self._impl.coeffs._impl
         rhs_impl = other._impl.strings._impl
         rhs_coeffs = other._impl.coeffs._impl
-        term_data = TermData(other._impl.strings._empty_clone(), ComplexCoeffs())
-        out = ComplexTermSum._create(term_data)
+        term_data = TermData(other._impl.strings._new(), ComplexCoeffs())
+        out = ComplexTermSum._create(term_data, map_=other._string_set.map_type())
         assert isinstance(out._impl.coeffs, ComplexCoeffs)
         out_impl = out._impl.strings._impl
         out_map = out._string_set._map
@@ -1567,8 +1567,8 @@ class SymbolicTermSum(TermSum[Expr]):
             return super().__mul__(other)
         elif not isinstance(other, SymbolicTermSum):
             return NotImplemented
-        term_data = TermData(other._impl.strings._empty_clone(), SymbolicCoeffs())
-        out = SymbolicTermSum._create(term_data)
+        term_data = TermData(other._impl.strings._new(), SymbolicCoeffs())
+        out = SymbolicTermSum._create(term_data, map_=other._string_set.map_type())
         for l_term in self:
             assert isinstance(l_term, SymbolicTerm)
             for r_term in other:

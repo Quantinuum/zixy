@@ -89,16 +89,16 @@ class _HasCoeffType[C](Protocol):
     def coeff_type(self) -> type[C]: ...
 
 
-class _HasEmptyClone[ContainerT](Protocol):
-    """A container whose empty clone preserves its concrete type."""
+class _HasNew[ContainerT](Protocol):
+    """A container whose empty allocation preserves its concrete type."""
 
-    def _empty_clone(self) -> ContainerT: ...
+    def _new(self) -> ContainerT: ...
 
 
 class _FilterableStrings[ContainerT, StringT](
-    _HasStringType[StringT], _HasEmptyClone[ContainerT], Protocol
+    _HasStringType[StringT], _HasNew[ContainerT], Protocol
 ):
-    """String factories and clones used to infer filter inputs and results together."""
+    """String factories used to infer filter inputs and results together."""
 
     def iter_filter_map(self, f: Callable[[StringT], bool]) -> Iterator[StringT]: ...
 
@@ -106,9 +106,9 @@ class _FilterableStrings[ContainerT, StringT](
 
 
 class _FilterableStringSet[ContainerT, StringT](
-    _HasStringsType[_HasStringType[StringT]], _HasEmptyClone[ContainerT], Protocol
+    _HasStringsType[_HasStringType[StringT]], _HasNew[ContainerT], Protocol
 ):
-    """String-set factories and clones used to infer filter inputs and results together."""
+    """String-set factories used to infer filter inputs and results together."""
 
     def iter_filter_map(self, f: Callable[[StringT], bool]) -> Iterator[StringT]: ...
 
@@ -198,24 +198,35 @@ class Resizable(Sized, Protocol):
         ...
 
 
-class ViewableBase[ImplT: Resizable, IndexerT: (int | None, slice)]:
+class ViewableBase[ImplT: Resizable, IndexerT: (int, slice)]:
     """Abstract base class for classes with an ownership model and underlying Rust-bound data."""
 
     _impl: ImplT
 
     @classmethod
     @abstractmethod
-    def _create(cls, impl: ImplT, indexer: IndexerT) -> Self:
-        """Create an instance of ``cls``.
+    def _create(cls, impl: ImplT) -> Self:
+        """Create an owning instance of ``cls``.
 
         Args:
             impl: Rust-bound object containing the data for this instance.
-            indexer: Index or slice of the data in ``impl`` that this instance should view. The
-                default value of ``None`` for an ``int`` or ``slice(None)`` for a ``slice``
-                indicates that this instance is considered to be owning.
 
         Returns:
-            A new instance of ``cls``.
+            A new owning instance of ``cls`` sharing the supplied storage.
+        """
+        pass
+
+    @classmethod
+    @abstractmethod
+    def _view(cls, impl: ImplT, indexer: IndexerT) -> Self:
+        """Create a view on existing storage.
+
+        Args:
+            impl: Rust-bound object containing the data for this instance.
+            indexer: Index or slice selecting the viewed contents.
+
+        Returns:
+            A non-owning instance of ``cls`` sharing the supplied storage.
         """
         pass
 
@@ -243,25 +254,10 @@ class ViewableBase[ImplT: Resizable, IndexerT: (int | None, slice)]:
         return into(self, t)
 
 
-class ViewableItem[ImplT: Resizable](ViewableBase[ImplT, int | None]):
+class ViewableItem[ImplT: Resizable](ViewableBase[ImplT, int]):
     """Abstract base class for items with an ownership model and underlying Rust-bound data."""
 
     _index: int | None
-
-    @classmethod
-    @abstractmethod
-    def _create(cls, impl: ImplT, indexer: int | None = None) -> Self:
-        """Create an instance of ``cls``.
-
-        Args:
-            impl: Rust-bound object containing the data for this item.
-            indexer: Index of the item within ``impl``. If ``None``, this instance is considered to
-                be owning.
-
-        Returns:
-            A new instance of ``cls``.
-        """
-        pass
 
     def is_owning(self) -> bool:
         """Check if ``self`` is owning (i.e. not a view)."""
@@ -277,33 +273,6 @@ class ViewableSequence[T, ImplT: Resizable](ViewableBase[ImplT, slice], Sequence
     """Abstract base class for sequences with an ownership model and underlying Rust-bound data."""
 
     _slice: slice
-
-    @classmethod
-    @abstractmethod
-    def _create(cls, impl: ImplT, indexer: slice = slice(None)) -> Self:
-        """Create a new instance of ``cls``.
-
-        Args:
-            impl: Rust-bound object containing the data for this sequence.
-            indexer: Slice of the data in ``impl`` that this instance should view. The default
-                value of ``slice(None)`` indicates that this instance is considered to be owning.
-
-        Returns:
-            A new instance of ``cls``.
-        """
-        pass
-
-    @classmethod
-    def _create_view(cls, impl: ImplT) -> Self:
-        """Factory method to create a viewing instance of ``cls``.
-
-        Args:
-            impl: Rust-bound object containing the data for this sequence.
-
-        Returns:
-            A viewing instance of ``cls``.
-        """
-        return cls._create(impl, slice(None, len(impl)))
 
     @property
     def slice(self) -> builtins.slice:
@@ -344,8 +313,8 @@ class ViewableSequence[T, ImplT: Resizable](ViewableBase[ImplT, slice], Sequence
             yield self[i]
 
     @abstractmethod
-    def _empty_clone(self) -> Self:
-        """Get an empty (owning, contiguous) clone of ``self``."""
+    def _new(self) -> Self:
+        """Allocate empty owning storage with the same concrete type and configuration."""
         pass
 
     def __len__(self) -> int:
@@ -360,7 +329,7 @@ class ViewableSequence[T, ImplT: Resizable](ViewableBase[ImplT, slice], Sequence
             ``self``.
         """
         if self.is_owning():
-            return self._create_view(self._impl)
+            return self._view(self._impl, self.slice)
         else:
             return self
 
@@ -384,18 +353,6 @@ class ViewableSequence[T, ImplT: Resizable](ViewableBase[ImplT, slice], Sequence
         self._impl.resize(n)
         assert len(self) == n
         return self
-
-    @classmethod
-    def from_view(cls, source: Self) -> Self:
-        """Create a new instance of ``cls`` from a view.
-
-        Args:
-            source: View to clone into the new instance.
-
-        Returns:
-            An owning clone of ``source``.
-        """
-        return source.clone()
 
     @classmethod
     def from_size(cls, n: int) -> Self:

@@ -22,4 +22,10 @@ impl Map {
     pub fn __len__(&self) -> usize {
         self.0.len()
     }
+
+    /// Return an independent copy of the map.
+    #[pyo3(name = "clone")]
+    pub fn clone_map(&self) -> Self {
+        Clone::clone(self)
+    }
 }

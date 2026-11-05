@@ -786,25 +786,41 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
             self[i] = convert(c, self.coeff_type)
 
     @classmethod
-    def _create(cls, data: _zixy.BaseVec, indexer: slice = slice(None)) -> Self:
-        """Create a new instance of ``cls``.
+    def _create(cls, data: _zixy.BaseVec) -> Self:
+        """Create an owning instance of ``cls``.
 
         Args:
-            data: Rust-bound object containing the data for this sequence.
-            indexer: Slice of the data in ``data`` that this instance should view. The default
-                value of ``slice(None)`` indicates that this instance is considered to be owning.
+            data: Rust-bound object containing the data for this instance.
 
         Returns:
-            A new instance of ``cls``.
+            A new owning instance of ``cls`` sharing the supplied storage.
         """
         out = cls.__new__(cls)
         assert type(data) is cls.coeffs_type, (type(data), cls.coeffs_type)
+        Coeffs.__init__(out, data)
+        return out
+
+    @classmethod
+    def _view(cls, data: _zixy.BaseVec, indexer: slice) -> Self:
+        """Create a view on existing coefficient storage.
+
+        Args:
+            data: Rust-bound object containing the data for this instance.
+            indexer: Slice selecting the coefficients to view.
+
+        Returns:
+            A non-owning instance of ``cls``, including for a full slice.
+        """
+        out = cls.__new__(cls)
+        assert type(data) is cls.coeffs_type, (type(data), cls.coeffs_type)
+        if indexer == slice(None):
+            indexer = slice(0, len(data), 1)
         Coeffs.__init__(out, data, indexer)
         return out
 
     def clone(self) -> Self:
         """Return a deep copy of ``self``."""
-        out = self._empty_clone()
+        out = self._new()
         for c in self:
             out.append(c)
         return out
@@ -815,7 +831,7 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
 
     def __neg__(self) -> Self:
         """Return the negation of ``self``."""
-        out: Self = self._empty_clone()
+        out: Self = self._new()
         for item in self:
             out.append(-item)
         return out
@@ -857,7 +873,7 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
             Coefficient or slice selected by ``indexer``.
         """
         if isinstance(indexer, builtins.slice):
-            return type(self)._create(
+            return type(self)._view(
                 self._impl, slice_of_slice(self.slice, indexer, len(self._impl))
             )
         if issubclass(self.coeff_type, Sign) or issubclass(self.coeff_type, ComplexSign):
@@ -973,8 +989,8 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
         """Get a tuple of clones of the elements of ``self``."""
         return tuple(c for c in self)
 
-    def _empty_clone(self) -> Self:
-        """Get an empty (owning, contiguous) clone of ``self``."""
+    def _new(self) -> Self:
+        """Allocate empty owning storage with the same concrete type and configuration."""
         return self._create(self.coeffs_type(0))
 
     def reordered(self, inds: Sequence[int]) -> Self:
@@ -989,7 +1005,7 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
         """
         if not all(i < len(self) for i in inds):
             raise IndexError("Index out of bounds in reorder.")
-        out = self._empty_clone()
+        out = self._new()
         for i in inds:
             out.append(self[i])
         return out

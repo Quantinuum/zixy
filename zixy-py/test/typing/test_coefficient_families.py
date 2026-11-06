@@ -537,7 +537,7 @@ def test_zqo_custom_coefficient_factory() -> None:
     assert type(terms.clone().coeffs) is CustomCoeffs
     assert type(term_set.clone().coeffs) is CustomCoeffs
     assert type(total.clone().coeffs) is CustomCoeffs
-    assert type(CustomTerm.from_string_coeff(term.string, 2.0)._data.coeffs) is CustomCoeffs
+    assert type(CustomTerm.from_string(term.string, 2.0)._data.coeffs) is CustomCoeffs
     assert type(CustomTerm.from_str(str(term), 2)._data.coeffs) is CustomCoeffs
     assert type(CustomTerms.from_str(str(terms), 2).coeffs) is CustomCoeffs
     assert type(CustomTerms.from_str("", 2).coeffs) is CustomCoeffs
@@ -595,7 +595,7 @@ def test_zqs_custom_coefficient_factory() -> None:
     assert type(terms.clone().coeffs) is CustomCoeffs
     assert type(term_set.clone().coeffs) is CustomCoeffs
     assert type(total.clone().coeffs) is CustomCoeffs
-    assert type(CustomTerm.from_string_coeff(term.string, 2.0)._data.coeffs) is CustomCoeffs
+    assert type(CustomTerm.from_string(term.string, 2.0)._data.coeffs) is CustomCoeffs
     assert type(CustomTerm.from_str(str(term), 2)._data.coeffs) is CustomCoeffs
     assert type(CustomTerms.from_str(str(terms), 2).coeffs) is CustomCoeffs
     assert type(CustomTerms.from_str("", 2).coeffs) is CustomCoeffs
@@ -653,7 +653,7 @@ def test_zfog_custom_coefficient_factory() -> None:
     assert type(terms.clone().coeffs) is CustomCoeffs
     assert type(term_set.clone().coeffs) is CustomCoeffs
     assert type(total.clone().coeffs) is CustomCoeffs
-    assert type(CustomTerm.from_string_coeff(term.string, 2.0)._data.coeffs) is CustomCoeffs
+    assert type(CustomTerm.from_string(term.string, 2.0)._data.coeffs) is CustomCoeffs
     assert type(CustomTerm.from_str(str(term), 2)._data.coeffs) is CustomCoeffs
     assert type(CustomTerms.from_str(str(terms), 2).coeffs) is CustomCoeffs
     assert type(CustomTerms.from_str("", 2).coeffs) is CustomCoeffs
@@ -711,7 +711,7 @@ def test_zfon_custom_coefficient_factory() -> None:
     assert type(terms.clone().coeffs) is CustomCoeffs
     assert type(term_set.clone().coeffs) is CustomCoeffs
     assert type(total.clone().coeffs) is CustomCoeffs
-    assert type(CustomTerm.from_string_coeff(term.string, 2.0)._data.coeffs) is CustomCoeffs
+    assert type(CustomTerm.from_string(term.string, 2.0)._data.coeffs) is CustomCoeffs
     assert type(CustomTerm.from_str(str(term), 2)._data.coeffs) is CustomCoeffs
     assert type(CustomTerms.from_str(str(terms), 2).coeffs) is CustomCoeffs
     assert type(CustomTerms.from_str("", 2).coeffs) is CustomCoeffs
@@ -769,7 +769,7 @@ def test_zfs_custom_coefficient_factory() -> None:
     assert type(terms.clone().coeffs) is CustomCoeffs
     assert type(term_set.clone().coeffs) is CustomCoeffs
     assert type(total.clone().coeffs) is CustomCoeffs
-    assert type(CustomTerm.from_string_coeff(term.string, 2.0)._data.coeffs) is CustomCoeffs
+    assert type(CustomTerm.from_string(term.string, 2.0)._data.coeffs) is CustomCoeffs
     assert type(CustomTerm.from_str(str(term), 2)._data.coeffs) is CustomCoeffs
     assert type(CustomTerms.from_str(str(terms), 2).coeffs) is CustomCoeffs
     assert type(CustomTerms.from_str("", 2).coeffs) is CustomCoeffs
@@ -835,3 +835,12 @@ def test_coefficient_storage_matches_factory() -> None:
     assert_type(adopted.coeffs, CustomCoeffs)
     assert adopted.coeffs_type is DerivedCoeffs
     assert type(adopted.coeffs) is DerivedCoeffs
+
+
+def test_term_from_string_default_inference() -> None:
+    string = zqo.String(2, "X0")
+    assert_type(zqo.SignTerm.from_string(string), zqo.SignTerm)
+    assert_type(zqo.ComplexSignTerm.from_string(string), zqo.ComplexSignTerm)
+    assert_type(zqo.RealTerm.from_string(string), zqo.RealTerm)
+    assert_type(zqo.ComplexTerm.from_string(string), zqo.ComplexTerm)
+    assert_type(zqo.SymbolicTerm.from_string(string), zqo.SymbolicTerm)

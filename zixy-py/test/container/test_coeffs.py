@@ -15,22 +15,56 @@ from zixy.container.coeffs import (
 
 
 @pytest.mark.parametrize(
+    ("cls", "values"),
+    [
+        (Sign, [1, -1, 1.0, -1.0, 1 + 0j, -1 + 0j]),
+        (ComplexSign, [1, -1, 1.0, -1.0, 1 + 0j, -1 + 0j, 1j, -1j]),
+    ],
+)
+def test_scalar_factory_values_and_subclasses(cls, values):
+    class Derived(cls):
+        pass
+
+    for value in values:
+        result = cls.from_scalar(value)
+        assert type(result) is cls
+        assert result.to_numeric() == value
+        derived = Derived.from_scalar(value)
+        assert type(derived) is Derived
+        assert derived.to_numeric() == value
+
+
+@pytest.mark.parametrize("cls", [Sign, ComplexSign])
+@pytest.mark.parametrize("value", [0, 2, -2, 0.5, 1 + 1j, 1.000001, float("nan"), float("inf")])
+def test_scalar_factory_rejects_unrepresentable_values(cls, value):
+    with pytest.raises(ValueError, match="not an exact"):
+        cls.from_scalar(value)
+
+
+def test_scalar_factory_uses_values_and_constructor_uses_phases():
+    assert int(Sign(1)) == -1
+    assert int(Sign.from_scalar(1)) == 1
+    assert complex(ComplexSign(1)) == 1j
+    assert complex(ComplexSign.from_scalar(1)) == 1
+
+
+@pytest.mark.parametrize(
     ("scalar_type", "source", "expected"),
     (
-        (Sign, "1", Sign.from_int(1)),
-        (Sign, "+1", Sign.from_int(1)),
-        (Sign, "-1", Sign.from_int(-1)),
-        (Sign, " 1 ", Sign.from_int(1)),
-        (Sign, " -1 ", Sign.from_int(-1)),
-        (ComplexSign, "1", ComplexSign.from_complex(1)),
-        (ComplexSign, "+1", ComplexSign.from_complex(1)),
-        (ComplexSign, "-1", ComplexSign.from_complex(-1)),
-        (ComplexSign, "1j", ComplexSign.from_complex(1j)),
-        (ComplexSign, "+1j", ComplexSign.from_complex(1j)),
-        (ComplexSign, "-1j", ComplexSign.from_complex(-1j)),
-        (ComplexSign, "+i", ComplexSign.from_complex(1j)),
-        (ComplexSign, "-i", ComplexSign.from_complex(-1j)),
-        (ComplexSign, " 1j ", ComplexSign.from_complex(1j)),
+        (Sign, "1", Sign.from_scalar(1)),
+        (Sign, "+1", Sign.from_scalar(1)),
+        (Sign, "-1", Sign.from_scalar(-1)),
+        (Sign, " 1 ", Sign.from_scalar(1)),
+        (Sign, " -1 ", Sign.from_scalar(-1)),
+        (ComplexSign, "1", ComplexSign.from_scalar(1)),
+        (ComplexSign, "+1", ComplexSign.from_scalar(1)),
+        (ComplexSign, "-1", ComplexSign.from_scalar(-1)),
+        (ComplexSign, "1j", ComplexSign.from_scalar(1j)),
+        (ComplexSign, "+1j", ComplexSign.from_scalar(1j)),
+        (ComplexSign, "-1j", ComplexSign.from_scalar(-1j)),
+        (ComplexSign, "+i", ComplexSign.from_scalar(1j)),
+        (ComplexSign, "-i", ComplexSign.from_scalar(-1j)),
+        (ComplexSign, " 1j ", ComplexSign.from_scalar(1j)),
     ),
 )
 def test_scalar_from_str(scalar_type, source, expected):
@@ -92,57 +126,61 @@ def test_scalar_from_str_errors(scalar_type, source):
         (ComplexCoeffs, "[ 1j , (-2+3j) , 4 ]", [1j, -2 + 3j, 4 + 0j]),
         (ComplexCoeffs, "(1), (2j), (3+4j)", [1 + 0j, 2j, 3 + 4j]),
         (ComplexCoeffs, "   [(1+2j), 3]   ", [1 + 2j, 3 + 0j]),
-        (SignCoeffs, "1", [Sign.from_int(1)]),
-        (SignCoeffs, "-1", [Sign.from_int(-1)]),
+        (SignCoeffs, "1", [Sign.from_scalar(1)]),
+        (SignCoeffs, "-1", [Sign.from_scalar(-1)]),
         (
             SignCoeffs,
             "1, -1, 1, 1, -1",
             [
-                Sign.from_int(1),
-                Sign.from_int(-1),
-                Sign.from_int(1),
-                Sign.from_int(1),
-                Sign.from_int(-1),
+                Sign.from_scalar(1),
+                Sign.from_scalar(-1),
+                Sign.from_scalar(1),
+                Sign.from_scalar(1),
+                Sign.from_scalar(-1),
             ],
         ),
-        (SignCoeffs, "[1, -1, 1]", [Sign.from_int(1), Sign.from_int(-1), Sign.from_int(1)]),
-        (SignCoeffs, " 1 , -1 ", [Sign.from_int(1), Sign.from_int(-1)]),
-        (ComplexSignCoeffs, "1", [ComplexSign.from_complex(1)]),
-        (ComplexSignCoeffs, "-1", [ComplexSign.from_complex(-1)]),
-        (ComplexSignCoeffs, "j", [ComplexSign.from_complex(1j)]),
-        (ComplexSignCoeffs, "1j", [ComplexSign.from_complex(1j)]),
-        (ComplexSignCoeffs, "-1j", [ComplexSign.from_complex(-1j)]),
-        (ComplexSignCoeffs, "i", [ComplexSign.from_complex(1j)]),
-        (ComplexSignCoeffs, "+i", [ComplexSign.from_complex(1j)]),
-        (ComplexSignCoeffs, "-i", [ComplexSign.from_complex(-1j)]),
+        (
+            SignCoeffs,
+            "[1, -1, 1]",
+            [Sign.from_scalar(1), Sign.from_scalar(-1), Sign.from_scalar(1)],
+        ),
+        (SignCoeffs, " 1 , -1 ", [Sign.from_scalar(1), Sign.from_scalar(-1)]),
+        (ComplexSignCoeffs, "1", [ComplexSign.from_scalar(1)]),
+        (ComplexSignCoeffs, "-1", [ComplexSign.from_scalar(-1)]),
+        (ComplexSignCoeffs, "j", [ComplexSign.from_scalar(1j)]),
+        (ComplexSignCoeffs, "1j", [ComplexSign.from_scalar(1j)]),
+        (ComplexSignCoeffs, "-1j", [ComplexSign.from_scalar(-1j)]),
+        (ComplexSignCoeffs, "i", [ComplexSign.from_scalar(1j)]),
+        (ComplexSignCoeffs, "+i", [ComplexSign.from_scalar(1j)]),
+        (ComplexSignCoeffs, "-i", [ComplexSign.from_scalar(-1j)]),
         (
             ComplexSignCoeffs,
             "1, 1j, -1, -1j",
             [
-                ComplexSign.from_complex(1),
-                ComplexSign.from_complex(1j),
-                ComplexSign.from_complex(-1),
-                ComplexSign.from_complex(-1j),
+                ComplexSign.from_scalar(1),
+                ComplexSign.from_scalar(1j),
+                ComplexSign.from_scalar(-1),
+                ComplexSign.from_scalar(-1j),
             ],
         ),
         (
             ComplexSignCoeffs,
             "[1, 1j, -1, -1j]",
             [
-                ComplexSign.from_complex(1),
-                ComplexSign.from_complex(1j),
-                ComplexSign.from_complex(-1),
-                ComplexSign.from_complex(-1j),
+                ComplexSign.from_scalar(1),
+                ComplexSign.from_scalar(1j),
+                ComplexSign.from_scalar(-1),
+                ComplexSign.from_scalar(-1j),
             ],
         ),
         (
             ComplexSignCoeffs,
             "(1), (1j), (-1), (-1j)",
             [
-                ComplexSign.from_complex(1),
-                ComplexSign.from_complex(1j),
-                ComplexSign.from_complex(-1),
-                ComplexSign.from_complex(-1j),
+                ComplexSign.from_scalar(1),
+                ComplexSign.from_scalar(1j),
+                ComplexSign.from_scalar(-1),
+                ComplexSign.from_scalar(-1j),
             ],
         ),
     ),
@@ -190,13 +228,13 @@ def test_from_str_errors(coeffs_type, source):
     (
         RealCoeffs.from_iterable([1.0, -2.5, 0.0, 3.25]),
         ComplexCoeffs.from_iterable([1 + 2j, -3 - 4j, 0j, 5 + 0j]),
-        SignCoeffs.from_iterable([Sign.from_int(1), Sign.from_int(-1), Sign.from_int(1)]),
+        SignCoeffs.from_iterable([Sign.from_scalar(1), Sign.from_scalar(-1), Sign.from_scalar(1)]),
         ComplexSignCoeffs.from_iterable(
             [
-                ComplexSign.from_complex(1),
-                ComplexSign.from_complex(1j),
-                ComplexSign.from_complex(-1),
-                ComplexSign.from_complex(-1j),
+                ComplexSign.from_scalar(1),
+                ComplexSign.from_scalar(1j),
+                ComplexSign.from_scalar(-1),
+                ComplexSign.from_scalar(-1j),
             ]
         ),
     ),

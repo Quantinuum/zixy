@@ -330,10 +330,10 @@ def test_to_qubit_accepts_qubits(fermion_terms):
     qubits = Qubits.from_count(2)
 
     inferred = fermion_terms.to_qubit()
-    from_int = fermion_terms.to_qubit(qubits=2)
+    from_scalar = fermion_terms.to_qubit(qubits=2)
     from_qubits = fermion_terms.to_qubit(qubits=qubits)
 
-    assert from_int == inferred
+    assert from_scalar == inferred
     assert from_qubits == inferred
 
 
@@ -425,13 +425,13 @@ def test_state_to_qubit_defaults_to_jordan_wigner():
     state = zfs.RealTermSum.from_str("(2, [1, 0])", 2)
 
     inferred = state.to_qubit()
-    from_int = state.to_qubit(qubits=2)
+    from_scalar = state.to_qubit(qubits=2)
     from_qubits = state.to_qubit(qubits=Qubits.from_count(2))
 
     assert inferred == zfs.RealTermSum.from_str("(2, [1, 0])", 2).to_qubit(
         mapper=JordanWignerMapper
     )
-    assert from_int == inferred
+    assert from_scalar == inferred
     assert from_qubits == inferred
 
 

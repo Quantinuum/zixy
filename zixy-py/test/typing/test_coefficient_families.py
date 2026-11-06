@@ -16,6 +16,7 @@ from zixy.container.coeffs import (
     ComplexSign,
     ComplexSignCoeffs,
     RealCoeffs,
+    RootOfUnity,
     Sign,
     SignCoeffs,
     SymbolicCoeffs,
@@ -36,13 +37,32 @@ def test_coefficient_iterable_inference() -> None:
 
     assert_type(RealCoeffs.from_iterable(source=(x for x in [1.0, 2.0])), RealCoeffs)
     assert_type(ComplexCoeffs.from_iterable(source=iter([1j, 2j])), ComplexCoeffs)
-    assert_type(SignCoeffs.from_iterable(source=iter([Sign.from_int(1)])), SignCoeffs)
+    assert_type(SignCoeffs.from_iterable(source=iter([Sign.from_scalar(1)])), SignCoeffs)
     assert_type(
-        ComplexSignCoeffs.from_iterable(source=iter([ComplexSign.from_complex(1j)])),
+        ComplexSignCoeffs.from_iterable(source=iter([ComplexSign.from_scalar(1j)])),
         ComplexSignCoeffs,
     )
     assert_type(SymbolicCoeffs.from_iterable(source=iter([sympify("x")])), SymbolicCoeffs)
     assert_type(DerivedCoeffs.from_iterable(source=iter([1.0, 2.0])), DerivedCoeffs)
+
+
+def _scalar_from_value[T: RootOfUnity](cls: type[T], value: int | float | complex) -> T:
+    return cls.from_scalar(value)
+
+
+def test_scalar_factory_inference() -> None:
+    class DerivedSign(Sign):
+        pass
+
+    class DerivedComplexSign(ComplexSign):
+        pass
+
+    assert_type(Sign.from_scalar(1), Sign)
+    assert_type(ComplexSign.from_scalar(1j), ComplexSign)
+    assert_type(DerivedSign.from_scalar(-1), DerivedSign)
+    assert_type(DerivedComplexSign.from_scalar(-1j), DerivedComplexSign)
+    assert_type(_scalar_from_value(Sign, 1.0), Sign)
+    assert_type(_scalar_from_value(ComplexSign, -1j), ComplexSign)
 
 
 def _array_coeffs[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](

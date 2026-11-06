@@ -95,9 +95,20 @@ class RootOfUnity(Representable, ABC):
         """Convert ``self`` to a built-in numeric type."""
         pass
 
+    @classmethod
     @abstractmethod
-    def from_numeric(cls, value: Number) -> Self:
-        """Construct an instance of ``cls`` from a built-in numeric type."""
+    def from_scalar(cls, value: Number) -> Self:
+        """Construct an instance from an exactly representable scalar value.
+
+        Args:
+            value: Numeric value to represent, rather than a phase exponent.
+
+        Returns:
+            An instance of ``cls`` representing ``value``.
+
+        Raises:
+            ValueError: The value is not exactly representable as ``cls``.
+        """
         pass
 
     def _sympy_(self) -> Expr:  # noqa: PLW3201
@@ -238,8 +249,14 @@ class Sign(RootOfUnity):
         return other / self.to_numeric()
 
     @classmethod
-    def from_int(cls, value: int | float | complex) -> Self:
-        """Construct an instance of ``cls`` from an integer.
+    def from_scalar(cls, value: Number) -> Self:
+        """Construct a sign from its scalar value.
+
+        Args:
+            value: Numeric value, which must equal +1 or -1. This is not a phase exponent.
+
+        Returns:
+            An instance of ``cls`` representing ``value``.
 
         Raises:
             ValueError: If ``value`` is not exactly representable as ``cls``.
@@ -249,8 +266,6 @@ class Sign(RootOfUnity):
         elif value == -1:
             return cls(1)
         raise ValueError(f"value {value} is not an exact square root of unity.")
-
-    from_numeric = from_int
 
     @classmethod
     def from_str(cls, source: str) -> Self:
@@ -267,7 +282,7 @@ class Sign(RootOfUnity):
         """
         try:
             value = int(source)
-            return cls.from_int(value)
+            return cls.from_scalar(value)
         except ValueError as e:
             raise ValueError(f"string {source} is not an exact square root of unity.") from e
 
@@ -395,10 +410,10 @@ class ComplexSign(RootOfUnity):
             return self
         elif isinstance(rhs, Number):
             if int(rhs.real) == rhs or complex(0, int(rhs.imag)) == rhs:
-                return self.__imul__(ComplexSign.from_complex(rhs))
+                return self.__imul__(ComplexSign.from_scalar(rhs))
         else:
             try:
-                return self.__imul__(ComplexSign.from_complex(complex(rhs)))
+                return self.__imul__(ComplexSign.from_scalar(complex(rhs)))
             except TypeError:
                 pass
         raise _imul_error(self, rhs)
@@ -454,8 +469,14 @@ class ComplexSign(RootOfUnity):
         return other / self.to_numeric()
 
     @classmethod
-    def from_complex(cls, value: complex | float) -> Self:
-        """Construct an instance of ``cls`` from a complex value.
+    def from_scalar(cls, value: Number) -> Self:
+        """Construct a complex sign from its scalar value.
+
+        Args:
+            value: Numeric value, which must equal +1, -1, +i, or -i. This is not a phase exponent.
+
+        Returns:
+            An instance of ``cls`` representing ``value``.
 
         Raises:
             ValueError: If ``value`` is not exactly representable as ``cls``.
@@ -469,8 +490,6 @@ class ComplexSign(RootOfUnity):
         elif value == complex(0, -1):
             return cls(3)
         raise ValueError(f"value {value} is not an exact fourth root of unity.")
-
-    from_numeric = from_complex
 
     @classmethod
     def from_str(cls, source: str) -> Self:
@@ -491,7 +510,7 @@ class ComplexSign(RootOfUnity):
             elif source == "-i":
                 source = "-1j"
             value = complex(source)
-            return cls.from_complex(value)
+            return cls.from_scalar(value)
         except ValueError as e:
             raise ValueError(f"string {source} is not an exact fourth root of unity.") from e
 
@@ -674,9 +693,9 @@ def convert[C: (float, complex, Sign, ComplexSign, Expr)](source: Coeff, cls: ty
         else:
             return sympify(source)
     elif issubclass(cls, Sign):
-        return Sign.from_int(convert(source, int))
+        return Sign.from_scalar(convert(source, int))
     elif issubclass(cls, ComplexSign):
-        return ComplexSign.from_complex(complex(source))
+        return ComplexSign.from_scalar(complex(source))
     raise _convert_error(source, cls)
 
 
@@ -1256,7 +1275,7 @@ class SignCoeffs(RootOfUnityCoeffs[Sign]):
             An instance of ``cls`` parsed from ``source``.
         """
         check_schema_version(source)
-        return cls.from_iterable([cls.coeff_type.from_int(value) for value in source["coeffs"]])
+        return cls.from_iterable([cls.coeff_type.from_scalar(value) for value in source["coeffs"]])
 
 
 class ComplexSignCoeffs(RootOfUnityCoeffs[ComplexSign]):
@@ -1312,7 +1331,7 @@ class ComplexSignCoeffs(RootOfUnityCoeffs[ComplexSign]):
         """
         check_schema_version(source)
         return cls.from_iterable(
-            [cls.coeff_type.from_complex(complex(real, imag)) for real, imag in source["coeffs"]]
+            [cls.coeff_type.from_scalar(complex(real, imag)) for real, imag in source["coeffs"]]
         )
 
 

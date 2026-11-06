@@ -755,15 +755,28 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
 
     _impl: _zixy.BaseVec
 
-    def __init__(self, data: _zixy.BaseVec | None = None, indexer: slice = slice(None)):
-        """Initialize the coefficient vector.
+    def __init__(self, *, size: int = 0):
+        """Allocate an owning vector of unit coefficients.
 
         Args:
-            data: Rust-bound object storing a vector of coefficients. If ``None``, an empty vector
-                of the appropriate type is initialized.
-            indexer: Slice over which the data is to be viewed.
+            size: Number of unit coefficients with which to initialize the vector.
+
+        Raises:
+            ValueError: The size is negative.
         """
-        self._impl = data if data is not None else self.coeffs_type(0)
+        if size < 0:
+            raise ValueError("size must be non-negative.")
+        self._bind(self.coeffs_type(size), slice(None))
+
+    def _bind(self, data: _zixy.BaseVec, indexer: slice) -> None:
+        """Install coefficient storage and its selection without allocating or copying.
+
+        Args:
+            data: Coefficient storage matching the concrete vector factory.
+            indexer: Slice selecting the coefficients; ``slice(None)`` denotes ownership.
+        """
+        assert type(data) is self.coeffs_type, (type(data), self.coeffs_type)
+        self._impl = data
         self._slice = indexer
 
     def fill(self, coeff: C) -> None:
@@ -796,8 +809,7 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
             A new owning instance of ``cls`` sharing the supplied storage.
         """
         out = cls.__new__(cls)
-        assert type(data) is cls.coeffs_type, (type(data), cls.coeffs_type)
-        Coeffs.__init__(out, data)
+        out._bind(data, slice(None))
         return out
 
     @classmethod
@@ -812,10 +824,9 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
             A non-owning instance of ``cls``, including for a full slice.
         """
         out = cls.__new__(cls)
-        assert type(data) is cls.coeffs_type, (type(data), cls.coeffs_type)
         if indexer == slice(None):
             indexer = slice(0, len(data), 1)
-        Coeffs.__init__(out, data, indexer)
+        out._bind(data, indexer)
         return out
 
     def clone(self) -> Self:

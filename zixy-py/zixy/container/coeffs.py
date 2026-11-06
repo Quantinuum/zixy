@@ -1165,19 +1165,18 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
         return out
 
     @classmethod
-    def from_sequence(cls, source: Sequence[C]) -> Self:
-        """Get a new instance from a sequence of coefficients.
+    def from_iterable(cls, source: Iterable[C]) -> Self:
+        """Create an owning vector from an iterable of coefficients.
 
         Args:
-            source: Sequence of coefficients.
+            source: Iterable of coefficients.
 
         Returns:
-            New instance with elements set according to ``source``.
+            Owning instance containing the coefficients in ``source``.
         """
         out = cls()
         for coeff in source:
             out.append(coeff)
-        assert len(out) == len(source)
         return out
 
     def to_dict(self) -> SerializedContainer:
@@ -1257,7 +1256,7 @@ class SignCoeffs(RootOfUnityCoeffs[Sign]):
             An instance of ``cls`` parsed from ``source``.
         """
         check_schema_version(source)
-        return cls.from_sequence([cls.coeff_type.from_int(value) for value in source["coeffs"]])
+        return cls.from_iterable([cls.coeff_type.from_int(value) for value in source["coeffs"]])
 
 
 class ComplexSignCoeffs(RootOfUnityCoeffs[ComplexSign]):
@@ -1312,7 +1311,7 @@ class ComplexSignCoeffs(RootOfUnityCoeffs[ComplexSign]):
             An instance of ``cls`` parsed from ``source``.
         """
         check_schema_version(source)
-        return cls.from_sequence(
+        return cls.from_iterable(
             [cls.coeff_type.from_complex(complex(real, imag)) for real, imag in source["coeffs"]]
         )
 
@@ -1349,19 +1348,20 @@ class NumericalCoeffs[C: (float, complex)](Coeffs[C]):
         return not np.allclose(self.np_array, 0, rtol=0, atol=atol)
 
     @classmethod
-    def from_sequence(cls, source: Sequence[C] | NDArray[np.inexact]) -> Self:
-        """Get a new instance from a sequence of coefficients.
+    def from_iterable(cls, source: Iterable[C] | NDArray[np.inexact]) -> Self:
+        """Create an owning numeric vector from an iterable of coefficients.
 
         Args:
-            source: Sequence of coefficients.
+            source: Iterable of coefficients.
 
         Returns:
-            New instance with elements set according to ``source``.
+            Owning instance containing the coefficients in ``source``.
         """
-        out = cls()
-        out._impl = cls.coeffs_type.from_array(np.asarray(source, dtype=cls.coeff_type))
-        assert len(out) == len(source)
-        return out
+        if isinstance(source, Sequence | np.ndarray):
+            values = np.asarray(source, dtype=cls.coeff_type)
+        else:
+            values = np.fromiter(source, dtype=cls.coeff_type)
+        return cls._create(cls.coeffs_type.from_array(values))
 
 
 class RealCoeffs(NumericalCoeffs[float]):
@@ -1406,7 +1406,7 @@ class RealCoeffs(NumericalCoeffs[float]):
             An instance of ``cls`` parsed from ``source``.
         """
         check_schema_version(source)
-        return cls.from_sequence([cls.coeff_type(value) for value in source["coeffs"]])
+        return cls.from_iterable([cls.coeff_type(value) for value in source["coeffs"]])
 
 
 class ComplexCoeffs(NumericalCoeffs[complex]):
@@ -1443,12 +1443,12 @@ class ComplexCoeffs(NumericalCoeffs[complex]):
     @property
     def real_part(self) -> RealCoeffs:
         """The real part of ``self`` as a new instance of :class:`RealCoeffs`."""
-        return RealCoeffs.from_sequence(self.np_array.real)
+        return RealCoeffs.from_iterable(self.np_array.real)
 
     @property
     def imag_part(self) -> RealCoeffs:
         """The imaginary part of ``self`` as a new instance of :class:`RealCoeffs`."""
-        return RealCoeffs.from_sequence(self.np_array.imag)
+        return RealCoeffs.from_iterable(self.np_array.imag)
 
     @classmethod
     def from_dict(cls, source: SerializedContainer) -> Self:
@@ -1461,7 +1461,7 @@ class ComplexCoeffs(NumericalCoeffs[complex]):
             An instance of ``cls`` parsed from ``source``.
         """
         check_schema_version(source)
-        return cls.from_sequence(
+        return cls.from_iterable(
             [
                 cls.coeff_type(*value) if isinstance(value, Sequence) else cls.coeff_type(value)
                 for value in source["coeffs"]
@@ -1751,7 +1751,7 @@ class SymbolicCoeffs(Coeffs[Expr]):
             if not np.can_cast(float, type(v), casting="safe"):
                 raise TypeError(f"Cannot cast from {type(v)} to float")
             out.append(float(v))
-        return RealCoeffs.from_sequence(out)
+        return RealCoeffs.from_iterable(out)
 
     def try_to_complex(self) -> ComplexCoeffs:
         """Try to evaluate ``self`` as a vector of complex coefficients.
@@ -1768,7 +1768,7 @@ class SymbolicCoeffs(Coeffs[Expr]):
             if not np.can_cast(complex, type(v), casting="safe"):
                 raise TypeError(f"Cannot cast from {type(v)} to complex")
             out.append(complex(v))
-        return ComplexCoeffs.from_sequence(out)
+        return ComplexCoeffs.from_iterable(out)
 
     @classmethod
     def from_str(cls, source: str) -> Self:  # noqa: D102
@@ -1813,7 +1813,7 @@ class SymbolicCoeffs(Coeffs[Expr]):
             An instance of ``cls`` parsed from ``source``.
         """
         check_schema_version(source)
-        return cls.from_sequence([sympify(c) for c in source["coeffs"]])
+        return cls.from_iterable([sympify(c) for c in source["coeffs"]])
 
 
 def convert_vec[Cs: Coeffs[Any]](source: Coeffs[Any], t: type[Cs]) -> Cs:

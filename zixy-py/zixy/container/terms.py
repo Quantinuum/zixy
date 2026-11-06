@@ -284,19 +284,21 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         return out
 
     @classmethod
-    def from_string_coeff(cls, string: String[ImplT, SpecT], coeff: C) -> Self:
-        """Factory to make an instance of ``cls`` from a string and a coefficient.
+    def from_string(cls, string: String[ImplT, SpecT], coeff: C | None = None) -> Self:
+        """Create an owning term from a string and an optional coefficient.
 
         Args:
             string: String to copy from.
-            coeff: Coefficient scaling the ``string`` in the new instance.
+            coeff: Coefficient scaling the string. If omitted or ``None``, use the unit value
+                of the destination coefficient type.
 
         Returns:
-            An instance of ``cls`` with the given string and coefficient.
+            An independent owning instance of ``cls`` with the copied string, preserving its
+            space and configuration, and the given or unit coefficient.
         """
         strings = cls.strings_type.from_string(string)
         coeffs = cls.coeffs_type()
-        coeffs.append(coeff)
+        coeffs.append(unit(cls.coeff_type) if coeff is None else coeff)
         term_data = TermData(strings, coeffs)
         return cls._create(term_data)
 

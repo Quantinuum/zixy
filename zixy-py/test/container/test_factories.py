@@ -12,8 +12,10 @@ import zixy.qubit.state as zqs
 from zixy._zixy import Modes, Qubits
 from zixy.container.coeffs import (
     ComplexCoeffs,
+    ComplexSign,
     ComplexSignCoeffs,
     RealCoeffs,
+    Sign,
     SignCoeffs,
     SymbolicCoeffs,
     unit,
@@ -108,13 +110,72 @@ def test_item_views_share_storage_and_validate_indices(family_case):
             cls._view(source._impl, len(source))
 
 
+@pytest.mark.parametrize("source_kind", ["owning", "view", "default"])
+@pytest.mark.parametrize("coefficient_mode", ["omitted", "none", "explicit"])
+def test_term_from_string_defaults_and_ownership(family_case, source_kind, coefficient_mode):
+    family, strings, _ = family_case
+    coefficients = {
+        "Sign": Sign.from_int(-1),
+        "ComplexSign": ComplexSign.from_complex(-1j),
+        "Real": 2.5,
+        "Complex": 1 + 2j,
+        "Symbolic": Symbol("x"),
+    }
+    for prefix, coeff in coefficients.items():
+        cls = getattr(family, prefix + "Term", None)
+        if cls is None:
+            continue
+        template = strings.clone()
+        source = {
+            "owning": template[1].clone(),
+            "view": template[1],
+            "default": template.new_string(),
+        }[source_kind]
+        before = source.to_dict()
+        if coefficient_mode == "omitted":
+            result = cls.from_string(source)
+        else:
+            result = cls.from_string(source, coeff=None if coefficient_mode == "none" else coeff)
+
+        expected = coeff if coefficient_mode == "explicit" else unit(cls.coeff_type)
+        assert type(result) is cls
+        assert result.is_owning()
+        assert result._data.strings.is_owning()
+        assert result._data.coeffs.is_owning()
+        assert isinstance(result.coeff, cls.coeff_type)
+        assert result.coeff == expected
+        assert result.string == source
+        assert result.to_dict()["space"] == before["space"]
+        if hasattr(source, "max_string_len"):
+            assert result.string.max_string_len == source.max_string_len
+        result.string.clear()
+        result.coeff = -expected
+        assert source.to_dict() == before
+        snapshot = result.to_dict()
+        source.set(template[0])
+        assert result.to_dict() == snapshot
+
+
+@pytest.mark.parametrize("prefix", ["Real", "Complex", "Symbolic"])
+def test_term_from_string_retains_zero_coefficient(family_case, prefix):
+    family, strings, _ = family_case
+    cls = getattr(family, prefix + "Term")
+    zero = 0 * unit(cls.coeff_type)
+
+    result = cls.from_string(strings[0], coeff=zero)
+
+    assert result.coeff == zero
+    assert isinstance(result.coeff, cls.coeff_type)
+    assert result.string == strings[0]
+
+
 def test_public_factories_copy_visible_values(family_case):
     family, strings, terms = family_case
     string_view, term_view = strings[::-1], terms[::-1]
     results = [
         family.Strings.from_string(string_view[0]),
         family.StringSet.from_strings(string_view),
-        family.RealTerm.from_string_coeff(string_view[0], 2.0),
+        family.RealTerm.from_string(string_view[0], 2.0),
         family.RealTermSet.from_terms(term_view),
         family.RealTermSum.from_terms(term_view),
     ]

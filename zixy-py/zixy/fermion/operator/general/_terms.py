@@ -111,15 +111,15 @@ def _mul[
     """Driver for multiplication of a term with another term, a string, or a coefficient."""
     if isinstance(rhs, Coeff):
         scalar_product = lhs.coeff * rhs
-        return get_term_type(type(scalar_product)).from_string_coeff(lhs.string, scalar_product)
+        return get_term_type(type(scalar_product)).from_string(lhs.string, scalar_product)
     if isinstance(rhs, String):
         _check_modes_compatibility(lhs.modes, rhs.modes)
         string = String(lhs.modes, lhs.string.get_ops() + rhs.get_ops())
-        return get_term_type(type(lhs.coeff)).from_string_coeff(string, lhs.coeff)
+        return get_term_type(type(lhs.coeff)).from_string(string, lhs.coeff)
     _check_modes_compatibility(lhs.modes, rhs.modes)
     coeff = lhs.coeff * rhs.coeff
     string = String(lhs.modes, lhs.string.get_ops() + rhs.string.get_ops())
-    return get_term_type(type(coeff)).from_string_coeff(string, coeff)
+    return get_term_type(type(coeff)).from_string(string, coeff)
 
 
 def _rmul[
@@ -132,11 +132,11 @@ def _rmul[
     if isinstance(lhs, String):
         _check_modes_compatibility(lhs.modes, rhs.modes)
         string = String(rhs.modes, lhs.get_ops() + rhs.string.get_ops())
-        return get_term_type(type(rhs.coeff)).from_string_coeff(string, rhs.coeff)
+        return get_term_type(type(rhs.coeff)).from_string(string, rhs.coeff)
     _check_modes_compatibility(lhs.modes, rhs.modes)
     coeff = lhs.coeff * rhs.coeff
     string = String(rhs.modes, lhs.string.get_ops() + rhs.string.get_ops())
-    return get_term_type(type(coeff)).from_string_coeff(string, coeff)
+    return get_term_type(type(coeff)).from_string(string, coeff)
 
 
 class Term[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerm[ImplT, SpecT, C, ElemT]):

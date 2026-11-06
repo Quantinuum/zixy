@@ -32,6 +32,9 @@ from zixy.container.terms import (
 from zixy.fermion._strings import _check_modes_compatibility
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+    from typing import Self
+
     from zixy._zixy import FermionArray
     from zixy.container.strings import String as BaseString
     from zixy.container.terms import TermSpecT
@@ -102,6 +105,23 @@ class Terms[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, E
         """The modes corresponding to ``self``."""
         return self.strings.modes
 
+    @classmethod
+    def from_iterable(
+        cls, source: Iterable[TermSpecT[ImplT, SpecT, C]], modes: int | Modes = 0
+    ) -> Self:
+        """Create an owning collection from an iterable of terms.
+
+        Args:
+            source: Iterable of compatible terms or term specifiers.
+            modes: The mode space or number of modes.
+
+        Returns:
+            An independent owning instance of ``cls``.
+        """
+        out = cls(modes)
+        out.append_iterable(source)
+        return out
+
 
 class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
     TermSetBase[ImplT, SpecT, C]
@@ -150,6 +170,24 @@ class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign,
             )
         _check_modes_compatibility(self.modes, value.modes)
 
+    @classmethod
+    def from_iterable(
+        cls, source: Iterable[TermSpecT[ImplT, SpecT, C]], modes: int | Modes = 0
+    ) -> Self:
+        """Create an owning collection from an iterable of terms.
+
+        Args:
+            source: Iterable of compatible terms or term specifiers.
+            modes: The mode space or number of modes.
+
+        Returns:
+            An independent owning instance of ``cls``.
+            The last coefficient is retained for duplicate strings.
+        """
+        out = cls(modes)
+        out.insert_iterable(source)
+        return out
+
 
 class TermSum[ImplT: FermionArray, SpecT, C: (float, complex, Expr), ElemT](
     TermSet[ImplT, SpecT, C, ElemT], TermSumBase[ImplT, SpecT, C]
@@ -171,3 +209,19 @@ class TermSum[ImplT: FermionArray, SpecT, C: (float, complex, Expr), ElemT](
             modes: The mode space or number of modes.
         """
         TermSumBase.__init__(self, self.terms_type(modes))
+
+    @classmethod
+    def from_iterable(
+        cls, source: Iterable[TermSpecT[ImplT, SpecT, C]], modes: int | Modes = 0
+    ) -> Self:
+        """Create an owning collection from an iterable of terms.
+
+        Args:
+            source: Iterable of compatible terms or term specifiers.
+            modes: The mode space or number of modes.
+
+        Returns:
+            An independent owning instance of ``cls``.
+            Coefficients of duplicate strings are added together.
+        """
+        return cls.from_terms(cls.terms_type.from_iterable(source, modes))

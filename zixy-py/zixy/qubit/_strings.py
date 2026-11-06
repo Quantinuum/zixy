@@ -28,6 +28,8 @@ from zixy.container.strings import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from zixy._zixy import QubitArray, Springs
 
 
@@ -288,6 +290,21 @@ class Strings[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseStrings[ImplT, Spec
         """Get all the strings as a list of tuples of their elements."""
         return tuple(self[i].get_tuple() for i in range(len(self)))
 
+    @classmethod
+    def from_iterable(
+        cls, source: Iterable[SpecT | BaseString[ImplT, SpecT]], qubits: int | Qubits = 0
+    ) -> Self:
+        """Create an owning collection from an iterable of strings.
+
+        Args:
+            source: Iterable of compatible strings or string specifiers.
+            qubits: The qubit register or qubit count.
+
+        Returns:
+            An independent owning instance of ``cls``.
+        """
+        return super().from_iterable(source, qubits)
+
 
 class StringSet[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseStringSet[ImplT, SpecT]):
     """A collection of unique strings.
@@ -309,3 +326,19 @@ class StringSet[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseStringSet[ImplT, 
                 qubits if isinstance(qubits, Qubits) else Qubits.from_count(qubits)
             )
         )
+
+    @classmethod
+    def from_iterable(
+        cls, source: Iterable[SpecT | BaseString[ImplT, SpecT]], qubits: int | Qubits = 0
+    ) -> Self:
+        """Create an owning collection from an iterable of strings.
+
+        Args:
+            source: Iterable of compatible strings or string specifiers.
+            qubits: The qubit register or qubit count.
+
+        Returns:
+            An independent owning instance of ``cls``.
+            Duplicate strings appear only once.
+        """
+        return super().from_iterable(source, qubits)

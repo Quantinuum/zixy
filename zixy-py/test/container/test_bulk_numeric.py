@@ -55,7 +55,7 @@ def test_bulk_copy_and_collection(domain, keys, kwargs, name):
 )
 def test_numeric_vector_views(cls, indexer):
     values = [cls.coeff_type(i + 1) for i in range(6)]
-    vector = cls.from_sequence(values)
+    vector = cls.from_iterable(values)
     view = vector[indexer]
     clone = view.clone()
     assert list(clone) == values[indexer]
@@ -125,7 +125,7 @@ def test_numeric_norms(domain, keys, kwargs, name):
 
 @pytest.mark.parametrize("cls", (RealCoeffs, ComplexCoeffs))
 def test_native_slice_validation(cls):
-    vector = cls.from_sequence([1, 2, 3])
+    vector = cls.from_iterable([1, 2, 3])
     with pytest.raises(ValueError):
         vector._impl.copy_slice(slice(None, None, 0))
     with pytest.raises(ValueError):

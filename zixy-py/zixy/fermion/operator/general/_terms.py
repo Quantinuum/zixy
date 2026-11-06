@@ -241,12 +241,21 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerms[ImplT, S
         cls,
         source: Iterable[terms.TermSpecT[ImplT, SpecT, C]],
         modes: int | Modes = 0,
-        n: int = 0,
         *,
         max_string_len: int = 0,
     ) -> Self:
-        """Create terms, preallocating known sequences and streaming other iterables."""
-        out = cls(modes, size=n, max_string_len=max_string_len)
+        """Create an owning collection from an iterable of terms.
+
+        Args:
+            source: Iterable of compatible terms or term specifiers.
+            modes: The mode space or number of modes.
+            max_string_len: Initial maximum number of operators per string. Known sequences
+                reserve the required length before insertion; other iterables grow as needed.
+
+        Returns:
+            An independent owning instance of ``cls``.
+        """
+        out = cls(modes, max_string_len=max_string_len)
         if isinstance(source, Sequence):
             out.strings._impl._reserve_string_length(
                 max(map(_max_string_len_from_source, source), default=0),
@@ -306,19 +315,30 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
     @classmethod
     def from_iterable(
         cls,
-        iterable: Iterable[terms.TermSpecT[ImplT, SpecT, C]],
+        source: Iterable[terms.TermSpecT[ImplT, SpecT, C]],
         modes: int | Modes = 0,
         *,
         max_string_len: int = 0,
     ) -> Self:
-        """Create a set, preallocating known sequences and streaming other iterables."""
+        """Create an owning collection from an iterable of terms.
+
+        Args:
+            source: Iterable of compatible terms or term specifiers.
+            modes: The mode space or number of modes.
+            max_string_len: Initial maximum number of operators per string. Known sequences
+                reserve the required length before insertion; other iterables grow as needed.
+
+        Returns:
+            An independent owning instance of ``cls``.
+            The last coefficient is retained for duplicate strings.
+        """
         out = cls(modes, max_string_len=max_string_len)
-        if isinstance(iterable, Sequence):
+        if isinstance(source, Sequence):
             out.strings._impl._reserve_string_length(
-                max(map(_max_string_len_from_source, iterable), default=0),
+                max(map(_max_string_len_from_source, source), default=0),
                 warn=False,
             )
-        out.insert_iterable(iterable)
+        out.insert_iterable(source)
         return out
 
 
@@ -350,15 +370,21 @@ class TermSum[C: (float, complex, Expr)](OperatorTermSum[ImplT, SpecT, C, ElemT]
         *,
         max_string_len: int = 0,
     ) -> Self:
-        """Create a new instance of ``cls`` from an iterable of term specifiers."""
-        terms = cls.terms_type.from_iterable(source, modes, max_string_len=max_string_len)
-        out = cls(modes, max_string_len=max_string_len)
-        if isinstance(terms._impl.coeffs, RealCoeffs | ComplexCoeffs):
-            out._collect_terms(terms, sum_duplicates=True)
-        else:
-            out.strings._impl._reserve_string_length(terms.max_string_len, warn=False)
-            out.add_iterable(terms)
-        return out
+        """Create an owning collection from an iterable of terms.
+
+        Args:
+            source: Iterable of compatible terms or term specifiers.
+            modes: The mode space or number of modes.
+            max_string_len: Initial maximum number of operators per string. Known sequences
+                reserve the required length before insertion; other iterables grow as needed.
+
+        Returns:
+            An independent owning instance of ``cls``.
+            Coefficients of duplicate strings are added together.
+        """
+        return cls.from_terms(
+            cls.terms_type.from_iterable(source, modes, max_string_len=max_string_len)
+        )
 
     def dagger(self) -> None:
         """Take the adjoint of ``self`` in-place."""

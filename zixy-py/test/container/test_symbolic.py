@@ -8,7 +8,7 @@ from zixy.container.coeffs import SymbolicCoeffs
 def test_init_append():
     x, y = sympify("x, y")
     numbers = (0, x, 1.234, complex(1, 2), 2, -2, x * y)
-    v = SymbolicCoeffs.from_sequence(numbers)
+    v = SymbolicCoeffs.from_iterable(numbers)
     assert len(v) == 7
     assert str(v) == "[0, x, 1.23400000000000, 1.0 + 2.0*I, 2, -2, x*y]"
     v.append(1)
@@ -23,18 +23,18 @@ def test_init_append():
 
 def test_subs_convert():
     x, y, z = sympify("x, y, z")
-    v = SymbolicCoeffs.from_sequence([x, 2 * x, x**2, x * z, sin(x)])
-    assert v.subs({x: 3}) == SymbolicCoeffs.from_sequence([3, 6, 9, 3 * z, sin(3)])
-    assert v == SymbolicCoeffs.from_sequence([x, 2 * x, x**2, x * z, sin(x)])
+    v = SymbolicCoeffs.from_iterable([x, 2 * x, x**2, x * z, sin(x)])
+    assert v.subs({x: 3}) == SymbolicCoeffs.from_iterable([3, 6, 9, 3 * z, sin(3)])
+    assert v == SymbolicCoeffs.from_iterable([x, 2 * x, x**2, x * z, sin(x)])
     v.isubs({x: 3})
-    assert v == SymbolicCoeffs.from_sequence([3, 6, 9, 3 * z, sin(3)])
+    assert v == SymbolicCoeffs.from_iterable([3, 6, 9, 3 * z, sin(3)])
     # both real and complex conversions fail because z is unsubstituted
     with pytest.raises(TypeError):
         v.try_to_real()
     with pytest.raises(TypeError):
         v.try_to_real()
     v.isubs({z: y})
-    assert v == SymbolicCoeffs.from_sequence([3, 6, 9, 3 * y, sin(3)])
+    assert v == SymbolicCoeffs.from_iterable([3, 6, 9, 3 * y, sin(3)])
     v.isubs({y: 3j})
     # both real conversion fails because of non-real coeff
     with pytest.raises(TypeError):
@@ -50,7 +50,7 @@ def test_subs_convert():
 
 def test_diff():
     x, y = sympify("x, y")
-    v = SymbolicCoeffs.from_sequence([x, 2 * x, x**2, x * y, sin(x)])
-    assert v.diff(x) == SymbolicCoeffs.from_sequence([1, 2, 2 * x, y, cos(x)])
+    v = SymbolicCoeffs.from_iterable([x, 2 * x, x**2, x * y, sin(x)])
+    assert v.diff(x) == SymbolicCoeffs.from_iterable([1, 2, 2 * x, y, cos(x)])
     v.idiff(x)
-    assert v == SymbolicCoeffs.from_sequence([1, 2, 2 * x, y, cos(x)])
+    assert v == SymbolicCoeffs.from_iterable([1, 2, 2 * x, y, cos(x)])

@@ -1,6 +1,8 @@
 """Factories distinguish storage adoption, independent allocation, and shared views."""
 
+import numpy as np
 import pytest
+from sympy import Symbol
 
 import zixy.fermion.operator.general as zfog
 import zixy.fermion.operator.normal as zfon
@@ -196,6 +198,114 @@ def test_coefficient_factories_share_only_for_views(cls):
     assert type(empty) is cls
     assert empty.is_owning()
     assert len(empty) == 0
+
+
+@pytest.mark.parametrize(
+    "cls", [SignCoeffs, ComplexSignCoeffs, RealCoeffs, ComplexCoeffs, SymbolicCoeffs]
+)
+@pytest.mark.parametrize("source_kind", ["list", "tuple", "iterator", "generator", "empty"])
+def test_coefficient_iterable_construction(cls, source_kind):
+    one = unit(cls.coeff_type)
+    values = [one, -one, one]
+    source = {
+        "list": values,
+        "tuple": tuple(values),
+        "iterator": iter(values),
+        "generator": (value for value in values),
+        "empty": iter(()),
+    }[source_kind]
+    expected = [] if source_kind == "empty" else values.copy()
+
+    result = cls.from_iterable(source=source)
+
+    assert type(result) is cls
+    assert result.is_owning()
+    assert list(result) == expected
+    if expected:
+        result[0] = -one
+        assert values == expected
+
+
+@pytest.mark.parametrize("cls", [RealCoeffs, ComplexCoeffs])
+@pytest.mark.parametrize("source_kind", ["sequence", "array", "strided-array", "generator"])
+def test_numeric_iterable_uses_bulk_conversion(cls, source_kind, monkeypatch):
+    values = np.arange(6, dtype=cls.coeff_type)
+    source = {
+        "sequence": list(values),
+        "array": values,
+        "strided-array": values[::2],
+        "generator": (value for value in values),
+    }[source_kind]
+    expected = list(values[::2] if source_kind == "strided-array" else values)
+
+    def no_python_append(*args, **kwargs):
+        pytest.fail("Numeric iterable construction must use the bulk array path")
+
+    monkeypatch.setattr(cls, "append", no_python_append)
+    result = cls.from_iterable(source)
+
+    assert list(result) == expected
+    assert result.is_owning()
+    values[:] = 0
+    assert list(result) == expected
+
+
+@pytest.mark.parametrize(
+    "kind", ["Strings", "StringSet", "RealTerms", "RealTermSet", "RealTermSum"]
+)
+@pytest.mark.parametrize("streamed", [False, True])
+@pytest.mark.parametrize("empty", [False, True])
+def test_domain_iterable_signatures_and_duplicate_policies(family_case, kind, streamed, empty):
+    family, strings, _ = family_case
+    source = [strings[0], strings[1], strings[0]]
+    if kind.startswith("Real"):
+        source = list(zip(source, [2.0, 3.0, 4.0]))
+    if empty:
+        source = []
+    kwargs = {"qubits": strings.qubits} if family in (zqo, zqs) else {"modes": strings.modes}
+    if family is zfog:
+        kwargs["max_string_len"] = 64
+    cls = getattr(family, kind)
+
+    result = cls.from_iterable(source=(value for value in source) if streamed else source, **kwargs)
+
+    assert type(result) is cls
+    assert len(result) == (0 if empty else 3 if kind in ("Strings", "RealTerms") else 2)
+    assert result.to_dict()["space"] == strings.to_dict()["space"]
+    if hasattr(result, "is_owning"):
+        assert result.is_owning()
+    if family is zfog:
+        assert result.max_string_len == 64
+    if not empty and kind.startswith("Real"):
+        expected = {
+            "RealTerms": [2.0, 3.0, 4.0],
+            "RealTermSet": [4.0, 3.0],
+            "RealTermSum": [6.0, 3.0],
+        }
+        assert list(result.coeffs) == expected[kind]
+    snapshot = result.to_dict()
+    for string in strings:
+        string.clear()
+    assert result.to_dict() == snapshot
+
+
+@pytest.mark.parametrize("prefix", ["Real", "Complex", "Symbolic"])
+@pytest.mark.parametrize("streamed", [False, True])
+def test_sum_iterable_accumulates_duplicates(family_case, prefix, streamed):
+    family, strings, _ = family_case
+    cls = getattr(family, prefix + "TermSum")
+    coefficient = {"Real": 2.0, "Complex": 1j, "Symbolic": Symbol("x")}[prefix]
+    source = [(strings[0], coefficient), (strings[0], 2 * coefficient)]
+    kwargs = {"qubits": strings.qubits} if family in (zqo, zqs) else {"modes": strings.modes}
+    if family is zfog:
+        kwargs["max_string_len"] = 64
+
+    result = cls.from_iterable(source=iter(source) if streamed else source, **kwargs)
+
+    assert type(result) is cls
+    assert len(result) == 1
+    assert result.lookup_coeff(strings[0]) == 3 * coefficient
+    assert result == cls.from_terms(cls.terms_type.from_iterable(source, **kwargs))
 
 
 @pytest.mark.parametrize("family", [zqo, zqs, zfs])

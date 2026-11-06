@@ -32,6 +32,9 @@ from zixy.container.terms import (
 from zixy.qubit._strings import _check_qubits_compatibility
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+    from typing import Self
+
     from zixy._zixy import QubitArray
     from zixy.container.strings import String as BaseString
     from zixy.container.terms import TermSpecT
@@ -116,6 +119,23 @@ class Terms[
         """The qubits corresponding to ``self``."""
         return self.strings.qubits
 
+    @classmethod
+    def from_iterable(
+        cls, source: Iterable[TermSpecT[ImplT, SpecT, C]], qubits: int | Qubits = 0
+    ) -> Self:
+        """Create an owning collection from an iterable of terms.
+
+        Args:
+            source: Iterable of compatible terms or term specifiers.
+            qubits: The qubit register or qubit count.
+
+        Returns:
+            An independent owning instance of ``cls``.
+        """
+        out = cls(qubits)
+        out.append_iterable(source)
+        return out
+
 
 class TermSet[
     ImplT: QubitArray[Any, Any],
@@ -167,6 +187,24 @@ class TermSet[
             )
         _check_qubits_compatibility(self.qubits, value.qubits)
 
+    @classmethod
+    def from_iterable(
+        cls, source: Iterable[TermSpecT[ImplT, SpecT, C]], qubits: int | Qubits = 0
+    ) -> Self:
+        """Create an owning collection from an iterable of terms.
+
+        Args:
+            source: Iterable of compatible terms or term specifiers.
+            qubits: The qubit register or qubit count.
+
+        Returns:
+            An independent owning instance of ``cls``.
+            The last coefficient is retained for duplicate strings.
+        """
+        out = cls(qubits)
+        out.insert_iterable(source)
+        return out
+
 
 class TermSum[
     ImplT: QubitArray[Any, Any],
@@ -191,3 +229,19 @@ class TermSum[
             qubits: The qubit register or qubit count.
         """
         TermSumBase.__init__(self, self.terms_type(qubits))
+
+    @classmethod
+    def from_iterable(
+        cls, source: Iterable[TermSpecT[ImplT, SpecT, C]], qubits: int | Qubits = 0
+    ) -> Self:
+        """Create an owning collection from an iterable of terms.
+
+        Args:
+            source: Iterable of compatible terms or term specifiers.
+            qubits: The qubit register or qubit count.
+
+        Returns:
+            An independent owning instance of ``cls``.
+            Coefficients of duplicate strings are added together.
+        """
+        return cls.from_terms(cls.terms_type.from_iterable(source, qubits))

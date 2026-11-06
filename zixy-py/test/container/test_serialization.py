@@ -54,7 +54,7 @@ from zixy.container.terms import Term
 )
 def coefficient_case(request):
     coeffs_type, values, encoded = request.param
-    return coeffs_type.from_sequence(values), encoded
+    return coeffs_type.from_iterable(values), encoded
 
 
 def test_coeffs_serialization_format(coefficient_case):
@@ -140,15 +140,15 @@ def test_coeffs_serialization_schema_mismatch(coefficient_case, format_):
 @pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
 @pytest.mark.parametrize("coeffs_type", [RealCoeffs, ComplexCoeffs])
 def test_coeffs_serialization_nonfinite(coeffs_type, value):
-    coeffs = coeffs_type.from_sequence([coeffs_type.coeff_type(value)])
+    coeffs = coeffs_type.from_iterable([coeffs_type.coeff_type(value)])
     with pytest.raises(ValueError, match="Out of range float values"):
         coeffs.to_json()
 
 
 def test_coeffs_deserialization_cross_type():
-    signs = SignCoeffs.from_sequence([Sign.from_int(1), Sign.from_int(-1)])
+    signs = SignCoeffs.from_iterable([Sign.from_int(1), Sign.from_int(-1)])
     assert list(RealCoeffs.from_dict(signs.to_dict())) == [1.0, -1.0]
-    reals = RealCoeffs.from_sequence([1.25, -2.5])
+    reals = RealCoeffs.from_iterable([1.25, -2.5])
     assert list(ComplexCoeffs.from_json(reals.to_json())) == [1.25 + 0j, -2.5 + 0j]
 
 
@@ -507,7 +507,7 @@ def _make_term_case(family, prefix, container, space_kind):
         "Symbolic": ([sympify(x) for x in ["x", "0", "y + 1"]], ["x", "0", "y + 1"]),
     }[prefix]
     terms_type = getattr(family, f"{prefix}Terms")
-    coeffs = terms_type.term_type.coeffs_type.from_sequence(values)
+    coeffs = terms_type.term_type.coeffs_type.from_iterable(values)
     terms = terms_type._create(TermData(strings, coeffs))
     if container == "Term":
         source = terms[1]
@@ -776,7 +776,7 @@ def test_term_serialization_dispatch(term_case):
 
 
 def test_serialize_json_options():
-    source = RealCoeffs.from_sequence([1.25, -2.5])
+    source = RealCoeffs.from_iterable([1.25, -2.5])
     encoded = serialize(source, indent=2, sort_keys=True)
     assert encoded.startswith('{\n  "coeffs"')
     assert json.loads(encoded) == source.to_dict()
@@ -790,7 +790,7 @@ def test_serialize_unsupported_object(source):
 
 @pytest.mark.parametrize("mapping_type", [dict, MappingProxyType])
 def test_deserialize_rejects_mapping(mapping_type):
-    source = RealCoeffs.from_sequence([1.25, -2.5])
+    source = RealCoeffs.from_iterable([1.25, -2.5])
     payload = source.to_dict()
     with pytest.raises(TypeError, match="JSON string"):
         deserialize(mapping_type(payload))
@@ -815,7 +815,7 @@ def test_deserialize_invalid_json():
 
 @pytest.mark.parametrize("field", ["schema_version", "package_version", "family", "container"])
 def test_deserialize_missing_metadata(field):
-    payload = RealCoeffs.from_sequence([1.0]).to_dict()
+    payload = RealCoeffs.from_iterable([1.0]).to_dict()
     del payload[field]
     with pytest.raises(ValueError, match="Missing serialization metadata"):
         deserialize(json.dumps(payload))
@@ -823,21 +823,21 @@ def test_deserialize_missing_metadata(field):
 
 @pytest.mark.parametrize("field", ["schema_version", "package_version", "family", "container"])
 def test_deserialize_invalid_metadata_type(field):
-    payload = RealCoeffs.from_sequence([1.0]).to_dict()
+    payload = RealCoeffs.from_iterable([1.0]).to_dict()
     payload[field] = None
     with pytest.raises(TypeError, match="must be a string"):
         deserialize(json.dumps(payload))
 
 
 def test_deserialize_schema_mismatch():
-    payload = RealCoeffs.from_sequence([1.0]).to_dict()
+    payload = RealCoeffs.from_iterable([1.0]).to_dict()
     payload["schema_version"] = "unsupported"
     with pytest.raises(ValueError, match="schema version mismatch"):
         deserialize(json.dumps(payload))
 
 
 def test_deserialize_other_package_version():
-    source = RealCoeffs.from_sequence([1.0])
+    source = RealCoeffs.from_iterable([1.0])
     payload = source.to_dict()
     payload["package_version"] = "0.0.0"
     assert deserialize(json.dumps(payload)).to_dict() == source.to_dict()
@@ -845,7 +845,7 @@ def test_deserialize_other_package_version():
 
 @pytest.mark.parametrize("family", ["unknown", "qubit", "os", "container.coeffs"])
 def test_deserialize_unknown_family(family):
-    payload = RealCoeffs.from_sequence([1.0]).to_dict()
+    payload = RealCoeffs.from_iterable([1.0]).to_dict()
     payload["family"] = family
     with pytest.raises(ValueError, match="Unknown serialization family"):
         deserialize(json.dumps(payload))
@@ -853,7 +853,7 @@ def test_deserialize_unknown_family(family):
 
 @pytest.mark.parametrize("container", ["Unknown", "Sign", "Coeffs", "convert_vec", "RealTerm"])
 def test_deserialize_unknown_container(container):
-    payload = RealCoeffs.from_sequence([1.0]).to_dict()
+    payload = RealCoeffs.from_iterable([1.0]).to_dict()
     payload["container"] = container
     with pytest.raises(ValueError, match="Unknown serializable container"):
         deserialize(json.dumps(payload))

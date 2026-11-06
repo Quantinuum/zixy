@@ -1496,22 +1496,22 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
     @classmethod
     def from_iterable(
         cls,
-        iterable: Iterable[TermSpecT[ImplT, SpecT, C]],
+        source: Iterable[TermSpecT[ImplT, SpecT, C]],
         *args: Any,
         **kwargs: Any,
     ) -> Self:
         """Create a new instance of ``cls`` from an iterable.
 
         Args:
-            iterable: Iterable returning specifiers of all the terms to be appended.
+            source: Iterable returning specifiers of all the terms to be appended.
             args: Positional arguments to forward to the constructor of ``cls``.
             kwargs: Keyword arguments to forward to the constructor of ``cls``.
 
         Returns:
-            New instance of ``cls`` containing the terms specified by ``iterable``.
+            New instance of ``cls`` containing the terms specified by ``source``.
         """
         out = cls(*args, **kwargs)
-        out.insert_iterable(iterable)
+        out.insert_iterable(source)
         return out
 
     def iter_filter_nonzero(self) -> Iterator[Term[ImplT, SpecT, C]]:
@@ -1675,16 +1675,16 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Expr)](TermSet[ImplT,
         factor = 1 / scalar if not isinstance(scalar, RootOfUnity) else 1 / scalar.to_numeric()
         return self * factor
 
-    def add_iterable(self, iterable: Iterable[TermSpecT[ImplT, SpecT, C]]) -> None:
+    def add_iterable(self, source: Iterable[TermSpecT[ImplT, SpecT, C]]) -> None:
         """In-place addition of the terms in ``iterable`` to ``self``.
 
         Args:
-            iterable: Iterable of term specifiers or compatible terms to add to ``self``.
+            source: Iterable of term specifiers or compatible terms to add to ``self``.
 
         Note:
             This method operates in-place.
         """
-        for item in iterable:
+        for item in source:
             term = self._get_working_term(item)
             self += term
 
@@ -1719,27 +1719,21 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Expr)](TermSet[ImplT,
     @classmethod
     def from_iterable(
         cls,
-        iterable: Iterable[TermSpecT[ImplT, SpecT, C]],
+        source: Iterable[TermSpecT[ImplT, SpecT, C]],
         *args: Any,
         **kwargs: Any,
     ) -> Self:
         """Create a new instance of ``cls`` from an iterable.
 
         Args:
-            iterable: Iterable returning specifiers of all the terms to be appended.
+            source: Iterable returning specifiers of all the terms to be appended.
             args: Positional arguments to forward to the constructor of ``cls``.
             kwargs: Keyword arguments to forward to the constructor of ``cls``.
 
         Returns:
-            New instance of ``cls`` containing the terms specified by ``iterable``.
+            New instance of ``cls`` containing the terms specified by ``source``.
         """
-        out = cls(*args, **kwargs)
-        if isinstance(out._impl.coeffs, RealCoeffs | ComplexCoeffs):
-            terms = cls.terms_type.from_iterable(iterable, *args, **kwargs)
-            out._collect_terms(terms, sum_duplicates=True)
-        else:
-            out.add_iterable(iterable)
-        return out
+        return cls.from_terms(cls.terms_type.from_iterable(source, *args, **kwargs))
 
 
 class NumericTermSum[ImplT: ImplArray, SpecT, C: (float, complex)](TermSum[ImplT, SpecT, C]):

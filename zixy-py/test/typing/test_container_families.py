@@ -210,3 +210,19 @@ def test_fermion_state_relationships() -> None:
     terms[:][0].coeff = 2.0
     assert terms[0].coeff == 2.0
     assert terms[0].string.aliases(terms.strings[0])
+
+
+def test_iterable_keyword_signatures() -> None:
+    assert_type(zqo.Strings.from_iterable(source=iter(["X0"]), qubits=2), zqo.Strings)
+    assert_type(zqs.Strings.from_iterable(source=iter(["[1, 0]"]), qubits=2), zqs.Strings)
+    assert_type(zfon.Strings.from_iterable(source=iter(["F0^"]), modes=2), zfon.Strings)
+    assert_type(zfs.Strings.from_iterable(source=iter(["[1, 0]"]), modes=2), zfs.Strings)
+    assert_type(
+        zfog.Strings.from_iterable(source=iter(["F0^"]), modes=2, max_string_len=2),
+        zfog.Strings,
+    )
+    assert_type(zqo.RealTerms.from_iterable(source=iter([("X0", 2.0)]), qubits=2), zqo.RealTerms)
+    assert_type(
+        zfon.RealTermSum.from_iterable(source=iter([("F0^", 2.0)]), modes=2),
+        zfon.RealTermSum,
+    )

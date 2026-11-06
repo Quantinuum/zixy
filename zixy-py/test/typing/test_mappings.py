@@ -29,7 +29,7 @@ def check_mapping_types(
     string = zfon.String(2, "F0^")
     normal = zfon.RealTerm(2, ("F0^", 2.0))
     general = zfog.ComplexTerm(2, ("F0^", 2j))
-    sign = zfon.SignTerm(2, ("F0^", Sign.from_int(-1)))
+    sign = zfon.SignTerm(2, ("F0^", Sign.from_scalar(-1)))
     normal_sum = zfon.RealTermSum(2)
     general_sum = zfog.ComplexTermSum(2)
 

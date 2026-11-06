@@ -62,7 +62,7 @@ class Term[ImplT: QubitArray[Any, Any], SpecT, C: (float, complex, Sign, Complex
             source: The term specifier to use for default qubits and initial value.
         """
         strings = self.strings_type(qubits, size=1)
-        coeffs = self.coeffs_type.from_size(1)
+        coeffs = self.coeffs_type(size=1)
         term_data = TermData(strings, coeffs)
         TermBase.__init__(self, term_data)
         self.set(source)
@@ -107,7 +107,7 @@ class Terms[
             size: The number of items to initialize the array with.
         """
         strings = self.term_type.strings_type(qubits, size=size)
-        coeffs = self.term_type.coeffs_type.from_size(size)
+        coeffs = self.term_type.coeffs_type(size=size)
         data = TermData(strings, coeffs)
         TermsBase.__init__(self, data)
 

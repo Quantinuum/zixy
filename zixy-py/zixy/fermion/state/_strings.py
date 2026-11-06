@@ -196,7 +196,7 @@ class String(FermionString[ImplT, SpecT, ElemT]):
         from zixy.fermion.state._terms import get_term_type  # noqa: PLC0415
 
         term_type = get_term_type(type(rhs))
-        return term_type.from_string_coeff(self, rhs)
+        return term_type.from_string(self, rhs)
 
     def __rmul__[C: (float, complex, Sign, ComplexSign, Expr)](self, lhs: C) -> Term[C]:
         """Return the product of ``lhs`` and ``self``."""
@@ -205,7 +205,7 @@ class String(FermionString[ImplT, SpecT, ElemT]):
         from zixy.fermion.state._terms import get_term_type  # noqa: PLC0415
 
         term_type = get_term_type(type(lhs))
-        return term_type.from_string_coeff(self, lhs)
+        return term_type.from_string(self, lhs)
 
     def vdot(self, other: String) -> int:
         """Compute the inner product of this string with another."""

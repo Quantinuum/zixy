@@ -218,13 +218,13 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
 
         if isinstance(rhs, Coeff):
             scalar_term_type = get_term_type(type(rhs))
-            return scalar_term_type.from_string_coeff(self, rhs)
+            return scalar_term_type.from_string(self, rhs)
         if not isinstance(rhs, String):
             return NotImplemented
         impl, signs = self._impl.string_mul(self.index, rhs._impl, rhs.index)
         out = RealTermSum(self.modes)
         for i in range(len(impl)):
-            out += RealTermSum.terms_type.term_type.from_string_coeff(
+            out += RealTermSum.terms_type.term_type.from_string(
                 Strings._create(impl)[i], float(int(Sign(signs[i])))
             )
         return out

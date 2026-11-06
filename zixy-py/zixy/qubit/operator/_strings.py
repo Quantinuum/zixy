@@ -208,7 +208,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
             phases = ComplexSignCoeffs.from_scalar(ComplexSign(phase))
             term_data = TermData(Strings._create(product), phases)
             return ComplexSignTerm._create(term_data)
-        return get_term_type(type(rhs)).from_string_coeff(self, rhs)
+        return get_term_type(type(rhs)).from_string(self, rhs)
 
     def __rmul__[C: (float, complex, Sign, ComplexSign, Expr)](self, lhs: C) -> Term[C]:
         """Return the product of ``lhs`` and ``self``."""
@@ -217,7 +217,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         from zixy.qubit.operator._terms import get_term_type  # noqa: PLC0415
 
         term_type = get_term_type(type(lhs))
-        return term_type.from_string_coeff(self, lhs)
+        return term_type.from_string(self, lhs)
 
     def __imul__(self, rhs: String) -> Self:  # type: ignore
         """In-place multiplication of ``self`` by ``rhs``."""

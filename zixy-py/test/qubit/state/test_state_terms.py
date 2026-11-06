@@ -290,7 +290,7 @@ def test_term_set_check_term():
         term_set._check_term(zqs.RealTerm(4, ((1, 0, 0, 0), 1.0)))
 
     with pytest.raises(TypeError, match="Expected a RealTerm instance"):
-        term_set._check_term(zqo.RealTerm.from_string_coeff(zqo.String(3, (X, I, I)), 1.0))
+        term_set._check_term(zqo.RealTerm.from_string(zqo.String(3, (X, I, I)), 1.0))
 
 
 def test_term_set_check_string():

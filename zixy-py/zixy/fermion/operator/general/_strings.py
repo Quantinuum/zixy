@@ -269,12 +269,12 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
 
         if isinstance(rhs, Coeff):
             scalar_term_type = get_term_type(type(rhs))
-            return scalar_term_type.from_string_coeff(self, rhs)
+            return scalar_term_type.from_string(self, rhs)
         if not isinstance(rhs, String):
             return NotImplemented
         _check_modes_compatibility(self.modes, rhs.modes)
         string = String(self.modes, self.get_ops() + rhs.get_ops())
-        return RealTerm.from_string_coeff(string, 1.0)
+        return RealTerm.from_string(string)
 
 
 class Strings(OperatorStrings[ImplT, SpecT, ElemT]):

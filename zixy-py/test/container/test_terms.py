@@ -68,7 +68,7 @@ def _mock_term_from_str(cls: type[Term[StringsImplArray, str, object]], source: 
         coeff = complex(coeff_str)
     else:
         raise TypeError(f"Unsupported mock coefficient type {cls.coeff_type}.")
-    return cls.from_string_coeff(String.from_str(string_str), coeff)
+    return cls.from_string(String.from_str(string_str), coeff)
 
 
 class RealMockTerm(Term[StringsImplArray, str, float]):
@@ -208,7 +208,7 @@ def test_term_sum_from_terms_accumulates_duplicates(cls, values, slices):
 )
 def test_termsum_subtraction_negates_new_term(term_sum_type, term_type, coeff):
     term_sum = term_sum_type()
-    term = term_type.from_string_coeff(String.from_str("alpha"), coeff)
+    term = term_type.from_string(String.from_str("alpha"), coeff)
 
     result = term_sum - term
     assert len(term_sum) == 0
@@ -463,7 +463,7 @@ def test_termsum_vectorised_coeff_multiplication():
 
 
 def test_unary_term_algebra():
-    term = RealMockTerm.from_string_coeff(String.from_str("alpha"), 2.0)
+    term = RealMockTerm.from_string(String.from_str("alpha"), 2.0)
     assert +term is term
     assert str(-term) == "(-2.0, alpha)"
     assert str(term) == "(2.0, alpha)"

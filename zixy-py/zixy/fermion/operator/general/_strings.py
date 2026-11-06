@@ -349,19 +349,28 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
     @classmethod
     def from_iterable(
         cls,
-        iterable: Iterable[SpecT | BaseString[ImplT, SpecT]],
+        source: Iterable[SpecT | BaseString[ImplT, SpecT]],
         modes: int | Modes = 0,
-        n: int = 0,
         *,
         max_string_len: int = 0,
     ) -> Self:
-        """Create an array, preallocating known sequences and streaming other iterables."""
-        out = cls(modes, size=n, max_string_len=max_string_len)
-        if isinstance(iterable, Sequence):
+        """Create an owning collection from an iterable of strings.
+
+        Args:
+            source: Iterable of compatible strings or string specifiers.
+            modes: The mode space or number of modes.
+            max_string_len: Initial maximum number of operators per string. Known sequences
+                reserve the required length before insertion; other iterables grow as needed.
+
+        Returns:
+            An independent owning instance of ``cls``.
+        """
+        out = cls(modes, max_string_len=max_string_len)
+        if isinstance(source, Sequence):
             out._impl._reserve_string_length(
-                max(map(_string_length, iterable), default=0), warn=False
+                max(map(_string_length, source), default=0), warn=False
             )
-        out.append_iterable(iterable)
+        out.append_iterable(source)
         return out
 
     @classmethod
@@ -436,18 +445,29 @@ class StringSet(OperatorStringSet[ImplT, SpecT, ElemT]):
     @classmethod
     def from_iterable(
         cls,
-        iterable: Iterable[SpecT | BaseString[ImplT, SpecT]],
+        source: Iterable[SpecT | BaseString[ImplT, SpecT]],
         modes: int | Modes = 0,
         *,
         max_string_len: int = 0,
     ) -> Self:
-        """Create a set, preallocating known sequences and streaming other iterables."""
+        """Create an owning collection from an iterable of strings.
+
+        Args:
+            source: Iterable of compatible strings or string specifiers.
+            modes: The mode space or number of modes.
+            max_string_len: Initial maximum number of operators per string. Known sequences
+                reserve the required length before insertion; other iterables grow as needed.
+
+        Returns:
+            An independent owning instance of ``cls``.
+            Duplicate strings appear only once.
+        """
         out = cls(modes, max_string_len=max_string_len)
-        if isinstance(iterable, Sequence):
+        if isinstance(source, Sequence):
             out._impl._reserve_string_length(
-                max(map(_string_length, iterable), default=0), warn=False
+                max(map(_string_length, source), default=0), warn=False
             )
-        out.insert_iterable(iterable)
+        out.insert_iterable(source)
         return out
 
 

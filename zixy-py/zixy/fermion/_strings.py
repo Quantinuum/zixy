@@ -27,7 +27,8 @@ from zixy.container.strings import (
 )
 
 if TYPE_CHECKING:
-    from typing import Any
+    from collections.abc import Iterable
+    from typing import Any, Self
 
     from zixy._zixy import FermionArray
 
@@ -148,6 +149,21 @@ class Strings[ImplT: FermionArray, SpecT, ElemT](BaseStrings[ImplT, SpecT]):
         """The modes corresponding to ``self``."""
         return self._impl.modes
 
+    @classmethod
+    def from_iterable(
+        cls, source: Iterable[SpecT | BaseString[ImplT, SpecT]], modes: int | Modes = 0
+    ) -> Self:
+        """Create an owning collection from an iterable of strings.
+
+        Args:
+            source: Iterable of compatible strings or string specifiers.
+            modes: The mode space or number of modes.
+
+        Returns:
+            An independent owning instance of ``cls``.
+        """
+        return super().from_iterable(source, modes)
+
 
 class StringSet[ImplT: FermionArray, SpecT, ElemT](BaseStringSet[ImplT, SpecT]):
     """A collection of unique fermionic strings.
@@ -168,3 +184,19 @@ class StringSet[ImplT: FermionArray, SpecT, ElemT](BaseStringSet[ImplT, SpecT]):
             self,
             self.strings_type(Modes.from_count(modes) if isinstance(modes, int) else modes)._impl,
         )
+
+    @classmethod
+    def from_iterable(
+        cls, source: Iterable[SpecT | BaseString[ImplT, SpecT]], modes: int | Modes = 0
+    ) -> Self:
+        """Create an owning collection from an iterable of strings.
+
+        Args:
+            source: Iterable of compatible strings or string specifiers.
+            modes: The mode space or number of modes.
+
+        Returns:
+            An independent owning instance of ``cls``.
+            Duplicate strings appear only once.
+        """
+        return super().from_iterable(source, modes)

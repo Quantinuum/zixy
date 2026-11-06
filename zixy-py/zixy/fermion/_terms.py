@@ -62,7 +62,7 @@ class Term[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             source: The term specifier to use for initial value.
         """
         strings = self.strings_type(modes, size=1)
-        coeffs = self.coeffs_type.from_size(1)
+        coeffs = self.coeffs_type(size=1)
         term_data = TermData(strings, coeffs)
         TermBase.__init__(self, term_data)
         self.set(source)
@@ -93,7 +93,7 @@ class Terms[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, E
             size: The number of items to initialize the array with.
         """
         strings = self.term_type.strings_type(modes, size=size)
-        coeffs = self.term_type.coeffs_type.from_size(size)
+        coeffs = self.term_type.coeffs_type(size=size)
         term_data = TermData(strings, coeffs)
         TermsBase.__init__(self, term_data)
 

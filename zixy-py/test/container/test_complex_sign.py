@@ -22,7 +22,7 @@ def test_scalar_conversions():
 
 
 def test_str():
-    empty = ComplexSignCoeffs.from_size(0)
+    empty = ComplexSignCoeffs(size=0)
     assert empty.to_str() == "[]"
     assert ComplexSignCoeffs.from_str(empty.to_str()) == empty
 

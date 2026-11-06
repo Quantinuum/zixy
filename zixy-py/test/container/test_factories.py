@@ -154,6 +154,32 @@ def test_keyed_factories_adopt_data_and_maps_together(family_case):
 @pytest.mark.parametrize(
     "cls", [SignCoeffs, ComplexSignCoeffs, RealCoeffs, ComplexCoeffs, SymbolicCoeffs]
 )
+@pytest.mark.parametrize("size", [0, 1, 4])
+def test_coefficient_size_construction(cls, size):
+    one = unit(cls.coeff_type)
+    coeffs = cls(size=size)
+    other = cls(size=size)
+
+    assert coeffs.is_owning()
+    assert len(coeffs) == size
+    assert list(coeffs) == [one] * size
+    assert len(cls()) == 0
+    if size:
+        coeffs[0] = -one
+        assert list(other) == [one] * size
+
+
+@pytest.mark.parametrize(
+    "cls", [SignCoeffs, ComplexSignCoeffs, RealCoeffs, ComplexCoeffs, SymbolicCoeffs]
+)
+def test_coefficient_size_rejects_negative_values(cls):
+    with pytest.raises(ValueError, match="size must be non-negative"):
+        cls(size=-1)
+
+
+@pytest.mark.parametrize(
+    "cls", [SignCoeffs, ComplexSignCoeffs, RealCoeffs, ComplexCoeffs, SymbolicCoeffs]
+)
 def test_coefficient_factories_share_only_for_views(cls):
     one = unit(cls.coeff_type)
     data = cls.from_scalar(one, 3)._impl

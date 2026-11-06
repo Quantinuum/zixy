@@ -166,7 +166,7 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerm[ImplT, Spe
         """
         strings = self.strings_type(modes, size=1, max_string_len=max_string_len)
         strings._impl._reserve_string_length(_max_string_len_from_source(source), warn=False)
-        coeffs = self.coeffs_type.from_size(1)
+        coeffs = self.coeffs_type(size=1)
         term_data = TermData(strings, coeffs)
         TermBase.__init__(self, term_data)
         self.set(source)
@@ -209,7 +209,7 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerms[ImplT, S
             max_string_len: Maximum number of operators per string.
         """
         strings = self.term_type.strings_type(modes, size=size, max_string_len=max_string_len)
-        coeffs = self.term_type.coeffs_type.from_size(size)
+        coeffs = self.term_type.coeffs_type(size=size)
         term_data = TermData(strings, coeffs)
         TermsBase.__init__(self, term_data)
 

@@ -84,12 +84,12 @@ def test_zqo_concrete_term_data() -> None:
     class DerivedCoeffs(SignCoeffs):
         pass
 
-    specialised = TermData(strings, DerivedCoeffs.from_size(2))
+    specialised = TermData(strings, DerivedCoeffs(size=2))
     assert_type(specialised.clone(), TermData[zqo.Strings, DerivedCoeffs])
     assert type(specialised.clone().coeffs) is DerivedCoeffs
 
     # Existing term algorithms accept the projection without erasing scalar checks.
-    real_data = TermData(strings, RealCoeffs.from_size(2))
+    real_data = TermData(strings, RealCoeffs(size=2))
     assert_type(real_data.coeffs[0], float)
     assert_type(real_data.coeff_type, type[float])
     assert_type(_first_coeff(real_data), float)
@@ -162,12 +162,12 @@ def test_zqs_concrete_term_data() -> None:
     class DerivedCoeffs(SignCoeffs):
         pass
 
-    specialised = TermData(strings, DerivedCoeffs.from_size(2))
+    specialised = TermData(strings, DerivedCoeffs(size=2))
     assert_type(specialised.clone(), TermData[zqs.Strings, DerivedCoeffs])
     assert type(specialised.clone().coeffs) is DerivedCoeffs
 
     # Existing term algorithms accept the projection without erasing scalar checks.
-    real_data = TermData(strings, RealCoeffs.from_size(2))
+    real_data = TermData(strings, RealCoeffs(size=2))
     assert_type(real_data.coeffs[0], float)
     assert_type(real_data.coeff_type, type[float])
     assert_type(_first_coeff(real_data), float)
@@ -240,12 +240,12 @@ def test_zfog_concrete_term_data() -> None:
     class DerivedCoeffs(SignCoeffs):
         pass
 
-    specialised = TermData(strings, DerivedCoeffs.from_size(2))
+    specialised = TermData(strings, DerivedCoeffs(size=2))
     assert_type(specialised.clone(), TermData[zfog.Strings, DerivedCoeffs])
     assert type(specialised.clone().coeffs) is DerivedCoeffs
 
     # Existing term algorithms accept the projection without erasing scalar checks.
-    real_data = TermData(strings, RealCoeffs.from_size(2))
+    real_data = TermData(strings, RealCoeffs(size=2))
     assert_type(real_data.coeffs[0], float)
     assert_type(real_data.coeff_type, type[float])
     assert_type(_first_coeff(real_data), float)
@@ -318,12 +318,12 @@ def test_zfon_concrete_term_data() -> None:
     class DerivedCoeffs(SignCoeffs):
         pass
 
-    specialised = TermData(strings, DerivedCoeffs.from_size(2))
+    specialised = TermData(strings, DerivedCoeffs(size=2))
     assert_type(specialised.clone(), TermData[zfon.Strings, DerivedCoeffs])
     assert type(specialised.clone().coeffs) is DerivedCoeffs
 
     # Existing term algorithms accept the projection without erasing scalar checks.
-    real_data = TermData(strings, RealCoeffs.from_size(2))
+    real_data = TermData(strings, RealCoeffs(size=2))
     assert_type(real_data.coeffs[0], float)
     assert_type(real_data.coeff_type, type[float])
     assert_type(_first_coeff(real_data), float)
@@ -396,12 +396,12 @@ def test_zfs_concrete_term_data() -> None:
     class DerivedCoeffs(SignCoeffs):
         pass
 
-    specialised = TermData(strings, DerivedCoeffs.from_size(2))
+    specialised = TermData(strings, DerivedCoeffs(size=2))
     assert_type(specialised.clone(), TermData[zfs.Strings, DerivedCoeffs])
     assert type(specialised.clone().coeffs) is DerivedCoeffs
 
     # Existing term algorithms accept the projection without erasing scalar checks.
-    real_data = TermData(strings, RealCoeffs.from_size(2))
+    real_data = TermData(strings, RealCoeffs(size=2))
     assert_type(real_data.coeffs[0], float)
     assert_type(real_data.coeff_type, type[float])
     assert_type(_first_coeff(real_data), float)
@@ -420,7 +420,7 @@ def test_zfs_concrete_term_data() -> None:
 
 
 def test_storage_rejects_foreign_string_family() -> None:
-    data = TermData(zqs.Strings(2, size=1), RealCoeffs.from_size(1))
+    data = TermData(zqs.Strings(2, size=1), RealCoeffs(size=1))
     with pytest.raises(TypeError):
         zqo.RealTerm._view(data, 0)  # type: ignore[arg-type]
 
@@ -428,14 +428,14 @@ def test_storage_rejects_foreign_string_family() -> None:
 @pytest.mark.parametrize("n_strings,n_coeffs", [(0, 1), (1, 0), (1, 2), (2, 1)])
 def test_term_data_rejects_mismatched_lengths(n_strings: int, n_coeffs: int) -> None:
     strings = zqo.Strings(2, size=n_strings)
-    coeffs = RealCoeffs.from_size(n_coeffs)
+    coeffs = RealCoeffs(size=n_coeffs)
     with pytest.raises(ValueError, match="strings and coefficients must have equal lengths"):
         TermData(strings, coeffs)
 
 
 def test_term_data_checks_view_lengths() -> None:
     strings = zqo.Strings(2, size=3)
-    coeffs = RealCoeffs.from_size(4)
+    coeffs = RealCoeffs(size=4)
     data = TermData(strings[::2], coeffs[1::2])
     assert len(data) == 2
     assert len(TermData(strings[:0], coeffs[:0])) == 0

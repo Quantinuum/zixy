@@ -1,4 +1,4 @@
-"""Set membership checks string keys or complete term values through the lookup map."""
+"""String-keyed lookup and complete-term membership use the same lookup map."""
 
 import pytest
 from sympy import sympify
@@ -68,7 +68,7 @@ def test_membership_rejects_out_of_range_specifiers(family_strings):
         assert invalid not in collection
         assert strings[0] in collection
         with pytest.raises((IndexError, ValueError)):
-            collection.lookup(invalid)
+            collection.lookup_index(invalid)
         assert collection.to_dict() == before
 
 
@@ -90,6 +90,20 @@ def test_membership_rejects_invalidated_views(family_strings):
         if not isinstance(collection, family.StringSet):
             assert term_view not in collection
         assert collection.to_dict() == before
+
+
+def test_string_set_lookup_index(family_strings):
+    family, space, specs, strings = family_strings
+    collection = family.StringSet.from_strings(strings)
+    for index, (spec, string) in enumerate(zip(specs, strings, strict=True)):
+        assert collection.lookup_index(key=spec) == index
+        assert collection.lookup_index(string.clone()) == index
+    assert collection.lookup_index(family.String(space)) is None
+    with pytest.raises(TypeError):
+        collection.lookup_index(object())
+    with pytest.raises(ValueError):
+        collection.lookup_index(family.String(3))
+    assert not hasattr(collection, "lookup")
 
 
 @pytest.mark.parametrize("suffix", ["TermSet", "TermSum"])
@@ -166,6 +180,72 @@ def test_root_of_unity_membership(family, prefix, coefficient, different):
     assert next(iter(collection)) in collection
     assert term_type.from_string(term.string, different) not in collection
     assert term_type.from_string(term.string, different).string in collection
+    assert collection.get(term.string) == coefficient
+    assert collection.get(term_type.from_string(term.string, different)) == coefficient
+    assert collection.lookup_index(term) == 0
+    missing_spec = "X0" if family is zqo else "F0" if family is zfon else "[1, 0]"
+    missing = family.String(2, missing_spec)
+    marker = object()
+    assert collection.get(missing) is None
+    assert collection.get(missing, 0.0) == 0.0
+    assert collection.get(missing, marker) is marker
+    with pytest.raises(KeyError):
+        _ = collection[missing]
+
+
+@pytest.mark.parametrize("suffix", ["TermSet", "TermSum"])
+@pytest.mark.parametrize(
+    ("prefix", "coefficient", "different"),
+    [("Real", 2.0, 3.0), ("Complex", 2j, -2j), ("Symbolic", sympify("x"), sympify("y"))],
+)
+def test_term_get_and_index_lookup(family_strings, suffix, prefix, coefficient, different):
+    family, space, specs, strings = family_strings
+    collection_type = getattr(family, prefix + suffix)
+    term_type = collection_type.terms_type.term_type
+    term = term_type.from_string(strings[0], coefficient)
+    collection = collection_type.from_terms(collection_type.terms_type.from_iterable([term], space))
+    marker = object()
+    before = collection.to_dict()
+
+    for key in (specs[0], strings[0], term, term_type.from_string(strings[0], different)):
+        assert collection.lookup_index(key=key) == 0
+        assert collection.get(key=key) == coefficient
+        assert collection.get(key, default=marker) == coefficient
+        assert collection[key] == coefficient
+    for missing in (specs[1], strings[1], term_type.from_string(strings[1], coefficient)):
+        assert collection.lookup_index(missing) is None
+        assert collection.get(missing) is None
+        assert collection.get(missing, None) is None
+        assert collection.get(missing, default=marker) is marker
+        assert collection.get(missing, "absent") == "absent"
+        assert collection.get(missing, 0.0) == 0.0
+        with pytest.raises(KeyError):
+            _ = collection[missing]
+    with pytest.raises(TypeError):
+        collection.get(object(), marker)
+    with pytest.raises(ValueError):
+        collection.get(family.String(3), marker)
+    assert collection.to_dict() == before
+    assert not hasattr(collection, "lookup")
+    assert not hasattr(collection, "lookup_coeff")
+
+
+@pytest.mark.parametrize("suffix", ["TermSet", "TermSum"])
+@pytest.mark.parametrize("prefix", ["Real", "Complex", "Symbolic"])
+def test_get_preserves_stored_zero(family_strings, suffix, prefix):
+    family, space, _, strings = family_strings
+    collection_type = getattr(family, prefix + suffix)
+    term_type = collection_type.terms_type.term_type
+    kwargs = {"max_string_len": strings.max_string_len} if family is zfog else {}
+    collection = collection_type(space, **kwargs)
+    coefficient = sympify(0) if prefix == "Symbolic" else 0.0
+    collection.insert(term_type.from_string(strings[0], coefficient))
+    marker = object()
+
+    assert collection.lookup_index(strings[0]) == 0
+    assert collection.get(strings[0], marker) == coefficient
+    assert collection[strings[0]] == coefficient
+    assert collection.get(strings[1], marker) is marker
 
 
 def test_membership_rejects_other_families(family_strings):
@@ -198,12 +278,18 @@ def test_membership_checks_space_metadata(family_strings):
     strings.insert(string)
     assert string in strings
     assert foreign_string not in strings
+    with pytest.raises(ValueError):
+        strings.lookup_index(foreign_string)
     for collection_type in (family.RealTermSet, family.RealTermSum):
         collection = collection_type(space)
         collection.insert(term)
         assert term in collection
         assert foreign_string not in collection
         assert foreign_term not in collection
+        with pytest.raises(ValueError):
+            collection.lookup_index(foreign_term)
+        with pytest.raises(ValueError):
+            collection.get(foreign_term, object())
 
 
 def test_membership_does_not_convert_coefficients():
@@ -218,6 +304,30 @@ def test_membership_does_not_convert_coefficients():
     assert different != stored
     assert different not in collection
     assert different.string in collection
+    assert collection.lookup_index(different) == 0
+    assert collection.get(different) == 2.0
+    assert collection[different] == 2.0
+
+
+@pytest.mark.parametrize("operation", ["get", "getitem", "lookup_index"])
+def test_coefficient_lookup_uses_one_map_lookup(operation, monkeypatch):
+    collection = zqo.RealTermSet.from_iterable([("X0", 2.0)], 2)
+    lookup_index = zqo.StringSet.lookup_index
+    lookups = 0
+
+    def count_lookup(self, key):
+        nonlocal lookups
+        lookups += 1
+        return lookup_index(self, key)
+
+    monkeypatch.setattr(zqo.StringSet, "lookup_index", count_lookup)
+    if operation == "get":
+        assert collection.get("X0") == 2.0
+    elif operation == "getitem":
+        assert collection["X0"] == 2.0
+    else:
+        assert collection.lookup_index("X0") == 0
+    assert lookups == 1
 
 
 @pytest.mark.parametrize("collection_type", [zqo.StringSet, zqo.RealTermSet, zqo.RealTermSum])

@@ -31,16 +31,16 @@ def test_bulk_copy_and_collection(domain, keys, kwargs, name):
     data = [(keys[0], 1), (keys[1], 0), (keys[2], 1e-20), (keys[0], 2)]
     source = cls.from_iterable(data, 3, **kwargs)
     assert len(source) == 3
-    assert source.lookup_coeff(keys[0]) == (3 if name.endswith("Sum") else 2)
+    assert source.get(keys[0]) == (3 if name.endswith("Sum") else 2)
     before = snapshot(source)
     for nonzero in (False, True):
         copy = source.filter_nonzero() if nonzero else source.clone()
         assert snapshot(copy) == [(key, c) for key, c in before if not nonzero or c != 0]
         for key, c in snapshot(copy):
-            assert copy.lookup_coeff(key) == c
+            assert copy.get(key) == c
         copy.remove(keys[0])
         copy.insert((keys[0], 7))
-        assert copy.lookup_coeff(keys[0]) == 7
+        assert copy.get(keys[0]) == 7
         assert snapshot(source) == before
     # Construction from a sliced array must not copy unselected terms.
     terms = source.to_terms()
@@ -82,12 +82,12 @@ def test_bulk_addition(cls):
     assert snapshot(lhs) == snapshot(cls.from_iterable([("X0", 1), ("X1", 3), ("Z1", 1e-20)], 2))
     assert snapshot(rhs) == rhs_before
     lhs += lhs
-    assert lhs.lookup_coeff("X0") == 2
-    assert lhs.lookup_coeff("X1") == 6
+    assert lhs.get("X0") == 2
+    assert lhs.get("X1") == 6
     lhs -= lhs
     assert len(lhs) == 0
     lhs.insert(("Z0", 4))
-    assert lhs.lookup_coeff("Z0") == 4
+    assert lhs.get("Z0") == 4
     with pytest.raises(ValueError):
         lhs += cls.from_iterable([("X0", 1)], 3)
 
@@ -109,7 +109,7 @@ def test_product_preserves_lengths_and_lookup(cls):
     )
     assert snapshot(product) == snapshot(expected)
     for key, coeff in snapshot(expected):
-        assert product.lookup_coeff(key) == coeff
+        assert product.get(key) == coeff
 
 
 @pytest.mark.parametrize("domain,keys,kwargs", DOMAINS)
@@ -158,21 +158,21 @@ def test_required_numeric_bulk_api(domain, keys, kwargs, name, monkeypatch):
     assert len(lhs.clone()) == 2
     assert len(lhs.filter_nonzero()) == 2
     constructed = cls.from_iterable([(keys[0], 1), (keys[0], 2)], 3, **kwargs)
-    assert constructed.lookup_coeff(keys[0]) == 3
+    assert constructed.get(keys[0]) == 3
     copied = cls.from_terms(array[::-1])
-    assert copied.lookup_coeff(keys[0]) == 4
-    assert copied.lookup_coeff(keys[1]) == 2
+    assert copied.get(keys[0]) == 4
+    assert copied.get(keys[1]) == 2
     assert copied == cls.from_iterable(array[::-1], 3, **kwargs)
     assert copied == cls.from_str(str(array[::-1]), 3, **kwargs)
     # String and coefficient views can also be nested inside an owning Terms.
     nested = cls.terms_type._create(TermData(array.strings[::-1], array.coeffs[::-1]))
     assert snapshot(cls.from_terms(nested)) == snapshot(copied)
     lhs += rhs
-    assert lhs.lookup_coeff(keys[0]) is None
-    assert lhs.lookup_coeff(keys[1]) == 3
-    assert lhs.lookup_coeff(keys[2]) == 4
+    assert lhs.get(keys[0]) is None
+    assert lhs.get(keys[1]) == 3
+    assert lhs.get(keys[2]) == 4
     lhs += lhs
-    assert lhs.lookup_coeff(keys[1]) == 6
+    assert lhs.get(keys[1]) == 6
     lhs -= lhs
     assert len(lhs) == 0
     lhs += cls(3, **kwargs)
@@ -185,9 +185,9 @@ def test_general_bulk_addition_different_storage_layouts(cls):
     rhs = cls.from_iterable([("F1^", 3), ("F2 F1^", 4)], 3, max_string_len=128)
     lhs += rhs
     assert len(lhs) == 2
-    assert lhs.lookup_coeff("F1^") == 5
-    assert lhs.lookup_coeff("F2 F1^") == 4
-    assert rhs.lookup_coeff("F1^") == 3
+    assert lhs.get("F1^") == 5
+    assert lhs.get("F2 F1^") == 4
+    assert rhs.get("F1^") == 3
     # Validate all source strings before mutating the destination.
     bad = cls.from_iterable([("F1^", 10), ("F1^ " * 6, 1)], 3, max_string_len=128)
     before = snapshot(lhs)

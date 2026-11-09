@@ -44,13 +44,13 @@ def test_filter_nonzero_preserves_order_and_independence(kind, pattern):
     assert [(str(t.string), t.coeff) for t in result] == expected
     assert [(str(t.string), t.coeff) for t in source] == before
     for key, coeff in expected:
-        assert result.lookup_coeff(key) == coeff
+        assert result.get(key) == coeff
     if expected:
         result.remove(expected[0][0])
         assert expected[0][0] not in result
         assert expected[0][0] in source
     result.insert(("new", nonzero))
-    assert result.lookup_coeff("new") == nonzero
+    assert result.get("new") == nonzero
     assert "new" not in source
 
 
@@ -219,7 +219,7 @@ def test_term_sum_from_terms_accumulates_duplicates(cls, values, slices):
     assert result.strings.is_owning()
     assert result.coeffs.is_owning()
     for key, coeff in expected.items():
-        assert result.lookup_coeff(key) == coeff
+        assert result.get(key) == coeff
     assert [(str(term.string), term.coeff) for term in source] == before
     if expected:
         key = next(iter(expected))

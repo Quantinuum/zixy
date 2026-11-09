@@ -85,18 +85,18 @@ def test_keys_include_length_and_ignore_capacity():
     assert small == large
     for index, spec in enumerate(values):
         source = zfog.String(2, spec, max_string_len=256)
-        assert small.lookup(source) == index
+        assert small.lookup_index(source) == index
         assert small.insert(source) == index
     with pytest.warns(UserWarning) as caught:
         small.insert([(1, True)] * 65)
     assert len(caught) == 1
     for index, spec in enumerate(values):
-        assert small.lookup(spec) == index
+        assert small.lookup_index(spec) == index
     small.remove("F0")  # Pop-and-swap moves the newly added long string.
-    assert small.lookup([(1, True)] * 65) == 1
-    assert small.lookup("F0") is None
-    assert small.lookup("") == 0
-    assert small.lookup("F0 F0") == 2
+    assert small.lookup_index([(1, True)] * 65) == 1
+    assert small.lookup_index("F0") is None
+    assert small.lookup_index("") == 0
+    assert small.lookup_index("F0 F0") == 2
     assert small.max_string_len == 65
 
 
@@ -222,5 +222,7 @@ def test_sum_preallocation_is_silent_and_refreshes_keys():
     assert left.max_string_len == 1
     assert list(added.coeffs) == [2.0, 4.0]
     assert list(subtracted.coeffs) == [2.0, -4.0]
-    assert added.lookup("F0") == (0, 2.0)
-    assert added.lookup("F0 F1") == (1, 4.0)
+    assert added.lookup_index("F0") == 0
+    assert added.get("F0") == 2.0
+    assert added.lookup_index("F0 F1") == 1
+    assert added.get("F0 F1") == 4.0

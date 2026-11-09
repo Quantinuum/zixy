@@ -67,7 +67,7 @@ def test_apply_coefficient_combinations(
     result = operator.apply(state)
 
     assert type(result) is result_type
-    assert result.lookup_coeff("[1]") == coeff
+    assert result.get("[1]") == coeff
 
 
 @pytest.mark.parametrize(
@@ -86,7 +86,7 @@ def test_symbolic_apply_pauli_actions(pauli, ket, result_string, coeff):
 
     result = operator.apply(state)
 
-    assert result.lookup_coeff(result_string) == coeff * Symbol("a") * Symbol("b")
+    assert result.get(result_string) == coeff * Symbol("a") * Symbol("b")
 
 
 @pytest.mark.parametrize(
@@ -111,8 +111,8 @@ def test_apply_consolidates_duplicate_outputs():
     result = operator.apply(state)
 
     assert len(result) == 1
-    assert result.lookup_coeff("[0]") == 2
-    assert result.lookup_coeff("[1]") is None
+    assert result.get("[0]") == 2
+    assert result.get("[1]") is None
 
 
 @pytest.mark.parametrize(

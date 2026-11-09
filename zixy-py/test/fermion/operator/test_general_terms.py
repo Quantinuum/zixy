@@ -33,7 +33,7 @@ def test_numeric_product_retains_rust_map(term_sum_type, empty_side, monkeypatch
     assert result.coeffs.is_owning()
     assert len(result._string_set._map) == len(result)
     for term in expected:
-        assert result.lookup_coeff(term.string) == term.coeff
+        assert result.get(term.string) == term.coeff
         index, inserted = result.soft_insert(term)
         assert not inserted
         assert result._impl.coeffs[index] == term.coeff
@@ -350,7 +350,8 @@ def test_real_term_into_other_types():
     assert term_set.insert(("F1 F0^", 3.0)) == 0
     assert len(term_set) == 2
     assert term_set["F1 F0^"] == 3.0
-    assert term_set.lookup("F2") == (1, -1.0)
+    assert term_set.lookup_index("F2") == 1
+    assert term_set.get("F2") == -1.0
     assert "F2" in term_set
 
     terms = term_set.to_terms()

@@ -67,6 +67,36 @@ def test_coefficient_extend_iterable_inference() -> None:
     assert list(reals) == [1.0, 2.0, 1.0, 1.0, 2.0, 1.0]
 
 
+def test_coefficient_lookup_inference() -> None:
+    class Missing:
+        pass
+
+    real = zqo.RealTermSet.from_iterable([("X0", 2.0)], 2)
+    complex_ = zqo.ComplexTermSum(2)
+    signs = zqo.SignTermSet(2)
+    phases = zqo.ComplexSignTermSet(2)
+    symbolic = zqo.SymbolicTermSum(2)
+    marker = Missing()
+    query = zqo.ComplexTerm(2, ("X0", 2 + 1j))
+    assert_type(real.get("X0"), float | None)
+    assert_type(real.get("X0", None), float | None)
+    assert_type(real.get("X0", 0.0), float)
+    assert_type(real.get("X0", "missing"), float | str)
+    assert_type(real.get("X0", marker), float | Missing)
+    assert_type(real.get(query), float | None)
+    assert_type(real[query], float)
+    assert_type(real.lookup_index(query), int | None)
+    assert_type(zqo.StringSet(2).lookup_index("X0"), int | None)
+    assert_type(complex_.get("X0"), complex | None)
+    assert_type(signs.get("X0"), Sign | None)
+    assert_type(signs.get("X0", 0.0), Sign | float)
+    assert_type(phases.get("X0"), ComplexSign | None)
+    assert_type(symbolic.get("X0"), Expr | None)
+    assert_type(symbolic.get("X0", "missing"), Expr | str)
+    assert real.get(query) == 2.0
+    assert real.get("Y0", marker) is marker
+
+
 def _scalar_from_value[T: RootOfUnity](cls: type[T], value: int | float | complex) -> T:
     return cls.from_scalar(value)
 

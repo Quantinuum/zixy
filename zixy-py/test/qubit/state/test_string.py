@@ -136,6 +136,6 @@ def test_strings_from_iterable():
     with pytest.raises(ValueError, match="different qubit spaces"):
         string_set.insert(wrong_qubits)
     with pytest.raises(ValueError, match="different qubit spaces"):
-        string_set.lookup(wrong_qubits)
+        string_set.lookup_index(wrong_qubits)
     with pytest.raises(ValueError, match="different qubit spaces"):
         string_set.remove(wrong_qubits)

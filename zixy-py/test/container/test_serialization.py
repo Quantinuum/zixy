@@ -684,17 +684,17 @@ def test_term_serialization_rebuilds_map(family, prefix, container, term_space_k
     coeff = source.coeffs[0]
     size = len(source)
     assert restored.lookup_index(key) == 0
-    assert restored.lookup_coeff(key) == coeff
+    assert restored.get(key) == coeff
 
     replacement = -unit(source.coeff_type)
     restored.insert((key, replacement))
-    assert restored.lookup_coeff(key) == replacement
+    assert restored.get(key) == replacement
     assert len(restored) == size
     restored.remove(key)
     assert restored.lookup_index(key) is None
     assert len(restored) == size - 1
     restored.insert((key, coeff))
-    assert restored.lookup_coeff(key) == coeff
+    assert restored.get(key) == coeff
     assert len(restored) == size
     assert source.to_dict() == expected
 
@@ -724,8 +724,8 @@ def test_term_deserialization_duplicate_strings(family, prefix, container, forma
         expected += terms.coeffs[0]
     assert type(restored) is cls
     assert len(restored) == 2
-    assert restored.lookup_coeff(terms.strings[0]) == expected
-    assert restored.lookup_coeff(terms.strings[2]) == terms.coeffs[2]
+    assert restored.get(terms.strings[0]) == expected
+    assert restored.get(terms.strings[2]) == terms.coeffs[2]
     assert terms.to_dict() == before
 
 

@@ -33,6 +33,12 @@ def test_qubit_operator_assignment_contract() -> None:
     expected = zqo.String(2, specs[0])
     source = zqo.RealTerm(2, (expected, 2.0))
 
+    membership = zqo.RealTermSet.from_terms(zqo.RealTerms.from_iterable([source], 2))
+    assert_type(source in membership, bool)
+    assert_type(expected in membership, bool)
+    assert_type("X0" in membership, bool)
+    assert_type(object() in membership, bool)
+
     # The same domain specifications work through construction and every mutation path.
     for spec in specs:
         string = DerivedString(2, spec)
@@ -47,7 +53,7 @@ def test_qubit_operator_assignment_contract() -> None:
         assert strings[0] == expected
         string_set = zqo.StringSet(2)
         assert string_set.insert(spec) == 0
-        assert string_set.contains(expected)
+        assert expected in string_set
         term = DerivedTerm(2, spec)
         assert term.string == expected and term.coeff == 1.0
         term.set((spec, 2.0))
@@ -184,7 +190,7 @@ def test_qubit_state_assignment_contract() -> None:
         assert strings[0] == expected
         string_set = zqs.StringSet(2)
         assert string_set.insert(spec) == 0
-        assert string_set.contains(expected)
+        assert expected in string_set
         term = DerivedTerm(2, spec)
         assert term.string == expected and term.coeff == 1.0
         term.set((spec, 2.0))
@@ -320,7 +326,7 @@ def test_fermion_general_assignment_contract() -> None:
         assert strings[0] == expected
         string_set = zfog.StringSet(2, max_string_len=2)
         assert string_set.insert(spec) == 0
-        assert string_set.contains(expected)
+        assert expected in string_set
         term = DerivedTerm(2, spec)
         assert term.string == expected and term.coeff == 1.0
         term.set((spec, 2.0))
@@ -451,7 +457,7 @@ def test_fermion_normal_assignment_contract() -> None:
         assert strings[0] == expected
         string_set = zfon.StringSet(2)
         assert string_set.insert(spec) == 0
-        assert string_set.contains(expected)
+        assert expected in string_set
         term = DerivedTerm(2, spec)
         assert term.string == expected and term.coeff == 1.0
         term.set((spec, 2.0))
@@ -588,7 +594,7 @@ def test_fermion_state_assignment_contract() -> None:
         assert strings[0] == expected
         string_set = zfs.StringSet(2)
         assert string_set.insert(spec) == 0
-        assert string_set.contains(expected)
+        assert expected in string_set
         term = DerivedTerm(2, spec)
         assert term.string == expected and term.coeff == 1.0
         term.set((spec, 2.0))

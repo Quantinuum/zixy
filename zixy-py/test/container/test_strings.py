@@ -100,11 +100,11 @@ def test_string_array_filter_map():
 def test_string_set():
     s = StringSet()
     assert len(s) == 0
-    assert not s.contains("hello")
+    assert "hello" not in s
     assert s.insert("hello") == 0
     assert s.insert("hello") == 0
     assert len(s) == 1
-    assert s.contains("hello")
+    assert "hello" in s
     assert s.insert("world") == 1
     assert len(s) == 2
     assert s._map == {"hello": 0, "world": 1}

@@ -351,7 +351,7 @@ def test_real_term_into_other_types():
     assert len(term_set) == 2
     assert term_set["F1 F0^"] == 3.0
     assert term_set.lookup("F2") == (1, -1.0)
-    assert term_set.contains("F2")
+    assert "F2" in term_set
 
     terms = term_set.to_terms()
     assert type(terms) is zfog.RealTerms
@@ -359,7 +359,7 @@ def test_real_term_into_other_types():
     assert type(term_set.into(zfog.ComplexTermSet)) is zfog.ComplexTermSet
 
     assert term_set.remove("F1 F0^") == 0
-    assert not term_set.contains("F1 F0^")
+    assert "F1 F0^" not in term_set
     with pytest.raises(KeyError):
         term_set.remove("F1 F0^")
 

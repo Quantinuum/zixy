@@ -14,6 +14,123 @@ from zixy.container.coeffs import (
 )
 
 
+@pytest.fixture(
+    params=[
+        (RealCoeffs, [1.0, -2.0, 3.0, -4.0]),
+        (ComplexCoeffs, [1 + 2j, -3j, 4 - 1j, 5 + 0j]),
+        (SignCoeffs, [Sign.from_scalar(value) for value in [1, -1, -1, 1]]),
+        (ComplexSignCoeffs, [ComplexSign.from_scalar(value) for value in [1, 1j, -1, -1j]]),
+        (SymbolicCoeffs, [sympify(value) for value in ["x", "y", "2*x", "1"]]),
+    ],
+    ids=["real", "complex", "sign", "complex_sign", "symbolic"],
+)
+def extension_coeffs(request):
+    cls, values = request.param
+    return cls.from_iterable(values)
+
+
+@pytest.mark.parametrize(
+    "source_form", ["collection", "view", "list", "tuple", "iterator", "generator"]
+)
+def test_extend_copies_iterable_contents(extension_coeffs, source_form):
+    original = list(extension_coeffs)
+    source = extension_coeffs[::-1][::2] if source_form == "view" else extension_coeffs
+    expected = list(source)
+    if source_form == "list":
+        source = list(source)
+    elif source_form == "tuple":
+        source = tuple(source)
+    elif source_form == "iterator":
+        source = iter(source)
+    elif source_form == "generator":
+        source = (value for value in source)
+    destination = type(extension_coeffs).from_iterable(original[:1])
+
+    assert destination.extend(source=source) is None
+    assert list(destination) == original[:1] + expected
+    assert list(extension_coeffs) == original
+    extension_coeffs[0] = original[1]
+    assert list(destination) == original[:1] + expected
+
+
+@pytest.mark.parametrize(
+    "indexer",
+    [None, slice(None), slice(1, 3), slice(None, None, -1), slice(None, None, 2), slice(0, 0)],
+)
+@pytest.mark.parametrize("source_form", ["collection", "iterator", "generator"])
+def test_extend_self_and_overlapping_views(extension_coeffs, indexer, source_form):
+    original = list(extension_coeffs)
+    source = extension_coeffs if indexer is None else extension_coeffs[indexer]
+    expected = original + list(source)
+    if source_form == "iterator":
+        source = iter(source)
+    elif source_form == "generator":
+        source = (value for value in source)
+
+    assert extension_coeffs.extend(source) is None
+    assert list(extension_coeffs) == expected
+
+
+@pytest.mark.parametrize("indexer", [slice(None), slice(0, 0), slice(None, None, -1)])
+@pytest.mark.parametrize("empty_source", [False, True])
+def test_extend_rejects_view_before_consuming_source(extension_coeffs, indexer, empty_source):
+    view = extension_coeffs[indexer]
+    before = list(extension_coeffs)
+    consumed = False
+
+    def generate():
+        nonlocal consumed
+        consumed = True
+        if not empty_source:
+            yield extension_coeffs[0]
+
+    with pytest.raises(ValueError, match="Cannot call extend on a non-owning view"):
+        view.extend(generate())
+    assert not consumed
+    assert list(extension_coeffs) == before
+    with pytest.raises(ValueError, match="Cannot call extend on a non-owning view"):
+        view.extend([])
+
+
+def test_extend_empty_owner(extension_coeffs):
+    destination = type(extension_coeffs)()
+    assert destination.extend(destination) is None
+    assert destination.extend(iter(())) is None
+    assert list(destination) == []
+    expected = list(extension_coeffs)
+    assert destination.extend(extension_coeffs) is None
+    assert list(destination) == expected
+
+
+@pytest.mark.parametrize("cls", [RealCoeffs, ComplexCoeffs, SignCoeffs, ComplexSignCoeffs])
+@pytest.mark.parametrize("source_kind", ["self", "external", "shared_owner"])
+def test_extend_preserves_native_bulk_paths(cls, source_kind, monkeypatch):
+    destination = cls(size=2)
+    destination[0] = convert(-1, cls.coeff_type)
+    if source_kind == "self":
+        source = destination
+    elif source_kind == "shared_owner":
+        source = cls._create(destination._impl)
+    else:
+        source = cls(size=3)
+    expected = list(destination) + list(source)
+
+    def reject_elementwise_append(value):
+        raise AssertionError("Compatible owning coefficient vectors must use bulk extension.")
+
+    monkeypatch.setattr(destination, "append", reject_elementwise_append)
+    assert destination.extend(source) is None
+    assert list(destination) == expected
+
+
+def test_extend_compatible_numeric_containers():
+    source = RealCoeffs.from_iterable([1.5, -2.0])
+    destination = ComplexCoeffs.from_iterable([3j])
+    assert destination.extend(source) is None
+    assert list(destination) == [3j, 1.5 + 0j, -2.0 + 0j]
+    assert list(source) == [1.5, -2.0]
+
+
 @pytest.mark.parametrize(
     ("cls", "values"),
     [

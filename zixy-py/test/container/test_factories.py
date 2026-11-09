@@ -43,6 +43,96 @@ def family_case(request):
 
 
 @pytest.mark.parametrize("kind", ["strings", "terms"])
+@pytest.mark.parametrize(
+    "indexer",
+    [None, slice(None), slice(1, None), slice(None, None, -1), slice(None, None, 2), slice(0, 0)],
+)
+@pytest.mark.parametrize("source_form", ["collection", "iterator", "generator"])
+def test_extend_self_and_overlapping_views(family_case, kind, indexer, source_form):
+    _, strings, terms = family_case
+    destination = strings if kind == "strings" else terms
+    original = [str(item) for item in destination]
+    original_space = destination.to_dict()["space"]
+    source = destination if indexer is None else destination[indexer]
+    expected = original + [str(item) for item in source]
+    if source_form == "iterator":
+        source = iter(source)
+    elif source_form == "generator":
+        source = (item for item in source)
+
+    result = destination.extend(source)
+
+    assert result is destination
+    assert destination.is_owning()
+    assert [str(item) for item in destination] == expected
+    assert destination.to_dict()["space"] == original_space
+    if hasattr(destination, "max_string_len"):
+        assert destination.max_string_len == 64
+
+
+@pytest.mark.parametrize("kind", ["strings", "terms"])
+@pytest.mark.parametrize("empty_destination", [False, True])
+def test_extend_copies_visible_source_elements(family_case, kind, empty_destination):
+    _, strings, terms = family_case
+    backing = strings if kind == "strings" else terms
+    source = backing[::-1][::2]
+    destination = backing._new() if empty_destination else backing.clone()
+    before = [str(item) for item in destination]
+    source_values = [str(item) for item in source]
+
+    assert destination.extend(source) is destination
+    assert [str(item) for item in destination] == before + source_values
+
+    if kind == "strings":
+        source[0].clear()
+    else:
+        source[0].string.clear()
+        source[0].coeff = 9.0
+    assert [str(item) for item in destination] == before + source_values
+
+
+@pytest.mark.parametrize("kind", ["strings", "terms"])
+def test_extend_consumes_reused_generator_item_in_order(family_case, kind):
+    _, strings, terms = family_case
+    source = strings if kind == "strings" else terms
+    destination = source._new()
+    working = source.new_string() if kind == "strings" else source.new_term()
+    expected = [str(item) for item in source]
+
+    def generate():
+        for item in source:
+            working.set(item)
+            yield working
+
+    assert destination.extend(generate()) is destination
+    assert [str(item) for item in destination] == expected
+
+
+@pytest.mark.parametrize("kind", ["strings", "terms"])
+@pytest.mark.parametrize("indexer", [slice(None), slice(0, 0), slice(None, None, -1)])
+@pytest.mark.parametrize("empty_source", [False, True])
+def test_extend_rejects_view_before_consuming_source(family_case, kind, indexer, empty_source):
+    _, strings, terms = family_case
+    backing = strings if kind == "strings" else terms
+    view = backing[indexer]
+    before = backing.to_dict()
+    consumed = False
+
+    def generate():
+        nonlocal consumed
+        consumed = True
+        if not empty_source:
+            yield backing[0]
+
+    with pytest.raises(ValueError, match="Cannot call extend on a non-owning view"):
+        view.extend(generate())
+    assert not consumed
+    assert backing.to_dict() == before
+    with pytest.raises(ValueError, match="Cannot call extend on a non-owning view"):
+        view.extend([])
+
+
+@pytest.mark.parametrize("kind", ["strings", "terms"])
 @pytest.mark.parametrize("indexer", [slice(None), slice(0, 0), slice(None, None, -1)])
 def test_sequence_factories_preserve_ownership_and_configuration(family_case, kind, indexer):
     _, strings, terms = family_case

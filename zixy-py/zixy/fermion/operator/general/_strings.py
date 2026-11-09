@@ -390,7 +390,7 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
             out._impl._reserve_string_length(
                 max(map(_string_length, source), default=0), warn=False
             )
-        out.append_iterable(source)
+        out.extend(source)
         return out
 
     @classmethod

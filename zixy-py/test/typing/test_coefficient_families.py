@@ -46,6 +46,27 @@ def test_coefficient_iterable_inference() -> None:
     assert_type(DerivedCoeffs.from_iterable(source=iter([1.0, 2.0])), DerivedCoeffs)
 
 
+def test_coefficient_extend_iterable_inference() -> None:
+    class DerivedCoeffs(RealCoeffs):
+        pass
+
+    reals = DerivedCoeffs()
+    complexes = ComplexCoeffs()
+    signs = SignCoeffs()
+    phases = ComplexSignCoeffs()
+    symbols = SymbolicCoeffs()
+    assert_type(reals.extend(source=(value for value in [1.0, 2.0])), None)
+    assert_type(reals.extend(RealCoeffs(size=1)), None)
+    assert_type(complexes.extend(iter([1j, 2j])), None)
+    assert_type(complexes.extend(reals), None)
+    assert_type(signs.extend([Sign.from_scalar(-1)]), None)
+    assert_type(phases.extend((ComplexSign.from_scalar(1j),)), None)
+    assert_type(symbols.extend(iter([sympify("x")])), None)
+    assert_type(reals.extend(reals[::-1]), None)
+    assert_type(reals[0], float)
+    assert list(reals) == [1.0, 2.0, 1.0, 1.0, 2.0, 1.0]
+
+
 def _scalar_from_value[T: RootOfUnity](cls: type[T], value: int | float | complex) -> T:
     return cls.from_scalar(value)
 

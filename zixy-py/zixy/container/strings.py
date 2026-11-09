@@ -760,7 +760,7 @@ class Strings[ImplT: ImplArray, SpecT](
             of ``self`` according to ``f``.
         """
         out = self._new()
-        out.append_iterable(self.iter_filter_map(f))
+        out.extend(self.iter_filter_map(f))
         return out
 
     def filter_unique(self) -> Self:
@@ -781,7 +781,7 @@ class Strings[ImplT: ImplArray, SpecT](
     def filter_populated(self) -> Self:
         """Eagerly filter strings of ``self``, retaining only those that are not clear."""
         out = self._new()
-        out.append_iterable(self.iter_filter_populated())
+        out.extend(self.iter_filter_populated())
         return out
 
     @requires_ownership
@@ -815,14 +815,22 @@ class Strings[ImplT: ImplArray, SpecT](
         """
         return self.append_n(1, source)
 
-    def append_iterable(self, source: Iterable[SpecT | String[ImplT, SpecT]] = tuple()) -> Self:
-        """Append many values from an iterable source.
+    @requires_ownership
+    def extend(self, source: Iterable[SpecT | String[ImplT, SpecT]] = tuple()) -> Self:
+        """Append the elements of ``source`` to the end of ``self``.
 
         Args:
-            source: Iterable over any string specifiers.
+            source: Iterable of compatible strings or string specifiers.
+
+        Returns:
+            ``self`` with the source elements appended in iteration order.
+
+        Raises:
+            ValueError: If ``self`` is a non-owning view, including for an empty source.
 
         Note:
-            This method operates in-place.
+            This method operates in-place. Extending from ``self`` or an overlapping
+            view appends the original visible elements once, in source order.
         """
         for item in source:
             self.append(item)
@@ -846,5 +854,5 @@ class Strings[ImplT: ImplArray, SpecT](
             New instance of ``cls`` containing the strings specified by ``source``.
         """
         out = cls(*args, **kwargs)
-        out.append_iterable(source)
+        out.extend(source)
         return out

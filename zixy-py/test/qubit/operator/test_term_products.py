@@ -107,7 +107,7 @@ def test_sign_terms_canonicalize():
         (I, X, X),
     )
     terms = zqo.SignTerms(3)
-    terms.append_iterable(tuples)
+    terms.extend(tuples)
     imul_ops = terms.canonicalize_all()
     # check imul ops are done in the right order
     correct_ops = [

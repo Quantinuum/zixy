@@ -403,7 +403,7 @@ def test_real_terms():
 
 def test_complex_terms():
     terms = zfon.ComplexTerms(3)
-    terms.append_iterable(
+    terms.extend(
         (
             ("F0^ F1", 1 + 2j),
             ("F2", -1j),
@@ -422,9 +422,9 @@ def test_complex_terms():
         terms.into(zfon.RealTerms)
 
 
-def test_append_iterable():
+def test_extend():
     terms = zfon.RealTerms(4)
-    terms.append_iterable(
+    terms.extend(
         (
             ("F0^ F1", 2.0),
             ("F2", -1.0),

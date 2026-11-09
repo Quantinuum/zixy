@@ -184,7 +184,7 @@ def test_array_modification():
         (X, Y, Z, Z, I, X),
         (Y, Z, Z, I, X, Z),
     )
-    a.append_iterable(tuples)
+    a.extend(tuples)
     assert str(a) == "X0 Y1 Z2 Z3 Y4 X5, X0 Z1 Y2 X3, X0 Y1 Z2 Z3 X5, Y0 Z1 Z2 X4 Z5"
     # swap elements with inds 1 and 3
     a[1], a[3] = a[3].clone(), a[1].clone()
@@ -216,7 +216,7 @@ def test_pauli_counts():
         (Y, Z, Z, I, X, Z),
         (Z, I, Z, Z, Z, I),
     )
-    a.append_iterable(tuples)
+    a.extend(tuples)
     for string, tup in zip(a, tuples, strict=False):
         for p in (I, X, Y, Z):
             assert string.count(p) == tup.count(p)
@@ -233,7 +233,7 @@ def test_out_of_place_products():
         (X, Y, Z, Z, I, X),
         (Y, Z, Z, I, X, Z),
     )
-    a.append_iterable(tuples)
+    a.extend(tuples)
     compat_mat = a.compatibility_matrix()
     assert str(a[0]) == "X0 Y1 Z2 Z3 Y4 X5"
     assert str(a[1]) == "X0 Z1 Y2 X3"
@@ -254,7 +254,7 @@ def test_in_place_products():
         (X, Y, Z, Z, Y, X),
         (Y, Z, Z, I, X, X),
     )
-    a.append_iterable(tuples)
+    a.extend(tuples)
     assert len(a) == len(tuples)
     assert a[0].get_tuple() == tuples[0]
     assert a[0].imul_get_phase(a[1]) == ComplexSign(1)
@@ -270,7 +270,7 @@ def test_string_copy():
         (X, Y, Z, Z, I, X),
         (Y, Z, Z, I, X, Z),
     )
-    a.append_iterable(tuples)
+    a.extend(tuples)
     assert len(a) == len(tuples)
     assert a.clone() is not a
     assert a.clone() == a

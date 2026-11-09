@@ -444,14 +444,14 @@ def test_symbolic_terms():
     assert all(terms.try_to_complex().coeffs.np_array == [1j, 1, 1, 1, 1, 1, 1, 1, 4, 5])
 
 
-def test_append_iterable():
+def test_extend():
     n_qubit = 6
     tuples = (
         (X, Y, Z, Z, Y, X),
         (Y, Z, Z, I, X, Z),
     )
     a = zqo.RealTerms(n_qubit)
-    a.append_iterable(tuples)
+    a.extend(tuples)
     assert a[0].string.get_tuple() == (X, Y, Z, Z, Y, X)
     assert a[1].string.get_tuple() == (Y, Z, Z, I, X, Z)
     assert a[0].string.get_tuple() == (X, Y, Z, Z, Y, X)

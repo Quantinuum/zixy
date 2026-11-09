@@ -119,7 +119,7 @@ class Terms[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, E
             An independent owning instance of ``cls``.
         """
         out = cls(modes)
-        out.append_iterable(source)
+        out.extend(source)
         return out
 
 

@@ -117,7 +117,7 @@ def test_array_sizing():
         [(3, True)],
     )
 
-    strings.append_iterable(specs)
+    strings.extend(specs)
 
     assert len(strings) == len(specs)
     assert strings.max_string_len == 3

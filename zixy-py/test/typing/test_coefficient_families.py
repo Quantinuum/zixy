@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, assert_type
 
+import numpy as np
 import pytest
+from numpy.typing import NDArray
 from sympy import Expr, sympify
 
 import zixy.fermion.operator.general as zfog
@@ -44,6 +46,16 @@ def test_coefficient_iterable_inference() -> None:
     )
     assert_type(SymbolicCoeffs.from_iterable(source=iter([sympify("x")])), SymbolicCoeffs)
     assert_type(DerivedCoeffs.from_iterable(source=iter([1.0, 2.0])), DerivedCoeffs)
+    assert_type(DerivedCoeffs.from_iterable(source=iter([1 + 0j, 2 + 0j])), DerivedCoeffs)
+
+
+def test_numpy_conversion_inference() -> None:
+    assert_type(RealCoeffs().to_numpy(), NDArray[np.float64])
+    assert_type(ComplexCoeffs().to_numpy(), NDArray[np.complex128])
+    assert_type(SignCoeffs().to_numpy(), NDArray[np.int64])
+    assert_type(ComplexSignCoeffs().to_numpy(), NDArray[np.complex128])
+    assert_type(SymbolicCoeffs().to_numpy(), NDArray[np.float64] | NDArray[np.complex128])
+    assert_type(np.asarray(RealCoeffs(), dtype=np.float32), NDArray[np.float32])
 
 
 def test_coefficient_extend_iterable_inference() -> None:

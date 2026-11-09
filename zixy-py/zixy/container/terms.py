@@ -932,7 +932,7 @@ class NumericTerms[ImplT: ImplArray, SpecT, C: (float, complex)](Terms[ImplT, Sp
 
         Note:
             This method operates by comparing the NumPy arrays returned by
-            :attr:`~zixy.container.coeffs.Coeffs.np_array`.
+            :meth:`~zixy.container.coeffs.Coeffs.to_numpy`.
         """
         out: bool = self.strings == other.strings and self.coeffs.allclose(other.coeffs, rtol, atol)
         return out

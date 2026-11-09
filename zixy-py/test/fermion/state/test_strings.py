@@ -135,7 +135,7 @@ def test_mapped_insert():
         assert string_set.lookup(spec) is None
         assert string_set.insert(spec) == i
         assert string_set.lookup(spec) == i
-        assert string_set.contains(spec)
+        assert spec in string_set
 
     assert string_set.insert(specs[1]) == 1
     assert len(string_set) == len(specs)
@@ -168,7 +168,7 @@ def test_mapped_remove():
     string_set.insert_iterable(specs)
 
     assert string_set.remove(specs[1]) == 1
-    assert not string_set.contains(specs[1])
+    assert specs[1] not in string_set
 
     with pytest.raises(KeyError):
         string_set.remove({3})

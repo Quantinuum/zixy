@@ -39,7 +39,7 @@ def test_set():
         str(s) == "[0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1], [1, 0, 1, 0, 1, 0], [1, 0, 0, 1, 0, 0]"
     )
     assert s.remove((1,) * 6) == 1
-    assert not s.contains((1,) * 6)
+    assert (1,) * 6 not in s
     assert s.lookup("") == 0
     with pytest.raises(TypeError):
         s.insert(None)

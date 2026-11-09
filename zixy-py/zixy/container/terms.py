@@ -1380,16 +1380,25 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             return None
         return index, self._impl.coeffs[index]
 
-    def contains(self, value: SpecT | String[ImplT, SpecT] | Term[ImplT, SpecT, C]) -> bool:
-        """Check whether the string specified by ``value`` is stored in ``self``.
+    def __contains__(self, value: object) -> bool:
+        """Check whether a string key or complete term is stored in ``self``.
 
         Args:
-            value: The string specifier.
+            value: String, string specifier, or term to look up. Strings and string
+                specifiers test key membership; terms also require an equal coefficient.
 
         Returns:
-            Whether the lookup of ``value`` was successful.
+            Whether the key or complete term is present. Unsupported objects and
+            objects from incompatible families or spaces return ``False``. A missing
+            key is not a member, including when querying a zero-coefficient term.
         """
-        return self.lookup(value) is not None
+        if not isinstance(value, Term):
+            return value in self._string_set
+        try:
+            index = self._string_set.lookup(value.string)
+        except (TypeError, ValueError):
+            return False
+        return index is not None and self.terms_type.term_type._view(self._impl, index) == value
 
     def remove(self, value: SpecT | String[ImplT, SpecT] | Term[ImplT, SpecT, C]) -> int:
         """Try to remove the string specified by ``value`` from ``self``.

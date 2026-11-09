@@ -405,16 +405,20 @@ class StringSet[ImplT: ImplArray, SpecT](Representable, SerializableContainer):
         value = self._get_working_string(value)
         return self._impl.mapped_lookup(self._map, value._impl, value.index)
 
-    def contains(self, value: SpecT | String[ImplT, SpecT]) -> bool:
+    def __contains__(self, value: object) -> bool:
         """Check whether ``value`` is stored in ``self``.
 
         Args:
-            value: The string specifier.
+            value: String or string specifier to look up.
 
         Returns:
-            Whether the lookup of ``value`` was successful.
+            Whether the string is present. Unsupported objects and strings from
+            incompatible families or spaces return ``False``.
         """
-        return self.lookup(value) is not None
+        try:
+            return self.lookup(cast("SpecT | String[ImplT, SpecT]", value)) is not None
+        except (TypeError, ValueError):
+            return False
 
     def remove(self, value: SpecT | String[ImplT, SpecT]) -> int:
         """Try to remove ``value`` from ``self``.

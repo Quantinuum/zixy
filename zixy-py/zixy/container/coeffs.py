@@ -751,7 +751,7 @@ def typesafe_mul[C: (float, complex, Sign, ComplexSign, Expr)](lhs: C, rhs: Coef
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from numpy.typing import NDArray
+    from numpy.typing import DTypeLike, NDArray
 
     BaseVec = _zixy.BaseVec
 else:
@@ -767,6 +767,10 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
 
     A resizable vector-like container of coefficients that may be an owning instance referencing a
     contiguous Rust-bound data object, or a view on a slice of the elements in another collection.
+
+    Use :meth:`to_numpy` or :func:`numpy.asarray` to obtain an independent numeric array
+    containing only the visible elements. NumPy conversion does not share storage with
+    the coefficient vector, so ``copy=False`` is unsupported.
     """
 
     coeff_type: type[C]
@@ -1149,15 +1153,49 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
 
         return out
 
-    @property
     @abstractmethod
-    def np_array(self) -> NDArray[np.int64] | NDArray[np.float64] | NDArray[np.complex128]:
-        """The contents of ``self`` as a flat NumPy array copy.
+    def to_numpy(self) -> NDArray[np.int64] | NDArray[np.float64] | NDArray[np.complex128]:
+        """Return a flat NumPy array copy of the visible contents of ``self``.
 
         Returns:
-            NumPy array containing all elements of ``self``.
+            An independent one-dimensional NumPy array containing the visible elements
+            in iteration order.
         """
         pass
+
+    def __array__(self, dtype: DTypeLike | None = None, copy: bool | None = None) -> NDArray[Any]:
+        """Convert the visible coefficients through NumPy's array protocol.
+
+        Args:
+            dtype: Requested NumPy dtype, or ``None`` to use the native numeric dtype.
+            copy: Whether copying is allowed. ``None`` and ``True`` return independent
+                arrays; ``False`` is unsupported because conversion requires a copy.
+
+        Returns:
+            An independent one-dimensional NumPy array containing the visible elements
+            in iteration order, converted to the requested dtype if supplied.
+
+        Raises:
+            ValueError: Copying is forbidden, or a complex coefficient with a nonzero
+                imaginary part cannot be represented in a real numeric dtype.
+            TypeError: Symbolic coefficients cannot be evaluated numerically or the
+                requested dtype is unsupported.
+        """
+        if copy is False:
+            raise ValueError(
+                "Coefficient array conversion requires a copy; copy=False is unsupported."
+            )
+        array = self.to_numpy()
+        if dtype is None:
+            return array
+        requested_dtype = np.dtype(dtype)
+        if np.iscomplexobj(array) and requested_dtype.kind in "buif":
+            if np.any(array.imag != 0):
+                raise ValueError(
+                    "Cannot convert coefficients with nonzero imaginary parts to real."
+                )
+            array = array.real
+        return array.astype(requested_dtype, copy=False)
 
     def allclose(
         self, other: Coeffs[Any], rtol: float = DEFAULT_RTOL, atol: float = DEFAULT_ATOL
@@ -1174,13 +1212,13 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
 
         Note:
             This method operates by comparing the NumPy arrays returned by
-            :attr:`~zixy.container.coeffs.Coeffs.np_array`.
+            :meth:`~zixy.container.coeffs.Coeffs.to_numpy`.
         """
         if len(self) != len(other):
             return False
         if self is other:
             return True
-        return np.allclose(self.np_array, other.np_array, rtol=rtol, atol=atol)
+        return np.allclose(self.to_numpy(), other.to_numpy(), rtol=rtol, atol=atol)
 
     @classmethod
     def from_scalar(cls, coeff: C, n: int = 1) -> Self:
@@ -1223,7 +1261,7 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
             package_version=__version__,
             family="container",
             container=self.__class__.__name__,
-            coeffs=serialize_numpy_array(self.np_array),
+            coeffs=serialize_numpy_array(self.to_numpy()),
         )
 
 
@@ -1269,12 +1307,12 @@ class SignCoeffs(RootOfUnityCoeffs[Sign]):
         assert len(out) == len(source)
         return out
 
-    @property
-    def np_array(self) -> NDArray[np.int64]:
-        """The contents of ``self`` as a flat NumPy array copy.
+    def to_numpy(self) -> NDArray[np.int64]:
+        """Return a flat NumPy array copy of the visible contents of ``self``.
 
         Returns:
-            NumPy array containing all elements of ``self``.
+            An independent one-dimensional NumPy array containing the visible elements
+            in iteration order.
         """
         return np.array([int(s) for s in self], dtype=np.int64).ravel()
 
@@ -1324,12 +1362,12 @@ class ComplexSignCoeffs(RootOfUnityCoeffs[ComplexSign]):
         assert len(out) == len(source)
         return out
 
-    @property
-    def np_array(self) -> NDArray[np.complex128]:
-        """The contents of ``self`` as a flat NumPy array copy.
+    def to_numpy(self) -> NDArray[np.complex128]:
+        """Return a flat NumPy array copy of the visible contents of ``self``.
 
         Returns:
-            NumPy array containing all elements of ``self``.
+            An independent one-dimensional NumPy array containing the visible elements
+            in iteration order.
         """
         return np.array([complex(s) for s in self], dtype=np.complex128).ravel()
 
@@ -1378,7 +1416,7 @@ class NumericalCoeffs[C: (float, complex)](Coeffs[C]):
         Returns:
             Whether any element of ``self`` is significantly different from zero.
         """
-        return not np.allclose(self.np_array, 0, rtol=0, atol=atol)
+        return not np.allclose(self.to_numpy(), 0, rtol=0, atol=atol)
 
     @classmethod
     def from_iterable(cls, source: Iterable[C] | NDArray[np.inexact]) -> Self:
@@ -1397,6 +1435,15 @@ class NumericalCoeffs[C: (float, complex)](Coeffs[C]):
         return cls._create(cls.coeffs_type.from_array(values))
 
 
+def _real_from_scalar(value: float | complex) -> float:
+    """Convert a numeric scalar to real without discarding an imaginary part."""
+    if isinstance(value, complex | np.complexfloating):
+        if value.imag != 0:
+            raise ValueError("Cannot convert coefficients with nonzero imaginary parts to real.")
+        return float(value.real)
+    return float(value)
+
+
 class RealCoeffs(NumericalCoeffs[float]):
     """A collection of ``float``.
 
@@ -1409,6 +1456,37 @@ class RealCoeffs(NumericalCoeffs[float]):
 
     _impl: _zixy.RealVec
 
+    @classmethod
+    def from_iterable(cls, source: Iterable[float | complex] | NDArray[np.inexact]) -> Self:
+        """Create an owning real vector from an iterable of numeric coefficients.
+
+        Args:
+            source: Iterable of real or complex coefficients. Complex values are
+                accepted only when their imaginary parts are exactly zero.
+
+        Returns:
+            An independent owning instance containing the coefficients in source order.
+
+        Raises:
+            ValueError: A coefficient has a nonzero imaginary part or the source array
+                is not one-dimensional.
+            TypeError: A coefficient cannot be converted to a real number.
+        """
+        if isinstance(source, Sequence | np.ndarray):
+            values = np.asarray(source)
+            if values.ndim != 1:
+                raise ValueError("Coefficient arrays must be one-dimensional.")
+            if np.iscomplexobj(values):
+                if np.any(values.imag != 0):
+                    raise ValueError(
+                        "Cannot convert coefficients with nonzero imaginary parts to real."
+                    )
+                values = values.real
+            if values.dtype.kind != "O":
+                return super().from_iterable(values)
+            source = values
+        return super().from_iterable(_real_from_scalar(value) for value in source)
+
     def scale(self, scalar: Coeff) -> None:
         """Scale the viewed real coefficients in Rust."""
         if len(self):
@@ -1419,14 +1497,15 @@ class RealCoeffs(NumericalCoeffs[float]):
         if len(self):
             self._impl.fill_slice(self.slice, convert(coeff, float))
 
-    @property
-    def np_array(self) -> NDArray[np.float64]:
-        """The contents of ``self`` as a flat NumPy array copy.
+    def to_numpy(self) -> NDArray[np.float64]:
+        """Return a flat NumPy array copy of the visible contents of ``self``.
 
         Returns:
-            NumPy array containing all elements of ``self``.
+            An independent one-dimensional NumPy array containing the visible elements
+            in iteration order.
         """
-        return np.asarray(self._impl.to_array(), dtype=np.float64)[self.slice].ravel()
+        impl = self._impl if self.is_owning() else self._impl.copy_slice(self.slice)
+        return np.asarray(impl.to_array(), dtype=np.float64)
 
     @classmethod
     def from_dict(cls, source: SerializedContainer) -> Self:
@@ -1464,24 +1543,25 @@ class ComplexCoeffs(NumericalCoeffs[complex]):
         if len(self):
             self._impl.fill_slice(self.slice, convert(coeff, complex))
 
-    @property
-    def np_array(self) -> NDArray[np.complex128]:
-        """The contents of ``self`` as a flat NumPy array copy.
+    def to_numpy(self) -> NDArray[np.complex128]:
+        """Return a flat NumPy array copy of the visible contents of ``self``.
 
         Returns:
-            NumPy array containing all elements of ``self``.
+            An independent one-dimensional NumPy array containing the visible elements
+            in iteration order.
         """
-        return np.asarray(self._impl.to_array(), dtype=np.complex128)[self.slice].ravel()
+        impl = self._impl if self.is_owning() else self._impl.copy_slice(self.slice)
+        return np.asarray(impl.to_array(), dtype=np.complex128)
 
     @property
     def real_part(self) -> RealCoeffs:
         """The real part of ``self`` as a new instance of :class:`RealCoeffs`."""
-        return RealCoeffs.from_iterable(self.np_array.real)
+        return RealCoeffs.from_iterable(self.to_numpy().real)
 
     @property
     def imag_part(self) -> RealCoeffs:
         """The imaginary part of ``self`` as a new instance of :class:`RealCoeffs`."""
-        return RealCoeffs.from_iterable(self.np_array.imag)
+        return RealCoeffs.from_iterable(self.to_numpy().imag)
 
     @classmethod
     def from_dict(cls, source: SerializedContainer) -> Self:
@@ -1816,17 +1896,21 @@ class SymbolicCoeffs(Coeffs[Expr]):
 
     from_str.__doc__ = Coeffs.from_str.__doc__
 
-    @property
-    def np_array(self) -> NDArray[np.float64] | NDArray[np.complex128]:
-        """The contents of ``self`` as a flat NumPy array copy.
+    def to_numpy(self) -> NDArray[np.float64] | NDArray[np.complex128]:
+        """Return a flat NumPy array copy of the visible contents of ``self``.
 
         Returns:
-            NumPy array containing all elements of ``self``.
+            An independent one-dimensional NumPy array containing the visible elements
+            in iteration order.
+
+        Raises:
+            TypeError: A coefficient contains free symbols or cannot be evaluated as
+                a real or complex number.
         """
         try:
-            return self.try_to_real().np_array
+            return self.try_to_real().to_numpy()
         except TypeError:
-            return self.try_to_complex().np_array
+            return self.try_to_complex().to_numpy()
 
     def to_dict(self) -> SerializedContainer:
         """Return a JSON-serializable dictionary representation of ``self``.

@@ -260,16 +260,6 @@ class Strings(FermionStrings[ImplT, SpecT, ElemT]):
         return out
 
     @classmethod
-    def new(cls, modes: int | Modes = 0, *, size: int = 0) -> Self:
-        """Create a new instance with a given mode count and number of vacuum strings.
-
-        Args:
-            modes: Space of modes or a number of modes.
-            size: Number of default elements with which to create the instance.
-        """
-        return cls(modes, size=size)
-
-    @classmethod
     def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
         """Create an instance of ``cls`` from a string.
 

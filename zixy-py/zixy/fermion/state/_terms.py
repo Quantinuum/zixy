@@ -42,6 +42,7 @@ from zixy.container.data import TermData
 from zixy.container.terms import (
     NumericTerms,
     NumericTermSum,
+    SymbolicTermSum as SymbolicTermSumBase,
     TermSpecT,
 )
 from zixy.fermion._strings import _check_modes_compatibility
@@ -808,7 +809,7 @@ class SymbolicTermSet(TermSet[Expr]):
     terms_type = SymbolicTerms
 
 
-class SymbolicTermSum(TermSum[Expr]):
+class SymbolicTermSum(SymbolicTermSumBase[ImplT, SpecT], TermSum[Expr]):
     """A sum of terms consisting of state strings and symbolic coefficients.
 
     A set-like container of mode-based terms that may be used to store unique terms and perform
@@ -848,30 +849,6 @@ class SymbolicTermSum(TermSum[Expr]):
         out = zqs.SymbolicTermSum(qubits)
         for term in self:
             out += mapper_instance.apply(term.string.into(String)) * term.coeff
-        return out
-
-    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
-        """Apply a partial substitution of the symbols in-place.
-
-        Args:
-            values: Map from a symbol or symbol name to its new expression or numeric value.
-
-        Note:
-            This method operates in-place.
-        """
-        self.coeffs.isubs(values)
-
-    def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTermSum:
-        """Apply a partial substitution of the symbols out of place.
-
-        Args:
-            values: Map from a symbol or symbol name to its new expression or numeric value.
-
-        Returns:
-            A new contiguously stored instance with the substitution applied.
-        """
-        out = self.clone()
-        out.isubs(values)
         return out
 
 

@@ -39,7 +39,12 @@ from zixy.container.coeffs import (
     typesafe_mul,
 )
 from zixy.container.data import TermData
-from zixy.container.terms import NumericTerms, NumericTermSum, TermSpecT
+from zixy.container.terms import (
+    NumericTerms,
+    NumericTermSum,
+    SymbolicTermSum as SymbolicTermSumBase,
+    TermSpecT,
+)
 from zixy.qubit._strings import _check_qubits_compatibility
 from zixy.qubit._terms import (
     Term as TermBase,
@@ -840,7 +845,7 @@ class SymbolicTermSet(TermSet[Expr]):
     terms_type = SymbolicTerms
 
 
-class SymbolicTermSum(TermSum[Expr]):
+class SymbolicTermSum(SymbolicTermSumBase[QubitStateArray, StringSpec], TermSum[Expr]):
     """A sum of terms consisting of state strings and symbolic coefficients.
 
     A set-like container of qubit-based terms that may be used to store unique terms and perform

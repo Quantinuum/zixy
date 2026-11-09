@@ -264,6 +264,25 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
         Returns:
             A new owning instance of ``cls`` parsed from ``source``, with storage independent of
             the source dictionary and any existing containers.
+
+        Examples:
+            Each row in ``strings`` contains two lists: creation indices followed by
+            annihilation indices. The outer list contains one row per string. For
+            ``F0^ F1`` over two unlabelled modes:
+
+            >>> import zixy.fermion.operator.normal as zfon
+            >>> from zixy import __version__
+            >>> from zixy.container.base import __schema_version__
+            >>> data = {
+            ...     "schema_version": __schema_version__,
+            ...     "package_version": __version__,
+            ...     "family": "fermion.operator.normal",
+            ...     "container": "Strings",
+            ...     "space": {"modes": 2, "spin_ordering": None},
+            ...     "strings": [[[0], [1]]],
+            ... }
+            >>> str(zfon.Strings.from_dict(data))
+            'F0^ F1'
         """
         check_schema_version(source)
         space = _deserialize_modes(source["space"])

@@ -37,7 +37,6 @@ from zixy.qubit.operator._terms import (
     SymbolicTermSet,
     SymbolicTermSum,
 )
-
 from zixy._zixy import PauliMatrix, PauliSprings, SymplecticPart
 
 I = PauliMatrix.I  # noqa: E741

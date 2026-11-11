@@ -95,6 +95,9 @@ ignore = [
     "PLW2901",  # redefined-loop-name
 ]
 
+[tool.ruff.lint.flake8-type-checking]
+strict = true
+
 [tool.ruff.lint.per-file-ignores]
 "zixy/**/__init__.py" = [
     "I001",  # unsorted-imports

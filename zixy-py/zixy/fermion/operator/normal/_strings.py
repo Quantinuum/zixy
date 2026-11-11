@@ -30,13 +30,13 @@ from sympy import Expr
 from zixy._zixy import FermionSprings, Modes, NormalFermionOperatorArray
 from zixy.container.coeffs import Coeff, ComplexSign, Sign
 from zixy.fermion.operator._strings import (
-    LadderOp,
     String as OperatorString,
     Strings as OperatorStrings,
     StringSet as OperatorStringSet,
 )
 
 if TYPE_CHECKING:
+    from zixy.fermion.operator._strings import LadderOp
     from zixy.fermion.operator.normal._terms import RealTermSum, Term
 
 type StringSpec = str | tuple[Sequence[int] | Sequence[bool], Sequence[int] | Sequence[bool]]

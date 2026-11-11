@@ -20,18 +20,17 @@ operators, acting on a register of fermionic modes.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Self
-
-if TYPE_CHECKING:
-    from zixy._zixy import FermionArray
-
 from abc import abstractmethod
+from typing import TYPE_CHECKING, Self
 
 from zixy.fermion._strings import (
     String as FermionString,
     Strings as FermionStrings,
     StringSet as FermionStringSet,
 )
+
+if TYPE_CHECKING:
+    from zixy._zixy import FermionArray
 
 type LadderOp = tuple[int, bool]
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, assert_type
 
 import pytest
-from sympy import Expr, sympify
+from sympy import sympify
 
 import zixy.fermion.operator.general as zfog
 import zixy.fermion.operator.normal as zfon
@@ -12,6 +12,8 @@ import zixy.qubit.operator as zqo
 import zixy.qubit.state as zqs
 
 if TYPE_CHECKING:
+    from sympy import Expr
+
     from zixy._zixy import (
         FermionStateArray,
         GeneralFermionOperatorArray,

@@ -16,20 +16,14 @@
 
 from __future__ import annotations
 
+from abc import abstractmethod
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Self
 
 from sympy import Expr
 
-from zixy.container.coeffs import ComplexSign, Sign, convert
-
-if TYPE_CHECKING:
-    from zixy._zixy import FermionArray
-    from zixy.fermion.operator._strings import Strings as OperatorStrings
-
-from abc import abstractmethod
-from collections.abc import Callable
-
 from zixy._zixy import Qubits
+from zixy.container.coeffs import ComplexSign, Sign, convert
 from zixy.fermion._terms import (
     Term as FermionTerm,
     Terms as FermionTerms,
@@ -38,6 +32,10 @@ from zixy.fermion._terms import (
 )
 from zixy.mappings.base import Mapper
 from zixy.qubit.operator._terms import ComplexTermSum as PauliComplexTermSum
+
+if TYPE_CHECKING:
+    from zixy._zixy import FermionArray
+    from zixy.fermion.operator._strings import Strings as OperatorStrings
 
 type MapperType = Callable[[int | Qubits], Mapper]
 

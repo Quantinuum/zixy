@@ -22,21 +22,20 @@ from sympy import Expr
 
 from zixy._zixy import Modes  # noqa: TC001 (required for sphinx)
 from zixy.container.coeffs import ComplexSign, Sign
-
-if TYPE_CHECKING:
-    from zixy._zixy import FermionArray
-    from zixy.container.strings import String as BaseString
-
-
 from zixy.container.data import TermData
 from zixy.container.terms import (
     Term as TermBase,
     Terms as TermsBase,
     TermSet as TermSetBase,
-    TermSpecT,
     TermSum as TermSumBase,
 )
-from zixy.fermion._strings import Strings, _check_modes_compatibility
+from zixy.fermion._strings import _check_modes_compatibility
+
+if TYPE_CHECKING:
+    from zixy._zixy import FermionArray
+    from zixy.container.strings import String as BaseString
+    from zixy.container.terms import TermSpecT
+    from zixy.fermion._strings import Strings
 
 
 class Term[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](

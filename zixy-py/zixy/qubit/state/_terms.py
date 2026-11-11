@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Self, overload
 
-from sympy import Expr, Symbol
+from sympy import Expr
 
 from zixy._zixy import Qubits, QubitStateArray
 from zixy.container.coeffs import (
@@ -31,7 +31,6 @@ from zixy.container.coeffs import (
     ComplexCoeffs,
     ComplexSign,
     ComplexSignCoeffs,
-    Number,
     RealCoeffs,
     Sign,
     SignCoeffs,
@@ -55,6 +54,9 @@ if TYPE_CHECKING:
 
     import numpy as np
     from numpy.typing import NDArray
+    from sympy import Symbol
+
+    from zixy.container.coeffs import Number
 
 type TermSpec[C: (float, complex, Sign, ComplexSign, Expr)] = TermSpecT[
     QubitStateArray, StringSpec, C

@@ -14,7 +14,10 @@ from zixy.container.coeffs import (
     Sign,
     SignCoeffs,
     SymbolicCoeffs,
+    unit,
 )
+from zixy.container.data import TermData
+from zixy.container.terms import Term
 from zixy.fermion import state as zfs
 from zixy.fermion.operator import general as zfog, normal as zfon
 from zixy.qubit import operator as zqo, state as zqs
@@ -298,14 +301,17 @@ def string_family(request):
 
 @pytest.fixture(params=["count", "labelled", "alternate", "empty"])
 def string_case(request, string_family):
-    family = string_family
+    return _make_string_case(string_family, request.param)
+
+
+def _make_string_case(family, space_kind):
     if family in (zqo, zqs):
         space, indices = {
             "count": (Qubits.from_count(4), [0, 1, 2, 3]),
             "labelled": (Qubits.from_offset(4, 4), [4, 5, 6, 7]),
             "alternate": (Qubits.from_inds([7, 2, 8, 3]), [7, 2, 8, 3]),
             "empty": (Qubits.from_count(0), []),
-        }[request.param]
+        }[space_kind]
         encoded_space = {"qubits": indices}
     else:
         space, ordering = {
@@ -313,7 +319,7 @@ def string_case(request, string_family):
             "labelled": (Modes.from_pair_count_spin_major(2), "major"),
             "alternate": (Modes.from_pair_count_spin_minor(2), "minor"),
             "empty": (Modes.from_count(0), None),
-        }[request.param]
+        }[space_kind]
         encoded_space = {"modes": len(space), "spin_ordering": ordering}
 
     if family is zqo:
@@ -475,3 +481,219 @@ def test_fermion_serialization_invalid_space(space):
     payload["space"] = space
     with pytest.raises(ValueError):
         zfs.Strings.from_dict(payload)
+
+
+_COEFFICIENT_FAMILIES = [
+    (family, prefix)
+    for family in (zqo, zqs, zfs, zfon, zfog)
+    for prefix in ("Sign", "ComplexSign", "Real", "Complex", "Symbolic")
+    if hasattr(family, f"{prefix}Terms")
+]
+
+
+def _make_term_case(family, prefix, container, space_kind):
+    strings, encoded_strings, space = _make_string_case(family, space_kind)
+    values, encoded_coeffs = {
+        "Sign": ([Sign.from_int(x) for x in [1, -1, 1]], [1, -1, 1]),
+        "ComplexSign": (
+            [ComplexSign.from_complex(x) for x in [1, 1j, -1j]],
+            [[1, 0], [0, 1], [0, -1]],
+        ),
+        "Real": ([1.25, 0.0, -2.5], [1.25, 0.0, -2.5]),
+        "Complex": ([1 + 2j, 0j, -3 + 4j], [[1, 2], [0, 0], [-3, 4]]),
+        "Symbolic": ([sympify(x) for x in ["x", "0", "y + 1"]], ["x", "0", "y + 1"]),
+    }[prefix]
+    terms_type = getattr(family, f"{prefix}Terms")
+    coeffs = terms_type.term_type.coeffs_type.from_sequence(values)
+    terms = terms_type._create(TermData(strings, coeffs))
+    if container == "Term":
+        source = terms[1]
+        encoded_strings = encoded_strings[1:2]
+        encoded_coeffs = encoded_coeffs[1:2]
+    elif container == "Terms":
+        source = terms
+    else:
+        source = getattr(family, f"{prefix}{container}").from_terms(terms)
+        if len(source) == 1:
+            encoded_strings = encoded_strings[:1]
+            encoded_coeffs = encoded_coeffs[-1:]
+    expected = {
+        "schema_version": __schema_version__,
+        "package_version": __version__,
+        "family": family.__name__.removeprefix("zixy."),
+        "container": type(source).__name__,
+        "space": space,
+        "strings": encoded_strings,
+        "coeffs": encoded_coeffs,
+    }
+    return source, expected
+
+
+@pytest.fixture(params=["count", "labelled", "alternate", "empty"])
+def term_space_kind(request):
+    return request.param
+
+
+@pytest.fixture(
+    params=[
+        pytest.param((family, prefix, container), id=f"{family.__name__}.{prefix}{container}")
+        for family, prefix in _COEFFICIENT_FAMILIES
+        for container in ("Term", "Terms", "TermSet", "TermSum")
+        if hasattr(family, f"{prefix}{container}")
+    ]
+)
+def term_case(request, term_space_kind):
+    return _make_term_case(*request.param, term_space_kind)
+
+
+@pytest.mark.parametrize("format_", ["dict", "json"])
+def test_term_serialization_round_trip(term_case, format_):
+    source, expected = term_case
+    assert source.to_dict() == expected
+    assert json.loads(source.to_json()) == expected
+    cls = type(source)
+    if format_ == "dict":
+        restored = cls.from_dict(source.to_dict())
+    else:
+        restored = cls.from_json(source.to_json())
+    assert type(restored) is cls
+    assert restored.to_dict() == expected
+    assert type(restored._data.strings) is type(source._data.strings)
+    assert type(restored._data.coeffs) is type(source._data.coeffs)
+    assert restored._data.strings.is_owning()
+    assert restored._data.coeffs.is_owning()
+    if hasattr(restored, "is_owning"):
+        assert restored.is_owning()
+
+    # Coefficients are mutable in all four container kinds, including sets and sums.
+    one = unit(source.coeff_type)
+    source_index = source.index if isinstance(source, Term) else 0
+    replacement = -one if source._data.coeffs[source_index] == one else one
+    before = source.to_dict()
+    restored._data.coeffs[0] = replacement
+    assert source.to_dict() == before
+    before = restored.to_dict()
+    source._data.coeffs[source_index] = replacement
+    assert restored.to_dict() == before
+
+
+def test_term_serialization_snapshot(term_case):
+    source, expected = term_case
+    payload = source.to_dict()
+    restored = type(source).from_dict(payload)
+    before = restored.to_dict()
+    payload["strings"].clear()
+    payload["coeffs"].clear()
+    payload["space"].clear()
+    assert source.to_dict() == expected
+    assert restored.to_dict() == before
+
+
+@pytest.mark.parametrize(
+    "family,prefix",
+    [
+        pytest.param(family, prefix, id=f"{family.__name__}.{prefix}")
+        for family, prefix in _COEFFICIENT_FAMILIES
+    ],
+)
+@pytest.mark.parametrize(
+    "slices",
+    [
+        (slice(1, None),),
+        (slice(1, None, 2),),
+        (slice(None, None, -1),),
+        (slice(0, 0),),
+        (slice(None, None, -1), slice(1, None, 2)),
+    ],
+)
+def test_terms_serialization_views(family, prefix, term_space_kind, slices):
+    source, expected = _make_term_case(family, prefix, "Terms", term_space_kind)
+    view = source
+    for indexer in slices:
+        view = view[indexer]
+        expected["strings"] = expected["strings"][indexer]
+        expected["coeffs"] = expected["coeffs"][indexer]
+    assert view.to_dict() == expected
+    restored = type(source).from_json(view.to_json())
+    assert restored.to_dict() == expected
+    assert restored.is_owning()
+    if len(view):
+        term = view[0]
+        term_expected = dict(expected)
+        term_expected["container"] = type(term).__name__
+        term_expected["strings"] = expected["strings"][:1]
+        term_expected["coeffs"] = expected["coeffs"][:1]
+        assert term.to_dict() == term_expected
+        single = type(term).from_json(term.to_json())
+        assert single.to_dict() == term_expected
+        assert single.is_owning()
+    source.resize(0)
+    assert restored.to_dict() == expected
+
+
+def test_term_serialization_schema_mismatch(term_case):
+    source, _ = term_case
+    payload = source.to_dict()
+    payload["schema_version"] = "unsupported"
+    with pytest.raises(ValueError, match="schema version mismatch"):
+        type(source).from_dict(payload)
+
+
+def test_term_serialization_mismatched_lengths(term_case):
+    source, _ = term_case
+    payload = source.to_dict()
+    payload["coeffs"].pop()
+    with pytest.raises(ValueError, match="equal lengths"):
+        type(source).from_dict(payload)
+
+
+@pytest.mark.parametrize("n_terms", [0, 2])
+def test_single_term_deserialization_requires_one_term(string_family, string_case, n_terms):
+    strings, _, _ = string_case
+    cls = string_family.RealTerm
+    payload = strings.to_dict()
+    payload["strings"] = payload["strings"][:n_terms]
+    payload["coeffs"] = [1.0] * n_terms
+    with pytest.raises(ValueError, match="exactly one term"):
+        cls.from_dict(payload)
+
+
+@pytest.mark.parametrize(
+    "family,prefix,container",
+    [
+        pytest.param(family, prefix, container, id=f"{family.__name__}.{prefix}{container}")
+        for family, prefix in _COEFFICIENT_FAMILIES
+        for container in ("TermSet", "TermSum")
+        if hasattr(family, f"{prefix}{container}")
+    ],
+)
+def test_term_serialization_rebuilds_map(family, prefix, container, term_space_kind):
+    source, expected = _make_term_case(family, prefix, container, term_space_kind)
+    restored = type(source).from_json(source.to_json())
+    key = source.strings[0].clone()
+    coeff = source.coeffs[0]
+    size = len(source)
+    assert restored.lookup_index(key) == 0
+    assert restored.lookup_coeff(key) == coeff
+
+    replacement = -unit(source.coeff_type)
+    restored.insert((key, replacement))
+    assert restored.lookup_coeff(key) == replacement
+    assert len(restored) == size
+    restored.remove(key)
+    assert restored.lookup_index(key) is None
+    assert len(restored) == size - 1
+    restored.insert((key, coeff))
+    assert restored.lookup_coeff(key) == coeff
+    assert len(restored) == size
+    assert source.to_dict() == expected
+
+
+@pytest.mark.parametrize("cls", [zqo.RealTermSet, zqo.RealTermSum])
+def test_term_deserialization_duplicate_strings(cls):
+    strings = zqo.Strings.from_iterable([[zqo.X], [zqo.X], [zqo.Y]], 2)
+    terms = zqo.RealTerms._create(TermData(strings, RealCoeffs.from_sequence([2.0, 3.0, 0.0])))
+    restored = cls.from_json(terms.to_json())
+    assert len(restored) == 2
+    assert restored.lookup_coeff(strings[0]) == 3.0
+    assert restored.lookup_coeff(strings[2]) == 0.0

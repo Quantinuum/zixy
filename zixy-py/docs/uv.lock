@@ -2101,7 +2101,7 @@ dependencies = [
 requires-dist = [
     { name = "numpy", specifier = ">=1.26.4" },
     { name = "pandas", specifier = ">=2.3.3" },
-    { name = "scipy", specifier = ">=1.15.2" },
+    { name = "scipy", specifier = ">=1.15.2,<1.18.0" },
     { name = "sympy", specifier = ">=1.14.0" },
     { name = "typing-extensions", specifier = ">=4.16.0" },
 ]

@@ -34,7 +34,6 @@ from zixy._zixy import (
     QubitPauliArray,
     Qubits,
 )
-from zixy.container.base import check_schema_version
 from zixy.container.coeffs import (
     Coeff,
     ComplexSign,
@@ -44,6 +43,7 @@ from zixy.container.coeffs import (
     unit,
 )
 from zixy.container.data import TermData
+from zixy.container.serialization import check_schema_version
 from zixy.qubit._strings import (
     String as StringBase,
     Strings as StringsBase,
@@ -58,7 +58,8 @@ if TYPE_CHECKING:
     import numpy as np
     from numpy.typing import NDArray
 
-    from zixy.container.base import SerializedContainer, _FilterableStrings
+    from zixy.container.base import _FilterableStrings
+    from zixy.container.serialization import SerializedContainer
     from zixy.qubit.operator._terms import ComplexSignTerm, Term
 
 type StringSpec = Sequence[PauliMatrix] | dict[int, PauliMatrix] | str

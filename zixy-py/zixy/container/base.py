@@ -16,27 +16,34 @@
 
 from __future__ import annotations
 
+import json
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Sequence, Sized
 from functools import wraps
 from typing import (
     TYPE_CHECKING,
-    Any,
-    Concatenate,
     Protocol,
-    Self,
+    TypedDict,
     cast,
     overload,
 )
+
+import numpy as np
 
 from zixy.utils import slice_index, slice_len
 
 if TYPE_CHECKING:
     import builtins
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Iterator, Mapping
+    from typing import Any, Concatenate, NotRequired, Self
+
+    from numpy import complex128, float64, int64
+    from numpy.typing import NDArray
 
     from zixy.container.coeffs import Coeffs
+
+__schema_version__ = "1.0.0"
 
 
 class _Indexable[T](Protocol):
@@ -465,3 +472,114 @@ class Representable(ABC):
             stacklevel=2,
         )
         return cls.from_str(source)
+
+
+def check_schema_version(source: SerializedContainer) -> None:
+    """Check that the serialized container is valid."""
+    if source["schema_version"] != __schema_version__:
+        raise ValueError(
+            f"schema version mismatch: expected {__schema_version__}, got "
+            f"{source['schema_version']}"
+        )
+
+
+@overload
+def serialize_numpy_array(array: NDArray[int64]) -> list[int]: ...
+@overload
+def serialize_numpy_array(array: NDArray[float64]) -> list[float]: ...
+@overload
+def serialize_numpy_array(array: NDArray[complex128]) -> list[list[float]]: ...
+
+
+def serialize_numpy_array[T: (int64, float64, complex128)](
+    array: NDArray[T],
+) -> list[int] | list[float] | list[list[float]]:
+    """Serialize a NumPy array to a JSON-serializable list."""
+    if array.dtype == np.int64:
+        return [int(x) for x in array.tolist()]
+    elif array.dtype == np.float64:
+        return [float(x) for x in array.tolist()]
+    return [[float(x.real), float(x.imag)] for x in array.tolist()]
+
+
+class SerializedContainer(TypedDict):
+    """Serialized representation of a container."""
+
+    schema_version: str
+    """Version of the schema."""
+
+    package_version: str
+    """Version of the package."""
+
+    family: str
+    """Family of the container."""
+
+    container: str
+    """Name of the container."""
+
+    strings: NotRequired[list[Any]]
+    """List of strings in the container."""
+
+    coeffs: NotRequired[list[Any]]
+    """List of coefficients in the container."""
+
+    space: NotRequired[list[Any]]
+    """Space for the domain of the container."""
+
+
+class Serializable[SerializedT: Mapping[str, object]](ABC):
+    """Abstract base class for classes that can be serialized to and deserialized from JSON."""
+
+    @abstractmethod
+    def to_dict(self) -> SerializedT:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            A JSON-serializable dictionary representation of ``self``.
+        """
+        pass
+
+    @classmethod
+    @abstractmethod
+    def from_dict(cls, source: SerializedT) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        pass
+
+    def to_json(self, **kwargs: Any) -> str:
+        """Return a JSON string representation of ``self``.
+
+        Args:
+            **kwargs: Keyword arguments to forward to ``json.dumps``.
+
+        Returns:
+            A JSON string representation of ``self``.
+        """
+        kwargs = dict(kwargs)
+        kwargs.setdefault("allow_nan", False)
+        return json.dumps(self.to_dict(), **kwargs)
+
+    @classmethod
+    def from_json(cls, source: str, **kwargs: Any) -> Self:
+        """Create an instance of ``cls`` from a JSON string representation.
+
+        Args:
+            source: JSON string representation to parse.
+            **kwargs: Keyword arguments to forward to ``json.loads``.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        return cls.from_dict(json.loads(source, **kwargs))
+
+
+class SerializableContainer(Serializable[SerializedContainer], ABC):
+    """Abstract base class for containers that can be serialized to and deserialized from JSON."""
+
+    pass

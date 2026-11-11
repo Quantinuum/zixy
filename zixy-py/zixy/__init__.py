@@ -18,13 +18,13 @@ Zixy is a high performance library for the manipulation of Pauli strings and oth
 algebraic objects.
 """
 
+# x-release-please-start-version
+__version__ = "0.4.3"
+# x-release-please-end
+
 from zixy import container
 from zixy import fermion
 from zixy import mappings
 from zixy import qubit
 
 __all__ = ["container", "fermion", "mappings", "qubit"]
-
-# x-release-please-start-version
-__version__ = "0.4.3"
-# x-release-please-end

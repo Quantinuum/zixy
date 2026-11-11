@@ -58,3 +58,6 @@ updates:
       - dependency-name: "pandas"
         # Breaking API change which breaks CI as it requires Python >=3.11.
         versions: [">= 3.0.0"]
+      - dependency-name: "scipy"
+        # SciPy 1.18 drops Python 3.11 support.
+        versions: [">= 1.18.0"]

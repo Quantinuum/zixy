@@ -415,7 +415,7 @@ class ViewableSequence[T, ImplT: Resizable](ViewableBase[ImplT, slice], Sequence
         return out
 
 
-class StringRepresentable(ABC):
+class Representable(ABC):
     """Abstract base class for classes that can be represented as, and constructed from, strings."""
 
     @abstractmethod

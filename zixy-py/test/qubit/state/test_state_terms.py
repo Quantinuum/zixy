@@ -3,111 +3,92 @@ from typing import assert_type
 import pytest
 from sympy import Expr, I as imaginary_unit, S, symbols
 
+import zixy.qubit.operator as zqo
+import zixy.qubit.state as zqs
 from zixy.container.coeffs import Sign
-from zixy.qubit.operator import I, RealTerm as PauliRealTerm, String as PauliString, X
-from zixy.qubit.state import (
-    ComplexSignTerm,
-    ComplexSignTerms,
-    ComplexSignTermSet,
-    ComplexTerm,
-    ComplexTerms,
-    ComplexTermSet,
-    ComplexTermSum,
-    RealTerm,
-    RealTerms,
-    RealTermSet,
-    RealTermSum,
-    SignTerm,
-    SignTerms,
-    SignTermSet,
-    String,
-    SymbolicTerm,
-    SymbolicTerms,
-    SymbolicTermSet,
-    SymbolicTermSum,
-)
+from zixy.qubit.operator import I, X
 
 
 @pytest.mark.parametrize(
     ("term_type", "source", "qubits", "expected", "terms_type"),
     (
-        (SignTerm, "(1, [1, 0])", 2, "(+1, [1, 0])", None),
+        (zqs.SignTerm, "(1, [1, 0])", 2, "(+1, [1, 0])", None),
         (
-            SignTerms,
+            zqs.SignTerms,
             "(1, [1, 0]), (-1, [0, 1]), (1, [1, 0])",
             2,
             "(+1, [1, 0]), (-1, [0, 1]), (+1, [1, 0])",
             None,
         ),
         (
-            SignTermSet,
+            zqs.SignTermSet,
             "(1, [1, 0]), (-1, [0, 1]), (1, [1, 0])",
             2,
             "(+1, [1, 0]), (-1, [0, 1])",
-            SignTerms,
+            zqs.SignTerms,
         ),
-        (ComplexSignTerm, "(1j, [1, 0])", 2, "(+i, [1, 0])", None),
+        (zqs.ComplexSignTerm, "(1j, [1, 0])", 2, "(+i, [1, 0])", None),
         (
-            ComplexSignTerms,
+            zqs.ComplexSignTerms,
             "(1j, [1, 0]), (-1, [0, 1]), (1, [1, 0])",
             2,
             "(+i, [1, 0]), (-1, [0, 1]), (+1, [1, 0])",
             None,
         ),
         (
-            ComplexSignTermSet,
+            zqs.ComplexSignTermSet,
             "(1j, [1, 0]), (-1, [0, 1]), (1, [1, 0])",
             2,
             "(+1, [1, 0]), (-1, [0, 1])",
-            ComplexSignTerms,
+            zqs.ComplexSignTerms,
         ),
-        (RealTerm, " ( 2.5 , [1, 0] ) ", 2, "(2.5, [1, 0])", None),
+        (zqs.RealTerm, " ( 2.5 , [1, 0] ) ", 2, "(2.5, [1, 0])", None),
         (
-            RealTerms,
+            zqs.RealTerms,
             " (2.0, [1, 0]) , (-0.5, [0, 1]) , (3.0, [1, 0]) ",
             2,
             "(2.0, [1, 0]), (-0.5, [0, 1]), (3.0, [1, 0])",
             None,
         ),
         (
-            RealTermSet,
+            zqs.RealTermSet,
             "(2.0, [1, 0]), (-0.5, [0, 1]), (3.0, [1, 0])",
             2,
             "(3.0, [1, 0]), (-0.5, [0, 1])",
-            RealTerms,
+            zqs.RealTerms,
         ),
         (
-            RealTermSum,
+            zqs.RealTermSum,
             "(2.0, [1, 0]), (-0.5, [0, 1]), (3.0, [1, 0])",
             2,
             "(5.0, [1, 0]), (-0.5, [0, 1])",
             None,
         ),
-        (ComplexTerm, "(1j, [1, 0])", 2, "(1j, [1, 0])", None),
+        (zqs.ComplexTerm, "(1j, [1, 0])", 2, "(1j, [1, 0])", None),
         (
-            ComplexTerms,
+            zqs.ComplexTerms,
             "((1j), [1, 0]), ((2), [0, 1]), ((3), [1, 0])",
             2,
             "(1j, [1, 0]), ((2+0j), [0, 1]), ((3+0j), [1, 0])",
             None,
         ),
         (
-            ComplexTermSet,
+            zqs.ComplexTermSet,
             "((1j), [1, 0]), ((2), [0, 1]), ((3), [1, 0])",
             2,
             "((3+0j), [1, 0]), ((2+0j), [0, 1])",
-            ComplexTerms,
+            zqs.ComplexTerms,
         ),
         (
-            ComplexTermSum,
+            zqs.ComplexTermSum,
             "((1j), [1, 0]), ((2), [0, 1]), ((3), [1, 0])",
             2,
             "((3+1j), [1, 0]), ((2+0j), [0, 1])",
             None,
         ),
-        (RealTerm, "(2, [1, 0, 1, 0])", 4, "(2.0, [1, 0, 1, 0])", None),
-        (RealTerms, "\n(1, [1, 0]),\n(2, [0, 1])\n", 2, "(1.0, [1, 0]), (2.0, [0, 1])", None),
-        (RealTermSum, "(2, [1, 0]), (-2, [1, 0])", 2, "(0.0, [1, 0])", None),
+        (zqs.RealTerm, "(2, [1, 0, 1, 0])", 4, "(2.0, [1, 0, 1, 0])", None),
+        (zqs.RealTerms, "\n(1, [1, 0]),\n(2, [0, 1])\n", 2, "(1.0, [1, 0]), (2.0, [0, 1])", None),
+        (zqs.RealTermSum, "(2, [1, 0]), (-2, [1, 0])", 2, "(0.0, [1, 0])", None),
     ),
 )
 def test_from_str(term_type, source, qubits, expected, terms_type):
@@ -121,16 +102,16 @@ def test_from_str(term_type, source, qubits, expected, terms_type):
 @pytest.mark.parametrize(
     ("term_type", "source", "qubits"),
     (
-        (SignTerms, "", 2),
-        (SignTermSet, "", 2),
-        (ComplexSignTerms, "", 2),
-        (ComplexSignTermSet, "", 2),
-        (RealTerms, "", 2),
-        (RealTermSet, "", 2),
-        (RealTermSum, "", 2),
-        (ComplexTerms, "", 2),
-        (ComplexTermSet, "", 2),
-        (ComplexTermSum, "", 2),
+        (zqs.SignTerms, "", 2),
+        (zqs.SignTermSet, "", 2),
+        (zqs.ComplexSignTerms, "", 2),
+        (zqs.ComplexSignTermSet, "", 2),
+        (zqs.RealTerms, "", 2),
+        (zqs.RealTermSet, "", 2),
+        (zqs.RealTermSum, "", 2),
+        (zqs.ComplexTerms, "", 2),
+        (zqs.ComplexTermSet, "", 2),
+        (zqs.ComplexTermSum, "", 2),
     ),
 )
 def test_from_str_empty_containers(term_type, source, qubits):
@@ -140,10 +121,10 @@ def test_from_str_empty_containers(term_type, source, qubits):
 @pytest.mark.parametrize(
     ("term_type", "source"),
     (
-        (RealTerm, "(2.5, [1, 0])"),
-        (RealTerms, "(2.0, [1, 0]), (-0.5, [0, 1])"),
-        (RealTermSet, "(2.0, [1, 0]), (-0.5, [0, 1])"),
-        (RealTermSum, "(2.0, [1, 0]), (-0.5, [0, 1])"),
+        (zqs.RealTerm, "(2.5, [1, 0])"),
+        (zqs.RealTerms, "(2.0, [1, 0]), (-0.5, [0, 1])"),
+        (zqs.RealTermSet, "(2.0, [1, 0]), (-0.5, [0, 1])"),
+        (zqs.RealTermSum, "(2.0, [1, 0]), (-0.5, [0, 1])"),
     ),
 )
 def test_from_str_round_trip(term_type, source):
@@ -153,7 +134,7 @@ def test_from_str_round_trip(term_type, source):
 
 @pytest.mark.parametrize(
     "term_type",
-    (SymbolicTerm, SymbolicTerms, SymbolicTermSet, SymbolicTermSum),
+    (zqs.SymbolicTerm, zqs.SymbolicTerms, zqs.SymbolicTermSet, zqs.SymbolicTermSum),
 )
 def test_from_str_symbolic_not_implemented(term_type):
     with pytest.raises(NotImplementedError):
@@ -166,67 +147,67 @@ def test_from_str_symbolic_not_implemented(term_type):
 )
 def test_from_str_errors(source):
     with pytest.raises(ValueError):
-        RealTerm.from_str(source, 2)
+        zqs.RealTerm.from_str(source, 2)
 
     with pytest.raises(IndexError):
-        RealTerm.from_str("(1, [1, 0, 1])", 2)
+        zqs.RealTerm.from_str("(1, [1, 0, 1])", 2)
 
     with pytest.raises(ValueError):
-        SignTerm.from_str("(2, [1, 0])", 2)
+        zqs.SignTerm.from_str("(2, [1, 0])", 2)
 
     with pytest.raises(ValueError):
-        ComplexSignTerm.from_str("(2, [1, 0])", 2)
+        zqs.ComplexSignTerm.from_str("(2, [1, 0])", 2)
 
     with pytest.raises(ValueError):
-        RealTerm.from_str("(1j, [1, 0])", 2)
+        zqs.RealTerm.from_str("(1j, [1, 0])", 2)
 
 
 def test_term():
-    term = SignTerm(6, "")
+    term = zqs.SignTerm(6, "")
     assert term.coeff == Sign(False)
     with pytest.raises(TypeError):
-        SignTerm(6, None)
+        zqs.SignTerm(6, None)
     term.string.set((1, 0) * 3)
     assert str(term) == "(+1, [1, 0, 1, 0, 1, 0])"
     term *= -1
     assert str(term) == "(-1, [1, 0, 1, 0, 1, 0])"
     assert str(term * Sign(True)) == "(+1, [1, 0, 1, 0, 1, 0])"
 
-    term = RealTerm.from_str("[1, 0, 1, 0, 1, 0]")
+    term = zqs.RealTerm.from_str("[1, 0, 1, 0, 1, 0]")
     assert str(term) == "(1.0, [1, 0, 1, 0, 1, 0])"
     assert term.coeff == 1.0
 
 
 def test_term_real_sum():
-    lc = RealTermSum(6)
+    lc = zqs.RealTermSum(6)
     assert len(lc._impl._strings._impl.qubits) == 6
     assert len(lc) == 0
     assert str(lc) == ""
-    lc += RealTerm(6, ((1, 0, 0, 0, 0, 1), 3.0))
+    lc += zqs.RealTerm(6, ((1, 0, 0, 0, 0, 1), 3.0))
     assert len(lc) == 1
     assert str(lc) == "(3.0, [1, 0, 0, 0, 0, 1])"
-    lc += RealTerm(6, ((1, 1, 0, 0, 1, 1), 4.0))
+    lc += zqs.RealTerm(6, ((1, 1, 0, 0, 1, 1), 4.0))
     assert len(lc) == 2
     assert str(lc) == "(3.0, [1, 0, 0, 0, 0, 1]), (4.0, [1, 1, 0, 0, 1, 1])"
     assert lc.l1_norm == 3 + 4
     assert lc.l2_norm_square == 3**2 + 4**2
-    assert RealTermSet.from_str(
-        str(RealTermSet.from_terms(lc.to_terms()))
-    ) == RealTermSet.from_terms(lc.to_terms())
-    assert RealTermSum.from_str(str(lc)) == lc
+    assert zqs.RealTermSet.from_str(
+        str(zqs.RealTermSet.from_terms(lc.to_terms()))
+    ) == zqs.RealTermSet.from_terms(lc.to_terms())
+    assert zqs.RealTermSum.from_str(str(lc)) == lc
 
 
 def test_vdot_rejects_different_qubits():
-    lhs = RealTermSum.from_str("[1, 0]", 2)
-    rhs = RealTermSum.from_str("[1, 0, 0]", 3)
+    lhs = zqs.RealTermSum.from_str("[1, 0]", 2)
+    rhs = zqs.RealTermSum.from_str("[1, 0, 0]", 3)
 
     with pytest.raises(ValueError, match="different qubits"):
         lhs.vdot(rhs)
 
 
 def test_complex_vdot_rejects_different_qubits():
-    lhs = ComplexTermSum.from_str("[1, 0]", 2)
-    rhs = ComplexTermSum.from_str("[1, 0, 0]", 3)
+    lhs = zqs.ComplexTermSum.from_str("[1, 0]", 2)
+    rhs = zqs.ComplexTermSum.from_str("[1, 0, 0]", 3)
 
     with pytest.raises(ValueError, match="different qubits"):
         lhs.vdot(rhs)
@@ -234,7 +215,7 @@ def test_complex_vdot_rejects_different_qubits():
 
 def test_symbolic_vdot():
     x, y, z = symbols("x y z", real=True)
-    lhs = SymbolicTermSum.from_iterable(
+    lhs = zqs.SymbolicTermSum.from_iterable(
         [
             ("[1, 0, 0]", x + imaginary_unit * y),
             ("[0, 1, 0]", 2 * x),
@@ -242,7 +223,9 @@ def test_symbolic_vdot():
         ],
         3,
     )
-    rhs = SymbolicTermSum.from_iterable([("[1, 0, 0]", z), ("[0, 1, 0]", 3), ("[1, 1, 0]", y)], 3)
+    rhs = zqs.SymbolicTermSum.from_iterable(
+        [("[1, 0, 0]", z), ("[0, 1, 0]", 3), ("[1, 1, 0]", y)], 3
+    )
     lhs_before = lhs.clone()
     rhs_before = rhs.clone()
 
@@ -260,9 +243,9 @@ def test_symbolic_vdot():
 
 def test_symbolic_vdot_empty_and_disjoint():
     x = symbols("x")
-    empty = SymbolicTermSum(2)
-    lhs = SymbolicTermSum.from_iterable([("[1, 0]", x)], 2)
-    rhs = SymbolicTermSum.from_iterable([("[0, 1]", x)], 2)
+    empty = zqs.SymbolicTermSum(2)
+    lhs = zqs.SymbolicTermSum.from_iterable([("[1, 0]", x)], 2)
+    rhs = zqs.SymbolicTermSum.from_iterable([("[0, 1]", x)], 2)
 
     assert empty.vdot(empty) is S.Zero
     assert empty.vdot(lhs) is S.Zero
@@ -271,15 +254,15 @@ def test_symbolic_vdot_empty_and_disjoint():
 
 
 def test_symbolic_vdot_rejects_different_qubits():
-    lhs = SymbolicTermSum.from_str("[1, 0]", 2)
-    rhs = SymbolicTermSum.from_str("[1, 0, 0]", 3)
+    lhs = zqs.SymbolicTermSum.from_str("[1, 0]", 2)
+    rhs = zqs.SymbolicTermSum.from_str("[1, 0, 0]", 3)
 
     with pytest.raises(ValueError, match="different qubits"):
         lhs.vdot(rhs)
 
 
 def test_term_scalar_mul_preserves_viewed_string():
-    terms = RealTerms.from_str("(1.0, [0, 0]), (2.0, [1, 1])", 2)
+    terms = zqs.RealTerms.from_str("(1.0, [0, 0]), (2.0, [1, 1])", 2)
 
     right_scaled = terms[1] * 3.0
     left_scaled = 3.0 * terms[1]
@@ -297,41 +280,41 @@ def test_term_scalar_mul_preserves_viewed_string():
 
 
 def test_term_set_check_term():
-    term_set = RealTermSet(3)
-    term = RealTerm(3, ((1, 0, 0), 1.0))
+    term_set = zqs.RealTermSet(3)
+    term = zqs.RealTerm(3, ((1, 0, 0), 1.0))
 
     assert term_set.insert(term) == 0
     term_set._check_term(term)
 
     with pytest.raises(ValueError, match="different qubits"):
-        term_set._check_term(RealTerm(4, ((1, 0, 0, 0), 1.0)))
+        term_set._check_term(zqs.RealTerm(4, ((1, 0, 0, 0), 1.0)))
 
     with pytest.raises(TypeError, match="Expected a RealTerm instance"):
-        term_set._check_term(PauliRealTerm.from_string_coeff(PauliString(3, (X, I, I)), 1.0))
+        term_set._check_term(zqo.RealTerm.from_string_coeff(zqo.String(3, (X, I, I)), 1.0))
 
 
 def test_term_set_check_string():
-    term_set = RealTermSet(3)
-    string = String(3, (1, 0, 0))
+    term_set = zqs.RealTermSet(3)
+    string = zqs.String(3, (1, 0, 0))
 
     term_set._check_string(string)
 
     with pytest.raises(ValueError, match="different qubits"):
-        term_set._check_string(String(4, (1, 0, 0, 0)))
+        term_set._check_string(zqs.String(4, (1, 0, 0, 0)))
 
     with pytest.raises(TypeError, match="Expected a String instance"):
-        term_set._check_string(PauliString(3, (X, I, I)))
+        term_set._check_string(zqo.String(3, (X, I, I)))
 
 
 def test_real_term_sum_to_dense_matrix_index_error():
-    op = RealTermSum(65)
+    op = zqs.RealTermSum(65)
 
     with pytest.raises(IndexError):
         op.to_dense()
 
 
 def test_complex_term_sum_to_dense_matrix_index_error():
-    op = ComplexTermSum(65)
+    op = zqs.ComplexTermSum(65)
 
     with pytest.raises(IndexError):
         op.to_dense()

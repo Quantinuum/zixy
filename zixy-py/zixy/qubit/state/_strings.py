@@ -40,8 +40,8 @@ from zixy.qubit._strings import (
 )
 
 if TYPE_CHECKING:
+    import zixy.qubit.operator as zqo
     from zixy.container.serialization import SerializedContainer
-    from zixy.qubit.operator import String as PauliString
     from zixy.qubit.state._terms import Term
 
 type StringSpec = Sequence[bool] | set[int] | str
@@ -195,7 +195,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         _check_qubits_compatibility(self.qubits, other.qubits)
         return int(self == other)
 
-    def imul_get_phase(self, op: PauliString) -> ComplexSign:
+    def imul_get_phase(self, op: zqo.String) -> ComplexSign:
         """In-place multiplication of ``self`` by ``op``, returning the phase."""
         return ComplexSign(self._impl.string_pauli_string_imul(self.index, op._impl, op.index))
 

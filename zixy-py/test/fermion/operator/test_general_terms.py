@@ -1,78 +1,59 @@
 import pytest
 from sympy import sympify
 
-from zixy.fermion.operator.general import (
-    ComplexTerm,
-    ComplexTerms,
-    ComplexTermSet,
-    ComplexTermSum,
-    RealTerm,
-    RealTerms,
-    RealTermSet,
-    RealTermSum,
-    String,
-    SymbolicTerm,
-    SymbolicTerms,
-    SymbolicTermSet,
-    SymbolicTermSum,
-)
-from zixy.fermion.operator.normal import (
-    ComplexTermSum as NormalComplexTermSum,
-    RealTerm as NormalRealTerm,
-    RealTermSum as NormalRealTermSum,
-    String as NormalString,
-)
+import zixy.fermion.operator.general as zfog
+import zixy.fermion.operator.normal as zfon
 
 
 @pytest.mark.parametrize(
     ("term_type", "source", "modes", "expected", "terms_type"),
     (
-        (RealTerm, " ( 2.5 , F0^ F1 ) ", 2, "(2.5, F0^ F1)", None),
+        (zfog.RealTerm, " ( 2.5 , F0^ F1 ) ", 2, "(2.5, F0^ F1)", None),
         (
-            RealTerms,
+            zfog.RealTerms,
             " (2.0, F0^ F1) , (-0.5, F1 F0^) , (3.0, F0^ F1) ",
             2,
             "(2.0, F0^ F1), (-0.5, F1 F0^), (3.0, F0^ F1)",
             None,
         ),
         (
-            RealTermSet,
+            zfog.RealTermSet,
             "(2.0, F0^ F1), (-0.5, F1 F0^), (3.0, F0^ F1)",
             2,
             "(3.0, F0^ F1), (-0.5, F1 F0^)",
-            RealTerms,
+            zfog.RealTerms,
         ),
         (
-            RealTermSum,
+            zfog.RealTermSum,
             "(2.0, F0^ F1), (-0.5, F1 F0^), (3.0, F0^ F1)",
             2,
             "(5.0, F0^ F1), (-0.5, F1 F0^)",
             None,
         ),
-        (ComplexTerm, "(1j, F0^ F1)", 2, "(1j, F0^ F1)", None),
+        (zfog.ComplexTerm, "(1j, F0^ F1)", 2, "(1j, F0^ F1)", None),
         (
-            ComplexTerms,
+            zfog.ComplexTerms,
             "((1j), F0^ F1), ((2), F1 F0^), ((3), F0^ F1)",
             2,
             "(1j, F0^ F1), ((2+0j), F1 F0^), ((3+0j), F0^ F1)",
             None,
         ),
         (
-            ComplexTermSet,
+            zfog.ComplexTermSet,
             "((1j), F0^ F1), ((2), F1 F0^), ((3), F0^ F1)",
             2,
             "((3+0j), F0^ F1), ((2+0j), F1 F0^)",
-            ComplexTerms,
+            zfog.ComplexTerms,
         ),
         (
-            ComplexTermSum,
+            zfog.ComplexTermSum,
             "((1j), F0^ F1), ((2), F1 F0^), ((3), F0^ F1)",
             2,
             "((3+1j), F0^ F1), ((2+0j), F1 F0^)",
             None,
         ),
-        (RealTerm, "(2, F0^ F1 F2^ F0)", 3, "(2.0, F0^ F1 F2^ F0)", None),
-        (RealTermSum, "(2, F0^ F1^ F2), (-2, F0^ F1^ F2)", 3, "(0.0, F0^ F1^ F2)", None),
+        (zfog.RealTerm, "(2, F0^ F1 F2^ F0)", 3, "(2.0, F0^ F1 F2^ F0)", None),
+        (zfog.RealTermSum, "(2, F0^ F1^ F2), (-2, F0^ F1^ F2)", 3, "(0.0, F0^ F1^ F2)", None),
     ),
 )
 def test_from_str(term_type, source, modes, expected, terms_type):
@@ -85,7 +66,14 @@ def test_from_str(term_type, source, modes, expected, terms_type):
 
 @pytest.mark.parametrize(
     "term_type",
-    (RealTerms, RealTermSet, RealTermSum, ComplexTerms, ComplexTermSet, ComplexTermSum),
+    (
+        zfog.RealTerms,
+        zfog.RealTermSet,
+        zfog.RealTermSum,
+        zfog.ComplexTerms,
+        zfog.ComplexTermSet,
+        zfog.ComplexTermSum,
+    ),
 )
 def test_from_str_empty_containers(term_type):
     assert str(term_type.from_str("", 2)) == ""
@@ -94,10 +82,10 @@ def test_from_str_empty_containers(term_type):
 @pytest.mark.parametrize(
     ("term_type", "source"),
     (
-        (ComplexTerm, "((1j), F0^ F1)"),
-        (ComplexTerms, "((1j), F0^ F1), ((2), F1 F0^)"),
-        (ComplexTermSet, "((1j), F0^ F1), ((2), F1 F0^)"),
-        (ComplexTermSum, "((1j), F0^ F1), ((2), F1 F0^)"),
+        (zfog.ComplexTerm, "((1j), F0^ F1)"),
+        (zfog.ComplexTerms, "((1j), F0^ F1), ((2), F1 F0^)"),
+        (zfog.ComplexTermSet, "((1j), F0^ F1), ((2), F1 F0^)"),
+        (zfog.ComplexTermSum, "((1j), F0^ F1), ((2), F1 F0^)"),
     ),
 )
 def test_from_str_round_trip(term_type, source):
@@ -106,7 +94,7 @@ def test_from_str_round_trip(term_type, source):
 
 
 @pytest.mark.parametrize(
-    "term_type", (SymbolicTerm, SymbolicTerms, SymbolicTermSet, SymbolicTermSum)
+    "term_type", (zfog.SymbolicTerm, zfog.SymbolicTerms, zfog.SymbolicTermSet, zfog.SymbolicTermSum)
 )
 def test_from_str_symbolic_not_implemented(term_type):
     with pytest.raises(NotImplementedError):
@@ -118,57 +106,57 @@ def test_from_str_symbolic_not_implemented(term_type):
 )
 def test_from_str_errors(source):
     with pytest.raises(ValueError):
-        RealTerm.from_str(source, 2)
+        zfog.RealTerm.from_str(source, 2)
 
     with pytest.raises(ValueError):
-        RealTerm.from_str("(1, F2^ F0)", 2)
+        zfog.RealTerm.from_str("(1, F2^ F0)", 2)
 
     with pytest.raises(ValueError):
-        RealTerm.from_str("(1j, F0^ F1)", 2)
+        zfog.RealTerm.from_str("(1j, F0^ F1)", 2)
 
 
 def test_real_term():
     with pytest.raises(ValueError, match="mode index out of bounds"):
-        RealTerm(1, ("F2^", 2.0))
+        zfog.RealTerm(1, ("F2^", 2.0))
 
-    term = RealTerm(4, ("F1 F0^", 2.0))
+    term = zfog.RealTerm(4, ("F1 F0^", 2.0))
     assert type(term.coeff) is float
     assert term.coeff == 2.0
     assert term.string.get_ops() == [(1, False), (0, True)]
 
     scaled = term * 3
-    assert type(scaled) is RealTerm
+    assert type(scaled) is zfog.RealTerm
     assert str(scaled) == "(6.0, F1 F0^)"
 
     complex_scaled = term * 1j
-    assert type(complex_scaled) is ComplexTerm
+    assert type(complex_scaled) is zfog.ComplexTerm
     assert str(complex_scaled) == "(2j, F1 F0^)"
 
     symbolic_scaled = term * sympify("a")
-    assert type(symbolic_scaled) is SymbolicTerm
+    assert type(symbolic_scaled) is zfog.SymbolicTerm
     assert str(symbolic_scaled) == "(2.0*a, F1 F0^)"
 
-    parsed = RealTerm.from_str("F1 F0^", 2)
+    parsed = zfog.RealTerm.from_str("F1 F0^", 2)
     assert str(parsed) == "(1.0, F1 F0^)"
     assert parsed.string.get_ops() == [(1, False), (0, True)]
 
 
 def test_complex_term():
-    term = ComplexTerm(3, ("F1 F0^", 1 + 2j))
+    term = zfog.ComplexTerm(3, ("F1 F0^", 1 + 2j))
     assert type(term.coeff) is complex
     assert term.coeff == 1 + 2j
 
     scaled = term * 2
-    assert type(scaled) is ComplexTerm
+    assert type(scaled) is zfog.ComplexTerm
     assert str(scaled) == "((2+4j), F1 F0^)"
 
 
 @pytest.mark.parametrize(
     ("term", "expected"),
     (
-        (RealTerm.from_str("(2, F0^ F1)", 2), "(2.0, F1^ F0)"),
-        (ComplexTerm.from_str("((1j), F0^ F1)", 2), "(-1j, F1^ F0)"),
-        (SymbolicTerm(2, ("F0^ F1", sympify("a"))), "(conjugate(a), F1^ F0)"),
+        (zfog.RealTerm.from_str("(2, F0^ F1)", 2), "(2.0, F1^ F0)"),
+        (zfog.ComplexTerm.from_str("((1j), F0^ F1)", 2), "(-1j, F1^ F0)"),
+        (zfog.SymbolicTerm(2, ("F0^ F1", sympify("a"))), "(conjugate(a), F1^ F0)"),
     ),
 )
 def test_term_dagger(term, expected):
@@ -181,10 +169,10 @@ def test_term_dagger(term, expected):
 @pytest.mark.parametrize(
     ("term", "original", "expected"),
     (
-        (RealTerm.from_str("(2, F0^ F1)", 2), "(2.0, F0^ F1)", "(2.0, F1^ F0)"),
-        (ComplexTerm.from_str("((1j), F0^ F1)", 2), "(1j, F0^ F1)", "(-1j, F1^ F0)"),
+        (zfog.RealTerm.from_str("(2, F0^ F1)", 2), "(2.0, F0^ F1)", "(2.0, F1^ F0)"),
+        (zfog.ComplexTerm.from_str("((1j), F0^ F1)", 2), "(1j, F0^ F1)", "(-1j, F1^ F0)"),
         (
-            SymbolicTerm(2, ("F0^ F1", sympify("a"))),
+            zfog.SymbolicTerm(2, ("F0^ F1", sympify("a"))),
             "(a, F0^ F1)",
             "(conjugate(a), F1^ F0)",
         ),
@@ -199,7 +187,7 @@ def test_term_daggered(term, original, expected):
 
 
 def test_real_terms():
-    terms = RealTerms(4, max_string_len=2)
+    terms = zfog.RealTerms(4, max_string_len=2)
     assert len(terms) == 0
     terms.resize(4)
 
@@ -209,12 +197,12 @@ def test_real_terms():
 
     terms[1].string.set("F1 F0^")
     terms[1].coeff = 2.5
-    terms[2] = String(4, "F2^")
-    terms[3] = RealTerm(4, ("F3", -1.0))
+    terms[2] = zfog.String(4, "F2^")
+    terms[3] = zfog.RealTerm(4, ("F3", -1.0))
 
     assert str(terms[1:]) == "(2.5, F1 F0^), (1.0, F2^), (-1.0, F3)"
-    assert type(terms.into(ComplexTerms)) is ComplexTerms
-    assert tuple(terms.into(ComplexTerms).coeffs) == (
+    assert type(terms.into(zfog.ComplexTerms)) is zfog.ComplexTerms
+    assert tuple(terms.into(zfog.ComplexTerms).coeffs) == (
         1 + 0j,
         2.5 + 0j,
         1 + 0j,
@@ -223,7 +211,7 @@ def test_real_terms():
 
 
 def test_complex_terms():
-    terms = ComplexTerms(3, max_string_len=2)
+    terms = zfog.ComplexTerms(3, max_string_len=2)
     terms.append_iterable(
         (
             ("F1 F0^", 1 + 2j),
@@ -231,20 +219,20 @@ def test_complex_terms():
         )
     )
 
-    assert type(terms[0]) is ComplexTerm
+    assert type(terms[0]) is zfog.ComplexTerm
     assert str(terms) == "((1+2j), F1 F0^), ((-0-1j), F2)"
 
     terms[0].coeff = 1.25
     terms[1].coeff = -2.0
     assert terms[0].coeff == 1.25 + 0j
-    assert type(terms.into(RealTerms)) is RealTerms
+    assert type(terms.into(zfog.RealTerms)) is zfog.RealTerms
     terms[1].coeff = 1j
     with pytest.raises(ValueError):
-        terms.into(RealTerms)
+        terms.into(zfog.RealTerms)
 
 
 def test_append_iterable():
-    terms = RealTerms(4, max_string_len=2)
+    terms = zfog.RealTerms(4, max_string_len=2)
     terms.append_iterable(
         (
             ("F1 F0^", 2.0),
@@ -259,7 +247,7 @@ def test_append_iterable():
 
 
 def test_real_term_sum():
-    term_sum = RealTermSum.from_str("(2, F1 F0^), (-0.5, F1 F0^), (1, F0^ F1)", 2)
+    term_sum = zfog.RealTermSum.from_str("(2, F1 F0^), (-0.5, F1 F0^), (1, F0^ F1)", 2)
 
     assert len(term_sum) == 2
     assert str(term_sum) == "(1.5, F1 F0^), (1.0, F0^ F1)"
@@ -269,11 +257,11 @@ def test_real_term_sum():
 
 
 def test_real_term_add_iterable():
-    term_sum = RealTermSum.from_iterable(
+    term_sum = zfog.RealTermSum.from_iterable(
         (
-            RealTerm(4, ("F1 F0^", 1.0)),
-            RealTerm(4, ("F1 F0^", -1.0)),
-            RealTerm(4, ("F2", 0.25)),
+            zfog.RealTerm(4, ("F1 F0^", 1.0)),
+            zfog.RealTerm(4, ("F1 F0^", -1.0)),
+            zfog.RealTerm(4, ("F2", 0.25)),
         ),
         4,
         max_string_len=2,
@@ -286,42 +274,42 @@ def test_real_term_add_iterable():
 
 
 def test_term_sum_rejects_term_over_different_modes():
-    term_sum = RealTermSum(max_string_len=4)
-    term = RealTerm.from_string_coeff(String(4, "F0^ F0"), 1.0)
+    term_sum = zfog.RealTermSum(max_string_len=4)
+    term = zfog.RealTerm.from_string_coeff(zfog.String(4, "F0^ F0"), 1.0)
 
     with pytest.raises(ValueError, match="different modes"):
         term_sum += term
 
 
 def test_term_set_check_term():
-    term_set = RealTermSet(3, max_string_len=2)
-    term = RealTerm.from_str("F0^ F1", 3)
+    term_set = zfog.RealTermSet(3, max_string_len=2)
+    term = zfog.RealTerm.from_str("F0^ F1", 3)
 
     assert term_set.insert(term) == 0
     term_set._check_term(term)
 
     with pytest.raises(ValueError, match="different modes"):
-        term_set._check_term(RealTerm.from_str("F0^ F1", 4))
+        term_set._check_term(zfog.RealTerm.from_str("F0^ F1", 4))
 
     with pytest.raises(TypeError, match="Expected a RealTerm instance"):
-        term_set._check_term(NormalRealTerm.from_str("F0^ F1", 3))
+        term_set._check_term(zfon.RealTerm.from_str("F0^ F1", 3))
 
 
 def test_term_set_check_string():
-    term_set = RealTermSet(3, max_string_len=2)
-    string = String(3, "F0^ F1")
+    term_set = zfog.RealTermSet(3, max_string_len=2)
+    string = zfog.String(3, "F0^ F1")
 
     term_set._check_string(string)
 
     with pytest.raises(ValueError, match="different modes"):
-        term_set._check_string(String(4, "F0^ F1"))
+        term_set._check_string(zfog.String(4, "F0^ F1"))
 
     with pytest.raises(TypeError, match="Expected a String instance"):
-        term_set._check_string(NormalString(3, "F0^ F1"))
+        term_set._check_string(zfon.String(3, "F0^ F1"))
 
 
 def test_real_term_into_other_types():
-    term_set = RealTermSet(4, max_string_len=2)
+    term_set = zfog.RealTermSet(4, max_string_len=2)
 
     assert term_set.insert(("F1 F0^", 2.0)) == 0
     assert term_set.insert(("F2", -1.0)) == 1
@@ -332,9 +320,9 @@ def test_real_term_into_other_types():
     assert term_set.contains("F2")
 
     terms = term_set.to_terms()
-    assert type(terms) is RealTerms
-    assert RealTermSet.from_terms(terms) == term_set
-    assert type(term_set.into(ComplexTermSet)) is ComplexTermSet
+    assert type(terms) is zfog.RealTerms
+    assert zfog.RealTermSet.from_terms(terms) == term_set
+    assert type(term_set.into(zfog.ComplexTermSet)) is zfog.ComplexTermSet
 
     assert term_set.remove("F1 F0^") == 0
     assert not term_set.contains("F1 F0^")
@@ -343,8 +331,8 @@ def test_real_term_into_other_types():
 
 
 def test_real_term_product():
-    lhs = RealTermSum.from_str("F0", 2)
-    rhs = RealTermSum.from_str("F0^", 2)
+    lhs = zfog.RealTermSum.from_str("F0", 2)
+    rhs = zfog.RealTermSum.from_str("F0^", 2)
 
     product = lhs * rhs
 
@@ -353,14 +341,14 @@ def test_real_term_product():
 
 
 def test_complex_term_product():
-    lhs = ComplexTermSum.from_str("((1j), F0)", 2)
-    rhs = ComplexTermSum.from_str("((2), F1^)", 2)
+    lhs = zfog.ComplexTermSum.from_str("((1j), F0)", 2)
+    rhs = zfog.ComplexTermSum.from_str("((2), F1^)", 2)
 
     assert str(lhs * rhs) == "(2j, F0 F1^)"
 
 
 def test_complex_term_sum_dagger():
-    term_sum = ComplexTermSum.from_str("((1j), F0^ F1), ((2), F2)", 3)
+    term_sum = zfog.ComplexTermSum.from_str("((1j), F0^ F1), ((2), F2)", 3)
 
     adjoint = term_sum.daggered()
 
@@ -376,85 +364,85 @@ def test_complex_term_sum_dagger():
     ("term_sum_type", "expected_type", "source", "modes", "expected"),
     (
         (
-            RealTermSum,
-            NormalRealTermSum,
+            zfog.RealTermSum,
+            zfon.RealTermSum,
             "F0 F0^",
             2,
             "(1.0, ), (-1.0, F0^ F0)",
         ),
         (
-            ComplexTermSum,
-            NormalComplexTermSum,
+            zfog.ComplexTermSum,
+            zfon.ComplexTermSum,
             "F0 F0^",
             2,
             "((1+0j), ), ((-1+0j), F0^ F0)",
         ),
         (
-            RealTermSum,
-            NormalRealTermSum,
+            zfog.RealTermSum,
+            zfon.RealTermSum,
             "F0 F0^, F0^ F0",
             2,
             "(1.0, )",
         ),
         (
-            ComplexTermSum,
-            NormalComplexTermSum,
+            zfog.ComplexTermSum,
+            zfon.ComplexTermSum,
             "F0 F0^, F0^ F0",
             2,
             "((1+0j), )",
         ),
         (
-            RealTermSum,
-            NormalRealTermSum,
+            zfog.RealTermSum,
+            zfon.RealTermSum,
             "F1 F0^",
             2,
             "(-1.0, F0^ F1)",
         ),
         (
-            ComplexTermSum,
-            NormalComplexTermSum,
+            zfog.ComplexTermSum,
+            zfon.ComplexTermSum,
             "F1 F0^",
             2,
             "((-1+0j), F0^ F1)",
         ),
         (
-            RealTermSum,
-            NormalRealTermSum,
+            zfog.RealTermSum,
+            zfon.RealTermSum,
             "F0 F1 F1^",
             2,
             "(1.0, F0), (1.0, F1^ F0 F1)",
         ),
         (
-            ComplexTermSum,
-            NormalComplexTermSum,
+            zfog.ComplexTermSum,
+            zfon.ComplexTermSum,
             "((1j), F0 F1 F1^)",
             2,
             "(1j, F0), (1j, F1^ F0 F1)",
         ),
         (
-            RealTermSum,
-            NormalRealTermSum,
+            zfog.RealTermSum,
+            zfon.RealTermSum,
             "F2 F0^ F1^",
             3,
             "(-1.0, F0^ F1^ F2)",
         ),
         (
-            ComplexTermSum,
-            NormalComplexTermSum,
+            zfog.ComplexTermSum,
+            zfon.ComplexTermSum,
             "F2 F0^ F1^",
             3,
             "((-1+0j), F0^ F1^ F2)",
         ),
         (
-            RealTermSum,
-            NormalRealTermSum,
+            zfog.RealTermSum,
+            zfon.RealTermSum,
             "F0 F0^ F1 F1^",
             3,
             "(1.0, ), (-1.0, F1^ F1), (-1.0, F0^ F0), (-1.0, F0^ F1^ F0 F1)",
         ),
         (
-            ComplexTermSum,
-            NormalComplexTermSum,
+            zfog.ComplexTermSum,
+            zfon.ComplexTermSum,
             "((2j), F0 F0^ F1 F1^), ((1-1j), F0 F0^)",
             3,
             "((1+1j), ), (-2j, F1^ F1), ((-1-1j), F0^ F0), (-2j, F0^ F1^ F0 F1)",

@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, Any, Self, overload
 
 from sympy import Expr
 
+import zixy.fermion.state as zfs
 from zixy._zixy import NormalFermionOperatorArray
 from zixy.container import terms
 from zixy.container.coeffs import (
@@ -57,23 +58,13 @@ from zixy.fermion.operator.normal._strings import (
     Strings,
     StringSpec,
 )
-from zixy.fermion.state._strings import String as StateString
-from zixy.fermion.state._terms import (
-    ComplexTermSum as ComplexState,
-    RealTermSum as RealState,
-    SymbolicTerm as SymbolicStateTerm,
-    SymbolicTermSum as SymbolicState,
-)
 
 if TYPE_CHECKING:
     from sympy import Symbol
 
+    import zixy.fermion.operator.general as zfog
     from zixy._zixy import Modes
     from zixy.container.coeffs import Number
-    from zixy.fermion.operator.general._terms import (
-        ComplexTermSum as GeneralComplexTermSum,
-        RealTermSum as GeneralRealTermSum,
-    )
 
 type TermSpec[C: (float, complex, Sign, ComplexSign, Expr)] = TermSpecT[
     NormalFermionOperatorArray, StringSpec, C
@@ -85,8 +76,8 @@ SignTermSpec = TermSpec[Sign]
 RealTermSpec = TermSpec[float]
 ComplexTermSpec = TermSpec[complex]
 SymbolicTermSpec = TermSpec[Expr]
-type NumericState = RealState | ComplexState
-type State = NumericState | SymbolicState
+type NumericState = zfs.RealTermSum | zfs.ComplexTermSum
+type State = NumericState | zfs.SymbolicTermSum
 
 
 def _term_sum_from_product(
@@ -501,30 +492,25 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
         """Return the set of mode indices on which ``self`` acts."""
         return self.strings._impl.lincomb_active_modes_real(self.strings._impl, self.coeffs._impl)
 
-    def to_general(self) -> GeneralRealTermSum:
+    def to_general(self) -> zfog.RealTermSum:
         """Convert this normal-ordered term sum to the raw general representation."""
-        from zixy.fermion.operator.general._strings import (  # noqa: PLC0415
-            Strings as GeneralStrings,
-        )
-        from zixy.fermion.operator.general._terms import (  # noqa: PLC0415
-            RealTermSum as GeneralRealTermSum,
-        )
+        import zixy.fermion.operator.general as zfog  # noqa: PLC0415
 
         impl, coeffs = self.strings._impl.lincomb_to_general_real(
             self.strings._impl, self._string_set._map, self.coeffs._impl
         )
         term_data = TermData(
-            GeneralStrings._create(impl),
+            zfog.Strings._create(impl),
             RealCoeffs._create(coeffs),
         )
-        return GeneralRealTermSum._create(term_data)
+        return zfog.RealTermSum._create(term_data)
 
     @overload
-    def apply(self, state: RealState) -> RealState: ...
+    def apply(self, state: zfs.RealTermSum) -> zfs.RealTermSum: ...
     @overload
-    def apply(self, state: ComplexState) -> ComplexState: ...
+    def apply(self, state: zfs.ComplexTermSum) -> zfs.ComplexTermSum: ...
     @overload
-    def apply(self, state: SymbolicState) -> SymbolicState: ...
+    def apply(self, state: zfs.SymbolicTermSum) -> zfs.SymbolicTermSum: ...
 
     def apply(self, state: State) -> State:
         """Apply ``self`` to a state.
@@ -536,11 +522,11 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
             The resulting state.
         """
         _check_modes_compatibility(self.modes, state.modes)
-        if isinstance(state, ComplexState):
+        if isinstance(state, zfs.ComplexTermSum):
             return self.into(ComplexTermSum).apply(state)
-        if isinstance(state, SymbolicState):
+        if isinstance(state, zfs.SymbolicTermSum):
             return self.into(SymbolicTermSum).apply(state)
-        out = RealState(self.modes)
+        out = zfs.RealTermSum(self.modes)
         assert isinstance(self._impl.coeffs, RealCoeffs)
         assert isinstance(state._impl.coeffs, RealCoeffs)
         assert isinstance(out._impl.coeffs, RealCoeffs)
@@ -555,15 +541,15 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
         return out.filter_nonzero()
 
     @overload
-    def mat_elem(self, bra: RealState, ket: RealState) -> float: ...
+    def mat_elem(self, bra: zfs.RealTermSum, ket: zfs.RealTermSum) -> float: ...
     @overload
-    def mat_elem(self, bra: ComplexState, ket: NumericState) -> complex: ...
+    def mat_elem(self, bra: zfs.ComplexTermSum, ket: NumericState) -> complex: ...
     @overload
-    def mat_elem(self, bra: RealState, ket: ComplexState) -> complex: ...
+    def mat_elem(self, bra: zfs.RealTermSum, ket: zfs.ComplexTermSum) -> complex: ...
     @overload
-    def mat_elem(self, bra: SymbolicState, ket: State) -> Expr: ...
+    def mat_elem(self, bra: zfs.SymbolicTermSum, ket: State) -> Expr: ...
     @overload
-    def mat_elem(self, bra: NumericState, ket: SymbolicState) -> Expr: ...
+    def mat_elem(self, bra: NumericState, ket: zfs.SymbolicTermSum) -> Expr: ...
 
     def mat_elem(self, bra: State, ket: State) -> float | complex | Expr:
         """Evaluate the matrix element of ``self`` between a bra and ket state.
@@ -576,9 +562,9 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
             The resulting matrix element.
         """
         _check_modes_compatibility(self.modes, bra.modes, ket.modes)
-        if isinstance(bra, SymbolicState) or isinstance(ket, SymbolicState):
+        if isinstance(bra, zfs.SymbolicTermSum) or isinstance(ket, zfs.SymbolicTermSum):
             return self.into(SymbolicTermSum).mat_elem(bra, ket)
-        if isinstance(bra, ComplexState) or isinstance(ket, ComplexState):
+        if isinstance(bra, zfs.ComplexTermSum) or isinstance(ket, zfs.ComplexTermSum):
             return self.into(ComplexTermSum).mat_elem(bra, ket)
         assert isinstance(self._impl.coeffs, RealCoeffs)
         assert isinstance(bra._impl.coeffs, RealCoeffs)
@@ -594,11 +580,11 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
         )
 
     @overload
-    def exp_val(self, state: RealState) -> float: ...
+    def exp_val(self, state: zfs.RealTermSum) -> float: ...
     @overload
-    def exp_val(self, state: ComplexState) -> complex: ...
+    def exp_val(self, state: zfs.ComplexTermSum) -> complex: ...
     @overload
-    def exp_val(self, state: SymbolicState) -> Expr: ...
+    def exp_val(self, state: zfs.SymbolicTermSum) -> Expr: ...
 
     def exp_val(self, state: State) -> float | complex | Expr:
         """Evaluate the expectation value of ``self`` with respect to a state.
@@ -788,30 +774,25 @@ class ComplexTermSum(
             self.strings._impl, self.coeffs._impl
         )
 
-    def to_general(self) -> GeneralComplexTermSum:
+    def to_general(self) -> zfog.ComplexTermSum:
         """Convert this normal-ordered term sum to the raw general representation."""
-        from zixy.fermion.operator.general._strings import (  # noqa: PLC0415
-            Strings as GeneralStrings,
-        )
-        from zixy.fermion.operator.general._terms import (  # noqa: PLC0415
-            ComplexTermSum as GeneralComplexTermSum,
-        )
+        import zixy.fermion.operator.general as zfog  # noqa: PLC0415
 
         impl, coeffs = self.strings._impl.lincomb_to_general_complex(
             self.strings._impl, self._string_set._map, self.coeffs._impl
         )
         term_data = TermData(
-            GeneralStrings._create(impl),
+            zfog.Strings._create(impl),
             ComplexCoeffs._create(coeffs),
         )
-        return GeneralComplexTermSum._create(term_data)
+        return zfog.ComplexTermSum._create(term_data)
 
     @overload
-    def apply(self, state: NumericState) -> ComplexState: ...
+    def apply(self, state: NumericState) -> zfs.ComplexTermSum: ...
     @overload
-    def apply(self, state: SymbolicState) -> SymbolicState: ...
+    def apply(self, state: zfs.SymbolicTermSum) -> zfs.SymbolicTermSum: ...
 
-    def apply(self, state: State) -> ComplexState | SymbolicState:
+    def apply(self, state: State) -> zfs.ComplexTermSum | zfs.SymbolicTermSum:
         """Apply ``self`` to a state.
 
         Args:
@@ -821,11 +802,11 @@ class ComplexTermSum(
             The resulting state.
         """
         _check_modes_compatibility(self.modes, state.modes)
-        if isinstance(state, RealState):
-            state = state.into(ComplexState)
-        elif isinstance(state, SymbolicState):
+        if isinstance(state, zfs.RealTermSum):
+            state = state.into(zfs.ComplexTermSum)
+        elif isinstance(state, zfs.SymbolicTermSum):
             return self.into(SymbolicTermSum).apply(state)
-        out = ComplexState(self.modes)
+        out = zfs.ComplexTermSum(self.modes)
         assert isinstance(self._impl.coeffs, ComplexCoeffs)
         assert isinstance(state._impl.coeffs, ComplexCoeffs)
         assert isinstance(out._impl.coeffs, ComplexCoeffs)
@@ -842,9 +823,9 @@ class ComplexTermSum(
     @overload
     def mat_elem(self, bra: NumericState, ket: NumericState) -> complex: ...
     @overload
-    def mat_elem(self, bra: SymbolicState, ket: State) -> Expr: ...
+    def mat_elem(self, bra: zfs.SymbolicTermSum, ket: State) -> Expr: ...
     @overload
-    def mat_elem(self, bra: NumericState, ket: SymbolicState) -> Expr: ...
+    def mat_elem(self, bra: NumericState, ket: zfs.SymbolicTermSum) -> Expr: ...
 
     def mat_elem(self, bra: State, ket: State) -> complex | Expr:
         """Evaluate the matrix element of ``self`` between a bra and ket state.
@@ -857,12 +838,12 @@ class ComplexTermSum(
             The resulting matrix element.
         """
         _check_modes_compatibility(self.modes, bra.modes, ket.modes)
-        if isinstance(bra, SymbolicState) or isinstance(ket, SymbolicState):
+        if isinstance(bra, zfs.SymbolicTermSum) or isinstance(ket, zfs.SymbolicTermSum):
             return self.into(SymbolicTermSum).mat_elem(bra, ket)
-        if isinstance(bra, RealState):
-            bra = bra.into(ComplexState)
-        if isinstance(ket, RealState):
-            ket = ket.into(ComplexState)
+        if isinstance(bra, zfs.RealTermSum):
+            bra = bra.into(zfs.ComplexTermSum)
+        if isinstance(ket, zfs.RealTermSum):
+            ket = ket.into(zfs.ComplexTermSum)
         assert isinstance(self._impl.coeffs, ComplexCoeffs)
         assert isinstance(bra._impl.coeffs, ComplexCoeffs)
         assert isinstance(ket._impl.coeffs, ComplexCoeffs)
@@ -879,7 +860,7 @@ class ComplexTermSum(
     @overload
     def exp_val(self, state: NumericState) -> complex: ...
     @overload
-    def exp_val(self, state: SymbolicState) -> Expr: ...
+    def exp_val(self, state: zfs.SymbolicTermSum) -> Expr: ...
 
     def exp_val(self, state: State) -> complex | Expr:
         """Evaluate the expectation value of ``self`` with respect to a state.
@@ -1101,7 +1082,7 @@ class SymbolicTermSum(TermSum[Expr]):
         out.isubs(values)
         return out
 
-    def apply(self, state: State) -> SymbolicState:
+    def apply(self, state: State) -> zfs.SymbolicTermSum:
         """Apply ``self`` to a state.
 
         Args:
@@ -1111,15 +1092,15 @@ class SymbolicTermSum(TermSum[Expr]):
             The resulting symbolic state.
         """
         _check_modes_compatibility(self.modes, state.modes)
-        if not isinstance(state, SymbolicState):
-            state = state.into(SymbolicState)
-        out = SymbolicState(self.modes)
+        if not isinstance(state, zfs.SymbolicTermSum):
+            state = state.into(zfs.SymbolicTermSum)
+        out = zfs.SymbolicTermSum(self.modes)
         for op_term in self:
             assert isinstance(op_term, SymbolicTerm)
             for state_term in state:
-                assert isinstance(state_term, SymbolicStateTerm)
+                assert isinstance(state_term, zfs.SymbolicTerm)
                 string = state_term.string.clone()
-                assert isinstance(string, StateString)
+                assert isinstance(string, zfs.String)
                 sign = string._impl.string_operator_string_imul(
                     string.index, op_term.string._impl, op_term.string.index
                 )
@@ -1138,10 +1119,10 @@ class SymbolicTermSum(TermSum[Expr]):
             The resulting symbolic matrix element.
         """
         _check_modes_compatibility(self.modes, bra.modes, ket.modes)
-        if not isinstance(bra, SymbolicState):
-            bra = bra.into(SymbolicState)
-        if not isinstance(ket, SymbolicState):
-            ket = ket.into(SymbolicState)
+        if not isinstance(bra, zfs.SymbolicTermSum):
+            bra = bra.into(zfs.SymbolicTermSum)
+        if not isinstance(ket, zfs.SymbolicTermSum):
+            ket = ket.into(zfs.SymbolicTermSum)
         return bra.vdot(self.apply(ket))
 
     def exp_val(self, state: State) -> Expr:

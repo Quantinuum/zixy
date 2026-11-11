@@ -1,27 +1,28 @@
 import pytest
 
+import zixy.qubit.operator as zqo
+import zixy.qubit.state as zqs
 from zixy.container.coeffs import ComplexSign
-from zixy.qubit.operator import I, String as PauliString, X, Y
-from zixy.qubit.state import String, StringSet
+from zixy.qubit.operator import I, X, Y
 
 
 def test_imul():
     n_qubit = 6
-    op = PauliString(n_qubit, (X, X, X, I, I, I))
-    state = String(n_qubit, "")
+    op = zqo.String(n_qubit, (X, X, X, I, I, I))
+    state = zqs.String(n_qubit, "")
     assert state.get_tuple() == (0,) * n_qubit
     with pytest.raises(TypeError):
-        String(n_qubit, None)
+        zqs.String(n_qubit, None)
     assert state.imul_get_phase(op) == ComplexSign(0)
     assert state.get_tuple() == (1, 1, 1, 0, 0, 0)
-    op = PauliString(n_qubit, (X, X, Y, I, I, I))
+    op = zqo.String(n_qubit, (X, X, Y, I, I, I))
     assert state.imul_get_phase(op) == ComplexSign(3)
     assert state.get_tuple() == (0,) * n_qubit
 
 
 def test_set():
     n_qubit = 6
-    s = StringSet(n_qubit)
+    s = zqs.StringSet(n_qubit)
     assert s.insert("") == 0
     assert len(s) == 1
     assert str(s) == "[0, 0, 0, 0, 0, 0]"

@@ -67,12 +67,9 @@ if TYPE_CHECKING:
 
     from sympy import Symbol
 
+    import zixy.fermion.operator.normal as zfon
     from zixy._zixy import Modes
     from zixy.container.coeffs import Number
-    from zixy.fermion.operator.normal._terms import (
-        ComplexTermSum as NormalComplexTermSum,
-        RealTermSum as NormalRealTermSum,
-    )
 
 type TermSpec[C: (float, complex, Sign, ComplexSign, Expr)] = TermSpecT[
     GeneralFermionOperatorArray, StringSpec, C
@@ -527,21 +524,18 @@ class RealTermSum(NumericTermSum[GeneralFermionOperatorArray, StringSpec, float]
         data = TermData(Strings._create(impl), RealCoeffs._create(coeffs))
         return RealTermSum._create(data)
 
-    def to_normal_ordered(self) -> NormalRealTermSum:
+    def to_normal_ordered(self) -> zfon.RealTermSum:
         """Convert this raw general term sum to the normal-ordered representation."""
-        from zixy.fermion.operator.normal._strings import Strings as NormalStrings  # noqa: PLC0415
-        from zixy.fermion.operator.normal._terms import (  # noqa: PLC0415
-            RealTermSum as NormalRealTermSum,
-        )
+        import zixy.fermion.operator.normal as zfon  # noqa: PLC0415
 
         impl, coeffs = self.strings._impl.lincomb_to_normal_order_real(
             self.strings._impl, self.coeffs._impl
         )
         term_data = TermData(
-            NormalStrings._create(impl),
+            zfon.Strings._create(impl),
             RealCoeffs._create(coeffs),
         )
-        return NormalRealTermSum._create(term_data)
+        return zfon.RealTermSum._create(term_data)
 
 
 class ComplexTerm(Term[complex]):
@@ -678,21 +672,18 @@ class ComplexTermSum(
         data = TermData(Strings._create(impl), ComplexCoeffs._create(coeffs))
         return ComplexTermSum._create(data)
 
-    def to_normal_ordered(self) -> NormalComplexTermSum:
+    def to_normal_ordered(self) -> zfon.ComplexTermSum:
         """Convert this raw general term sum to the normal-ordered representation."""
-        from zixy.fermion.operator.normal._strings import Strings as NormalStrings  # noqa: PLC0415
-        from zixy.fermion.operator.normal._terms import (  # noqa: PLC0415
-            ComplexTermSum as NormalComplexTermSum,
-        )
+        import zixy.fermion.operator.normal as zfon  # noqa: PLC0415
 
         impl, coeffs = self.strings._impl.lincomb_to_normal_order_complex(
             self.strings._impl, self.coeffs._impl
         )
         term_data = TermData(
-            NormalStrings._create(impl),
+            zfon.Strings._create(impl),
             ComplexCoeffs._create(coeffs),
         )
-        return NormalComplexTermSum._create(term_data)
+        return zfon.ComplexTermSum._create(term_data)
 
 
 class SymbolicTerm(Term[Expr]):

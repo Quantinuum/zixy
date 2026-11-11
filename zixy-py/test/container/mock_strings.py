@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from zixy.container.base import check_schema_version
 from zixy.container.strings import (
     String as BaseString,
     Strings as BaseStrings,
@@ -10,6 +11,8 @@ from zixy.container.strings import (
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+    from zixy.container.base import SerializedContainer
 
 """
 Mock-up a viewable string list system with classes extending:
@@ -162,6 +165,41 @@ class String(BaseString[StringsImplArray, StringSpecT]):
 
     _clear_spec = ""
 
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            An independent dictionary containing the mock family metadata and a one-entry list
+            containing the string.
+        """
+        data = super().to_dict()
+        data["family"] = "mock"
+        data["strings"] = [str(self)]
+        return data
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> String:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
+            the source dictionary and any existing containers.
+
+        Raises:
+            KeyError: A required field is missing.
+            TypeError: A serialized value is not a supported string specifier.
+            ValueError: The schema version does not match, or the source does not contain exactly
+                one
+                string.
+        """
+        check_schema_version(source)
+        if len(source["strings"]) != 1:
+            raise ValueError("A serialized String must contain exactly one string.")
+        return cls(source["strings"][0])
+
     def __init__(self, source: StringSpecT):
         impl = self.impl_type()
         impl.resize(1)
@@ -196,6 +234,37 @@ class String(BaseString[StringsImplArray, StringSpecT]):
 class Strings(BaseStrings[StringsImplArray, StringSpecT]):
     string_type = String
 
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            An independent dictionary containing the mock family metadata and a list of the visible
+            strings.
+        """
+        data = super().to_dict()
+        data["family"] = "mock"
+        data["strings"] = [str(string) for string in self]
+        return data
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Strings:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
+            the source dictionary and any existing containers.
+
+        Raises:
+            KeyError: A required field is missing.
+            TypeError: A serialized value is not a supported string specifier.
+            ValueError: The schema version does not match.
+        """
+        check_schema_version(source)
+        return cls.from_iterable(source["strings"])
+
     def __init__(self, n: int = 0):
         super().__init__(StringsImplArray.from_len(n))
 
@@ -215,6 +284,18 @@ class Strings(BaseStrings[StringsImplArray, StringSpecT]):
 class StringSet(BaseStringSet[StringsImplArray, StringSpecT]):
     strings_type = Strings
     map_type = dict
+
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            An independent dictionary containing the mock family metadata and a list of the visible
+            strings.
+        """
+        data = super().to_dict()
+        data["family"] = "mock"
+        data["strings"] = [str(string) for string in self]
+        return data
 
     def __init__(self):
         super().__init__(StringsImplArray())

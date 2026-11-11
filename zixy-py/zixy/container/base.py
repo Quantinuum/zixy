@@ -31,6 +31,7 @@ from typing import (
 
 import numpy as np
 
+from zixy import __version__
 from zixy.utils import slice_index, slice_len
 
 if TYPE_CHECKING:
@@ -475,7 +476,7 @@ class Representable(ABC):
 
 
 def check_schema_version(source: SerializedContainer) -> None:
-    """Check that the serialized container is valid."""
+    """Check that a serialized container uses the supported schema version."""
     if source["schema_version"] != __schema_version__:
         raise ValueError(
             f"schema version mismatch: expected {__schema_version__}, got "
@@ -523,7 +524,7 @@ class SerializedContainer(TypedDict):
     coeffs: NotRequired[list[Any]]
     """List of coefficients in the container."""
 
-    space: NotRequired[list[Any]]
+    space: NotRequired[dict[str, Any]]
     """Space for the domain of the container."""
 
 
@@ -582,4 +583,20 @@ class Serializable[SerializedT: Mapping[str, object]](ABC):
 class SerializableContainer(Serializable[SerializedContainer], ABC):
     """Abstract base class for containers that can be serialized to and deserialized from JSON."""
 
-    pass
+    def to_dict(self) -> SerializedContainer:
+        """Return the common metadata for a serialized container.
+
+        Returns:
+            A new dictionary containing the schema version, package version, concrete class name,
+            and the default family ``"container"``.
+
+        Note:
+            Subclasses update this dictionary with their family, contents, and space as needed.
+            This base implementation contains no container contents or view metadata.
+        """
+        return dict(
+            schema_version=__schema_version__,
+            package_version=__version__,
+            family="container",
+            container=type(self).__name__,
+        )

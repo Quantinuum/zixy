@@ -4,6 +4,7 @@ import pytest
 from sympy import sympify
 
 from zixy import __version__
+from zixy._zixy import Modes, Qubits
 from zixy.container.base import __schema_version__
 from zixy.container.coeffs import (
     ComplexCoeffs,
@@ -14,6 +15,9 @@ from zixy.container.coeffs import (
     SignCoeffs,
     SymbolicCoeffs,
 )
+from zixy.fermion import state as zfs
+from zixy.fermion.operator import general as zfog, normal as zfon
+from zixy.qubit import operator as zqo, state as zqs
 
 
 @pytest.fixture(
@@ -140,3 +144,334 @@ def test_coeffs_deserialization_cross_type():
     assert list(RealCoeffs.from_dict(signs.to_dict())) == [1.0, -1.0]
     reals = RealCoeffs.from_sequence([1.25, -2.5])
     assert list(ComplexCoeffs.from_json(reals.to_json())) == [1.25 + 0j, -2.5 + 0j]
+
+
+@pytest.fixture(
+    params=[
+        (Qubits.from_count(3), [0, 1, 2]),
+        (Qubits.from_offset(4, 3), [4, 5, 6]),
+        (Qubits.from_inds([7, 2, 5]), [7, 2, 5]),
+    ],
+    ids=["default", "offset", "mapped"],
+)
+def qubit_space(request):
+    return request.param
+
+
+@pytest.mark.parametrize("container", ["String", "Strings", "StringSet"])
+def test_pauli_serialization_format(qubit_space, container):
+    qubits, indices = qubit_space
+    rows = [["I", "X", "Y"], ["Z", "Y", "X"]]
+    strings = zqo.Strings.from_iterable([[zqo.I, zqo.X, zqo.Y], [zqo.Z, zqo.Y, zqo.X]], qubits)
+    if container == "String":
+        source = strings[1]
+        rows = rows[1:]
+    elif container == "Strings":
+        source = strings
+    else:
+        source = zqo.StringSet.from_strings(strings)
+
+    expected = {
+        "schema_version": __schema_version__,
+        "package_version": __version__,
+        "family": "qubit.operator",
+        "container": container,
+        "space": {"qubits": indices},
+        "strings": rows,
+    }
+    assert source.to_dict() == expected
+    assert json.loads(source.to_json()) == expected
+
+
+@pytest.mark.parametrize("format_", ["dict", "json"])
+@pytest.mark.parametrize(
+    "slices",
+    [
+        (),
+        (slice(1, None),),
+        (slice(1, None, 2),),
+        (slice(None, None, -1),),
+        (slice(0, 0),),
+        (slice(None, None, -1), slice(1, None, 2)),
+    ],
+)
+def test_pauli_strings_serialization_round_trip(qubit_space, format_, slices):
+    qubits, _ = qubit_space
+    source = zqo.Strings.from_iterable(
+        [[zqo.X, zqo.I, zqo.Y], [zqo.Z, zqo.X, zqo.I], [zqo.I, zqo.Y, zqo.Z]], qubits
+    )
+    view = source
+    for indexer in slices:
+        view = view[indexer]
+    if format_ == "dict":
+        restored = zqo.Strings.from_dict(view.to_dict())
+    else:
+        restored = zqo.Strings.from_json(view.to_json())
+    assert restored == view
+    assert restored.qubits == qubits
+    assert restored.is_owning()
+
+    before = source.clone()
+    if len(restored):
+        restored[0].clear()
+        assert source == before
+    before = restored.clone()
+    source[0].clear()
+    assert restored == before
+
+
+def test_pauli_string_serialization_snapshot(qubit_space):
+    qubits, _ = qubit_space
+    source = zqo.Strings.from_iterable([[zqo.X, zqo.Y, zqo.Z], [zqo.Z, zqo.X, zqo.Y]], qubits)
+    view = source[1]
+    payload = view.to_dict()
+    restored = zqo.String.from_dict(payload)
+    assert restored == view
+    assert restored.qubits == qubits
+    assert restored.is_owning()
+
+    source[1].clear()
+    assert payload["strings"] == [["Z", "X", "Y"]]
+    payload["strings"][0][0] = "I"
+    assert restored.get_tuple() == (zqo.Z, zqo.X, zqo.Y)
+    restored.clear()
+    assert source[0].get_tuple() == (zqo.X, zqo.Y, zqo.Z)
+
+
+def test_pauli_set_serialization_rebuilds_map(qubit_space):
+    qubits, _ = qubit_space
+    strings = zqo.Strings.from_iterable([[zqo.X], [zqo.Y], [zqo.X]], qubits)
+    source = zqo.StringSet.from_strings(strings)
+    restored = zqo.StringSet.from_json(source.to_json())
+    assert restored == source
+    assert restored.to_strings().qubits == qubits
+    assert restored.insert([zqo.X]) == 0
+    assert len(restored) == 2
+    restored.remove([zqo.Y])
+    assert len(restored) == 1
+    assert len(source) == 2
+    assert restored.insert([zqo.Z]) == 1
+
+
+@pytest.mark.parametrize("container_type", [zqo.String, zqo.Strings, zqo.StringSet])
+@pytest.mark.parametrize("n_qubits", [0, 3])
+def test_pauli_serialization_empty(container_type, n_qubits):
+    # Construct a zero-qubit identity through the array, avoiding the text parser.
+    source = (
+        zqo.Strings(n_qubits, 1)[0].clone()
+        if container_type is zqo.String
+        else container_type(n_qubits)
+    )
+    restored = container_type.from_json(source.to_json())
+    assert restored == source
+    space = restored.qubits if container_type is not zqo.StringSet else restored.to_strings().qubits
+    assert len(space) == n_qubits
+
+
+@pytest.mark.parametrize("n_strings", [0, 2])
+def test_pauli_string_deserialization_requires_one_string(n_strings):
+    payload = zqo.Strings(3, n_strings).to_dict()
+    with pytest.raises(ValueError, match="exactly one string"):
+        zqo.String.from_dict(payload)
+
+
+@pytest.mark.parametrize("container_type", [zqo.String, zqo.Strings, zqo.StringSet])
+def test_pauli_serialization_schema_mismatch(container_type):
+    payload = container_type(3).to_dict()
+    payload["schema_version"] = "unsupported"
+    with pytest.raises(ValueError, match="schema version mismatch"):
+        container_type.from_dict(payload)
+
+
+@pytest.mark.parametrize("row", [["X"], ["X", "Y", "invalid"]])
+def test_pauli_serialization_invalid_row(row):
+    payload = zqo.Strings(3).to_dict()
+    payload["strings"] = [row]
+    with pytest.raises(ValueError):
+        zqo.Strings.from_dict(payload)
+
+
+@pytest.fixture(params=[zqo, zqs, zfs, zfon, zfog], ids=lambda family: family.__name__)
+def string_family(request):
+    return request.param
+
+
+@pytest.fixture(params=["count", "labelled", "alternate", "empty"])
+def string_case(request, string_family):
+    family = string_family
+    if family in (zqo, zqs):
+        space, indices = {
+            "count": (Qubits.from_count(4), [0, 1, 2, 3]),
+            "labelled": (Qubits.from_offset(4, 4), [4, 5, 6, 7]),
+            "alternate": (Qubits.from_inds([7, 2, 8, 3]), [7, 2, 8, 3]),
+            "empty": (Qubits.from_count(0), []),
+        }[request.param]
+        encoded_space = {"qubits": indices}
+    else:
+        space, ordering = {
+            "count": (Modes.from_count(4), None),
+            "labelled": (Modes.from_pair_count_spin_major(2), "major"),
+            "alternate": (Modes.from_pair_count_spin_minor(2), "minor"),
+            "empty": (Modes.from_count(0), None),
+        }[request.param]
+        encoded_space = {"modes": len(space), "spin_ordering": ordering}
+
+    if family is zqo:
+        rows = [[zqo.I, zqo.X, zqo.Y, zqo.Z], [zqo.X] * 4, [zqo.Z] * 4]
+        encoded = [["I", "X", "Y", "Z"], ["X"] * 4, ["Z"] * 4]
+    elif family in (zqs, zfs):
+        rows = [[True, False, False, True], [False, True, False, False], [True] * 4]
+        encoded = rows
+    elif family is zfon:
+        rows = [([0], [1]), ([2], [3]), ([1], [2])]
+        encoded = [[[0], [1]], [[2], [3]], [[1], [2]]]
+    else:
+        # Raw products must preserve both the order and repeated operators.
+        rows = [
+            [(0, True), (1, False), (0, True)],
+            [(3, False), (1, True)],
+            [(0, False), (2, True), (0, False)],
+        ]
+        encoded = [[[mode, creation] for mode, creation in row] for row in rows]
+
+    if len(space) == 0:
+        strings = family.Strings(space, 3)
+        encoded = [[[], []] if family is zfon else [] for _ in range(3)]
+    else:
+        strings = family.Strings.from_iterable(rows, space)
+    return strings, encoded, encoded_space
+
+
+@pytest.mark.parametrize("container", ["String", "Strings", "StringSet"])
+@pytest.mark.parametrize("format_", ["dict", "json"])
+def test_string_family_serialization(string_family, string_case, container, format_):
+    strings, encoded, space = string_case
+    if container == "String":
+        source = strings[1]
+        encoded = encoded[1:2]
+    elif container == "StringSet":
+        source = string_family.StringSet.from_strings(strings)
+        if len(source) == 1:
+            encoded = encoded[:1]
+    else:
+        source = strings
+    expected = {
+        "schema_version": __schema_version__,
+        "package_version": __version__,
+        "family": string_family.__name__.removeprefix("zixy."),
+        "container": container,
+        "space": space,
+        "strings": encoded,
+    }
+    assert source.to_dict() == expected
+    cls = getattr(string_family, container)
+    if format_ == "dict":
+        restored = cls.from_dict(expected)
+    else:
+        restored = cls.from_json(source.to_json())
+    assert type(restored) is cls
+    assert restored == source
+    assert restored.to_dict() == expected
+    if container != "StringSet":
+        assert restored.is_owning()
+
+
+@pytest.mark.parametrize(
+    "slices",
+    [
+        (slice(1, None),),
+        (slice(1, None, 2),),
+        (slice(None, None, -1),),
+        (slice(0, 0),),
+        (slice(None, None, -1), slice(1, None, 2)),
+    ],
+)
+def test_string_family_serialization_views(string_case, slices):
+    source, encoded, space = string_case
+    view = source
+    for indexer in slices:
+        view = view[indexer]
+        encoded = encoded[indexer]
+    payload = view.to_dict()
+    assert payload["strings"] == encoded
+    assert payload["space"] == space
+    restored = type(source).from_json(view.to_json())
+    assert restored == view
+    assert restored.is_owning()
+    assert restored.to_dict()["space"] == space
+
+    before = source.clone()
+    # Zero-mode identities have no content to mutate.
+    if space.get("modes", len(space.get("qubits", []))):
+        for string in restored:
+            string.clear()
+    assert source == before
+    before = restored.clone()
+    source.resize(0)
+    assert restored == before
+    assert payload["strings"] == encoded
+    payload["strings"].clear()
+    assert restored == before
+
+
+def test_string_family_set_rebuilds_map(string_family, string_case):
+    strings, _, _ = string_case
+    restored = string_family.StringSet.from_json(strings.to_json())
+    first = strings[0].clone()
+    size = len(restored)
+    restored.insert(first)
+    assert len(restored) == size
+    restored.remove(first)
+    assert len(restored) == size - 1
+    restored.insert(first)
+    assert len(restored) == size
+    assert len(strings) == 3
+
+
+@pytest.mark.parametrize("container", ["String", "Strings", "StringSet"])
+def test_string_family_schema_mismatch(string_family, string_case, container):
+    strings, _, _ = string_case
+    payload = strings.to_dict()
+    payload["schema_version"] = "unsupported"
+    with pytest.raises(ValueError, match="schema version mismatch"):
+        getattr(string_family, container).from_dict(payload)
+
+
+@pytest.mark.parametrize("n_strings", [0, 2])
+def test_string_family_requires_one_string(string_family, string_case, n_strings):
+    strings, _, _ = string_case
+    payload = strings.to_dict()
+    payload["strings"] = payload["strings"][:n_strings]
+    with pytest.raises(ValueError, match="exactly one string"):
+        string_family.String.from_dict(payload)
+
+
+@pytest.mark.parametrize("family", [zfs, zfon, zfog])
+@pytest.mark.parametrize("ordering", ["major", "minor"])
+def test_fermion_serialization_empty_spin_space(family, ordering):
+    modes = (
+        Modes.from_pair_count_spin_major(0)
+        if ordering == "major"
+        else Modes.from_pair_count_spin_minor(0)
+    )
+    source = family.Strings(modes)
+    restored = family.Strings.from_json(source.to_json())
+    assert restored.modes == modes
+    assert restored.to_dict()["space"] == {"modes": 0, "spin_ordering": ordering}
+
+
+@pytest.mark.parametrize(
+    "space",
+    [
+        {"modes": -1, "spin_ordering": None},
+        {"modes": True, "spin_ordering": None},
+        {"modes": 2.5, "spin_ordering": None},
+        {"modes": 3, "spin_ordering": "major"},
+        {"modes": 4, "spin_ordering": "unknown"},
+    ],
+)
+def test_fermion_serialization_invalid_space(space):
+    payload = zfs.Strings(4).to_dict()
+    payload["space"] = space
+    with pytest.raises(ValueError):
+        zfs.Strings.from_dict(payload)

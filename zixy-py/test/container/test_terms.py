@@ -154,6 +154,54 @@ class SymbolicMockTermSum(TermSum[StringsImplArray, str, Expr]):
 
 
 @pytest.mark.parametrize(
+    ("cls", "values"),
+    [
+        (RealMockTermSum, [2.0, 3.0, 4.0, 5.0]),
+        (ComplexMockTermSum, [1 + 2j, 3 - 1j, -1 + 1j, 2 + 1j]),
+        (SymbolicMockTermSum, [sympify(x) for x in ["x", "y", "2*x", "1"]]),
+    ],
+)
+@pytest.mark.parametrize(
+    "slices",
+    [
+        (),
+        (slice(None),),
+        (slice(1, None),),
+        (slice(None, None, 2),),
+        (slice(None, None, -1),),
+        (slice(None, None, -1), slice(1, None, 2)),
+        (slice(0, 0),),
+    ],
+)
+def test_term_sum_from_terms_accumulates_duplicates(cls, values, slices):
+    terms = cls.terms_type.from_iterable(zip(["alpha", "beta", "alpha", "alpha"], values))
+    source = terms
+    for indexer in slices:
+        source = source[indexer]
+    before = [(str(term.string), term.coeff) for term in source]
+    expected = {}
+    for key, coeff in before:
+        expected[key] = expected.get(key, 0) + coeff
+
+    result = cls.from_terms(source)
+
+    assert type(result) is cls
+    assert [(str(term.string), term.coeff) for term in result] == list(expected.items())
+    assert result.strings.is_owning()
+    assert result.coeffs.is_owning()
+    for key, coeff in expected.items():
+        assert result.lookup_coeff(key) == coeff
+    assert [(str(term.string), term.coeff) for term in source] == before
+    if expected:
+        key = next(iter(expected))
+        result[key] = result[key] * 2
+        assert [(str(term.string), term.coeff) for term in source] == before
+        after = [(str(term.string), term.coeff) for term in result]
+        source[0].coeff = source[0].coeff * 3
+        assert [(str(term.string), term.coeff) for term in result] == after
+
+
+@pytest.mark.parametrize(
     ("term_sum_type", "term_type", "coeff"),
     (
         (RealMockTermSum, RealMockTerm, 2.5),

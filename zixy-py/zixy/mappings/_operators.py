@@ -22,7 +22,7 @@ import zixy.qubit.operator as zqo
 from zixy.container.coeffs import convert
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterator
     from typing import Literal
 
     import zixy.fermion.operator.general as zfog
@@ -143,9 +143,12 @@ def _apply_operator(
     if not isinstance(value, term_types + sum_types):
         raise TypeError(f"Cannot map an instance of {type(value).__name__}.")
     terms = (value,) if isinstance(value, term_types) else value
-    output = zqo.ComplexTermSum(qubits)
-    for term in terms:
-        mapped_sum = map_string(term.string)
-        mapped_sum *= convert(term.coeff, complex)
-        output += mapped_sum
+
+    def mapped_terms() -> Iterator[zqo.ComplexTerm]:
+        for term in terms:
+            mapped_sum = map_string(term.string)
+            mapped_sum *= convert(term.coeff, complex)
+            yield from mapped_sum
+
+    output = zqo.ComplexTermSum.from_iterable(mapped_terms(), qubits).filter_nonzero()
     return output.real_part if real else output

@@ -251,7 +251,7 @@ class Strings(FermionStrings[ImplT, SpecT, ElemT]):
         check_schema_version(source)
         space = _deserialize_modes(source["space"])
         rows = source["strings"]
-        out = cls(space, len(rows))
+        out = cls(space, size=len(rows))
         for i, row in enumerate(rows):
             if len(row) != len(space):
                 raise ValueError("Serialized string length must match the space.")
@@ -260,14 +260,14 @@ class Strings(FermionStrings[ImplT, SpecT, ElemT]):
         return out
 
     @classmethod
-    def new(cls, modes: int | Modes = 0, n: int = 0) -> Self:
+    def new(cls, modes: int | Modes = 0, *, size: int = 0) -> Self:
         """Create a new instance with a given mode count and number of vacuum strings.
 
         Args:
             modes: Space of modes or a number of modes.
-            n: Number of default elements with which to create the instance.
+            size: Number of default elements with which to create the instance.
         """
-        return cls(modes, n)
+        return cls(modes, size=size)
 
     @classmethod
     def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:

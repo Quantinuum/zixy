@@ -131,17 +131,17 @@ class Strings[ImplT: FermionArray, SpecT, ElemT](BaseStrings[ImplT, SpecT]):
     string_type: type[String[ImplT, SpecT, ElemT]]
     _set_type: type[StringSet[ImplT, SpecT, ElemT]]
 
-    def __init__(self, modes: int | Modes = 0, n: int = 0):
+    def __init__(self, modes: int | Modes = 0, *, size: int = 0):
         """Initialize the string array.
 
         Args:
             modes: The mode space or number of modes.
-            n: Number of default elements with which to create the instance.
+            size: Number of default elements with which to create the instance.
         """
         super().__init__(
             self.string_type.impl_type(Modes.from_count(modes) if isinstance(modes, int) else modes)
         )
-        self.resize(n)
+        self.resize(size)
 
     @property
     def modes(self) -> Modes:

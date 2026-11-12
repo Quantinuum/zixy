@@ -65,7 +65,7 @@ def _check_coefficient_views[ImplT: ImplArray, SpecT, C: (float, complex, Sign, 
 
 
 def test_zqo_coefficient_relationships() -> None:
-    signs = zqo.SignTerms(2, 2)
+    signs = zqo.SignTerms(2, size=2)
     signs_set = zqo.SignTermSet.from_terms(signs)
     assert_type(signs.coeffs, SignCoeffs)
     assert_type(signs.coeffs_type, type[SignCoeffs])
@@ -78,7 +78,7 @@ def test_zqo_coefficient_relationships() -> None:
     assert_type(_set_coeffs(signs_set), Coeffs[Sign])
     _check_coefficient_views(signs, signs_set, SignCoeffs, Sign(True))
 
-    phases = zqo.ComplexSignTerms(2, 2)
+    phases = zqo.ComplexSignTerms(2, size=2)
     phases_set = zqo.ComplexSignTermSet.from_terms(phases)
     assert_type(phases.coeffs, ComplexSignCoeffs)
     assert_type(phases.coeffs_type, type[ComplexSignCoeffs])
@@ -91,7 +91,7 @@ def test_zqo_coefficient_relationships() -> None:
     assert_type(_set_coeffs(phases_set), Coeffs[ComplexSign])
     _check_coefficient_views(phases, phases_set, ComplexSignCoeffs, ComplexSign(1))
 
-    reals = zqo.RealTerms(2, 2)
+    reals = zqo.RealTerms(2, size=2)
     reals_set = zqo.RealTermSet.from_terms(reals)
     assert_type(reals.coeffs, RealCoeffs)
     assert_type(reals.coeffs_type, type[RealCoeffs])
@@ -104,7 +104,7 @@ def test_zqo_coefficient_relationships() -> None:
     assert_type(_set_coeffs(reals_set), Coeffs[float])
     _check_coefficient_views(reals, reals_set, RealCoeffs, 2.0)
 
-    complexes = zqo.ComplexTerms(2, 2)
+    complexes = zqo.ComplexTerms(2, size=2)
     complexes_set = zqo.ComplexTermSet.from_terms(complexes)
     assert_type(complexes.coeffs, ComplexCoeffs)
     assert_type(complexes.coeffs_type, type[ComplexCoeffs])
@@ -117,7 +117,7 @@ def test_zqo_coefficient_relationships() -> None:
     assert_type(_set_coeffs(complexes_set), Coeffs[complex])
     _check_coefficient_views(complexes, complexes_set, ComplexCoeffs, 2j)
 
-    symbols = zqo.SymbolicTerms(2, 2)
+    symbols = zqo.SymbolicTerms(2, size=2)
     symbols_set = zqo.SymbolicTermSet.from_terms(symbols)
     assert_type(symbols.coeffs, SymbolicCoeffs)
     assert_type(symbols.coeffs_type, type[SymbolicCoeffs])
@@ -156,7 +156,7 @@ def test_zqo_coefficient_relationships() -> None:
 
 
 def test_zqs_coefficient_relationships() -> None:
-    signs = zqs.SignTerms(2, 2)
+    signs = zqs.SignTerms(2, size=2)
     signs_set = zqs.SignTermSet.from_terms(signs)
     assert_type(signs.coeffs, SignCoeffs)
     assert_type(signs.coeffs_type, type[SignCoeffs])
@@ -169,7 +169,7 @@ def test_zqs_coefficient_relationships() -> None:
     assert_type(_set_coeffs(signs_set), Coeffs[Sign])
     _check_coefficient_views(signs, signs_set, SignCoeffs, Sign(True))
 
-    phases = zqs.ComplexSignTerms(2, 2)
+    phases = zqs.ComplexSignTerms(2, size=2)
     phases_set = zqs.ComplexSignTermSet.from_terms(phases)
     assert_type(phases.coeffs, ComplexSignCoeffs)
     assert_type(phases.coeffs_type, type[ComplexSignCoeffs])
@@ -182,7 +182,7 @@ def test_zqs_coefficient_relationships() -> None:
     assert_type(_set_coeffs(phases_set), Coeffs[ComplexSign])
     _check_coefficient_views(phases, phases_set, ComplexSignCoeffs, ComplexSign(1))
 
-    reals = zqs.RealTerms(2, 2)
+    reals = zqs.RealTerms(2, size=2)
     reals_set = zqs.RealTermSet.from_terms(reals)
     assert_type(reals.coeffs, RealCoeffs)
     assert_type(reals.coeffs_type, type[RealCoeffs])
@@ -195,7 +195,7 @@ def test_zqs_coefficient_relationships() -> None:
     assert_type(_set_coeffs(reals_set), Coeffs[float])
     _check_coefficient_views(reals, reals_set, RealCoeffs, 2.0)
 
-    complexes = zqs.ComplexTerms(2, 2)
+    complexes = zqs.ComplexTerms(2, size=2)
     complexes_set = zqs.ComplexTermSet.from_terms(complexes)
     assert_type(complexes.coeffs, ComplexCoeffs)
     assert_type(complexes.coeffs_type, type[ComplexCoeffs])
@@ -208,7 +208,7 @@ def test_zqs_coefficient_relationships() -> None:
     assert_type(_set_coeffs(complexes_set), Coeffs[complex])
     _check_coefficient_views(complexes, complexes_set, ComplexCoeffs, 2j)
 
-    symbols = zqs.SymbolicTerms(2, 2)
+    symbols = zqs.SymbolicTerms(2, size=2)
     symbols_set = zqs.SymbolicTermSet.from_terms(symbols)
     assert_type(symbols.coeffs, SymbolicCoeffs)
     assert_type(symbols.coeffs_type, type[SymbolicCoeffs])
@@ -247,7 +247,7 @@ def test_zqs_coefficient_relationships() -> None:
 
 
 def test_zfog_coefficient_relationships() -> None:
-    reals = zfog.RealTerms(2, 2)
+    reals = zfog.RealTerms(2, size=2)
     reals_set = zfog.RealTermSet.from_terms(reals)
     assert_type(reals.coeffs, RealCoeffs)
     assert_type(reals.coeffs_type, type[RealCoeffs])
@@ -260,7 +260,7 @@ def test_zfog_coefficient_relationships() -> None:
     assert_type(_set_coeffs(reals_set), Coeffs[float])
     _check_coefficient_views(reals, reals_set, RealCoeffs, 2.0)
 
-    complexes = zfog.ComplexTerms(2, 2)
+    complexes = zfog.ComplexTerms(2, size=2)
     complexes_set = zfog.ComplexTermSet.from_terms(complexes)
     assert_type(complexes.coeffs, ComplexCoeffs)
     assert_type(complexes.coeffs_type, type[ComplexCoeffs])
@@ -273,7 +273,7 @@ def test_zfog_coefficient_relationships() -> None:
     assert_type(_set_coeffs(complexes_set), Coeffs[complex])
     _check_coefficient_views(complexes, complexes_set, ComplexCoeffs, 2j)
 
-    symbols = zfog.SymbolicTerms(2, 2)
+    symbols = zfog.SymbolicTerms(2, size=2)
     symbols_set = zfog.SymbolicTermSet.from_terms(symbols)
     assert_type(symbols.coeffs, SymbolicCoeffs)
     assert_type(symbols.coeffs_type, type[SymbolicCoeffs])
@@ -312,7 +312,7 @@ def test_zfog_coefficient_relationships() -> None:
 
 
 def test_zfon_coefficient_relationships() -> None:
-    signs = zfon.SignTerms(2, 2)
+    signs = zfon.SignTerms(2, size=2)
     signs_set = zfon.SignTermSet.from_terms(signs)
     assert_type(signs.coeffs, SignCoeffs)
     assert_type(signs.coeffs_type, type[SignCoeffs])
@@ -325,7 +325,7 @@ def test_zfon_coefficient_relationships() -> None:
     assert_type(_set_coeffs(signs_set), Coeffs[Sign])
     _check_coefficient_views(signs, signs_set, SignCoeffs, Sign(True))
 
-    reals = zfon.RealTerms(2, 2)
+    reals = zfon.RealTerms(2, size=2)
     reals_set = zfon.RealTermSet.from_terms(reals)
     assert_type(reals.coeffs, RealCoeffs)
     assert_type(reals.coeffs_type, type[RealCoeffs])
@@ -338,7 +338,7 @@ def test_zfon_coefficient_relationships() -> None:
     assert_type(_set_coeffs(reals_set), Coeffs[float])
     _check_coefficient_views(reals, reals_set, RealCoeffs, 2.0)
 
-    complexes = zfon.ComplexTerms(2, 2)
+    complexes = zfon.ComplexTerms(2, size=2)
     complexes_set = zfon.ComplexTermSet.from_terms(complexes)
     assert_type(complexes.coeffs, ComplexCoeffs)
     assert_type(complexes.coeffs_type, type[ComplexCoeffs])
@@ -351,7 +351,7 @@ def test_zfon_coefficient_relationships() -> None:
     assert_type(_set_coeffs(complexes_set), Coeffs[complex])
     _check_coefficient_views(complexes, complexes_set, ComplexCoeffs, 2j)
 
-    symbols = zfon.SymbolicTerms(2, 2)
+    symbols = zfon.SymbolicTerms(2, size=2)
     symbols_set = zfon.SymbolicTermSet.from_terms(symbols)
     assert_type(symbols.coeffs, SymbolicCoeffs)
     assert_type(symbols.coeffs_type, type[SymbolicCoeffs])
@@ -390,7 +390,7 @@ def test_zfon_coefficient_relationships() -> None:
 
 
 def test_zfs_coefficient_relationships() -> None:
-    signs = zfs.SignTerms(2, 2)
+    signs = zfs.SignTerms(2, size=2)
     signs_set = zfs.SignTermSet.from_terms(signs)
     assert_type(signs.coeffs, SignCoeffs)
     assert_type(signs.coeffs_type, type[SignCoeffs])
@@ -403,7 +403,7 @@ def test_zfs_coefficient_relationships() -> None:
     assert_type(_set_coeffs(signs_set), Coeffs[Sign])
     _check_coefficient_views(signs, signs_set, SignCoeffs, Sign(True))
 
-    reals = zfs.RealTerms(2, 2)
+    reals = zfs.RealTerms(2, size=2)
     reals_set = zfs.RealTermSet.from_terms(reals)
     assert_type(reals.coeffs, RealCoeffs)
     assert_type(reals.coeffs_type, type[RealCoeffs])
@@ -416,7 +416,7 @@ def test_zfs_coefficient_relationships() -> None:
     assert_type(_set_coeffs(reals_set), Coeffs[float])
     _check_coefficient_views(reals, reals_set, RealCoeffs, 2.0)
 
-    complexes = zfs.ComplexTerms(2, 2)
+    complexes = zfs.ComplexTerms(2, size=2)
     complexes_set = zfs.ComplexTermSet.from_terms(complexes)
     assert_type(complexes.coeffs, ComplexCoeffs)
     assert_type(complexes.coeffs_type, type[ComplexCoeffs])
@@ -429,7 +429,7 @@ def test_zfs_coefficient_relationships() -> None:
     assert_type(_set_coeffs(complexes_set), Coeffs[complex])
     _check_coefficient_views(complexes, complexes_set, ComplexCoeffs, 2j)
 
-    symbols = zfs.SymbolicTerms(2, 2)
+    symbols = zfs.SymbolicTerms(2, size=2)
     symbols_set = zfs.SymbolicTermSet.from_terms(symbols)
     assert_type(symbols.coeffs, SymbolicCoeffs)
     assert_type(symbols.coeffs_type, type[SymbolicCoeffs])
@@ -502,7 +502,7 @@ def test_zqo_custom_coefficient_factory() -> None:
 
     term = CustomTerm(2)
     term.string.set("X0")
-    terms = DerivedTerms(2, 2)
+    terms = DerivedTerms(2, size=2)
     terms[:] = term
     term_set = CustomSet.from_terms(terms)
     total = CustomSum.from_terms(terms)
@@ -528,7 +528,7 @@ def test_zqo_custom_coefficient_factory() -> None:
     assert type(CustomTerms.from_str("", 2).coeffs) is CustomCoeffs
     assert type(CustomSum.from_str(str(terms), 2).coeffs) is CustomCoeffs
     assert type(zqo.RealTerm(2).into(CustomTerm)._data.coeffs) is CustomCoeffs
-    assert type(zqo.RealTerms(2, 1).into(CustomTerms).coeffs) is CustomCoeffs
+    assert type(zqo.RealTerms(2, size=1).into(CustomTerms).coeffs) is CustomCoeffs
     assert type(zqo.RealTermSum(2).into(CustomSum).coeffs) is CustomCoeffs
     assert type(convert_vec(RealCoeffs.from_sequence([1.0]), CustomCoeffs)) is CustomCoeffs
     terms[1].coeff = 3.0
@@ -560,7 +560,7 @@ def test_zqs_custom_coefficient_factory() -> None:
 
     term = CustomTerm(2)
     term.string.set("[1, 0]")
-    terms = DerivedTerms(2, 2)
+    terms = DerivedTerms(2, size=2)
     terms[:] = term
     term_set = CustomSet.from_terms(terms)
     total = CustomSum.from_terms(terms)
@@ -586,7 +586,7 @@ def test_zqs_custom_coefficient_factory() -> None:
     assert type(CustomTerms.from_str("", 2).coeffs) is CustomCoeffs
     assert type(CustomSum.from_str(str(terms), 2).coeffs) is CustomCoeffs
     assert type(zqs.RealTerm(2).into(CustomTerm)._data.coeffs) is CustomCoeffs
-    assert type(zqs.RealTerms(2, 1).into(CustomTerms).coeffs) is CustomCoeffs
+    assert type(zqs.RealTerms(2, size=1).into(CustomTerms).coeffs) is CustomCoeffs
     assert type(zqs.RealTermSum(2).into(CustomSum).coeffs) is CustomCoeffs
     assert type(convert_vec(RealCoeffs.from_sequence([1.0]), CustomCoeffs)) is CustomCoeffs
     terms[1].coeff = 3.0
@@ -618,7 +618,7 @@ def test_zfog_custom_coefficient_factory() -> None:
 
     term = CustomTerm(2, max_string_len=2)
     term.string.set("F0^ F1")
-    terms = DerivedTerms(2, 2, max_string_len=2)
+    terms = DerivedTerms(2, size=2, max_string_len=2)
     terms[:] = term
     term_set = CustomSet.from_terms(terms)
     total = CustomSum.from_terms(terms)
@@ -644,7 +644,7 @@ def test_zfog_custom_coefficient_factory() -> None:
     assert type(CustomTerms.from_str("", 2).coeffs) is CustomCoeffs
     assert type(CustomSum.from_str(str(terms), 2).coeffs) is CustomCoeffs
     assert type(zfog.RealTerm(2).into(CustomTerm)._data.coeffs) is CustomCoeffs
-    assert type(zfog.RealTerms(2, 1).into(CustomTerms).coeffs) is CustomCoeffs
+    assert type(zfog.RealTerms(2, size=1).into(CustomTerms).coeffs) is CustomCoeffs
     assert type(zfog.RealTermSum(2).into(CustomSum).coeffs) is CustomCoeffs
     assert type(convert_vec(RealCoeffs.from_sequence([1.0]), CustomCoeffs)) is CustomCoeffs
     terms[1].coeff = 3.0
@@ -676,7 +676,7 @@ def test_zfon_custom_coefficient_factory() -> None:
 
     term = CustomTerm(2)
     term.string.set("F0^ F1")
-    terms = DerivedTerms(2, 2)
+    terms = DerivedTerms(2, size=2)
     terms[:] = term
     term_set = CustomSet.from_terms(terms)
     total = CustomSum.from_terms(terms)
@@ -702,7 +702,7 @@ def test_zfon_custom_coefficient_factory() -> None:
     assert type(CustomTerms.from_str("", 2).coeffs) is CustomCoeffs
     assert type(CustomSum.from_str(str(terms), 2).coeffs) is CustomCoeffs
     assert type(zfon.RealTerm(2).into(CustomTerm)._data.coeffs) is CustomCoeffs
-    assert type(zfon.RealTerms(2, 1).into(CustomTerms).coeffs) is CustomCoeffs
+    assert type(zfon.RealTerms(2, size=1).into(CustomTerms).coeffs) is CustomCoeffs
     assert type(zfon.RealTermSum(2).into(CustomSum).coeffs) is CustomCoeffs
     assert type(convert_vec(RealCoeffs.from_sequence([1.0]), CustomCoeffs)) is CustomCoeffs
     terms[1].coeff = 3.0
@@ -734,7 +734,7 @@ def test_zfs_custom_coefficient_factory() -> None:
 
     term = CustomTerm(2)
     term.string.set("[1, 0]")
-    terms = DerivedTerms(2, 2)
+    terms = DerivedTerms(2, size=2)
     terms[:] = term
     term_set = CustomSet.from_terms(terms)
     total = CustomSum.from_terms(terms)
@@ -760,7 +760,7 @@ def test_zfs_custom_coefficient_factory() -> None:
     assert type(CustomTerms.from_str("", 2).coeffs) is CustomCoeffs
     assert type(CustomSum.from_str(str(terms), 2).coeffs) is CustomCoeffs
     assert type(zfs.RealTerm(2).into(CustomTerm)._data.coeffs) is CustomCoeffs
-    assert type(zfs.RealTerms(2, 1).into(CustomTerms).coeffs) is CustomCoeffs
+    assert type(zfs.RealTerms(2, size=1).into(CustomTerms).coeffs) is CustomCoeffs
     assert type(zfs.RealTermSum(2).into(CustomSum).coeffs) is CustomCoeffs
     assert type(convert_vec(RealCoeffs.from_sequence([1.0]), CustomCoeffs)) is CustomCoeffs
     terms[1].coeff = 3.0
@@ -788,7 +788,7 @@ def test_coefficient_storage_matches_factory() -> None:
         terms_type = CustomTerms
 
     # A stored subclass is valid, and coeffs_type must return that actual subclass.
-    data = TermData(zqo.Strings(2, 1), DerivedCoeffs.from_size(1))
+    data = TermData(zqo.Strings(2, size=1), DerivedCoeffs.from_size(1))
     terms = CustomTerms._create(data)
     term_set = CustomSet.from_terms(terms)
     assert_type(terms.coeffs, CustomCoeffs)
@@ -799,7 +799,7 @@ def test_coefficient_storage_matches_factory() -> None:
     assert term_set.coeffs_type is DerivedCoeffs
 
     # Both normal initialization and internal construction reject inconsistent storage.
-    mismatched = TermData(zqo.Strings(2, 1), RealCoeffs.from_size(1))
+    mismatched = TermData(zqo.Strings(2, size=1), RealCoeffs.from_size(1))
     ordinary_terms = zqo.RealTerms._create(mismatched)
     with pytest.raises(TypeError, match="Coefficient storage does not match its factory"):
         TermBase.__init__(CustomTerm.__new__(CustomTerm), mismatched)

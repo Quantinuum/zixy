@@ -100,7 +100,9 @@ def test_item_views_share_storage_and_validate_indices(family_case):
         assert view.index == len(source) - 1
         assert view._impl is source._impl
         assert str(view) == str(source[-1])
+        before = str(source[-1])
         view.clear()
+        assert str(source[-1]) != before
         assert str(view) == str(source[-1])
         with pytest.raises(IndexError):
             cls._view(source._impl, len(source))

@@ -12,6 +12,15 @@ import zixy.qubit.operator as zqo
 import zixy.qubit.state as zqs
 
 
+def test_normal_sign_products() -> None:
+    term = zfon.SignTerm(2, "F0")
+    string = zfon.String(2, "F0^")
+
+    assert_type(term * term, zfon.RealTermSum)
+    assert_type(term * string, zfon.RealTermSum)
+    assert_type(string * term, zfon.RealTermSum)
+
+
 def test_qubit_operator_inherited_factories() -> None:
     class DerivedTerms(zqo.RealTerms):
         pass

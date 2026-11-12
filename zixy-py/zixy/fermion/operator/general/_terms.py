@@ -319,9 +319,7 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
         return out
 
 
-class TermSum[C: (float, complex, Sign, ComplexSign, Expr)](
-    OperatorTermSum[ImplT, SpecT, C, ElemT], TermSet[C]
-):
+class TermSum[C: (float, complex, Expr)](OperatorTermSum[ImplT, SpecT, C, ElemT], TermSet[C]):
     """A sum of terms consisting of raw fermionic strings and coefficients.
 
     A set-like container of mode-based terms that may be used to store unique terms and perform

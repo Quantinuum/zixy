@@ -171,7 +171,7 @@ class TermSet[
 class TermSum[
     ImplT: QubitArray[Any, Any],
     SpecT,
-    C: (float, complex, Sign, ComplexSign, Expr),
+    C: (float, complex, Expr),
     ElemT,
 ](TermSet[ImplT, SpecT, C, ElemT], TermSumBase[ImplT, SpecT, C]):
     """A sum of terms consisting of strings and coefficients.

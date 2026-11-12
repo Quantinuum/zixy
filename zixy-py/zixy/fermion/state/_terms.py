@@ -156,9 +156,7 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](FermionTermSet[ImplT
     terms_type: type[Terms[C]]
 
 
-class TermSum[C: (float, complex, Sign, ComplexSign, Expr)](
-    FermionTermSum[ImplT, SpecT, C, ElemT], TermSet[C]
-):
+class TermSum[C: (float, complex, Expr)](FermionTermSum[ImplT, SpecT, C, ElemT], TermSet[C]):
     """A sum of terms consisting of fermionic state strings and coefficients.
 
     A set-like container of mode-based terms that may be used to store unique terms and perform

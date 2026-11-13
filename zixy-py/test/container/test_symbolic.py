@@ -39,12 +39,12 @@ def test_subs_convert():
     # both real conversion fails because of non-real coeff
     with pytest.raises(TypeError):
         v.try_to_real()
-    assert v.try_to_complex().np_array.dtype.type is np.complex128
+    assert v.try_to_complex().to_numpy().dtype.type is np.complex128
     assert v.try_to_complex().to_tuple() == (3, 6, 9, 9j, np.sin(3))
     v[3] *= 1j
-    assert v.try_to_complex().np_array.dtype.type is np.complex128
+    assert v.try_to_complex().to_numpy().dtype.type is np.complex128
     assert v.try_to_complex().to_tuple() == (3, 6, 9, -9, np.sin(3))
-    assert v.try_to_real().np_array.dtype.type is np.float64
+    assert v.try_to_real().to_numpy().dtype.type is np.float64
     assert v.try_to_real().to_tuple() == (3, 6, 9, -9, np.sin(3))
 
 

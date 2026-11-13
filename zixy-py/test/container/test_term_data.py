@@ -72,7 +72,7 @@ def test_real_term_data() -> None:
     assert (len(td), len(td._strings), len(td._coeffs)) == (6,) * 3
     assert type(td._coeffs) is RealCoeffs
     assert all(
-        td._coeffs.np_array
+        td._coeffs.to_numpy()
         == [
             1.0,
         ]
@@ -80,17 +80,17 @@ def test_real_term_data() -> None:
     )
     td = TermData(Strings(6), RealCoeffs.from_scalar(1.234, 6))
     assert all(
-        td._coeffs.np_array
+        td._coeffs.to_numpy()
         == [
             1.234,
         ]
         * 6
     )
     td = TermData(Strings(6), RealCoeffs.from_iterable(list(range(6))))
-    assert all(td._coeffs.np_array == np.arange(6))
+    assert all(td._coeffs.to_numpy() == np.arange(6))
     assert td._coeffs.clone() == td._coeffs
     td = TermData(Strings(6), td._coeffs.clone())
-    assert all(td._coeffs.np_array == np.arange(6))
+    assert all(td._coeffs.to_numpy() == np.arange(6))
     assert td.clone(slice(None, None, 2)) == td.clone(slice(None, None, 2))
     assert td.clone() is not td
     assert td.clone() == td
@@ -107,21 +107,21 @@ def test_complex_term_data() -> None:
     td = TermData(Strings(6), ComplexCoeffs.from_iterable([complex(1, 0)] * 6))
     assert (len(td), len(td._strings), len(td._coeffs)) == (6,) * 3
     assert type(td._coeffs) is ComplexCoeffs
-    assert td._coeffs.np_array.shape == (6,)
-    assert all(td._coeffs.np_array == complex(1, 0))
+    assert td._coeffs.to_numpy().shape == (6,)
+    assert all(td._coeffs.to_numpy() == complex(1, 0))
     td = TermData(Strings(6), ComplexCoeffs.from_scalar(complex(1.2, -3.4), 6))
     assert all(
-        td._coeffs.np_array
+        td._coeffs.to_numpy()
         == [
             complex(1.2, -3.4),
         ]
         * 6
     )
     td = TermData(Strings(6), ComplexCoeffs.from_iterable(list(complex(i) for i in range(6))))
-    assert all(td._coeffs.np_array == np.arange(6))
+    assert all(td._coeffs.to_numpy() == np.arange(6))
     assert td._coeffs.clone() == td._coeffs
     td = TermData(Strings(6), td._coeffs.clone())
-    assert all(td._coeffs.np_array == np.arange(6))
+    assert all(td._coeffs.to_numpy() == np.arange(6))
     assert td.clone(slice(None, None, 2)) == td.clone(slice(None, None, 2))
     assert td.clone() is not td
     assert td.clone() == td

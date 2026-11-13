@@ -21,13 +21,13 @@ STATE_01 = (0, 1)
 @pytest.mark.parametrize(
     "source, target_type, exc_type",
     [
-        (RealCoeffs.from_sequence((1.0, -2.5)), ComplexCoeffs, None),
-        (RealCoeffs.from_sequence((1.0, -1.0)), SignCoeffs, None),
+        (RealCoeffs.from_iterable((1.0, -2.5)), ComplexCoeffs, None),
+        (RealCoeffs.from_iterable((1.0, -1.0)), SignCoeffs, None),
         (SignCoeffs.from_phases((False, True, False)), ComplexSignCoeffs, None),
         (ComplexSignCoeffs.from_phases((0, 2)), RealCoeffs, None),
         (ComplexSignCoeffs.from_phases((0, 1)), RealCoeffs, ValueError),
-        (ComplexCoeffs.from_sequence((1.0 + 0j, -2.0 + 0j)), RealCoeffs, None),
-        (ComplexCoeffs.from_sequence((1.0 + 1j,)), RealCoeffs, ValueError),
+        (ComplexCoeffs.from_iterable((1.0 + 0j, -2.0 + 0j)), RealCoeffs, None),
+        (ComplexCoeffs.from_iterable((1.0 + 1j,)), RealCoeffs, ValueError),
         (zqo.String(2, PAULI_XY), zqo.Strings, None),
         (zqo.Strings.from_iterable((PAULI_XY,), 2), zqo.String, None),
         (zqo.Strings.from_iterable((PAULI_XY, PAULI_YX), 2), zqo.String, ValueError),

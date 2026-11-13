@@ -40,7 +40,7 @@ class _TermData[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, 
 
     def __len__(self) -> int: ...
 
-    def _empty_clone(self) -> Self: ...
+    def _new(self) -> Self: ...
 
     def clone(self, s: int | slice = slice(None)) -> Self: ...
 
@@ -123,9 +123,9 @@ class TermData[StringsT: Strings[Any, Any], Cs: Coeffs[Any]]:
         """Return a string representation of ``self``."""
         return ", ".join(f"({c}, {s})" for s, c in zip(self.strings, self.coeffs, strict=False))
 
-    def _empty_clone(self) -> Self:
-        """Get an empty (owning, contiguous) clone of ``self``."""
-        return type(self)(self.strings._empty_clone(), self.coeffs._empty_clone())
+    def _new(self) -> Self:
+        """Create an empty instance with the same type and configuration."""
+        return type(self)(self.strings._new(), self.coeffs._new())
 
     def clone(self, s: int | slice = slice(None)) -> Self:
         """Return a deep copy of ``self``.
@@ -140,7 +140,7 @@ class TermData[StringsT: Strings[Any, Any], Cs: Coeffs[Any]]:
             return self.clone(slice_single_item(slice(None), s, len(self)))
         cls = type(self)
         strings = self.strings[s].clone()
-        coeffs = self.coeffs_type.from_view(self.coeffs[s])
+        coeffs = self.coeffs[s].clone()
         return cls(strings, coeffs)
 
     def resize(self, n: int) -> None:

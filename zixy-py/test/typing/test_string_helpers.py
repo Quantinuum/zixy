@@ -16,7 +16,7 @@ def _keep_base(string: BaseString[Any, Any]) -> bool:
 def test_qubit_operator_string_helpers() -> None:
     strings = zqo.Strings.from_iterable(["X0", "", "Z1", "X0"], 2)
     string_set = zqo.StringSet.from_strings(strings)
-    clear = strings.new_clear_string()
+    clear = strings.new_string()
     before = str(strings)
     set_before = str(string_set)
 
@@ -82,7 +82,7 @@ def test_qubit_operator_string_helpers() -> None:
         raise AssertionError("Empty collections must not invoke callbacks")
 
     empty = strings[:0]
-    assert type(empty.new_clear_string()) is zqo.String
+    assert type(empty.new_string()) is zqo.String
     assert list(empty.iter_filter_map(unexpected_callback)) == []
     assert list(empty.iter_filter_populated()) == []
     assert len(empty.filter_map(unexpected_callback)) == 0
@@ -94,7 +94,7 @@ def test_qubit_operator_string_helpers() -> None:
 def test_qubit_state_string_helpers() -> None:
     strings = zqs.Strings.from_iterable(["[1, 0]", "", "[0, 1]", "[1, 0]"], 2)
     string_set = zqs.StringSet.from_strings(strings)
-    clear = strings.new_clear_string()
+    clear = strings.new_string()
     before = str(strings)
     set_before = str(string_set)
 
@@ -157,7 +157,7 @@ def test_qubit_state_string_helpers() -> None:
         raise AssertionError("Empty collections must not invoke callbacks")
 
     empty = strings[:0]
-    assert type(empty.new_clear_string()) is zqs.String
+    assert type(empty.new_string()) is zqs.String
     assert list(empty.iter_filter_map(unexpected_callback)) == []
     assert list(empty.iter_filter_populated()) == []
     assert len(empty.filter_map(unexpected_callback)) == 0
@@ -169,7 +169,7 @@ def test_qubit_state_string_helpers() -> None:
 def test_fermion_general_string_helpers() -> None:
     strings = zfog.Strings.from_iterable(["F0^", "", "F1", "F0^"], 2)
     string_set = zfog.StringSet.from_strings(strings)
-    clear = strings.new_clear_string()
+    clear = strings.new_string()
     before = str(strings)
     set_before = str(string_set)
 
@@ -232,7 +232,7 @@ def test_fermion_general_string_helpers() -> None:
         raise AssertionError("Empty collections must not invoke callbacks")
 
     empty = strings[:0]
-    assert type(empty.new_clear_string()) is zfog.String
+    assert type(empty.new_string()) is zfog.String
     assert list(empty.iter_filter_map(unexpected_callback)) == []
     assert list(empty.iter_filter_populated()) == []
     assert len(empty.filter_map(unexpected_callback)) == 0
@@ -244,7 +244,7 @@ def test_fermion_general_string_helpers() -> None:
 def test_fermion_normal_string_helpers() -> None:
     strings = zfon.Strings.from_iterable(["F0^", "", "F1", "F0^"], 2)
     string_set = zfon.StringSet.from_strings(strings)
-    clear = strings.new_clear_string()
+    clear = strings.new_string()
     before = str(strings)
     set_before = str(string_set)
 
@@ -307,7 +307,7 @@ def test_fermion_normal_string_helpers() -> None:
         raise AssertionError("Empty collections must not invoke callbacks")
 
     empty = strings[:0]
-    assert type(empty.new_clear_string()) is zfon.String
+    assert type(empty.new_string()) is zfon.String
     assert list(empty.iter_filter_map(unexpected_callback)) == []
     assert list(empty.iter_filter_populated()) == []
     assert len(empty.filter_map(unexpected_callback)) == 0
@@ -319,7 +319,7 @@ def test_fermion_normal_string_helpers() -> None:
 def test_fermion_state_string_helpers() -> None:
     strings = zfs.Strings.from_iterable(["[1, 0]", "", "[0, 1]", "[1, 0]"], 2)
     string_set = zfs.StringSet.from_strings(strings)
-    clear = strings.new_clear_string()
+    clear = strings.new_string()
     before = str(strings)
     set_before = str(string_set)
 
@@ -382,7 +382,7 @@ def test_fermion_state_string_helpers() -> None:
         raise AssertionError("Empty collections must not invoke callbacks")
 
     empty = strings[:0]
-    assert type(empty.new_clear_string()) is zfs.String
+    assert type(empty.new_string()) is zfs.String
     assert list(empty.iter_filter_map(unexpected_callback)) == []
     assert list(empty.iter_filter_populated()) == []
     assert len(empty.filter_map(unexpected_callback)) == 0

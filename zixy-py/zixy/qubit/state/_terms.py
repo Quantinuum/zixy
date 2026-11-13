@@ -586,14 +586,14 @@ class ComplexTermSum(NumericTermSum[QubitStateArray, StringSpec, complex], TermS
         """The real part of ``self``."""
         assert isinstance(self._data.coeffs, ComplexCoeffs)  # TODO: resolve
         data = TermData(self._data.strings.clone(), self._data.coeffs.real_part)
-        return RealTermSum._create(data)
+        return RealTermSum._create(data, map_=self._string_set._map.clone())
 
     @property
     def imag_part(self) -> RealTermSum:
         """The imaginary part of ``self``."""
         assert isinstance(self._data.coeffs, ComplexCoeffs)  # TODO: resolve
         data = TermData(self._data.strings.clone(), self._data.coeffs.imag_part)
-        return RealTermSum._create(data)
+        return RealTermSum._create(data, map_=self._string_set._map.clone())
 
     def to_dense(self, big_endian: bool = False) -> NDArray[np.complex128]:
         """Convert ``self`` to a dense vector.

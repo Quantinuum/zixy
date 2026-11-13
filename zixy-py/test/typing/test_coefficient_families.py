@@ -814,11 +814,9 @@ def test_coefficient_storage_matches_factory() -> None:
     with pytest.raises(TypeError, match="Coefficient storage does not match its factory"):
         CustomSet.from_terms(ordinary_terms)
     with pytest.raises(TypeError, match="Coefficient storage does not match its factory"):
-        CustomSet._create(mismatched)
-    with pytest.raises(TypeError, match="Coefficient storage does not match its factory"):
-        CustomSet._create(mismatched, term_set._string_set._map)
+        CustomSet._create(mismatched, map_=term_set._string_set._map)
 
-    adopted = CustomSet._create(data, term_set._string_set._map)
+    adopted = CustomSet._create(data, map_=term_set._string_set._map)
     assert_type(adopted.coeffs, CustomCoeffs)
     assert adopted.coeffs_type is DerivedCoeffs
     assert type(adopted.coeffs) is DerivedCoeffs

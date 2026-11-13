@@ -412,12 +412,12 @@ class StringSet[ImplT: ImplArray, SpecT](Representable, SerializableContainer):
             value: String or string specifier to look up.
 
         Returns:
-            Whether the string is present. Unsupported objects and strings from
-            incompatible families or spaces return ``False``.
+            Whether the string is present. Unsupported objects, out-of-range string
+            specifiers, and strings from incompatible families or spaces return ``False``.
         """
         try:
             return self.lookup(cast("SpecT | String[ImplT, SpecT]", value)) is not None
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, IndexError):
             return False
 
     def remove(self, value: SpecT | String[ImplT, SpecT]) -> int:

@@ -1388,15 +1388,16 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
                 specifiers test key membership; terms also require an equal coefficient.
 
         Returns:
-            Whether the key or complete term is present. Unsupported objects and
-            objects from incompatible families or spaces return ``False``. A missing
-            key is not a member, including when querying a zero-coefficient term.
+            Whether the key or complete term is present. Unsupported objects, out-of-range
+            string specifiers, and objects from incompatible families or spaces return
+            ``False``. A missing key is not a member, including when querying a
+            zero-coefficient term.
         """
         if not isinstance(value, Term):
             return value in self._string_set
         try:
             index = self._string_set.lookup(value.string)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, IndexError):
             return False
         return index is not None and self.terms_type.term_type._view(self._impl, index) == value
 

@@ -47,6 +47,51 @@ def test_string_set_membership(family_strings):
     assert not hasattr(collection, "contains")
 
 
+def test_membership_rejects_out_of_range_specifiers(family_strings):
+    family, space, _, strings = family_strings
+    invalid = {
+        zqo: "X2",
+        zqs: {2},
+        zfog: [(2, True)],
+        zfon: ([2], []),
+        zfs: {2},
+    }[family]
+    kwargs = {"max_string_len": strings.max_string_len} if family is zfog else {}
+    terms = family.RealTerms.from_iterable(zip(strings, [2.0, 3.0]), space, **kwargs)
+    collections = [
+        family.StringSet.from_strings(strings),
+        family.RealTermSet.from_terms(terms),
+        family.RealTermSum.from_terms(terms),
+    ]
+    for collection in collections:
+        before = collection.to_dict()
+        assert invalid not in collection
+        assert strings[0] in collection
+        with pytest.raises((IndexError, ValueError)):
+            collection.lookup(invalid)
+        assert collection.to_dict() == before
+
+
+def test_membership_rejects_invalidated_views(family_strings):
+    family, space, _, strings = family_strings
+    kwargs = {"max_string_len": strings.max_string_len} if family is zfog else {}
+    terms = family.RealTerms.from_iterable(zip(strings, [2.0, 3.0]), space, **kwargs)
+    string_view, term_view = strings[-1], terms[-1]
+    collections = [
+        family.StringSet.from_strings(strings),
+        family.RealTermSet.from_terms(terms),
+        family.RealTermSum.from_terms(terms),
+    ]
+    strings.resize(0)
+    terms.resize(0)
+    for collection in collections:
+        before = collection.to_dict()
+        assert string_view not in collection
+        if not isinstance(collection, family.StringSet):
+            assert term_view not in collection
+        assert collection.to_dict() == before
+
+
 @pytest.mark.parametrize("suffix", ["TermSet", "TermSum"])
 @pytest.mark.parametrize(
     ("prefix", "coefficient", "different"),

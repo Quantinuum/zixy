@@ -96,13 +96,13 @@ class String[ImplT: ImplArray, SpecT](ViewableItem[ImplT], Representable, Serial
 
     @classmethod
     def _create(cls, impl: ImplT) -> Self:
-        """Create an owning instance of ``cls``.
+        """Create an owning instance of ``cls``, wrapping existing storage.
 
         Args:
             impl: Rust-bound object containing the data for this instance.
 
         Returns:
-            A new owning instance of ``cls`` sharing the supplied storage.
+            A new owning instance of ``cls`` using the supplied storage without copying it.
 
         Raises:
             IndexError: The storage does not contain exactly one string.
@@ -113,14 +113,14 @@ class String[ImplT: ImplArray, SpecT](ViewableItem[ImplT], Representable, Serial
 
     @classmethod
     def _view(cls, impl: ImplT, indexer: int) -> Self:
-        """Create a view on one existing string.
+        """Create a mutable view on an existing string.
 
         Args:
             impl: Rust-bound object containing the data for this instance.
-            indexer: Index of the string to view, allowing negative indices.
+            indexer: Index selecting the viewed string.
 
         Returns:
-            A non-owning instance of ``cls`` sharing the selected string.
+            A non-owning instance of ``cls`` sharing the selected string without copying it.
 
         Raises:
             IndexError: The index is outside the storage.
@@ -270,14 +270,14 @@ class StringSet[ImplT: ImplArray, SpecT](Representable, SerializableContainer):
 
     @classmethod
     def _create(cls, impl: ImplT, *, map_: Map) -> Self:
-        """Create an owning instance of ``cls``.
+        """Create an owning instance of ``cls``, wrapping existing storage.
 
         Args:
             impl: Rust-bound object containing the data for this instance.
             map_: Populated lookup map corresponding to the supplied data.
 
         Returns:
-            A new instance of ``cls`` sharing the supplied storage and map.
+            A new owning instance of ``cls`` using the supplied storage without copying it.
         """
         out = cls.__new__(cls)
         out._bind(impl, map_)
@@ -313,7 +313,7 @@ class StringSet[ImplT: ImplArray, SpecT](Representable, SerializableContainer):
         return cls.from_strings(strings)
 
     def _new(self) -> Self:
-        """Allocate empty owning storage with the same concrete type and configuration."""
+        """Create an empty instance with the same type and configuration."""
         return self._create(self._impl.strings_clone([]), map_=self.map_type())
 
     def clone(self) -> Self:
@@ -556,13 +556,13 @@ class Strings[ImplT: ImplArray, SpecT](
 
     @classmethod
     def _create(cls, impl: ImplT) -> Self:
-        """Create an owning instance of ``cls``.
+        """Create an owning instance of ``cls``, wrapping existing storage.
 
         Args:
             impl: Rust-bound object containing the data for this instance.
 
         Returns:
-            A new owning instance of ``cls`` sharing the supplied storage.
+            A new owning instance of ``cls`` using the supplied storage without copying it.
         """
         assert isinstance(impl, cls.string_type.impl_type)
         out = cls.__new__(cls)
@@ -571,14 +571,14 @@ class Strings[ImplT: ImplArray, SpecT](
 
     @classmethod
     def _view(cls, impl: ImplT, indexer: slice) -> Self:
-        """Create a view on existing string storage.
+        """Create a mutable view on existing strings.
 
         Args:
             impl: Rust-bound object containing the data for this instance.
-            indexer: Slice selecting the strings to view.
+            indexer: Slice selecting the viewed strings.
 
         Returns:
-            A non-owning instance of ``cls``, including for a full slice.
+            A non-owning instance of ``cls`` sharing the selected storage without copying it.
         """
         out = cls.__new__(cls)
         if indexer == slice(None):
@@ -689,7 +689,7 @@ class Strings[ImplT: ImplArray, SpecT](
             self[indexer].set(source)
 
     def _new(self) -> Self:
-        """Allocate empty owning storage with the same concrete type and configuration."""
+        """Create an empty instance with the same type and configuration."""
         return self._create(self._impl.strings_clone([]))
 
     def reordered(self, inds: Sequence[int]) -> Self:
@@ -712,10 +712,10 @@ class Strings[ImplT: ImplArray, SpecT](
     def new_string[StringT: String[Any, Any]](
         self: _HasStringType[StringT],
     ) -> StringT:
-        """Allocate a default owning string with the same type and configuration.
+        """Create an independent string with the same space and configuration.
 
         Returns:
-            An independent owning string of the concrete string type of ``self``.
+            An owning instance of ``self.string_type`` with independent storage.
         """
         strings = cast("Strings[Any, Any]", self)
         data = strings._new().resize(1)

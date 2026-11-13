@@ -124,7 +124,7 @@ class TermData[StringsT: Strings[Any, Any], Cs: Coeffs[Any]]:
         return ", ".join(f"({c}, {s})" for s, c in zip(self.strings, self.coeffs, strict=False))
 
     def _new(self) -> Self:
-        """Allocate empty owning storage with the same concrete type and configuration."""
+        """Create an empty instance with the same type and configuration."""
         return type(self)(self.strings._new(), self.coeffs._new())
 
     def clone(self, s: int | slice = slice(None)) -> Self:

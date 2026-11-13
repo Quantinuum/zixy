@@ -90,7 +90,7 @@ class _HasCoeffType[C](Protocol):
 
 
 class _HasNew[ContainerT](Protocol):
-    """A container whose empty allocation preserves its concrete type."""
+    """A container that can create an empty container of its concrete type."""
 
     def _new(self) -> ContainerT: ...
 
@@ -206,27 +206,27 @@ class ViewableBase[ImplT: Resizable, IndexerT: (int, slice)]:
     @classmethod
     @abstractmethod
     def _create(cls, impl: ImplT) -> Self:
-        """Create an owning instance of ``cls``.
+        """Create an owning instance of ``cls``, wrapping existing storage.
 
         Args:
             impl: Rust-bound object containing the data for this instance.
 
         Returns:
-            A new owning instance of ``cls`` sharing the supplied storage.
+            A new owning instance of ``cls`` using the supplied storage without copying it.
         """
         pass
 
     @classmethod
     @abstractmethod
     def _view(cls, impl: ImplT, indexer: IndexerT) -> Self:
-        """Create a view on existing storage.
+        """Create a mutable view on existing storage.
 
         Args:
             impl: Rust-bound object containing the data for this instance.
             indexer: Index or slice selecting the viewed contents.
 
         Returns:
-            A non-owning instance of ``cls`` sharing the supplied storage.
+            A non-owning instance of ``cls`` sharing the selected storage without copying it.
         """
         pass
 
@@ -314,7 +314,7 @@ class ViewableSequence[T, ImplT: Resizable](ViewableBase[ImplT, slice], Sequence
 
     @abstractmethod
     def _new(self) -> Self:
-        """Allocate empty owning storage with the same concrete type and configuration."""
+        """Create an empty instance with the same type and configuration."""
         pass
 
     def __len__(self) -> int:

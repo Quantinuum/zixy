@@ -802,14 +802,14 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
 
     @classmethod
     def _view(cls, data: _zixy.BaseVec, indexer: slice) -> Self:
-        """Create a view on existing coefficient storage.
+        """Create a mutable view on existing storage.
 
         Args:
             data: Rust-bound object containing the data for this instance.
-            indexer: Slice selecting the coefficients to view.
+            indexer: Slice selecting the viewed coefficients.
 
         Returns:
-            A non-owning instance of ``cls``, including for a full slice.
+            A non-owning instance of ``cls`` sharing the selected storage without copying it.
         """
         out = cls.__new__(cls)
         assert type(data) is cls.coeffs_type, (type(data), cls.coeffs_type)
@@ -990,7 +990,7 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
         return tuple(c for c in self)
 
     def _new(self) -> Self:
-        """Allocate empty owning storage with the same concrete type and configuration."""
+        """Create an empty instance with the same type and configuration."""
         return self._create(self.coeffs_type(0))
 
     def reordered(self, inds: Sequence[int]) -> Self:

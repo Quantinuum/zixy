@@ -30,12 +30,12 @@ from zixy.container.terms import Term
     params=[
         (
             SignCoeffs,
-            [Sign.from_int(x) for x in [1, -1, 1, -1]],
+            [Sign.from_scalar(x) for x in [1, -1, 1, -1]],
             [1, -1, 1, -1],
         ),
         (
             ComplexSignCoeffs,
-            [ComplexSign.from_complex(x) for x in [1, 1j, -1, -1j]],
+            [ComplexSign.from_scalar(x) for x in [1, 1j, -1, -1j]],
             [[1, 0], [0, 1], [-1, 0], [0, -1]],
         ),
         (RealCoeffs, [1.25, -2.5, 0.0, 4.0], [1.25, -2.5, 0.0, 4.0]),
@@ -146,7 +146,7 @@ def test_coeffs_serialization_nonfinite(coeffs_type, value):
 
 
 def test_coeffs_deserialization_cross_type():
-    signs = SignCoeffs.from_iterable([Sign.from_int(1), Sign.from_int(-1)])
+    signs = SignCoeffs.from_iterable([Sign.from_scalar(1), Sign.from_scalar(-1)])
     assert list(RealCoeffs.from_dict(signs.to_dict())) == [1.0, -1.0]
     reals = RealCoeffs.from_iterable([1.25, -2.5])
     assert list(ComplexCoeffs.from_json(reals.to_json())) == [1.25 + 0j, -2.5 + 0j]
@@ -497,9 +497,9 @@ _COEFFICIENT_FAMILIES = [
 def _make_term_case(family, prefix, container, space_kind):
     strings, encoded_strings, space = _make_string_case(family, space_kind)
     values, encoded_coeffs = {
-        "Sign": ([Sign.from_int(x) for x in [1, -1, 1]], [1, -1, 1]),
+        "Sign": ([Sign.from_scalar(x) for x in [1, -1, 1]], [1, -1, 1]),
         "ComplexSign": (
-            [ComplexSign.from_complex(x) for x in [1, 1j, -1j]],
+            [ComplexSign.from_scalar(x) for x in [1, 1j, -1j]],
             [[1, 0], [0, 1], [0, -1]],
         ),
         "Real": ([1.25, 0.0, -2.5], [1.25, 0.0, -2.5]),
@@ -782,7 +782,7 @@ def test_serialize_json_options():
     assert json.loads(encoded) == source.to_dict()
 
 
-@pytest.mark.parametrize("source", [None, 1, {}, [1], Sign.from_int(1)])
+@pytest.mark.parametrize("source", [None, 1, {}, [1], Sign.from_scalar(1)])
 def test_serialize_unsupported_object(source):
     with pytest.raises(TypeError, match="serializable Zixy container"):
         serialize(source)

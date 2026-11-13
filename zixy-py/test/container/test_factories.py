@@ -301,7 +301,7 @@ def test_keyed_factories_adopt_data_and_maps_together(family_case):
         assert empty._string_set._impl is empty._impl.strings._impl
         empty.insert(terms[0])
         assert len(adopted) == len(source) == 2
-        assert empty.lookup_coeff(terms[0].string) == terms[0].coeff
+        assert empty.get(terms[0].string) == terms[0].coeff
 
 
 @pytest.mark.parametrize(
@@ -455,7 +455,7 @@ def test_sum_iterable_accumulates_duplicates(family_case, prefix, streamed):
 
     assert type(result) is cls
     assert len(result) == 1
-    assert result.lookup_coeff(strings[0]) == 3 * coefficient
+    assert result.get(strings[0]) == 3 * coefficient
     assert result == cls.from_terms(cls.terms_type.from_iterable(source, **kwargs))
 
 
@@ -480,10 +480,10 @@ def test_projection_copies_existing_lookup_map(family, part, coefficient, monkey
     assert projected.strings.is_owning()
     assert projected.coeffs.is_owning()
     assert projected.to_dict()["space"] == before["space"]
-    assert projected.lookup_coeff(specs[0]) == coefficient
-    assert projected.lookup_coeff(specs[1]) == 0.0
+    assert projected.get(specs[0]) == coefficient
+    assert projected.get(specs[1]) == 0.0
     projected.insert((specs[2], 3.0))
-    assert source.lookup_coeff(specs[2]) is None
+    assert source.get(specs[2]) is None
     assert source.to_dict() == before
 
 
@@ -508,7 +508,7 @@ def test_operator_domain_conversion_retains_rust_map(family, prefix, source_stri
     assert result.to_dict()["space"] == source.to_dict()["space"]
     assert len(result._string_set._map) == len(result)
     for term in expected:
-        assert result.lookup_coeff(term.string) == term.coeff
+        assert result.get(term.string) == term.coeff
 
 
 @pytest.mark.parametrize("term_sum_type", [zqo.RealTermSum, zqo.ComplexTermSum])
@@ -525,4 +525,4 @@ def test_pauli_product_uses_prepared_empty_map(term_sum_type, monkeypatch):
     product = lhs * rhs
 
     assert product == expected
-    assert product.lookup_coeff("Z0") == 6j * scale * scale
+    assert product.get("Z0") == 6j * scale * scale

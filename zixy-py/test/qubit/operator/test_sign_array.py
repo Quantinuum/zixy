@@ -109,7 +109,7 @@ def test_sign_term_set_strings_only():
     for i in range(len(tuples)):
         assert a.insert(tuples[i]) == i
     a.remove(tuples[1])
-    assert a.lookup(tuples[1]) is None
+    assert a.lookup_index(tuples[1]) is None
     assert a.lookup_index(tuples[0]) == 0
     assert a.lookup_index(tuples[2]) == 2
     assert a.lookup_index(tuples[3]) == 1
@@ -144,15 +144,10 @@ def test_sign_term_set():
     assert a.lookup_index(tuples[2][0]) == 2
     assert a.lookup_index(tuples[3][0]) == 1
 
-    assert a.lookup_coeff(tuples[1][0]) is None
-    assert a.lookup_coeff(tuples[0][0]) == tuples[0][1]
-    assert a.lookup_coeff(tuples[2][0]) == tuples[2][1]
-    assert a.lookup_coeff(tuples[3][0]) == tuples[3][1]
-
-    assert a.lookup(tuples[1][0]) is None
-    assert a.lookup(tuples[0][0]) == (0, tuples[0][1])
-    assert a.lookup(tuples[2][0]) == (2, tuples[2][1])
-    assert a.lookup(tuples[3][0]) == (1, tuples[3][1])
+    assert a.get(tuples[1][0]) is None
+    assert a.get(tuples[0][0]) == tuples[0][1]
+    assert a.get(tuples[2][0]) == tuples[2][1]
+    assert a.get(tuples[3][0]) == tuples[3][1]
 
     a[tuples[1][0]] = Sign(True)
     assert len(a) == len(tuples)

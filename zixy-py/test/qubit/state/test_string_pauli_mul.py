@@ -40,11 +40,11 @@ def test_set():
     )
     assert s.remove((1,) * 6) == 1
     assert (1,) * 6 not in s
-    assert s.lookup("") == 0
+    assert s.lookup_index("") == 0
     with pytest.raises(TypeError):
         s.insert(None)
     with pytest.raises(TypeError):
-        s.lookup(None)
-    assert s.lookup((1, 0) * 3) == 2
-    assert s.lookup((1, 0, 0) * 2) == 1
+        s.lookup_index(None)
+    assert s.lookup_index((1, 0) * 3) == 2
+    assert s.lookup_index((1, 0, 0) * 2) == 1
     assert s.insert((1, 0, 0) * 2) == 1

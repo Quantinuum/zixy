@@ -393,16 +393,21 @@ class StringSet[ImplT: ImplArray, SpecT](Representable, SerializableContainer):
         for item in source:
             self.insert(item)
 
-    def lookup(self, value: SpecT | String[ImplT, SpecT]) -> int | None:
-        """Try to find the index of ``value`` in ``self``.
+    def lookup_index(self, key: SpecT | String[ImplT, SpecT]) -> int | None:
+        """Try to find the storage index of ``key`` in ``self``.
 
         Args:
-            value: The string specifier.
+            key: String or string specifier to look up.
 
         Returns:
-            The index at which the value was inserted, or ``None`` if the value was not found.
+            The current storage index, or ``None`` if the string is absent. Indices
+            may change when strings are removed.
+
+        Raises:
+            TypeError: The key is unsupported or belongs to an incompatible family.
+            ValueError: The key is invalid or belongs to an incompatible space.
         """
-        value = self._get_working_string(value)
+        value = self._get_working_string(key)
         return self._impl.mapped_lookup(self._map, value._impl, value.index)
 
     def __contains__(self, value: object) -> bool:
@@ -416,7 +421,7 @@ class StringSet[ImplT: ImplArray, SpecT](Representable, SerializableContainer):
             specifiers, and strings from incompatible families or spaces return ``False``.
         """
         try:
-            return self.lookup(cast("SpecT | String[ImplT, SpecT]", value)) is not None
+            return self.lookup_index(cast("SpecT | String[ImplT, SpecT]", value)) is not None
         except (TypeError, ValueError, IndexError):
             return False
 

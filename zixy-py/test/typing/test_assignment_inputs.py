@@ -70,6 +70,9 @@ def test_qubit_operator_assignment_contract() -> None:
         total = DerivedTermSet(2)
         total.insert((spec, 2.0))
         assert next(iter(total)) == source
+        assert total.get(spec) == 2.0
+        assert total.get(source) == 2.0
+        assert total.lookup_index(spec) == 0
 
     internal = zqo.Strings.from_iterable([specs[0], ""], 2)
     internal[1].set(internal[0])
@@ -207,6 +210,9 @@ def test_qubit_state_assignment_contract() -> None:
         total = DerivedTermSet(2)
         total.insert((spec, 2.0))
         assert next(iter(total)) == source
+        assert total.get(spec) == 2.0
+        assert total.get(source) == 2.0
+        assert total.lookup_index(spec) == 0
 
     internal = zqs.Strings.from_iterable([specs[0], ""], 2)
     internal[1].set(internal[0])
@@ -343,6 +349,9 @@ def test_fermion_general_assignment_contract() -> None:
         total = DerivedTermSet(2, max_string_len=2)
         total.insert((spec, 2.0))
         assert next(iter(total)) == source
+        assert total.get(spec) == 2.0
+        assert total.get(source) == 2.0
+        assert total.lookup_index(spec) == 0
 
     internal = zfog.Strings.from_iterable([specs[0], ""], 2)
     internal[1].set(internal[0])
@@ -474,6 +483,9 @@ def test_fermion_normal_assignment_contract() -> None:
         total = DerivedTermSet(2)
         total.insert((spec, 2.0))
         assert next(iter(total)) == source
+        assert total.get(spec) == 2.0
+        assert total.get(source) == 2.0
+        assert total.lookup_index(spec) == 0
 
     internal = zfon.Strings.from_iterable([specs[0], ""], 2)
     internal[1].set(internal[0])
@@ -611,6 +623,9 @@ def test_fermion_state_assignment_contract() -> None:
         total = DerivedTermSet(2)
         total.insert((spec, 2.0))
         assert next(iter(total)) == source
+        assert total.get(spec) == 2.0
+        assert total.get(source) == 2.0
+        assert total.lookup_index(spec) == 0
 
     internal = zfs.Strings.from_iterable([specs[0], ""], 2)
     internal[1].set(internal[0])

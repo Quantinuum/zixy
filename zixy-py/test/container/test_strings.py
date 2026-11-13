@@ -112,8 +112,8 @@ def test_string_set():
     assert len(s) == 6
     assert str(s) == "what, a, time, to, be, alive"
     assert str(StringSet.from_str(str(s))) == str(s)
-    assert s.lookup("be") == 4
-    assert s.lookup("was") is None
+    assert s.lookup_index("be") == 4
+    assert s.lookup_index("was") is None
 
     def f(string) -> bool:
         if str(string)[0] != "t":

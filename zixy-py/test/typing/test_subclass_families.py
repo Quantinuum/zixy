@@ -201,7 +201,7 @@ def test_qubit_operator_overridden_factories() -> None:
     custom_term.set(parent_term)
     terms.append(parent_term)
     total.insert(parent_term)
-    assert total.lookup_coeff(parent) == 2.0
+    assert total.get(parent) == 2.0
     assert parent == zqo.String(2, "X0")
 
 
@@ -361,7 +361,7 @@ def test_qubit_state_overridden_factories() -> None:
     custom_term.set(parent_term)
     terms.append(parent_term)
     total.insert(parent_term)
-    assert total.lookup_coeff(parent) == 2.0
+    assert total.get(parent) == 2.0
     assert parent == zqs.String(2, "[1, 0]")
 
 
@@ -521,7 +521,7 @@ def test_fermion_general_overridden_factories() -> None:
     custom_term.set(parent_term)
     terms.append(parent_term)
     total.insert(parent_term)
-    assert total.lookup_coeff(parent) == 2.0
+    assert total.get(parent) == 2.0
     assert parent == zfog.String(2, "F0^")
 
 
@@ -681,7 +681,7 @@ def test_fermion_normal_overridden_factories() -> None:
     custom_term.set(parent_term)
     terms.append(parent_term)
     total.insert(parent_term)
-    assert total.lookup_coeff(parent) == 2.0
+    assert total.get(parent) == 2.0
     assert parent == zfon.String(2, "F0^")
 
 
@@ -841,7 +841,7 @@ def test_fermion_state_overridden_factories() -> None:
     custom_term.set(parent_term)
     terms.append(parent_term)
     total.insert(parent_term)
-    assert total.lookup_coeff(parent) == 2.0
+    assert total.get(parent) == 2.0
     assert parent == zfs.String(2, "[1, 0]")
 
 

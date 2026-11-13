@@ -20,14 +20,14 @@ def test_copy_terms(cls, values, nonzero):
     assert type(copied) is cls
     assert [(str(t.string), t.coeff) for t in copied] == expected
     for key, c in expected:
-        assert copied.lookup_coeff(key) == c
+        assert copied.get(key) == c
     if expected:
         copied._data.coeffs[0] = 7
-        assert source.lookup_coeff(expected[0][0]) == expected[0][1]
+        assert source.get(expected[0][0]) == expected[0][1]
         copied.remove(expected[0][0])
         assert expected[0][0] not in copied
     copied.insert(("Z3", 2))
-    assert copied.lookup_coeff("Z3") == 2
+    assert copied.get("Z3") == 2
     assert "Z3" not in source
     assert [(str(t.string), t.coeff) for t in source] == before
 
@@ -36,6 +36,6 @@ def test_filter_complex_imaginary_and_nonfinite():
     source = zqo.ComplexTermSum.from_iterable([("X0", 1e-20j), ("Y0", 1j), ("Z0", 0j)], 2)
     source._data.coeffs[1] = complex(float("inf"))
     result = source.filter_nonzero()
-    assert result.lookup_coeff("X0") == 1e-20j
-    assert result.lookup_coeff("Y0") == complex(float("inf"))
+    assert result.get("X0") == 1e-20j
+    assert result.get("Y0") == complex(float("inf"))
     assert "Z0" not in result

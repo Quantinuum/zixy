@@ -271,9 +271,9 @@ def test_mapped_insert():
     )
 
     for i, spec in enumerate(specs):
-        assert string_set.lookup(spec) is None
+        assert string_set.lookup_index(spec) is None
         assert string_set.insert(spec) == i
-        assert string_set.lookup(spec) == i
+        assert string_set.lookup_index(spec) == i
         assert spec in string_set
 
     assert string_set.insert(specs[1]) == 1
@@ -283,7 +283,7 @@ def test_mapped_insert():
     with pytest.raises(ValueError, match="different .*spaces"):
         string_set.insert(wrong_modes)
     with pytest.raises(ValueError, match="different .*spaces"):
-        string_set.lookup(wrong_modes)
+        string_set.lookup_index(wrong_modes)
     with pytest.raises(ValueError, match="different .*spaces"):
         string_set.remove(wrong_modes)
 

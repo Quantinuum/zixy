@@ -133,7 +133,7 @@ class Terms[
             An independent owning instance of ``cls``.
         """
         out = cls(qubits)
-        out.append_iterable(source)
+        out.extend(source)
         return out
 
 

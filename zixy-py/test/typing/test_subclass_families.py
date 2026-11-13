@@ -12,6 +12,28 @@ import zixy.qubit.operator as zqo
 import zixy.qubit.state as zqs
 
 
+def test_extend_preserves_subclass_types() -> None:
+    class CustomStrings(zqo.Strings):
+        _set_type: type[CustomStringSet]
+
+    class CustomStringSet(zqo.StringSet):
+        strings_type = CustomStrings
+
+    CustomStrings._set_type = CustomStringSet
+
+    class CustomTerms(zqo.RealTerms):
+        pass
+
+    strings = CustomStrings(2)
+    terms = CustomTerms(2)
+    assert_type(strings.extend(iter(["X0", "Y1"])), CustomStrings)
+    assert_type(terms.extend([("X0", 2.0), ("Y1", 3.0)]), CustomTerms)
+    assert_type(strings.extend(strings[:]), CustomStrings)
+    assert_type(terms.extend(term for term in terms[::-1]), CustomTerms)
+    assert [str(string) for string in strings] == ["X0", "Y1", "X0", "Y1"]
+    assert list(terms.coeffs) == [2.0, 3.0, 3.0, 2.0]
+
+
 def test_normal_sign_products() -> None:
     term = zfon.SignTerm(2, "F0")
     string = zfon.String(2, "F0^")

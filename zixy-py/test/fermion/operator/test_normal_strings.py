@@ -31,7 +31,7 @@ def test_string_access():
         ([], [4]),
     )
 
-    strings.append_iterable(specs)
+    strings.extend(specs)
 
     assert len(strings) == len(specs)
     assert [string.get_sets() for string in strings] == [

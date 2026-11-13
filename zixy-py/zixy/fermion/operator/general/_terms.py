@@ -261,7 +261,7 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerms[ImplT, S
                 max(map(_max_string_len_from_source, source), default=0),
                 warn=False,
             )
-        out.append_iterable(source)
+        out.extend(source)
         return out
 
 

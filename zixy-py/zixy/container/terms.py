@@ -251,13 +251,13 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
 
     @classmethod
     def _create(cls, data: _TermData[ImplT, SpecT, C]) -> Self:
-        """Create an owning instance of ``cls``.
+        """Create an owning instance of ``cls``, wrapping existing storage.
 
         Args:
             data: Term data object containing the data for this instance.
 
         Returns:
-            A new owning instance of ``cls`` sharing the supplied storage.
+            A new owning instance of ``cls`` using the supplied storage without copying it.
 
         Raises:
             TypeError: The storage does not match the concrete container factories.
@@ -269,14 +269,14 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
 
     @classmethod
     def _view(cls, data: _TermData[ImplT, SpecT, C], indexer: int) -> Self:
-        """Create a view on one existing term.
+        """Create a mutable view on an existing term.
 
         Args:
             data: Term data object containing the data for this instance.
-            indexer: Index of the term to view, allowing negative indices.
+            indexer: Index selecting the viewed term.
 
         Returns:
-            A non-owning instance of ``cls`` sharing the selected term.
+            A non-owning instance of ``cls`` sharing the selected term without copying it.
 
         Raises:
             IndexError: The index is outside the storage.
@@ -512,13 +512,13 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
 
     @classmethod
     def _create(cls, data: _TermData[ImplT, SpecT, C]) -> Self:
-        """Create an owning instance of ``cls``.
+        """Create an owning instance of ``cls``, wrapping existing storage.
 
         Args:
             data: Term data object containing the data for this instance.
 
         Returns:
-            A new owning instance of ``cls`` sharing the supplied storage.
+            A new owning instance of ``cls`` using the supplied storage without copying it.
         """
         out = cls.__new__(cls)
         Terms.__init__(out, data)
@@ -526,14 +526,14 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
 
     @classmethod
     def _view(cls, data: _TermData[ImplT, SpecT, C], indexer: slice) -> Self:
-        """Create a view on existing term storage.
+        """Create a mutable view on existing terms.
 
         Args:
             data: Term data object containing the data for this instance.
-            indexer: Slice selecting the terms to view.
+            indexer: Slice selecting the viewed terms.
 
         Returns:
-            A non-owning instance of ``cls``, including for a full slice.
+            A non-owning instance of ``cls`` sharing the selected storage without copying it.
         """
         out = cls.__new__(cls)
         if indexer == slice(None):
@@ -729,7 +729,7 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         return out
 
     def _new(self) -> Self:
-        """Allocate empty owning storage with the same concrete type and configuration."""
+        """Create an empty instance with the same type and configuration."""
         return self._create(self._impl._new())
 
     def reordered(self, inds: Sequence[int]) -> Self:
@@ -750,10 +750,11 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         return out
 
     def new_term[TermT: Term[Any, Any, Any]](self: _HasTermType[TermT]) -> TermT:
-        """Allocate a default owning term with the same type and configuration.
+        """Create an independent term with the same space and configuration.
 
         Returns:
-            An independent owning term with a default string and unit coefficient.
+            An owning instance of ``self.term_type`` with independent string and
+            coefficient storage.
         """
         terms = cast("Terms[Any, Any, Any]", self)
         data = terms._new().resize(1)
@@ -1101,21 +1102,21 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
 
     @classmethod
     def _create(cls, data: _TermData[ImplT, SpecT, C], *, map_: Map) -> Self:
-        """Create an owning instance of ``cls``.
+        """Create an owning instance of ``cls``, wrapping existing storage.
 
         Args:
             data: Term data object containing the data for this instance.
-            map_: Populated string lookup map corresponding to the supplied data.
+            map_: Populated lookup map corresponding to the supplied data.
 
         Returns:
-            A new instance of ``cls`` sharing the supplied storage and map.
+            A new owning instance of ``cls`` using the supplied storage without copying it.
         """
         out = cls.__new__(cls)
         out._bind(data, map_)
         return out
 
     def _new(self) -> Self:
-        """Allocate empty owning storage with the same concrete type and configuration."""
+        """Create an empty instance with the same type and configuration."""
         term_data = TermData(self._impl.strings._new(), self._impl.coeffs._new())
         return self._create(term_data, map_=self._string_set.map_type())
 

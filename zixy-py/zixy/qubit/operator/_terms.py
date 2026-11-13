@@ -88,7 +88,7 @@ def _mul[
     """Driver for multiplication of a term with another term, a string, or a coefficient."""
     if isinstance(rhs, Coeff):
         scalar_product = lhs.coeff * rhs
-        return get_term_type(type(scalar_product)).from_string_coeff(lhs.string, scalar_product)
+        return get_term_type(type(scalar_product)).from_string(lhs.string, scalar_product)
     elif isinstance(rhs, String):
         product = lhs.string * rhs
         assert isinstance(product, ComplexSignTerm)

@@ -267,20 +267,6 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
             return out
         return cls._create(cls.string_type.impl_type(qubits, BinarySprings(source)))
 
-    @classmethod
-    def new(cls, qubits: int | Qubits = 0, n: int = 0) -> Strings:
-        """Create a new instance with a given qubit count and number of 00...0 strings.
-
-        Args:
-            qubits: Space of qubits or a number of qubits.
-            n: Number of default elements with which to create the instance.
-        """
-        out = cls._create(
-            ImplT(qubits if isinstance(qubits, Qubits) else Qubits.from_count(qubits))
-        )
-        out.resize(n)
-        return out
-
     def get_sets(self) -> tuple[set[int], ...]:
         """Get the strings as a list of sets of the indices of bits with value 1."""
         return tuple(self[i].get_set() for i in range(len(self)))

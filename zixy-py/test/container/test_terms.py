@@ -151,6 +151,37 @@ class SymbolicMockTermSum(TermSum[StringsImplArray, str, Expr]):
         super().__init__(SymbolicMockTerms())
 
 
+@pytest.mark.parametrize("cls", [RealMockTerms, ComplexMockTerms, SymbolicMockTerms])
+@pytest.mark.parametrize(
+    ("left_slice", "right_slice", "expected"),
+    [
+        (None, None, True),
+        (None, slice(None), True),
+        (None, slice(0, 2), False),
+        (None, slice(0, 0), False),
+        (slice(0, 1), slice(0, 2), False),
+        (slice(0, 0), slice(0, 1), False),
+        (slice(0, 0), slice(3, 3), True),
+        (slice(0, 1), slice(2, 3), False),
+        (slice(None, None, 2), slice(None, None, -2), False),
+        (slice(None, None, -1), slice(None, None, -1), True),
+    ],
+)
+def test_equality_checks_visible_length_and_values(cls, left_slice, right_slice, expected):
+    values = [("alpha", 1.0), ("beta", 2.0), ("gamma", 3.0)]
+    left = cls.from_iterable(values)
+    right = cls.from_iterable(values)
+    if left_slice is not None:
+        left = left[left_slice]
+    if right_slice is not None:
+        right = right[right_slice]
+
+    assert (left == right) is expected
+    assert (right == left) is expected
+    assert (left != right) is not expected
+    assert (right != left) is not expected
+
+
 @pytest.mark.parametrize(
     ("cls", "values"),
     [

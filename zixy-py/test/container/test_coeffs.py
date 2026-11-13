@@ -17,6 +17,45 @@ from zixy.container.coeffs import (
 @pytest.mark.parametrize(
     ("cls", "values"),
     [
+        (RealCoeffs, [1.0, -1.0, -1.0]),
+        (ComplexCoeffs, [1j, -1j, -1j]),
+        (SignCoeffs, [Sign.from_scalar(value) for value in [1, -1, -1]]),
+        (ComplexSignCoeffs, [ComplexSign.from_scalar(value) for value in [1j, -1j, -1j]]),
+        (SymbolicCoeffs, [sympify(value) for value in ["x", "-x", "-x"]]),
+    ],
+)
+@pytest.mark.parametrize(
+    ("left_slice", "right_slice", "expected"),
+    [
+        (None, None, True),
+        (None, slice(None), True),
+        (None, slice(0, 2), False),
+        (None, slice(0, 0), False),
+        (slice(0, 1), slice(0, 2), False),
+        (slice(0, 0), slice(0, 1), False),
+        (slice(0, 0), slice(3, 3), True),
+        (slice(0, 1), slice(2, 3), False),
+        (slice(None, None, 2), slice(None, None, -2), False),
+        (slice(None, None, -1), slice(None, None, -1), True),
+    ],
+)
+def test_equality_checks_visible_length_and_values(cls, values, left_slice, right_slice, expected):
+    left = cls.from_iterable(values)
+    right = cls.from_iterable(values)
+    if left_slice is not None:
+        left = left[left_slice]
+    if right_slice is not None:
+        right = right[right_slice]
+
+    assert (left == right) is expected
+    assert (right == left) is expected
+    assert (left != right) is not expected
+    assert (right != left) is not expected
+
+
+@pytest.mark.parametrize(
+    ("cls", "values"),
+    [
         (Sign, [1, -1, 1.0, -1.0, 1 + 0j, -1 + 0j]),
         (ComplexSign, [1, -1, 1.0, -1.0, 1 + 0j, -1 + 0j, 1j, -1j]),
     ],

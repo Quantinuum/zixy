@@ -874,6 +874,8 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
         """Return whether ``self`` and ``other`` are equal."""
         if not isinstance(other, Coeffs):
             return NotImplemented
+        if len(self) != len(other):
+            return False
         return all(left == right for left, right in zip(self, other, strict=False))
 
     def map_index(self, index: int) -> int:
@@ -1673,6 +1675,8 @@ class SymbolicCoeffs(Coeffs[Expr]):
         """Return whether ``self`` and ``other`` are equal."""
         if not isinstance(other, SymbolicCoeffs):
             return NotImplemented
+        if len(self) != len(other):
+            return False
         return all(
             left.simplify() == right.simplify() for left, right in zip(self, other, strict=False)
         )

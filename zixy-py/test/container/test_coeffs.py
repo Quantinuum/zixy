@@ -629,7 +629,7 @@ def test_sign_vec():
     assert len(SignCoeffs.from_scalar(Sign(False), 5)) == 5
     assert SignCoeffs.from_scalar(Sign(False))[0] == Sign(False)
     assert SignCoeffs.from_str("[+1, -1]") == SignCoeffs.from_sequence([Sign(False), Sign(True)])
-    v = SignCoeffs.from_size(10)
+    v = SignCoeffs(size=10)
     assert len(v) == 10
     assert all(c == Sign(False) for c in v)
     v.append(Sign(False))
@@ -643,7 +643,7 @@ def test_sign_vec():
     assert len(v) == 6
     assert [c for c in v] == [Sign(i) for i in [1, 0, 0, 0, 0, 1]]
     assert v == SignCoeffs.from_phases([1, 0, 0, 0, 0, 1])
-    v.extend(SignCoeffs.from_size(1))
+    v.extend(SignCoeffs(size=1))
     assert len(v) == 7
     assert v == SignCoeffs.from_sequence([Sign(i) for i in [1, 0, 0, 0, 0, 1, 0]])
     v[3] = Sign(True)
@@ -693,7 +693,7 @@ def test_complex_sign_vec():
     assert ComplexSignCoeffs.from_str("[+1, +i, -1, -i]") == ComplexSignCoeffs.from_phases(
         [0, 1, 2, 3]
     )
-    v = ComplexSignCoeffs.from_size(10)
+    v = ComplexSignCoeffs(size=10)
     assert len(v) == 10
     assert all(c == ComplexSign(0) for c in v)
     v.append(ComplexSign(0))
@@ -706,7 +706,7 @@ def test_complex_sign_vec():
     v[0] = ComplexSign(2)
     assert len(v) == 6
     assert v == ComplexSignCoeffs.from_phases([2, 0, 0, 0, 0, 1])
-    v.extend(ComplexSignCoeffs.from_size(1))
+    v.extend(ComplexSignCoeffs(size=1))
     assert len(v) == 7
     assert v == ComplexSignCoeffs.from_phases([2, 0, 0, 0, 0, 1, 0])
     v[3] = ComplexSign(3)
@@ -755,7 +755,7 @@ def test_real_vec():
     assert len(RealCoeffs.from_scalar(2.0, 5)) == 5
     assert RealCoeffs.from_scalar(2.0)[0] == 2
     assert RealCoeffs.from_str("[1.25, -2.5]") == RealCoeffs.from_sequence([1.25, -2.5])
-    v = RealCoeffs.from_size(10)
+    v = RealCoeffs(size=10)
     assert len(v) == 10
     assert all(c == 1 for c in v)
     v.append(1)
@@ -769,7 +769,7 @@ def test_real_vec():
     assert len(v) == 6
     assert [c for c in v] == [-9.8, 1, 1, 1, 1, 2.345]
     assert v == RealCoeffs.from_sequence([-9.8, 1, 1, 1, 1, 2.345])
-    v.extend(RealCoeffs.from_size(1))
+    v.extend(RealCoeffs(size=1))
     assert len(v) == 7
     assert v == RealCoeffs.from_sequence([-9.8, 1, 1, 1, 1, 2.345, 1])
     v[3] = 0.4
@@ -829,7 +829,7 @@ def test_complex_vec():
     assert ComplexCoeffs.from_str("[(1+2j), (-3+0j)]") == ComplexCoeffs.from_sequence(
         [1 + 2j, -3 + 0j]
     )
-    v = ComplexCoeffs.from_size(10)
+    v = ComplexCoeffs(size=10)
     assert len(v) == 10
     assert all(c == 1 for c in v)
     v.append(1)
@@ -844,7 +844,7 @@ def test_complex_vec():
     example = [-9.8 + 1j, 1, 1, 1, 1, 2.345 + 1j]
     assert [c for c in v] == example
     assert v == ComplexCoeffs.from_sequence(example)
-    v.extend(ComplexCoeffs.from_size(1))
+    v.extend(ComplexCoeffs(size=1))
     assert len(v) == 7
     example += [1]
     assert v == ComplexCoeffs.from_sequence(example)
@@ -896,7 +896,7 @@ def test_symbolic_vec():
     assert len(SymbolicCoeffs.from_scalar("x")) == 1
     assert len(SymbolicCoeffs.from_scalar("x", 5)) == 5
     assert SymbolicCoeffs.from_scalar("x")[0] == sympify("x")
-    v = SymbolicCoeffs.from_size(10)
+    v = SymbolicCoeffs(size=10)
     assert len(v) == 10
     assert all(c == sympify(1) for c in v)
     v.append(1)
@@ -911,7 +911,7 @@ def test_symbolic_vec():
     assert len(v) == 6
     assert [c for c in v] == [sympify(c) for c in ["x**2", 1, 1, 1, 1, "3*x"]]
     assert v == SymbolicCoeffs.from_sequence([sympify(c) for c in ["x**2", 1, 1, 1, 1, "3*x"]])
-    v.extend(SymbolicCoeffs.from_size(1))
+    v.extend(SymbolicCoeffs(size=1))
     assert len(v) == 7
     assert v == SymbolicCoeffs.from_sequence([sympify(c) for c in ["x**2", 1, 1, 1, 1, "3*x", 1]])
     v[3] = sympify("y")

@@ -33,7 +33,7 @@ class ComplexStringTermData(TermData):
 
 
 def test_sign_term_data() -> None:
-    td = TermData(Strings(0), SignCoeffs.from_size(0))
+    td = TermData(Strings(0), SignCoeffs(size=0))
     assert (len(td), len(td._strings), len(td._coeffs)) == (0,) * 3
     td = TermData(Strings(1), SignCoeffs.from_sequence([Sign(True)]))
     assert (len(td), len(td._strings), len(td._coeffs)) == (1,) * 3

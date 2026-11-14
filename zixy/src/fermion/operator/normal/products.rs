@@ -93,18 +93,25 @@ impl ProductHelper {
         if Self::destroys(lhs, rhs) {
             return;
         }
-        let n_bif = lhs
+        // A common mode only splits if its uncontracted branch can survive.
+        let n_bif: usize = lhs
             .get_ann_part()
-            .intersection_hamming_weight(&rhs.get_cre_part());
+            .get_slice()
+            .iter()
+            .zip(rhs.get_cre_part().get_slice())
+            .zip(lhs.get_cre_part().get_slice())
+            .zip(rhs.get_ann_part().get_slice())
+            .map(|(((ann, cre), lhs_cre), rhs_ann)| {
+                (ann & cre & !lhs_cre & !rhs_ann).count_ones() as usize
+            })
+            .sum();
         self.strings.resize(1 << n_bif);
         self.signs.resize(self.strings.len());
         self.n_lhs_ann = lhs.get_ann_part().hamming_weight();
         self.n_rhs_ann = rhs.get_ann_part().hamming_weight();
         self.n_lhs_cre = lhs.get_cre_part().hamming_weight();
         self.n_rhs_cre = rhs.get_cre_part().hamming_weight();
-        self.n_bif = rhs
-            .get_cre_part()
-            .intersection_hamming_weight(&lhs.get_ann_part());
+        self.n_bif = n_bif;
         // copy the LHS^ and RHS_ strings to the last element of the result
         let i_branch_last = self.strings.len().saturating_sub(1);
         // these are the parts that are already in normal order
@@ -381,6 +388,22 @@ mod tests {
     use rstest::rstest;
 
     #[rstest]
+    // Number operators are projectors: n_0^2 = n_0, with no identity branch.
+    #[case(2, (vec![0], vec![0]), (vec![0], vec![0]),
+        vec![vec![0]], vec![vec![0]], vec![false])]
+    // T = a_0^dagger a_1^dagger a_0 a_1 = -n_0 n_1, hence T^2 = -T.
+    #[case(2, (vec![0, 1], vec![0, 1]), (vec![0, 1], vec![0, 1]),
+        vec![vec![0, 1]], vec![vec![0, 1]], vec![true])]
+    // One forced contraction and one real split leave exactly two result terms.
+    #[case(2, (vec![0], vec![0, 1]), (vec![0, 1], vec![]),
+        vec![vec![0], vec![0, 1]], vec![vec![], vec![1]], vec![true, false])]
+    // Forced contractions must also be excluded beyond the first storage word.
+    #[case(66, (vec![0, 65], vec![0, 65]), (vec![0, 65], vec![0, 65]),
+        vec![vec![0, 65]], vec![vec![0, 65]], vec![true])]
+    // A product of 70 number operators still has only one surviving branch.
+    #[case(70, ((0..70).collect(), (0..70).collect()),
+        ((0..70).collect(), (0..70).collect()),
+        vec![(0..70).collect()], vec![(0..70).collect()], vec![true])]
     // creation ops only
     #[case(6, (vec![0, 1], vec![]), (vec![2, 3], vec![]),
         vec![vec![0, 1, 2, 3]], vec![vec![]], vec![false])]

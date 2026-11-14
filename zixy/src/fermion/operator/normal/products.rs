@@ -181,14 +181,14 @@ impl ProductHelper {
                  * makes a further n_rc exchanges,
                  * and moving L_(0) to its position within RHS_
                  *                                                           C
-                 * makes a further number of exchanges equal to the number of set bits after L_(0) in RHS_
+                 * makes a further number of exchanges equal to the number of set bits before L_(0) in RHS_
                  */
                 // anti-commute to A
                 inds.exchange += self.n_lhs_ann.saturating_sub(inds.lhs_ann + 1);
                 // anti-commute to B
                 inds.exchange += self.n_rhs_cre.saturating_sub(inds.rhs_cre);
                 // anti-commute to C
-                inds.exchange += self.res_ann(i_branch).count_set_bits_after(i_lhs);
+                inds.exchange += self.res_ann(i_branch).count_set_bits_before(i_lhs);
                 self.res_ann_mut(i_branch).set_bit_unchecked(i_lhs, true);
                 i_lhs_maybe = lhs.get_ann_part().lowest_set_bit_after(i_lhs);
                 inds.lhs_ann += 1;
@@ -203,12 +203,12 @@ impl ProductHelper {
                  * makes n_la exchanges,
                  * and moving R^(0) to its position within LHS^
                  *  B?
-                 * makes a further number of exchanges equal to the number of set bits before R^(0) in LHS^
+                 * makes a further number of exchanges equal to the number of set bits after R^(0) in LHS^
                  */
                 // anti-commute to A
                 inds.exchange += self.n_lhs_ann.saturating_sub(inds.lhs_ann);
                 // anti-commute to B
-                inds.exchange += self.res_cre(i_branch).count_set_bits_before(i_rhs);
+                inds.exchange += self.res_cre(i_branch).count_set_bits_after(i_rhs);
                 self.res_cre_mut(i_branch).set_bit_unchecked(i_rhs, true);
                 i_rhs_maybe = rhs.get_cre_part().lowest_set_bit_after(i_rhs);
                 inds.rhs_cre += 1;
@@ -380,6 +380,97 @@ mod tests {
     use super::*;
     use rstest::rstest;
 
+    fn ladder_word(cre: u64, ann: u64, n_mode: usize) -> Vec<(usize, bool)> {
+        (0..n_mode)
+            .filter(|i| cre & (1 << i) != 0)
+            .map(|i| (i, true))
+            .chain(
+                (0..n_mode)
+                    .filter(|i| ann & (1 << i) != 0)
+                    .map(|i| (i, false)),
+            )
+            .collect()
+    }
+
+    fn apply_ladder_word(word: &[(usize, bool)], mut ket: u64) -> Option<(usize, i32)> {
+        let mut sign = 1;
+        for &(mode, creation) in word.iter().rev() {
+            let occupied = ket & (1 << mode) != 0;
+            if occupied == creation {
+                return None;
+            }
+            if (ket & ((1 << mode) - 1)).count_ones() % 2 != 0 {
+                sign = -sign;
+            }
+            ket ^= 1 << mode;
+        }
+        Some((ket as usize, sign))
+    }
+
+    fn assert_product_action(helper: &ProductHelper, word: &[(usize, bool)], n_mode: usize) {
+        let limit = 1u64 << n_mode;
+        for ket in 0..limit {
+            let mut expected = vec![0; limit as usize];
+            if let Some((out, sign)) = apply_ladder_word(word, ket) {
+                expected[out] = sign;
+            }
+            let mut actual = vec![0; limit as usize];
+            for row in 0..helper.strings.len() {
+                let term = ladder_word(
+                    helper.res_cre(row).get_slice()[0],
+                    helper.res_ann(row).get_slice()[0],
+                    n_mode,
+                );
+                if let Some((out, sign)) = apply_ladder_word(&term, ket) {
+                    let coefficient = if helper.signs.get_unchecked(row).0 {
+                        -1
+                    } else {
+                        1
+                    };
+                    actual[out] += sign * coefficient;
+                }
+            }
+            assert_eq!(actual, expected, "n={n_mode}, word={word:?}, ket={ket}");
+        }
+    }
+
+    #[test]
+    fn products_match_fock_basis_without_forced_contractions() {
+        use crate::container::traits::proj::Borrow;
+        use crate::fermion::operator::normal::string::String;
+
+        for n_mode in [2, 3] {
+            let modes = Modes::from_count(n_mode);
+            let limit = 1u64 << n_mode;
+            let make_string = |cre: u64, ann: u64| {
+                String::from_sets_unchecked(
+                    modes.clone(),
+                    (0..n_mode).filter(|i| cre & (1 << i) != 0).collect(),
+                    (0..n_mode).filter(|i| ann & (1 << i) != 0).collect(),
+                )
+            };
+            for lhs_cre in 0..limit {
+                for lhs_ann in 0..limit {
+                    let lhs = make_string(lhs_cre, lhs_ann);
+                    for rhs_cre in 0..limit {
+                        for rhs_ann in 0..limit {
+                            // Forced-branch allocation is tracked independently in #297.
+                            if lhs_ann & rhs_cre & (lhs_cre | rhs_ann) != 0 {
+                                continue;
+                            }
+                            let rhs = make_string(rhs_cre, rhs_ann);
+                            let mut helper = ProductHelper::new();
+                            helper.set(&lhs.borrow(), &rhs.borrow());
+                            let mut word = ladder_word(lhs_cre, lhs_ann, n_mode);
+                            word.extend(ladder_word(rhs_cre, rhs_ann, n_mode));
+                            assert_product_action(&helper, &word, n_mode);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     #[rstest]
     // creation ops only
     #[case(6, (vec![0, 1], vec![]), (vec![2, 3], vec![]),
@@ -439,13 +530,13 @@ mod tests {
     #[case(6, (vec![], vec![0, 3]), (vec![0, 1, 3], vec![]),
         vec![vec![1], vec![1, 3], vec![0, 1], vec![0, 1, 3]],
         vec![vec![], vec![3], vec![0], vec![0, 3]],
-        vec![false, true, true, true])]
+        vec![false, true, false, false])]
     #[case(6, (vec![], vec![2, 3]), (vec![], vec![2, 1]),
         vec![], vec![], vec![])] // destruction criterion met with F2 F2 product
     #[case(10, (vec![4, 7], vec![0, 3, 4, 5]), (vec![0, 1, 3], vec![2, 6]),
         vec![vec![1, 4, 7], vec![1, 3, 4, 7], vec![0, 1, 4, 7], vec![0, 1, 3, 4, 7]],
         vec![vec![2, 4, 5, 6], vec![2, 3, 4, 5, 6], vec![0, 2, 4, 5, 6], vec![0, 2, 3, 4, 5, 6]],
-        vec![false, false, true, false])]
+        vec![false, false, false, true])]
     fn test_fermion_products(
         #[case] n_mode: usize,
         #[case] lhs: (Vec<usize>, Vec<usize>),
@@ -461,6 +552,9 @@ mod tests {
         let modes = Modes::from_count(n_mode);
         let (lhs_cre, lhs_ann) = lhs;
         let (rhs_cre, rhs_ann) = rhs;
+        let bits = |indices: &[usize]| indices.iter().fold(0u64, |bits, i| bits | (1 << i));
+        let mut word = ladder_word(bits(&lhs_cre), bits(&lhs_ann), n_mode);
+        word.extend(ladder_word(bits(&rhs_cre), bits(&rhs_ann), n_mode));
         let lhs_cre = HashSet::from_iter(lhs_cre.into_iter());
         let lhs_ann = HashSet::from_iter(lhs_ann.into_iter());
         let rhs_cre = HashSet::from_iter(rhs_cre.into_iter());
@@ -485,6 +579,7 @@ mod tests {
                 .assign_set_unchecked(ann);
         }
         let result_signs = SignVec::from_phases(&result_signs);
+        assert_product_action(&helper, &word, n_mode);
         assert_eq!(helper.strings, result_strings);
         assert_eq!(helper.signs, result_signs);
     }

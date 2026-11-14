@@ -424,14 +424,15 @@ def test_complex_term_sum_dagger():
             zfon.RealTermSum,
             "F2 F0^ F1^",
             3,
-            "(-1.0, F0^ F1^ F2)",
+            # F2 crosses two distinct creators, giving (-1)**2 = +1.
+            "(1.0, F0^ F1^ F2)",
         ),
         (
             zfog.ComplexTermSum,
             zfon.ComplexTermSum,
             "F2 F0^ F1^",
             3,
-            "((-1+0j), F0^ F1^ F2)",
+            "((1+0j), F0^ F1^ F2)",
         ),
         (
             zfog.RealTermSum,

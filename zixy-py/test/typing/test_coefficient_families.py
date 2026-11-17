@@ -55,7 +55,8 @@ def test_numpy_conversion_inference() -> None:
     assert_type(SignCoeffs().to_numpy(), NDArray[np.int64])
     assert_type(ComplexSignCoeffs().to_numpy(), NDArray[np.complex128])
     assert_type(SymbolicCoeffs().to_numpy(), NDArray[np.float64] | NDArray[np.complex128])
-    assert_type(np.asarray(RealCoeffs(), dtype=np.float32), NDArray[np.float32])
+    result = np.asarray(RealCoeffs(), dtype=np.float32)
+    assert_type(result.dtype, np.dtype[np.float32])
 
 
 def test_coefficient_extend_iterable_inference() -> None:

@@ -30,6 +30,7 @@ and a minimal example.
    examples/basics.ipynb
    examples/chem.ipynb
    examples/features.ipynb
+   examples/tableau_demo.ipynb
 
 .. toctree::
    :caption: Project

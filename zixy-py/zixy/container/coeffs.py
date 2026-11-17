@@ -767,10 +767,6 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
 
     A resizable vector-like container of coefficients that may be an owning instance referencing a
     contiguous Rust-bound data object, or a view on a slice of the elements in another collection.
-
-    Use :meth:`to_numpy` or :func:`numpy.asarray` to obtain an independent numeric array
-    containing only the visible elements. NumPy conversion does not share storage with
-    the coefficient vector, so ``copy=False`` is unsupported.
     """
 
     coeff_type: type[C]
@@ -1086,8 +1082,7 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
             ValueError: If ``self`` is a non-owning view, including for an empty source.
 
         Note:
-            This method operates in-place. Extending from ``self`` or an overlapping
-            view appends the original visible elements once, in source order.
+            This method operates in-place.
         """
         if (
             isinstance(source, Coeffs)
@@ -1155,16 +1150,15 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
 
     @abstractmethod
     def to_numpy(self) -> NDArray[np.int64] | NDArray[np.float64] | NDArray[np.complex128]:
-        """Return a flat NumPy array copy of the visible contents of ``self``.
+        """Return a flat NumPy array copy of the contents of ``self``.
 
         Returns:
-            An independent one-dimensional NumPy array containing the visible elements
-            in iteration order.
+            An independent one-dimensional NumPy array containing the elements in iteration order.
         """
         pass
 
     def __array__(self, dtype: DTypeLike | None = None, copy: bool | None = None) -> NDArray[Any]:
-        """Convert the visible coefficients through NumPy's array protocol.
+        """Convert the coefficients through NumPy's array protocol.
 
         Args:
             dtype: Requested NumPy dtype, or ``None`` to use the native numeric dtype.
@@ -1172,14 +1166,8 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
                 arrays; ``False`` is unsupported because conversion requires a copy.
 
         Returns:
-            An independent one-dimensional NumPy array containing the visible elements
-            in iteration order, converted to the requested dtype if supplied.
-
-        Raises:
-            ValueError: Copying is forbidden, or a complex coefficient with a nonzero
-                imaginary part cannot be represented in a real numeric dtype.
-            TypeError: Symbolic coefficients cannot be evaluated numerically or the
-                requested dtype is unsupported.
+            An independent one-dimensional NumPy array containing the elements in iteration order,
+            converted to the requested dtype if supplied.
         """
         if copy is False:
             raise ValueError(
@@ -1308,11 +1296,10 @@ class SignCoeffs(RootOfUnityCoeffs[Sign]):
         return out
 
     def to_numpy(self) -> NDArray[np.int64]:
-        """Return a flat NumPy array copy of the visible contents of ``self``.
+        """Return a flat NumPy array copy of the contents of ``self``.
 
         Returns:
-            An independent one-dimensional NumPy array containing the visible elements
-            in iteration order.
+            An independent one-dimensional NumPy array containing the elements in iteration order.
         """
         return np.array([int(s) for s in self], dtype=np.int64).ravel()
 
@@ -1363,11 +1350,10 @@ class ComplexSignCoeffs(RootOfUnityCoeffs[ComplexSign]):
         return out
 
     def to_numpy(self) -> NDArray[np.complex128]:
-        """Return a flat NumPy array copy of the visible contents of ``self``.
+        """Return a flat NumPy array copy of the contents of ``self``.
 
         Returns:
-            An independent one-dimensional NumPy array containing the visible elements
-            in iteration order.
+            An independent one-dimensional NumPy array containing the elements in iteration order.
         """
         return np.array([complex(s) for s in self], dtype=np.complex128).ravel()
 
@@ -1498,11 +1484,10 @@ class RealCoeffs(NumericalCoeffs[float]):
             self._impl.fill_slice(self.slice, convert(coeff, float))
 
     def to_numpy(self) -> NDArray[np.float64]:
-        """Return a flat NumPy array copy of the visible contents of ``self``.
+        """Return a flat NumPy array copy of the contents of ``self``.
 
         Returns:
-            An independent one-dimensional NumPy array containing the visible elements
-            in iteration order.
+            An independent one-dimensional NumPy array containing the elements in iteration order.
         """
         impl = self._impl if self.is_owning() else self._impl.copy_slice(self.slice)
         return np.asarray(impl.to_array(), dtype=np.float64)
@@ -1544,11 +1529,10 @@ class ComplexCoeffs(NumericalCoeffs[complex]):
             self._impl.fill_slice(self.slice, convert(coeff, complex))
 
     def to_numpy(self) -> NDArray[np.complex128]:
-        """Return a flat NumPy array copy of the visible contents of ``self``.
+        """Return a flat NumPy array copy of the contents of ``self``.
 
         Returns:
-            An independent one-dimensional NumPy array containing the visible elements
-            in iteration order.
+            An independent one-dimensional NumPy array containing the elements in iteration order.
         """
         impl = self._impl if self.is_owning() else self._impl.copy_slice(self.slice)
         return np.asarray(impl.to_array(), dtype=np.complex128)
@@ -1796,8 +1780,7 @@ class SymbolicCoeffs(Coeffs[Expr]):
             ValueError: If ``self`` is a non-owning view, including for an empty source.
 
         Note:
-            This method operates in-place. Extending from ``self`` or an overlapping
-            view appends the original visible elements once, in source order.
+            This method operates in-place.
         """
         for value in source:
             self.append(value)
@@ -1897,15 +1880,14 @@ class SymbolicCoeffs(Coeffs[Expr]):
     from_str.__doc__ = Coeffs.from_str.__doc__
 
     def to_numpy(self) -> NDArray[np.float64] | NDArray[np.complex128]:
-        """Return a flat NumPy array copy of the visible contents of ``self``.
+        """Return a flat NumPy array copy of the contents of ``self``.
 
         Returns:
-            An independent one-dimensional NumPy array containing the visible elements
-            in iteration order.
+            An independent one-dimensional NumPy array containing the elements in iteration order.
 
         Raises:
-            TypeError: A coefficient contains free symbols or cannot be evaluated as
-                a real or complex number.
+            TypeError: A coefficient contains free symbols or cannot be evaluated as a real or
+                complex number.
         """
         try:
             return self.try_to_real().to_numpy()

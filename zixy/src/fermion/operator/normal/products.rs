@@ -86,6 +86,21 @@ impl ProductHelper {
             ) != 0
     }
 
+    /// Return whether a common mode must contract to avoid a repeated outer operator.
+    fn must_contract(lhs: &CmpntRef, rhs: &CmpntRef, mode: usize) -> bool {
+        lhs.get_cre_part().get_bit_unchecked(mode) || rhs.get_ann_part().get_bit_unchecked(mode)
+    }
+
+    /// Count common modes with both contracted and uncontracted results.
+    fn count_branch_points(lhs: &CmpntRef, rhs: &CmpntRef) -> usize {
+        lhs.get_ann_part()
+            .iter_set_bits_flat()
+            .filter(|&mode| {
+                rhs.get_cre_part().get_bit_unchecked(mode) && !Self::must_contract(lhs, rhs, mode)
+            })
+            .count()
+    }
+
     /// Compute and store every branch of the product `lhs * rhs`, including their signs.
     pub fn set(&mut self, lhs: &CmpntRef, rhs: &CmpntRef) {
         self.cmpnts = CmpntList::new(lhs.modes().clone());
@@ -93,18 +108,13 @@ impl ProductHelper {
         if Self::destroys(lhs, rhs) {
             return;
         }
-        let n_bif = lhs
-            .get_ann_part()
-            .intersection_hamming_weight(&rhs.get_cre_part());
-        self.cmpnts.resize(1 << n_bif);
+        self.n_bif = Self::count_branch_points(lhs, rhs);
+        self.cmpnts.resize(1 << self.n_bif);
         self.signs.resize(self.cmpnts.len());
         self.n_lhs_ann = lhs.get_ann_part().hamming_weight();
         self.n_rhs_ann = rhs.get_ann_part().hamming_weight();
         self.n_lhs_cre = lhs.get_cre_part().hamming_weight();
         self.n_rhs_cre = rhs.get_cre_part().hamming_weight();
-        self.n_bif = rhs
-            .get_cre_part()
-            .intersection_hamming_weight(&lhs.get_ann_part());
         // copy the LHS^ and RHS_ strings to the last element of the result
         let i_branch_last = self.cmpnts.len().saturating_sub(1);
         // these are the parts that are already in normal order
@@ -241,12 +251,8 @@ impl ProductHelper {
                  */
                 assert_eq!(i_lhs, i_rhs);
                 let i = i_lhs;
-                /*
-                 * only bifurcate if both LHS^ and RHS_ are given, and the mode index is not set in LHS^ or RHS_,
-                 * otherwise, the high-rank branch is destroyed and only the low-rank branch survives
-                 */
-                let is_bif: bool = !lhs.get_cre_part().get_bit_unchecked(i)
-                    && !rhs.get_ann_part().get_bit_unchecked(i);
+                // Match the allocation count: a forced contraction has no high-rank branch.
+                let is_bif = !Self::must_contract(lhs, rhs, i);
                 let mut i_branch_next = i_branch;
                 if is_bif {
                     i_branch_next &= !(1 << self.n_bif.saturating_sub(1 + inds.bif));
@@ -381,6 +387,32 @@ mod tests {
     use rstest::rstest;
 
     #[rstest]
+    // Forced contractions must not leave unused identity rows.
+    #[case(2, (vec![0], vec![0]), (vec![0], vec![]),
+        vec![vec![0]], vec![vec![]], vec![false])]
+    #[case(2, (vec![], vec![0]), (vec![0], vec![0]),
+        vec![vec![]], vec![vec![0]], vec![false])]
+    // Number operators are projectors: n_0^2 = n_0.
+    #[case(2, (vec![0], vec![0]), (vec![0], vec![0]),
+        vec![vec![0]], vec![vec![0]], vec![false])]
+    // T = a_0^dagger a_1^dagger a_0 a_1 = -n_0 n_1, so T^2 = -T.
+    #[case(2, (vec![0, 1], vec![0, 1]), (vec![0, 1], vec![0, 1]),
+        vec![vec![0, 1]], vec![vec![0, 1]], vec![true])]
+    // A forced contraction followed by a genuine split produces exactly two rows.
+    #[case(2, (vec![0], vec![0, 1]), (vec![0, 1], vec![]),
+        vec![vec![0], vec![0, 1]], vec![vec![], vec![1]], vec![true, false])]
+    // Count forced contractions across storage words.
+    #[case(66, (vec![0, 65], vec![0, 65]), (vec![0, 65], vec![0, 65]),
+        vec![vec![0, 65]], vec![vec![0, 65]], vec![true])]
+    // Seventy forced contractions need one row, not a shift by seventy bits.
+    #[case(70, ((0..70).collect(), (0..70).collect()),
+        ((0..70).collect(), (0..70).collect()),
+        vec![(0..70).collect()], vec![(0..70).collect()], vec![true])]
+    // Empty operator products remain identity on either side.
+    #[case(2, (vec![], vec![]), (vec![0], vec![1]),
+        vec![vec![0]], vec![vec![1]], vec![false])]
+    #[case(2, (vec![0], vec![1]), (vec![], vec![]),
+        vec![vec![0]], vec![vec![1]], vec![false])]
     // creation ops only
     #[case(6, (vec![0, 1], vec![]), (vec![2, 3], vec![]),
         vec![vec![0, 1, 2, 3]], vec![vec![]], vec![false])]

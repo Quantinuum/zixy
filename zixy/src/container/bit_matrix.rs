@@ -571,8 +571,6 @@ impl BitMatrix {
         out.resize(n_row_out);
 
         let src_row_blocks = divceil(self.len(), 64);
-        // This loop writes one output column across multiple rows.
-        #[allow(clippy::needless_range_loop)]
         for i_row_block in 0..src_row_blocks {
             let row_start = i_row_block * 64;
             for i_word in 0..self.table.get_row_size() {

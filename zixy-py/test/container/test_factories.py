@@ -117,8 +117,8 @@ def test_item_views_share_storage_and_validate_indices(family_case):
 def test_term_from_string_defaults_and_ownership(family_case, source_kind, coefficient_mode):
     family, strings, _ = family_case
     coefficients = {
-        "Sign": Sign.from_int(-1),
-        "ComplexSign": ComplexSign.from_complex(-1j),
+        "Sign": Sign.from_scalar(-1),
+        "ComplexSign": ComplexSign.from_scalar(-1j),
         "Real": 2.5,
         "Complex": 1 + 2j,
         "Symbolic": Symbol("x"),

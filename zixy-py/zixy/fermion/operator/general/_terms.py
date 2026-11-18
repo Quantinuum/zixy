@@ -154,6 +154,7 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerm[ImplT, Spe
         self,
         modes: int | Modes = 0,
         source: TermSpec[C] = "",
+        *,
         max_string_len: int = 0,
     ):
         """Initialize the term.
@@ -163,7 +164,7 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerm[ImplT, Spe
             source: The term specifier to use for initial value.
             max_string_len: Maximum number of operators per string.
         """
-        strings = self.strings_type(modes, 1, max_string_len)
+        strings = self.strings_type(modes, size=1, max_string_len=max_string_len)
         strings._impl._reserve_string_length(_max_string_len_from_source(source), warn=False)
         coeffs = self.coeffs_type.from_size(1)
         term_data = TermData(strings, coeffs)
@@ -199,16 +200,16 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerms[ImplT, S
 
     term_type: type[Term[C]]
 
-    def __init__(self, modes: int | Modes = 0, n: int = 0, max_string_len: int = 0):
+    def __init__(self, modes: int | Modes = 0, *, size: int = 0, max_string_len: int = 0):
         """Initialize the term array.
 
         Args:
             modes: The mode space or number of modes.
-            n: The number of items to initialize the array with.
+            size: The number of items to initialize the array with.
             max_string_len: Maximum number of operators per string.
         """
-        strings = self.term_type.strings_type(modes, n, max_string_len)
-        coeffs = self.term_type.coeffs_type.from_size(n)
+        strings = self.term_type.strings_type(modes, size=size, max_string_len=max_string_len)
+        coeffs = self.term_type.coeffs_type.from_size(size)
         term_data = TermData(strings, coeffs)
         TermsBase.__init__(self, term_data)
 
@@ -241,10 +242,11 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerms[ImplT, S
         source: Iterable[terms.TermSpecT[ImplT, SpecT, C]],
         modes: int | Modes = 0,
         n: int = 0,
+        *,
         max_string_len: int = 0,
     ) -> Self:
         """Create terms, preallocating known sequences and streaming other iterables."""
-        out = cls(modes, n, max_string_len)
+        out = cls(modes, size=n, max_string_len=max_string_len)
         if isinstance(source, Sequence):
             out.strings._impl._reserve_string_length(
                 max(map(_max_string_len_from_source, source), default=0),
@@ -269,7 +271,7 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
 
     terms_type: type[Terms[C]]
 
-    def __init__(self, modes: int | Modes = 0, max_string_len: int = 0):
+    def __init__(self, modes: int | Modes = 0, *, max_string_len: int = 0):
         """Initialize the term set.
 
         Args:
@@ -306,10 +308,11 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
         cls,
         iterable: Iterable[terms.TermSpecT[ImplT, SpecT, C]],
         modes: int | Modes = 0,
+        *,
         max_string_len: int = 0,
     ) -> Self:
         """Create a set, preallocating known sequences and streaming other iterables."""
-        out = cls(modes, max_string_len)
+        out = cls(modes, max_string_len=max_string_len)
         if isinstance(iterable, Sequence):
             out.strings._impl._reserve_string_length(
                 max(map(_max_string_len_from_source, iterable), default=0),
@@ -330,7 +333,7 @@ class TermSum[C: (float, complex, Expr)](OperatorTermSum[ImplT, SpecT, C, ElemT]
         are not.
     """
 
-    def __init__(self, modes: int | Modes = 0, max_string_len: int = 0):
+    def __init__(self, modes: int | Modes = 0, *, max_string_len: int = 0):
         """Initialize the term sum.
 
         Args:
@@ -344,6 +347,7 @@ class TermSum[C: (float, complex, Expr)](OperatorTermSum[ImplT, SpecT, C, ElemT]
         cls,
         source: Iterable[terms.TermSpecT[ImplT, SpecT, C]],
         modes: int | Modes = 0,
+        *,
         max_string_len: int = 0,
     ) -> Self:
         """Create a new instance of ``cls`` from an iterable of term specifiers."""

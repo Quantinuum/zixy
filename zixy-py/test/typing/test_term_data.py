@@ -420,21 +420,21 @@ def test_zfs_concrete_term_data() -> None:
 
 
 def test_storage_rejects_foreign_string_family() -> None:
-    data = TermData(zqs.Strings(2, 1), RealCoeffs.from_size(1))
+    data = TermData(zqs.Strings(2, size=1), RealCoeffs.from_size(1))
     with pytest.raises(TypeError):
         zqo.RealTerm._create(data, 0)  # type: ignore[arg-type]
 
 
 @pytest.mark.parametrize("n_strings,n_coeffs", [(0, 1), (1, 0), (1, 2), (2, 1)])
 def test_term_data_rejects_mismatched_lengths(n_strings: int, n_coeffs: int) -> None:
-    strings = zqo.Strings(2, n_strings)
+    strings = zqo.Strings(2, size=n_strings)
     coeffs = RealCoeffs.from_size(n_coeffs)
     with pytest.raises(ValueError, match="strings and coefficients must have equal lengths"):
         TermData(strings, coeffs)
 
 
 def test_term_data_checks_view_lengths() -> None:
-    strings = zqo.Strings(2, 3)
+    strings = zqo.Strings(2, size=3)
     coeffs = RealCoeffs.from_size(4)
     data = TermData(strings[::2], coeffs[1::2])
     assert len(data) == 2

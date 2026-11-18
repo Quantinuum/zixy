@@ -438,29 +438,29 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
         rhs_impl = rhs._impl.strings._impl
         rhs_coeffs = rhs._impl.coeffs._impl
         # TODO: support output by reference
-        impl, coeffs = lhs_impl.lincomb_mul_real(lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs)
+        impl, coeffs, map_ = lhs_impl.lincomb_mul_real(lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs)
         data = TermData(Strings._create(impl), RealCoeffs._create(coeffs))
-        return RealTermSum._create(data)
+        return RealTermSum._create(data, map_=map_)
 
     def commutator(self, rhs: TermSum[float]) -> RealTermSum:
         """Return the commutator ``[self, rhs]``."""
         rhs_coeffs = rhs.coeffs
         assert isinstance(rhs_coeffs, RealCoeffs)
-        impl, coeffs = self.strings._impl.lincomb_commutator_real(
+        impl, coeffs, map_ = self.strings._impl.lincomb_commutator_real(
             self.strings._impl, self.coeffs._impl, rhs.strings._impl, rhs_coeffs._impl
         )
         data = TermData(Strings._create(impl), RealCoeffs._create(coeffs))
-        return RealTermSum._create(data)
+        return RealTermSum._create(data, map_=map_)
 
     def anticommutator(self, rhs: TermSum[float]) -> RealTermSum:
         """Return the anticommutator ``{self, rhs}``."""
         rhs_coeffs = rhs.coeffs
         assert isinstance(rhs_coeffs, RealCoeffs)
-        impl, coeffs = self.strings._impl.lincomb_anticommutator_real(
+        impl, coeffs, map_ = self.strings._impl.lincomb_anticommutator_real(
             self.strings._impl, self.coeffs._impl, rhs.strings._impl, rhs_coeffs._impl
         )
         data = TermData(Strings._create(impl), RealCoeffs._create(coeffs))
-        return RealTermSum._create(data)
+        return RealTermSum._create(data, map_=map_)
 
     def is_hermitian(self, atol: float = 1e-10) -> bool:
         """Check whether ``self`` is Hermitian within the given tolerance."""
@@ -486,14 +486,14 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
         """Convert this normal-ordered term sum to the raw general representation."""
         import zixy.fermion.operator.general as zfog  # noqa: PLC0415
 
-        impl, coeffs = self.strings._impl.lincomb_to_general_real(
+        impl, coeffs, map_ = self.strings._impl.lincomb_to_general_real(
             self.strings._impl, self._string_set._map, self.coeffs._impl
         )
         term_data = TermData(
             zfog.Strings._create(impl),
             RealCoeffs._create(coeffs),
         )
-        return zfog.RealTermSum._create(term_data)
+        return zfog.RealTermSum._create(term_data, map_=map_)
 
     @overload
     def apply(self, state: zfs.RealTermSum) -> zfs.RealTermSum: ...
@@ -718,29 +718,31 @@ class ComplexTermSum(
         rhs_impl = rhs._impl.strings._impl
         rhs_coeffs = rhs._impl.coeffs._impl
         # TODO: support output by reference
-        impl, coeffs = lhs_impl.lincomb_mul_complex(lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs)
+        impl, coeffs, map_ = lhs_impl.lincomb_mul_complex(
+            lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs
+        )
         data = TermData(Strings._create(impl), ComplexCoeffs._create(coeffs))
-        return ComplexTermSum._create(data)
+        return ComplexTermSum._create(data, map_=map_)
 
     def commutator(self, rhs: TermSum[complex]) -> ComplexTermSum:
         """Return the commutator ``[self, rhs]``."""
         rhs_coeffs = rhs.coeffs
         assert isinstance(rhs_coeffs, ComplexCoeffs)
-        impl, coeffs = self.strings._impl.lincomb_commutator_complex(
+        impl, coeffs, map_ = self.strings._impl.lincomb_commutator_complex(
             self.strings._impl, self.coeffs._impl, rhs.strings._impl, rhs_coeffs._impl
         )
         data = TermData(Strings._create(impl), ComplexCoeffs._create(coeffs))
-        return ComplexTermSum._create(data)
+        return ComplexTermSum._create(data, map_=map_)
 
     def anticommutator(self, rhs: TermSum[complex]) -> ComplexTermSum:
         """Return the anticommutator ``{self, rhs}``."""
         rhs_coeffs = rhs.coeffs
         assert isinstance(rhs_coeffs, ComplexCoeffs)
-        impl, coeffs = self.strings._impl.lincomb_anticommutator_complex(
+        impl, coeffs, map_ = self.strings._impl.lincomb_anticommutator_complex(
             self.strings._impl, self.coeffs._impl, rhs.strings._impl, rhs_coeffs._impl
         )
         data = TermData(Strings._create(impl), ComplexCoeffs._create(coeffs))
-        return ComplexTermSum._create(data)
+        return ComplexTermSum._create(data, map_=map_)
 
     def is_hermitian(self, atol: float = 1e-10) -> bool:
         """Check whether ``self`` is Hermitian within the given tolerance."""
@@ -768,14 +770,14 @@ class ComplexTermSum(
         """Convert this normal-ordered term sum to the raw general representation."""
         import zixy.fermion.operator.general as zfog  # noqa: PLC0415
 
-        impl, coeffs = self.strings._impl.lincomb_to_general_complex(
+        impl, coeffs, map_ = self.strings._impl.lincomb_to_general_complex(
             self.strings._impl, self._string_set._map, self.coeffs._impl
         )
         term_data = TermData(
             zfog.Strings._create(impl),
             ComplexCoeffs._create(coeffs),
         )
-        return zfog.ComplexTermSum._create(term_data)
+        return zfog.ComplexTermSum._create(term_data, map_=map_)
 
     @overload
     def apply(self, state: NumericState) -> zfs.ComplexTermSum: ...

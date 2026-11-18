@@ -22,6 +22,7 @@ class Map:
     def __init__(self, *args: Any, **kwargs: Any) -> None: ...
     def __call__(self, *args: Any, **kwargs: Any) -> None: ...
     def __len__(self) -> int: ...
+    def clone(self) -> Map: ...
 
 class RootOfUnity:
     def __str__(self) -> str: ...
@@ -169,49 +170,49 @@ class NormalFermionOperatorArray(FermionArray):
     @staticmethod
     def from_ladder_product(
         modes: Modes, ops: Sequence[tuple[int, bool]]
-    ) -> tuple[NormalFermionOperatorArray, RealVec]: ...
+    ) -> tuple[NormalFermionOperatorArray, RealVec, Map]: ...
     @staticmethod
     def lincomb_mul_real(
         lhs_impl: NormalFermionOperatorArray,
         lhs_coeffs: RealVec,
         rhs_impl: NormalFermionOperatorArray,
         rhs_coeffs: RealVec,
-    ) -> tuple[NormalFermionOperatorArray, RealVec]: ...
+    ) -> tuple[NormalFermionOperatorArray, RealVec, Map]: ...
     @staticmethod
     def lincomb_mul_complex(
         lhs_impl: NormalFermionOperatorArray,
         lhs_coeffs: ComplexVec,
         rhs_impl: NormalFermionOperatorArray,
         rhs_coeffs: ComplexVec,
-    ) -> tuple[NormalFermionOperatorArray, ComplexVec]: ...
+    ) -> tuple[NormalFermionOperatorArray, ComplexVec, Map]: ...
     @staticmethod
     def lincomb_commutator_real(
         lhs_impl: NormalFermionOperatorArray,
         lhs_coeffs: RealVec,
         rhs_impl: NormalFermionOperatorArray,
         rhs_coeffs: RealVec,
-    ) -> tuple[NormalFermionOperatorArray, RealVec]: ...
+    ) -> tuple[NormalFermionOperatorArray, RealVec, Map]: ...
     @staticmethod
     def lincomb_anticommutator_real(
         lhs_impl: NormalFermionOperatorArray,
         lhs_coeffs: RealVec,
         rhs_impl: NormalFermionOperatorArray,
         rhs_coeffs: RealVec,
-    ) -> tuple[NormalFermionOperatorArray, RealVec]: ...
+    ) -> tuple[NormalFermionOperatorArray, RealVec, Map]: ...
     @staticmethod
     def lincomb_commutator_complex(
         lhs_impl: NormalFermionOperatorArray,
         lhs_coeffs: ComplexVec,
         rhs_impl: NormalFermionOperatorArray,
         rhs_coeffs: ComplexVec,
-    ) -> tuple[NormalFermionOperatorArray, ComplexVec]: ...
+    ) -> tuple[NormalFermionOperatorArray, ComplexVec, Map]: ...
     @staticmethod
     def lincomb_anticommutator_complex(
         lhs_impl: NormalFermionOperatorArray,
         lhs_coeffs: ComplexVec,
         rhs_impl: NormalFermionOperatorArray,
         rhs_coeffs: ComplexVec,
-    ) -> tuple[NormalFermionOperatorArray, ComplexVec]: ...
+    ) -> tuple[NormalFermionOperatorArray, ComplexVec, Map]: ...
     @staticmethod
     def lincomb_is_hermitian_real(
         strings: NormalFermionOperatorArray, coeffs: RealVec, atol: float
@@ -245,11 +246,11 @@ class NormalFermionOperatorArray(FermionArray):
     @staticmethod
     def lincomb_to_general_real(
         strings: NormalFermionOperatorArray, map: Map, coeffs: RealVec
-    ) -> tuple[GeneralFermionOperatorArray, RealVec]: ...
+    ) -> tuple[GeneralFermionOperatorArray, RealVec, Map]: ...
     @staticmethod
     def lincomb_to_general_complex(
         strings: NormalFermionOperatorArray, map: Map, coeffs: ComplexVec
-    ) -> tuple[GeneralFermionOperatorArray, ComplexVec]: ...
+    ) -> tuple[GeneralFermionOperatorArray, ComplexVec, Map]: ...
     def apply_to_state_real(
         self,
         coeffs: RealVec,
@@ -310,22 +311,22 @@ class GeneralFermionOperatorArray(FermionArray):
         lhs_coeffs: RealVec,
         rhs_impl: GeneralFermionOperatorArray,
         rhs_coeffs: RealVec,
-    ) -> tuple[GeneralFermionOperatorArray, RealVec]: ...
+    ) -> tuple[GeneralFermionOperatorArray, RealVec, Map]: ...
     @staticmethod
     def lincomb_mul_complex(
         lhs_impl: GeneralFermionOperatorArray,
         lhs_coeffs: ComplexVec,
         rhs_impl: GeneralFermionOperatorArray,
         rhs_coeffs: ComplexVec,
-    ) -> tuple[GeneralFermionOperatorArray, ComplexVec]: ...
+    ) -> tuple[GeneralFermionOperatorArray, ComplexVec, Map]: ...
     @staticmethod
     def lincomb_to_normal_order_real(
         strings: GeneralFermionOperatorArray, coeffs: RealVec
-    ) -> tuple[NormalFermionOperatorArray, ComplexVec]: ...
+    ) -> tuple[NormalFermionOperatorArray, RealVec, Map]: ...
     @staticmethod
     def lincomb_to_normal_order_complex(
         strings: GeneralFermionOperatorArray, coeffs: ComplexVec
-    ) -> tuple[NormalFermionOperatorArray, ComplexVec]: ...
+    ) -> tuple[NormalFermionOperatorArray, ComplexVec, Map]: ...
 
 class QubitArray[SpringsT: Springs, ElemT](ImplArray):
     qubits: Qubits

@@ -652,7 +652,7 @@ def test_sign_vec():
     assert v[::-1] == SignCoeffs.from_phases([1, 0, 0, 1, 0, 1, 0][::-1])
     # view every second item
     assert v[::2] == SignCoeffs.from_phases([1, 0, 0, 1, 0, 1, 0][::2])
-    assert SignCoeffs.from_view(v[::2]) == v[::2]
+    assert v[::2].clone() == v[::2]
     v.resize(1)
     v.resize(7)
     assert v == SignCoeffs.from_sequence([Sign(i) for i in [1, 0, 0, 0, 0, 0, 0]])
@@ -716,7 +716,7 @@ def test_complex_sign_vec():
     # view every second item
     assert v[::2] == ComplexSignCoeffs.from_phases([2, 0, 0, 3, 0, 1, 0][::2])
     assert v[1::2] == ComplexSignCoeffs.from_phases([2, 0, 0, 3, 0, 1, 0][1::2])
-    assert ComplexSignCoeffs.from_view(v[::2]) == v[::2]
+    assert v[::2].clone() == v[::2]
     v.resize(1)
     v.resize(7)
     assert v == ComplexSignCoeffs.from_phases([2, 0, 0, 0, 0, 0, 0])
@@ -778,7 +778,7 @@ def test_real_vec():
     assert v[::-1] == RealCoeffs.from_sequence([-9.8, 1, 1, 0.4, 1, 2.345, 1][::-1])
     # view every second item
     assert v[::2] == RealCoeffs.from_sequence([-9.8, 1, 1, 0.4, 1, 2.345, 1][::2])
-    assert RealCoeffs.from_view(v[::2]) == v[::2]
+    assert v[::2].clone() == v[::2]
     v.resize(1)
     v.resize(7)
     assert v == RealCoeffs.from_sequence([-9.8, 1, 1, 1, 1, 1, 1])
@@ -855,7 +855,7 @@ def test_complex_vec():
     assert v[::-1] == ComplexCoeffs.from_sequence(example[::-1])
     # view every second item
     assert v[::2] == ComplexCoeffs.from_sequence(example[::2])
-    assert ComplexCoeffs.from_view(v[::2]) == v[::2]
+    assert v[::2].clone() == v[::2]
     v.resize(1)
     v.resize(7)
     assert v == ComplexCoeffs.from_sequence([-9.8 + 1j, 1, 1, 1, 1, 1, 1])
@@ -920,7 +920,7 @@ def test_symbolic_vec():
     assert v[::-1] == SymbolicCoeffs.from_sequence(["x**2", 1, 1, "y", 1, "3*x", 1][::-1])
     # view every second item
     assert v[::2] == SymbolicCoeffs.from_sequence(["x**2", 1, 1, "y", 1, "3*x", 1][::2])
-    assert SymbolicCoeffs.from_view(v[::2]) == v[::2]
+    assert v[::2].clone() == v[::2]
     v.resize(1)
     v.resize(7)
     assert v == SymbolicCoeffs.from_sequence([sympify(c) for c in ["x**2", 1, 1, 1, 1, 1, 1]])

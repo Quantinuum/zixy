@@ -105,7 +105,7 @@ class ParityMapper(Mapper):
                 )
                 return zqo.RealTermSum._create(
                     real_data,
-                    map_,
+                    map_=map_,
                 )
             complex_strings, complex_coeffs, map_ = self._impl.apply_complex(ops)
             complex_data = TermData(
@@ -113,6 +113,6 @@ class ParityMapper(Mapper):
             )
             return zqo.ComplexTermSum._create(
                 complex_data,
-                map_,
+                map_=map_,
             )
         return _apply_operator(value, self.apply, self.qubits, real=bool(real))

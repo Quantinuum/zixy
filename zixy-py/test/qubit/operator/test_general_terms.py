@@ -321,7 +321,7 @@ def test_real_terms():
     terms[0] = zqo.RealTerm(6, (X,) * 6)
     assert terms[0].string.get_tuple() == (X,) * 6
     assert type(terms.into(zqo.ComplexTerms)) is zqo.ComplexTerms
-    assert all(terms.into(zqo.ComplexTerms).coeffs.np_array == 1)
+    assert all(terms.into(zqo.ComplexTerms).coeffs.to_numpy() == 1)
     terms[1:4].scale(-1)
     assert type(terms.into(zqo.SignTerms)) is zqo.SignTerms
     assert str(terms.into(zqo.SignTerms).coeffs) == "[+1, -1, -1, -1, +1, +1, +1, +1, +1, +1]"
@@ -412,7 +412,7 @@ def test_symbolic_terms():
         terms.try_to_real()
     # but can be converted to complex
     assert all(
-        terms.try_to_complex().coeffs.np_array
+        terms.try_to_complex().coeffs.to_numpy()
         == [
             1j,
         ]
@@ -441,7 +441,7 @@ def test_symbolic_terms():
         terms.try_to_complex()
     terms[-2].isubs({"y": 4})
     assert len(terms.free_symbols) == 0
-    assert all(terms.try_to_complex().coeffs.np_array == [1j, 1, 1, 1, 1, 1, 1, 1, 4, 5])
+    assert all(terms.try_to_complex().coeffs.to_numpy() == [1j, 1, 1, 1, 1, 1, 1, 1, 4, 5])
 
 
 def test_extend():

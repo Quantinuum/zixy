@@ -745,7 +745,7 @@ class RealTerms(NumericTerms[QubitPauliArray, StringSpec, float], Terms[float]):
         Note:
             This method operates in-place.
         """
-        array = self.coeffs.np_array
+        array = self.coeffs.to_numpy()
         if by_magnitude:
             array = np.abs(array)
         inds = tuple(int(i) for i in np.argsort(array))
@@ -1094,7 +1094,7 @@ class ComplexTerms(NumericTerms[QubitPauliArray, StringSpec, complex], Terms[com
         Note:
             This method operates in-place.
         """
-        array = np.abs(self.coeffs.np_array)
+        array = np.abs(self.coeffs.to_numpy())
         inds = tuple(int(i) for i in np.argsort(array))
         if not ascending:
             inds = inds[::-1]

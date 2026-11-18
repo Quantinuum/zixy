@@ -53,6 +53,7 @@ from zixy.container.coeffs import (
     RealCoeffs,
     RootOfUnity,
     Sign,
+    SymbolicCoeffs,
     convert,
     convert_vec,
     typesafe_mul,
@@ -74,6 +75,8 @@ from zixy.utils import (
 if TYPE_CHECKING:
     import builtins
     from collections.abc import Callable, Iterable, Iterator, Sequence
+
+    from sympy import Symbol
 
     from zixy._zixy import ImplArray, Map
     from zixy.container.base import (
@@ -1774,6 +1777,42 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Expr)](TermSet[ImplT,
             New instance of ``cls`` containing the terms specified by ``source``.
         """
         return cls.from_terms(cls.terms_type.from_iterable(source, *args, **kwargs))
+
+
+class SymbolicTermSum[ImplT: ImplArray, SpecT](TermSum[ImplT, SpecT, Expr]):
+    """A sum of terms consisting of strings and symbolic coefficients.
+
+    Coefficient substitution preserves the string keys and their space. Out-of-place
+    substitution returns an independent owning sum of the same concrete type.
+    """
+
+    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
+        """Apply a partial substitution of the symbols in-place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Note:
+            This method operates in-place. String keys and explicitly stored zero
+            coefficients are retained.
+        """
+        coeffs = self._impl.coeffs
+        assert isinstance(coeffs, SymbolicCoeffs)
+        coeffs.isubs(values)
+
+    def subs(self, values: dict[Symbol | str, Number | Expr]) -> Self:
+        """Apply a partial substitution of the symbols out of place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Returns:
+            An independent owning sum of the same concrete type with the substitution
+            applied. String keys, their space, and explicitly stored zeros are retained.
+        """
+        out = self.clone()
+        out.isubs(values)
+        return out
 
 
 class NumericTermSum[ImplT: ImplArray, SpecT, C: (float, complex)](TermSum[ImplT, SpecT, C]):

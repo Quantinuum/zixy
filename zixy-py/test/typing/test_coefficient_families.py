@@ -97,6 +97,34 @@ def test_coefficient_lookup_inference() -> None:
     assert real.get("Y0", marker) is marker
 
 
+def test_symbolic_sum_substitution_inference() -> None:
+    class CustomCoeffs(SymbolicCoeffs):
+        pass
+
+    class CustomTerm(zqo.SymbolicTerm):
+        coeffs_type = CustomCoeffs
+
+    class CustomTerms(zqo.SymbolicTerms):
+        term_type = CustomTerm
+
+    class CustomSum(zqo.SymbolicTermSum):
+        terms_type = CustomTerms
+
+    source = CustomSum.from_iterable([("X0", sympify("x"))], 2)
+    result = source.subs({"x": 2})
+    assert_type(result, CustomSum)
+    assert_type(result.coeffs, CustomCoeffs)
+    assert_type(result.isubs({"x": 2}), None)
+    assert type(result.coeffs) is CustomCoeffs
+    assert result.get("X0") == sympify(2)
+    assert source.get("X0") == sympify("x")
+    assert_type(zqo.SymbolicTermSum(2).subs({"x": 2}), zqo.SymbolicTermSum)
+    assert_type(zqs.SymbolicTermSum(2).subs({"x": 2}), zqs.SymbolicTermSum)
+    assert_type(zfog.SymbolicTermSum(2).subs({"x": 2}), zfog.SymbolicTermSum)
+    assert_type(zfon.SymbolicTermSum(2).subs({"x": 2}), zfon.SymbolicTermSum)
+    assert_type(zfs.SymbolicTermSum(2).subs({"x": 2}), zfs.SymbolicTermSum)
+
+
 def _scalar_from_value[T: RootOfUnity](cls: type[T], value: int | float | complex) -> T:
     return cls.from_scalar(value)
 

@@ -354,20 +354,6 @@ class ViewableSequence[T, ImplT: Resizable](ViewableBase[ImplT, slice], Sequence
         assert len(self) == n
         return self
 
-    @classmethod
-    def from_size(cls, n: int) -> Self:
-        """Create a new instance of ``cls`` with the given size.
-
-        Args:
-            n: The size of the new instance.
-
-        Returns:
-            An instance of ``cls`` with the given size.
-        """
-        out = cls()
-        out.resize(n)
-        return out
-
 
 class Representable(ABC):
     """Abstract base class for classes that can be represented as, and constructed from, strings."""

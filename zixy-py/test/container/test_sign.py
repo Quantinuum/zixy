@@ -20,7 +20,7 @@ def test_scalar_conversions():
 
 
 def test_str():
-    empty = SignCoeffs.from_size(0)
+    empty = SignCoeffs(size=0)
     assert empty.to_str() == "[]"
     assert SignCoeffs.from_str(empty.to_str()) == empty
 

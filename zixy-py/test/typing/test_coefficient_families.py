@@ -788,7 +788,7 @@ def test_coefficient_storage_matches_factory() -> None:
         terms_type = CustomTerms
 
     # A stored subclass is valid, and coeffs_type must return that actual subclass.
-    data = TermData(zqo.Strings(2, size=1), DerivedCoeffs.from_size(1))
+    data = TermData(zqo.Strings(2, size=1), DerivedCoeffs(size=1))
     terms = CustomTerms._create(data)
     term_set = CustomSet.from_terms(terms)
     assert_type(terms.coeffs, CustomCoeffs)
@@ -799,7 +799,7 @@ def test_coefficient_storage_matches_factory() -> None:
     assert term_set.coeffs_type is DerivedCoeffs
 
     # Both normal initialization and internal construction reject inconsistent storage.
-    mismatched = TermData(zqo.Strings(2, size=1), RealCoeffs.from_size(1))
+    mismatched = TermData(zqo.Strings(2, size=1), RealCoeffs(size=1))
     ordinary_terms = zqo.RealTerms._create(mismatched)
     with pytest.raises(TypeError, match="Coefficient storage does not match its factory"):
         TermBase.__init__(CustomTerm.__new__(CustomTerm), mismatched)

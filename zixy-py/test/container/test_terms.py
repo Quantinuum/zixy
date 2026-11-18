@@ -85,7 +85,7 @@ class RealMockTerms(NumericTerms[StringsImplArray, str, float]):
     term_type = RealMockTerm
 
     def __init__(self, data: TermData[StringsImplArray, str, float] | None = None):
-        super().__init__(TermData(Strings(0), RealCoeffs.from_size(0)) if data is None else data)
+        super().__init__(TermData(Strings(0), RealCoeffs(size=0)) if data is None else data)
 
 
 class RealMockTermSet(TermSet[StringsImplArray, str, float]):
@@ -113,7 +113,7 @@ class ComplexMockTerms(NumericTerms[StringsImplArray, str, complex]):
     term_type = ComplexMockTerm
 
     def __init__(self, data: TermData[StringsImplArray, str, complex] | None = None):
-        super().__init__(TermData(Strings(0), ComplexCoeffs.from_size(0)) if data is None else data)
+        super().__init__(TermData(Strings(0), ComplexCoeffs(size=0)) if data is None else data)
 
 
 class ComplexMockTermSet(TermSet[StringsImplArray, str, complex]):
@@ -141,9 +141,7 @@ class SymbolicMockTerms(Terms[StringsImplArray, str, Expr]):
     term_type = SymbolicMockTerm
 
     def __init__(self, data: TermData[StringsImplArray, str, Expr] | None = None):
-        super().__init__(
-            TermData(Strings(0), SymbolicCoeffs.from_size(0)) if data is None else data
-        )
+        super().__init__(TermData(Strings(0), SymbolicCoeffs(size=0)) if data is None else data)
 
 
 class SymbolicMockTermSum(TermSum[StringsImplArray, str, Expr]):
@@ -234,15 +232,13 @@ def test_sign_terms():
         term_type = MockTerm
 
         def __init__(self, data: TermData[StringsImplArray, str, Sign] | None = None):
-            super().__init__(
-                TermData(Strings(0), SignCoeffs.from_size(0)) if data is None else data
-            )
+            super().__init__(TermData(Strings(0), SignCoeffs(size=0)) if data is None else data)
 
     class MockTermSet(TermSet[StringsImplArray, str, Sign]):
         terms_type = MockTerms
         _set_type = StringSet
 
-    terms = MockTerms(TermData(Strings(0), SignCoeffs.from_size(0)))
+    terms = MockTerms(TermData(Strings(0), SignCoeffs(size=0)))
     assert (len(terms), len(terms.strings), len(terms.coeffs)) == (0,) * 3
     assert str(terms) == ""
     assert len(MockTermSet(terms)) == 0
@@ -362,7 +358,7 @@ def test_real_terms():
     class MockTerms(NumericTerms[StringsImplArray, str, float]):
         term_type = MockTerm
 
-    terms = MockTerms(TermData(Strings(0), RealCoeffs.from_size(0)))
+    terms = MockTerms(TermData(Strings(0), RealCoeffs(size=0)))
     assert (len(terms), len(terms.strings), len(terms.coeffs)) == (0,) * 3
     assert str(terms) == ""
 
@@ -530,9 +526,7 @@ def test_sign_terms_vectorised_coeff_multiplication():
         term_type = MockTerm
 
         def __init__(self, data: TermData[StringsImplArray, str, Sign] | None = None):
-            super().__init__(
-                TermData(Strings(0), SignCoeffs.from_size(0)) if data is None else data
-            )
+            super().__init__(TermData(Strings(0), SignCoeffs(size=0)) if data is None else data)
 
     terms = MockTerms(
         TermData(
@@ -642,7 +636,7 @@ def test_symbolic_termsum_vectorised_coeff_multiplication():
 
 
 def test_str():
-    empty_terms = RealMockTerms(TermData(Strings(0), RealCoeffs.from_size(0)))
+    empty_terms = RealMockTerms(TermData(Strings(0), RealCoeffs(size=0)))
     assert empty_terms.to_str() == ""
     assert RealMockTerms.from_str(empty_terms.to_str()) == empty_terms
 

@@ -149,9 +149,7 @@ def _coeffs_from_str[C: (float, complex, Sign, ComplexSign, Expr)](
 ) -> Coeffs[C]:
     """Construct coefficient data from parsed coefficient text."""
     coeffs = (
-        coeffs_type.from_size(n_string)
-        if source_coeff is None
-        else coeffs_type.from_str(source_coeff)
+        coeffs_type(size=n_string) if source_coeff is None else coeffs_type.from_str(source_coeff)
     )
     if len(coeffs) != n_string:
         raise ValueError(

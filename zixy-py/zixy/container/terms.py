@@ -549,6 +549,8 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         """Return whether ``self`` and ``other`` are equal."""
         if not isinstance(other, type(self)):
             return NotImplemented
+        if len(self) != len(other):
+            return False
         return all(self[i] == other[i] for i in range(len(self)))
 
     @property

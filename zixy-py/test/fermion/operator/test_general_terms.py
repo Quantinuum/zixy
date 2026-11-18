@@ -309,7 +309,7 @@ def test_real_term_add_iterable():
 
 def test_term_sum_rejects_term_over_different_modes():
     term_sum = zfog.RealTermSum(max_string_len=4)
-    term = zfog.RealTerm.from_string_coeff(zfog.String(4, "F0^ F0"), 1.0)
+    term = zfog.RealTerm.from_string(zfog.String(4, "F0^ F0"), 1.0)
 
     with pytest.raises(ValueError, match="different modes"):
         term_sum += term

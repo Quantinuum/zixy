@@ -76,7 +76,7 @@ def _mul[
     if not isinstance(rhs, Coeff):
         return NotImplemented
     scalar_product = lhs.coeff * rhs
-    return get_term_type(type(scalar_product)).from_string_coeff(lhs.string, scalar_product)
+    return get_term_type(type(scalar_product)).from_string(lhs.string, scalar_product)
 
 
 def _rmul[

@@ -92,7 +92,7 @@ def _term_sum_from_product(
     strings = term_type.strings_type._create(impl)
     for i in range(len(impl)):
         coeff = typesafe_mul(base_coeff, Sign(signs[i]))
-        term = out.terms_type.term_type.from_string_coeff(strings[i], coeff)
+        term = out.terms_type.term_type.from_string(strings[i], coeff)
         out += term
     return out
 
@@ -104,7 +104,7 @@ def _mul[
     """Driver for multiplication of a term with another term, a string, or a coefficient."""
     if isinstance(rhs, Coeff):
         scalar_product = lhs.coeff * rhs
-        return get_term_type(type(scalar_product)).from_string_coeff(lhs.string, scalar_product)
+        return get_term_type(type(scalar_product)).from_string(lhs.string, scalar_product)
     if isinstance(rhs, String):
         return _term_sum_from_product(
             get_term_type(type(lhs.coeff)), lhs.modes, lhs.string, rhs, lhs.coeff

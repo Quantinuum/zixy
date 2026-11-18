@@ -171,7 +171,9 @@ def test_qubit_operator_overridden_factories() -> None:
     assert copied[1] == parent
     copied[0].set(parent)
     parent_term = zqo.RealTerm(2, (parent, 2.0))
-    custom_term = CustomTerm.from_string_coeff(parent, 2.0)
+    custom_term = CustomTerm.from_string(parent, 2.0)
+    assert_type(CustomTerm.from_string(parent), CustomTerm)
+    assert_type(CustomTerm.from_string(parent, None), CustomTerm)
     assert_type(custom_term, CustomTerm)
     assert custom_term == parent_term
     custom_term.set(parent_term)
@@ -329,7 +331,9 @@ def test_qubit_state_overridden_factories() -> None:
     assert copied[1] == parent
     copied[0].set(parent)
     parent_term = zqs.RealTerm(2, (parent, 2.0))
-    custom_term = CustomTerm.from_string_coeff(parent, 2.0)
+    custom_term = CustomTerm.from_string(parent, 2.0)
+    assert_type(CustomTerm.from_string(parent), CustomTerm)
+    assert_type(CustomTerm.from_string(parent, None), CustomTerm)
     assert_type(custom_term, CustomTerm)
     assert custom_term == parent_term
     custom_term.set(parent_term)
@@ -487,7 +491,9 @@ def test_fermion_general_overridden_factories() -> None:
     assert copied[1] == parent
     copied[0].set(parent)
     parent_term = zfog.RealTerm(2, (parent, 2.0))
-    custom_term = CustomTerm.from_string_coeff(parent, 2.0)
+    custom_term = CustomTerm.from_string(parent, 2.0)
+    assert_type(CustomTerm.from_string(parent), CustomTerm)
+    assert_type(CustomTerm.from_string(parent, None), CustomTerm)
     assert_type(custom_term, CustomTerm)
     assert custom_term == parent_term
     custom_term.set(parent_term)
@@ -645,7 +651,9 @@ def test_fermion_normal_overridden_factories() -> None:
     assert copied[1] == parent
     copied[0].set(parent)
     parent_term = zfon.RealTerm(2, (parent, 2.0))
-    custom_term = CustomTerm.from_string_coeff(parent, 2.0)
+    custom_term = CustomTerm.from_string(parent, 2.0)
+    assert_type(CustomTerm.from_string(parent), CustomTerm)
+    assert_type(CustomTerm.from_string(parent, None), CustomTerm)
     assert_type(custom_term, CustomTerm)
     assert custom_term == parent_term
     custom_term.set(parent_term)
@@ -803,7 +811,9 @@ def test_fermion_state_overridden_factories() -> None:
     assert copied[1] == parent
     copied[0].set(parent)
     parent_term = zfs.RealTerm(2, (parent, 2.0))
-    custom_term = CustomTerm.from_string_coeff(parent, 2.0)
+    custom_term = CustomTerm.from_string(parent, 2.0)
+    assert_type(CustomTerm.from_string(parent), CustomTerm)
+    assert_type(CustomTerm.from_string(parent, None), CustomTerm)
     assert_type(custom_term, CustomTerm)
     assert custom_term == parent_term
     custom_term.set(parent_term)

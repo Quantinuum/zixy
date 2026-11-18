@@ -148,7 +148,7 @@ def test_scalar_from_str_errors(scalar_type, source):
     ),
 )
 def test_from_str(coeffs_type, source, expected):
-    assert coeffs_type.from_str(source) == coeffs_type.from_sequence(expected)
+    assert coeffs_type.from_str(source) == coeffs_type.from_iterable(expected)
 
 
 @pytest.mark.parametrize(
@@ -188,10 +188,10 @@ def test_from_str_errors(coeffs_type, source):
 @pytest.mark.parametrize(
     "coeffs",
     (
-        RealCoeffs.from_sequence([1.0, -2.5, 0.0, 3.25]),
-        ComplexCoeffs.from_sequence([1 + 2j, -3 - 4j, 0j, 5 + 0j]),
-        SignCoeffs.from_sequence([Sign.from_int(1), Sign.from_int(-1), Sign.from_int(1)]),
-        ComplexSignCoeffs.from_sequence(
+        RealCoeffs.from_iterable([1.0, -2.5, 0.0, 3.25]),
+        ComplexCoeffs.from_iterable([1 + 2j, -3 - 4j, 0j, 5 + 0j]),
+        SignCoeffs.from_iterable([Sign.from_int(1), Sign.from_int(-1), Sign.from_int(1)]),
+        ComplexSignCoeffs.from_iterable(
             [
                 ComplexSign.from_complex(1),
                 ComplexSign.from_complex(1j),
@@ -208,8 +208,8 @@ def test_from_str_round_trip(coeffs):
 def test_from_str_returns_owned_vector():
     parsed = RealCoeffs.from_str("1, 2, 3")
     parsed[0] = 99
-    assert parsed == RealCoeffs.from_sequence([99.0, 2.0, 3.0])
-    assert RealCoeffs.from_str("1, 2, 3") == RealCoeffs.from_sequence([1.0, 2.0, 3.0])
+    assert parsed == RealCoeffs.from_iterable([99.0, 2.0, 3.0])
+    assert RealCoeffs.from_str("1, 2, 3") == RealCoeffs.from_iterable([1.0, 2.0, 3.0])
 
 
 def test_conversion():
@@ -628,7 +628,7 @@ def test_sign_vec():
     assert len(SignCoeffs.from_scalar(Sign(False))) == 1
     assert len(SignCoeffs.from_scalar(Sign(False), 5)) == 5
     assert SignCoeffs.from_scalar(Sign(False))[0] == Sign(False)
-    assert SignCoeffs.from_str("[+1, -1]") == SignCoeffs.from_sequence([Sign(False), Sign(True)])
+    assert SignCoeffs.from_str("[+1, -1]") == SignCoeffs.from_iterable([Sign(False), Sign(True)])
     v = SignCoeffs(size=10)
     assert len(v) == 10
     assert all(c == Sign(False) for c in v)
@@ -645,9 +645,9 @@ def test_sign_vec():
     assert v == SignCoeffs.from_phases([1, 0, 0, 0, 0, 1])
     v.extend(SignCoeffs(size=1))
     assert len(v) == 7
-    assert v == SignCoeffs.from_sequence([Sign(i) for i in [1, 0, 0, 0, 0, 1, 0]])
+    assert v == SignCoeffs.from_iterable([Sign(i) for i in [1, 0, 0, 0, 0, 1, 0]])
     v[3] = Sign(True)
-    assert v == SignCoeffs.from_sequence([Sign(i) for i in [1, 0, 0, 1, 0, 1, 0]])
+    assert v == SignCoeffs.from_iterable([Sign(i) for i in [1, 0, 0, 1, 0, 1, 0]])
     # view it backwards
     assert v[::-1] == SignCoeffs.from_phases([1, 0, 0, 1, 0, 1, 0][::-1])
     # view every second item
@@ -655,7 +655,7 @@ def test_sign_vec():
     assert v[::2].clone() == v[::2]
     v.resize(1)
     v.resize(7)
-    assert v == SignCoeffs.from_sequence([Sign(i) for i in [1, 0, 0, 0, 0, 0, 0]])
+    assert v == SignCoeffs.from_iterable([Sign(i) for i in [1, 0, 0, 0, 0, 0, 0]])
     assert v.clone() is not v
     assert v.clone() == v
     v = SignCoeffs.from_phases([1, 0, 1, 0, 1, 0])
@@ -754,7 +754,7 @@ def test_real_vec():
     assert len(RealCoeffs.from_scalar(2.0)) == 1
     assert len(RealCoeffs.from_scalar(2.0, 5)) == 5
     assert RealCoeffs.from_scalar(2.0)[0] == 2
-    assert RealCoeffs.from_str("[1.25, -2.5]") == RealCoeffs.from_sequence([1.25, -2.5])
+    assert RealCoeffs.from_str("[1.25, -2.5]") == RealCoeffs.from_iterable([1.25, -2.5])
     v = RealCoeffs(size=10)
     assert len(v) == 10
     assert all(c == 1 for c in v)
@@ -768,31 +768,31 @@ def test_real_vec():
     v[0] = -9.8
     assert len(v) == 6
     assert [c for c in v] == [-9.8, 1, 1, 1, 1, 2.345]
-    assert v == RealCoeffs.from_sequence([-9.8, 1, 1, 1, 1, 2.345])
+    assert v == RealCoeffs.from_iterable([-9.8, 1, 1, 1, 1, 2.345])
     v.extend(RealCoeffs(size=1))
     assert len(v) == 7
-    assert v == RealCoeffs.from_sequence([-9.8, 1, 1, 1, 1, 2.345, 1])
+    assert v == RealCoeffs.from_iterable([-9.8, 1, 1, 1, 1, 2.345, 1])
     v[3] = 0.4
-    assert v == RealCoeffs.from_sequence([-9.8, 1, 1, 0.4, 1, 2.345, 1])
+    assert v == RealCoeffs.from_iterable([-9.8, 1, 1, 0.4, 1, 2.345, 1])
     # view it backwards
-    assert v[::-1] == RealCoeffs.from_sequence([-9.8, 1, 1, 0.4, 1, 2.345, 1][::-1])
+    assert v[::-1] == RealCoeffs.from_iterable([-9.8, 1, 1, 0.4, 1, 2.345, 1][::-1])
     # view every second item
-    assert v[::2] == RealCoeffs.from_sequence([-9.8, 1, 1, 0.4, 1, 2.345, 1][::2])
+    assert v[::2] == RealCoeffs.from_iterable([-9.8, 1, 1, 0.4, 1, 2.345, 1][::2])
     assert v[::2].clone() == v[::2]
     v.resize(1)
     v.resize(7)
-    assert v == RealCoeffs.from_sequence([-9.8, 1, 1, 1, 1, 1, 1])
+    assert v == RealCoeffs.from_iterable([-9.8, 1, 1, 1, 1, 1, 1])
     assert v.clone() is not v
     assert v.clone() == v
     v[3] += 1e-9
-    assert v.allclose(RealCoeffs.from_sequence([-9.8, 1, 1, 1, 1, 1, 1]), 1e-5, 0.0)
+    assert v.allclose(RealCoeffs.from_iterable([-9.8, 1, 1, 1, 1, 1, 1]), 1e-5, 0.0)
     v[3] += 1e-5
-    assert not v.allclose(RealCoeffs.from_sequence([-9.8, 1, 1, 1, 1, 1, 1]), 1e-5, 0.0)
-    v = RealCoeffs.from_sequence([1.0, 2.0, 2.4, -9.8, 1.2])
+    assert not v.allclose(RealCoeffs.from_iterable([-9.8, 1, 1, 1, 1, 1, 1]), 1e-5, 0.0)
+    v = RealCoeffs.from_iterable([1.0, 2.0, 2.4, -9.8, 1.2])
     v.swap_remove(0)
-    assert v == RealCoeffs.from_sequence([1.2, 2.0, 2.4, -9.8])
+    assert v == RealCoeffs.from_iterable([1.2, 2.0, 2.4, -9.8])
     v.swap_remove(0)
-    assert v == RealCoeffs.from_sequence([-9.8, 2.0, 2.4])
+    assert v == RealCoeffs.from_iterable([-9.8, 2.0, 2.4])
     v[:] = 1
     assert all(c == 1 for c in v)
     assert str(v) == "[1.0, 1.0, 1.0]"
@@ -817,7 +817,7 @@ def test_real_vec():
 
 
 def test_coeffs_from_str():
-    assert RealCoeffs.from_str("1.0, 2.0") == RealCoeffs.from_sequence([1.0, 2.0])
+    assert RealCoeffs.from_str("1.0, 2.0") == RealCoeffs.from_iterable([1.0, 2.0])
     with pytest.raises(NotImplementedError):
         SymbolicCoeffs.from_str("x, y")
 
@@ -826,7 +826,7 @@ def test_complex_vec():
     assert len(ComplexCoeffs.from_scalar(2 + 1j)) == 1
     assert len(ComplexCoeffs.from_scalar(2 + 1j, 5)) == 5
     assert ComplexCoeffs.from_scalar(2 + 1j)[0] == 2 + 1j
-    assert ComplexCoeffs.from_str("[(1+2j), (-3+0j)]") == ComplexCoeffs.from_sequence(
+    assert ComplexCoeffs.from_str("[(1+2j), (-3+0j)]") == ComplexCoeffs.from_iterable(
         [1 + 2j, -3 + 0j]
     )
     v = ComplexCoeffs(size=10)
@@ -843,31 +843,31 @@ def test_complex_vec():
     assert len(v) == 6
     example = [-9.8 + 1j, 1, 1, 1, 1, 2.345 + 1j]
     assert [c for c in v] == example
-    assert v == ComplexCoeffs.from_sequence(example)
+    assert v == ComplexCoeffs.from_iterable(example)
     v.extend(ComplexCoeffs(size=1))
     assert len(v) == 7
     example += [1]
-    assert v == ComplexCoeffs.from_sequence(example)
+    assert v == ComplexCoeffs.from_iterable(example)
     v[3] = 0.4 + 1j
     example[3] = 0.4 + 1j
-    assert v == ComplexCoeffs.from_sequence(example)
+    assert v == ComplexCoeffs.from_iterable(example)
     # view it backwards
-    assert v[::-1] == ComplexCoeffs.from_sequence(example[::-1])
+    assert v[::-1] == ComplexCoeffs.from_iterable(example[::-1])
     # view every second item
-    assert v[::2] == ComplexCoeffs.from_sequence(example[::2])
+    assert v[::2] == ComplexCoeffs.from_iterable(example[::2])
     assert v[::2].clone() == v[::2]
     v.resize(1)
     v.resize(7)
-    assert v == ComplexCoeffs.from_sequence([-9.8 + 1j, 1, 1, 1, 1, 1, 1])
+    assert v == ComplexCoeffs.from_iterable([-9.8 + 1j, 1, 1, 1, 1, 1, 1])
     assert v.clone() is not v
     assert v.clone() == v
     v[3] += 1e-9
-    assert v.allclose(ComplexCoeffs.from_sequence([-9.8 + 1j, 1, 1, 1, 1, 1, 1]), 1e-5, 0.0)
+    assert v.allclose(ComplexCoeffs.from_iterable([-9.8 + 1j, 1, 1, 1, 1, 1, 1]), 1e-5, 0.0)
     v[3] += 1e-5
-    assert not v.allclose(ComplexCoeffs.from_sequence([-9.8 + 1j, 1, 1, 1, 1, 1, 1]), 1e-5, 0.0)
-    v = ComplexCoeffs.from_sequence(example)
-    assert v.real_part == RealCoeffs.from_sequence([complex(c).real for c in example])
-    assert v.imag_part == RealCoeffs.from_sequence([complex(c).imag for c in example])
+    assert not v.allclose(ComplexCoeffs.from_iterable([-9.8 + 1j, 1, 1, 1, 1, 1, 1]), 1e-5, 0.0)
+    v = ComplexCoeffs.from_iterable(example)
+    assert v.real_part == RealCoeffs.from_iterable([complex(c).real for c in example])
+    assert v.imag_part == RealCoeffs.from_iterable([complex(c).imag for c in example])
     v.resize(4)
     v[:] = 1 + 1j
     assert all(c == 1 + 1j for c in v)
@@ -910,36 +910,36 @@ def test_symbolic_vec():
     v[0] = x * x
     assert len(v) == 6
     assert [c for c in v] == [sympify(c) for c in ["x**2", 1, 1, 1, 1, "3*x"]]
-    assert v == SymbolicCoeffs.from_sequence([sympify(c) for c in ["x**2", 1, 1, 1, 1, "3*x"]])
+    assert v == SymbolicCoeffs.from_iterable([sympify(c) for c in ["x**2", 1, 1, 1, 1, "3*x"]])
     v.extend(SymbolicCoeffs(size=1))
     assert len(v) == 7
-    assert v == SymbolicCoeffs.from_sequence([sympify(c) for c in ["x**2", 1, 1, 1, 1, "3*x", 1]])
+    assert v == SymbolicCoeffs.from_iterable([sympify(c) for c in ["x**2", 1, 1, 1, 1, "3*x", 1]])
     v[3] = sympify("y")
-    assert v == SymbolicCoeffs.from_sequence([sympify(c) for c in ["x**2", 1, 1, "y", 1, "3*x", 1]])
+    assert v == SymbolicCoeffs.from_iterable([sympify(c) for c in ["x**2", 1, 1, "y", 1, "3*x", 1]])
     # view it backwards
-    assert v[::-1] == SymbolicCoeffs.from_sequence(["x**2", 1, 1, "y", 1, "3*x", 1][::-1])
+    assert v[::-1] == SymbolicCoeffs.from_iterable(["x**2", 1, 1, "y", 1, "3*x", 1][::-1])
     # view every second item
-    assert v[::2] == SymbolicCoeffs.from_sequence(["x**2", 1, 1, "y", 1, "3*x", 1][::2])
+    assert v[::2] == SymbolicCoeffs.from_iterable(["x**2", 1, 1, "y", 1, "3*x", 1][::2])
     assert v[::2].clone() == v[::2]
     v.resize(1)
     v.resize(7)
-    assert v == SymbolicCoeffs.from_sequence([sympify(c) for c in ["x**2", 1, 1, 1, 1, 1, 1]])
-    assert v == SymbolicCoeffs.from_sequence([sympify(c) for c in ["x*x", 1, 1, 1, 1, 1, 1]])
+    assert v == SymbolicCoeffs.from_iterable([sympify(c) for c in ["x**2", 1, 1, 1, 1, 1, 1]])
+    assert v == SymbolicCoeffs.from_iterable([sympify(c) for c in ["x*x", 1, 1, 1, 1, 1, 1]])
     assert v.clone() is not v
     assert v.clone() == v
-    v = SymbolicCoeffs.from_sequence(
+    v = SymbolicCoeffs.from_iterable(
         [sympify(c) for c in ["x**2", "2*x", "y**3", "y", 1, "3*x", 1]]
     )
-    assert v.subs({"x": 5}) == SymbolicCoeffs.from_sequence(
+    assert v.subs({"x": 5}) == SymbolicCoeffs.from_iterable(
         [sympify(c) for c in [25, 10, "y**3", "y", 1, 15, 1]]
     )
-    assert v.subs({"y": 2}) == SymbolicCoeffs.from_sequence(
+    assert v.subs({"y": 2}) == SymbolicCoeffs.from_iterable(
         [sympify(c) for c in ["x**2", "2*x", 8, 2, 1, "3*x", 1]]
     )
-    assert v.subs({sympify("x"): 1, "y": 2}) == SymbolicCoeffs.from_sequence(
+    assert v.subs({sympify("x"): 1, "y": 2}) == SymbolicCoeffs.from_iterable(
         [sympify(c) for c in [1, 2, 8, 2, 1, 3, 1]]
     )
-    assert v.subs({sympify("x"): 1, "y": 2}).try_to_real() == RealCoeffs.from_sequence(
+    assert v.subs({sympify("x"): 1, "y": 2}).try_to_real() == RealCoeffs.from_iterable(
         [1, 2, 8, 2, 1, 3, 1]
     )
     v.resize(4)

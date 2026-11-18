@@ -493,22 +493,22 @@ class StringSet[ImplT: ImplArray, SpecT](Representable, SerializableContainer):
     @classmethod
     def from_iterable(
         cls,
-        iterable: Iterable[SpecT | String[ImplT, SpecT]],
+        source: Iterable[SpecT | String[ImplT, SpecT]],
         *args: Any,
         **kwargs: Any,
     ) -> Self:
         """Create a new instance of ``cls`` from an iterable.
 
         Args:
-            iterable: Iterable returning specifiers of all the strings to be appended.
+            source: Iterable returning specifiers of all the strings to be appended.
             args: Positional arguments to forward to the constructor of ``cls``.
             kwargs: Keyword arguments to forward to the constructor of ``cls``.
 
         Returns:
-            New instance of ``cls`` containing the strings specified by ``iterable``.
+            New instance of ``cls`` containing the strings specified by ``source``.
         """
         out = cls(*args, **kwargs)
-        out.insert_iterable(iterable)
+        out.insert_iterable(source)
         return out
 
 
@@ -831,20 +831,20 @@ class Strings[ImplT: ImplArray, SpecT](
     @classmethod
     def from_iterable(
         cls,
-        iterable: Iterable[SpecT | String[ImplT, SpecT]],
+        source: Iterable[SpecT | String[ImplT, SpecT]],
         *args: Any,
         **kwargs: Any,
     ) -> Self:
         """Create a new instance of ``cls`` from an iterable.
 
         Args:
-            iterable: Iterable returning specifiers of all the strings to be appended.
+            source: Iterable returning specifiers of all the strings to be appended.
             args: Positional arguments to forward to the constructor of ``cls``.
             kwargs: Keyword arguments to forward to the constructor of ``cls``.
 
         Returns:
-            New instance of ``cls`` containing the strings specified by ``iterable``.
+            New instance of ``cls`` containing the strings specified by ``source``.
         """
         out = cls(*args, **kwargs)
-        out.append_iterable(iterable)
+        out.append_iterable(source)
         return out

@@ -30,6 +30,21 @@ if TYPE_CHECKING:
     from zixy.container.terms import Terms, TermSet
 
 
+def test_coefficient_iterable_inference() -> None:
+    class DerivedCoeffs(RealCoeffs):
+        pass
+
+    assert_type(RealCoeffs.from_iterable(source=(x for x in [1.0, 2.0])), RealCoeffs)
+    assert_type(ComplexCoeffs.from_iterable(source=iter([1j, 2j])), ComplexCoeffs)
+    assert_type(SignCoeffs.from_iterable(source=iter([Sign.from_int(1)])), SignCoeffs)
+    assert_type(
+        ComplexSignCoeffs.from_iterable(source=iter([ComplexSign.from_complex(1j)])),
+        ComplexSignCoeffs,
+    )
+    assert_type(SymbolicCoeffs.from_iterable(source=iter([sympify("x")])), SymbolicCoeffs)
+    assert_type(DerivedCoeffs.from_iterable(source=iter([1.0, 2.0])), DerivedCoeffs)
+
+
 def _array_coeffs[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
     terms: Terms[ImplT, SpecT, C],
 ) -> Coeffs[C]:
@@ -478,7 +493,7 @@ def test_coefficient_factories() -> None:
     assert get_coeffs_type(Sign) is SignCoeffs
     assert get_coeffs_type(ComplexSign) is ComplexSignCoeffs
     assert get_coeffs_type(Expr) is SymbolicCoeffs
-    assert_type(convert_vec(RealCoeffs.from_sequence([1.0]), ComplexCoeffs), ComplexCoeffs)
+    assert_type(convert_vec(RealCoeffs.from_iterable([1.0]), ComplexCoeffs), ComplexCoeffs)
 
 
 def test_zqo_custom_coefficient_factory() -> None:
@@ -513,7 +528,7 @@ def test_zqo_custom_coefficient_factory() -> None:
     assert_type(total.coeffs, CustomCoeffs)
     assert_type(terms[::-1].coeffs, CustomCoeffs)
     assert_type(terms.clone().coeffs, CustomCoeffs)
-    assert_type(convert_vec(RealCoeffs.from_sequence([1.0]), CustomCoeffs), CustomCoeffs)
+    assert_type(convert_vec(RealCoeffs.from_iterable([1.0]), CustomCoeffs), CustomCoeffs)
     assert type(term._data.coeffs) is CustomCoeffs
     assert type(terms.coeffs) is CustomCoeffs
     assert type(term_set.coeffs) is CustomCoeffs
@@ -530,7 +545,7 @@ def test_zqo_custom_coefficient_factory() -> None:
     assert type(zqo.RealTerm(2).into(CustomTerm)._data.coeffs) is CustomCoeffs
     assert type(zqo.RealTerms(2, size=1).into(CustomTerms).coeffs) is CustomCoeffs
     assert type(zqo.RealTermSum(2).into(CustomSum).coeffs) is CustomCoeffs
-    assert type(convert_vec(RealCoeffs.from_sequence([1.0]), CustomCoeffs)) is CustomCoeffs
+    assert type(convert_vec(RealCoeffs.from_iterable([1.0]), CustomCoeffs)) is CustomCoeffs
     terms[1].coeff = 3.0
     terms[::-1].coeffs[0] = 4.0
     assert terms[1].coeff == 4.0
@@ -571,7 +586,7 @@ def test_zqs_custom_coefficient_factory() -> None:
     assert_type(total.coeffs, CustomCoeffs)
     assert_type(terms[::-1].coeffs, CustomCoeffs)
     assert_type(terms.clone().coeffs, CustomCoeffs)
-    assert_type(convert_vec(RealCoeffs.from_sequence([1.0]), CustomCoeffs), CustomCoeffs)
+    assert_type(convert_vec(RealCoeffs.from_iterable([1.0]), CustomCoeffs), CustomCoeffs)
     assert type(term._data.coeffs) is CustomCoeffs
     assert type(terms.coeffs) is CustomCoeffs
     assert type(term_set.coeffs) is CustomCoeffs
@@ -588,7 +603,7 @@ def test_zqs_custom_coefficient_factory() -> None:
     assert type(zqs.RealTerm(2).into(CustomTerm)._data.coeffs) is CustomCoeffs
     assert type(zqs.RealTerms(2, size=1).into(CustomTerms).coeffs) is CustomCoeffs
     assert type(zqs.RealTermSum(2).into(CustomSum).coeffs) is CustomCoeffs
-    assert type(convert_vec(RealCoeffs.from_sequence([1.0]), CustomCoeffs)) is CustomCoeffs
+    assert type(convert_vec(RealCoeffs.from_iterable([1.0]), CustomCoeffs)) is CustomCoeffs
     terms[1].coeff = 3.0
     terms[::-1].coeffs[0] = 4.0
     assert terms[1].coeff == 4.0
@@ -629,7 +644,7 @@ def test_zfog_custom_coefficient_factory() -> None:
     assert_type(total.coeffs, CustomCoeffs)
     assert_type(terms[::-1].coeffs, CustomCoeffs)
     assert_type(terms.clone().coeffs, CustomCoeffs)
-    assert_type(convert_vec(RealCoeffs.from_sequence([1.0]), CustomCoeffs), CustomCoeffs)
+    assert_type(convert_vec(RealCoeffs.from_iterable([1.0]), CustomCoeffs), CustomCoeffs)
     assert type(term._data.coeffs) is CustomCoeffs
     assert type(terms.coeffs) is CustomCoeffs
     assert type(term_set.coeffs) is CustomCoeffs
@@ -646,7 +661,7 @@ def test_zfog_custom_coefficient_factory() -> None:
     assert type(zfog.RealTerm(2).into(CustomTerm)._data.coeffs) is CustomCoeffs
     assert type(zfog.RealTerms(2, size=1).into(CustomTerms).coeffs) is CustomCoeffs
     assert type(zfog.RealTermSum(2).into(CustomSum).coeffs) is CustomCoeffs
-    assert type(convert_vec(RealCoeffs.from_sequence([1.0]), CustomCoeffs)) is CustomCoeffs
+    assert type(convert_vec(RealCoeffs.from_iterable([1.0]), CustomCoeffs)) is CustomCoeffs
     terms[1].coeff = 3.0
     terms[::-1].coeffs[0] = 4.0
     assert terms[1].coeff == 4.0
@@ -687,7 +702,7 @@ def test_zfon_custom_coefficient_factory() -> None:
     assert_type(total.coeffs, CustomCoeffs)
     assert_type(terms[::-1].coeffs, CustomCoeffs)
     assert_type(terms.clone().coeffs, CustomCoeffs)
-    assert_type(convert_vec(RealCoeffs.from_sequence([1.0]), CustomCoeffs), CustomCoeffs)
+    assert_type(convert_vec(RealCoeffs.from_iterable([1.0]), CustomCoeffs), CustomCoeffs)
     assert type(term._data.coeffs) is CustomCoeffs
     assert type(terms.coeffs) is CustomCoeffs
     assert type(term_set.coeffs) is CustomCoeffs
@@ -704,7 +719,7 @@ def test_zfon_custom_coefficient_factory() -> None:
     assert type(zfon.RealTerm(2).into(CustomTerm)._data.coeffs) is CustomCoeffs
     assert type(zfon.RealTerms(2, size=1).into(CustomTerms).coeffs) is CustomCoeffs
     assert type(zfon.RealTermSum(2).into(CustomSum).coeffs) is CustomCoeffs
-    assert type(convert_vec(RealCoeffs.from_sequence([1.0]), CustomCoeffs)) is CustomCoeffs
+    assert type(convert_vec(RealCoeffs.from_iterable([1.0]), CustomCoeffs)) is CustomCoeffs
     terms[1].coeff = 3.0
     terms[::-1].coeffs[0] = 4.0
     assert terms[1].coeff == 4.0
@@ -745,7 +760,7 @@ def test_zfs_custom_coefficient_factory() -> None:
     assert_type(total.coeffs, CustomCoeffs)
     assert_type(terms[::-1].coeffs, CustomCoeffs)
     assert_type(terms.clone().coeffs, CustomCoeffs)
-    assert_type(convert_vec(RealCoeffs.from_sequence([1.0]), CustomCoeffs), CustomCoeffs)
+    assert_type(convert_vec(RealCoeffs.from_iterable([1.0]), CustomCoeffs), CustomCoeffs)
     assert type(term._data.coeffs) is CustomCoeffs
     assert type(terms.coeffs) is CustomCoeffs
     assert type(term_set.coeffs) is CustomCoeffs
@@ -762,7 +777,7 @@ def test_zfs_custom_coefficient_factory() -> None:
     assert type(zfs.RealTerm(2).into(CustomTerm)._data.coeffs) is CustomCoeffs
     assert type(zfs.RealTerms(2, size=1).into(CustomTerms).coeffs) is CustomCoeffs
     assert type(zfs.RealTermSum(2).into(CustomSum).coeffs) is CustomCoeffs
-    assert type(convert_vec(RealCoeffs.from_sequence([1.0]), CustomCoeffs)) is CustomCoeffs
+    assert type(convert_vec(RealCoeffs.from_iterable([1.0]), CustomCoeffs)) is CustomCoeffs
     terms[1].coeff = 3.0
     terms[::-1].coeffs[0] = 4.0
     assert terms[1].coeff == 4.0

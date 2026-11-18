@@ -1072,19 +1072,31 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
         self.append_n(1, value)
 
     @requires_ownership
-    def extend(self, other: Self) -> None:
-        """Append the elements of ``other`` to the end of ``self``.
+    def extend(self, source: Iterable[C]) -> None:
+        """Append the elements of ``source`` to the end of ``self``.
 
         Args:
-            other: Other instance whose elements are appended to ``self``.
+            source: Iterable of compatible coefficients.
+
+        Raises:
+            ValueError: If ``self`` is a non-owning view, including for an empty source.
 
         Note:
-            This method operates in-place.
+            This method operates in-place. Extending from ``self`` or an overlapping
+            view appends the original visible elements once, in source order.
         """
-        if self._impl.same_as(other._impl):
-            self._impl.extend_internal()
-        else:
-            self._impl.extend_external(other._impl)
+        if (
+            isinstance(source, Coeffs)
+            and source.coeffs_type is self.coeffs_type
+            and source.is_owning()
+        ):
+            if self._impl.same_as(source._impl):
+                self._impl.extend_internal()
+            else:
+                self._impl.extend_external(source._impl)
+            return
+        for value in source:
+            self.append(value)
 
     @requires_ownership
     def swap_remove(self, index: int) -> None:
@@ -1693,17 +1705,22 @@ class SymbolicCoeffs(Coeffs[Expr]):
             out.update(coeff.free_symbols)
         return out
 
-    def extend(self, other: Self) -> None:
-        """Append the elements of ``other`` to the end of ``self``.
+    @requires_ownership
+    def extend(self, source: Iterable[Expr]) -> None:
+        """Append the elements of ``source`` to the end of ``self``.
 
         Args:
-            other: Other instance whose elements are appended to ``self``.
+            source: Iterable of compatible coefficients.
+
+        Raises:
+            ValueError: If ``self`` is a non-owning view, including for an empty source.
 
         Note:
-            This method operates in-place.
+            This method operates in-place. Extending from ``self`` or an overlapping
+            view appends the original visible elements once, in source order.
         """
-        for c in other:
-            self.append(c)
+        for value in source:
+            self.append(value)
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
         """Apply a partial substitution of the symbols in-place.

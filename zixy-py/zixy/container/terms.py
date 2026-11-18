@@ -794,7 +794,7 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
             of ``self`` according to ``f``.
         """
         out = self._new()
-        out.append_iterable(self.iter_filter_map(f))
+        out.extend(self.iter_filter_map(f))
         return out
 
     def append_n(
@@ -833,17 +833,25 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         """
         return self.append_n(1, source)
 
-    def append_iterable(
+    @requires_ownership
+    def extend(
         self,
         source: Iterable[TermSpecT[ImplT, SpecT, C]] = tuple(),
     ) -> Self:
         """Append the elements of ``source`` to the end of ``self``.
 
         Args:
-            source: Other iterable whose terms to append to ``self``.
+            source: Iterable of compatible terms or term specifiers.
+
+        Returns:
+            ``self`` with the source elements appended in iteration order.
+
+        Raises:
+            ValueError: If ``self`` is a non-owning view, including for an empty source.
 
         Note:
-            This method operates in-place.
+            This method operates in-place. Extending from ``self`` or an overlapping
+            view appends the original visible elements once, in source order.
         """
         for item in source:
             self.append(item)
@@ -876,7 +884,7 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
             New instance of ``cls`` containing the terms specified by ``source``.
         """
         out = cls(*args, **kwargs)
-        out.append_iterable(source)
+        out.extend(source)
         return out
 
     @classmethod

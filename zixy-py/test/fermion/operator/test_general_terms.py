@@ -246,7 +246,7 @@ def test_real_terms():
 
 def test_complex_terms():
     terms = zfog.ComplexTerms(3, max_string_len=2)
-    terms.append_iterable(
+    terms.extend(
         (
             ("F1 F0^", 1 + 2j),
             ("F2", -1j),
@@ -265,9 +265,9 @@ def test_complex_terms():
         terms.into(zfog.RealTerms)
 
 
-def test_append_iterable():
+def test_extend():
     terms = zfog.RealTerms(4, max_string_len=2)
-    terms.append_iterable(
+    terms.extend(
         (
             ("F1 F0^", 2.0),
             ("F2", -1.0),

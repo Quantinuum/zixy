@@ -287,20 +287,20 @@ def test_mapped_insert():
     )
     for i in range(len(tuples)):
         string = tuples[i]
-        assert a.lookup(string) is None
+        assert a.lookup_index(string) is None
         assert a.insert(string) == i
-        assert a.lookup(string) == i
+        assert a.lookup_index(string) == i
     for i in range(len(tuples)):
         string = tuples[i]
-        assert a.lookup(string) == i
+        assert a.lookup_index(string) == i
         assert a.insert(string) == i
-        assert a.lookup(string) == i
+        assert a.lookup_index(string) == i
 
     wrong_qubits = zqo.String(n_qubit + 1, (X, I, I, I, I, I, I))
     with pytest.raises(ValueError, match="different qubit spaces"):
         a.insert(wrong_qubits)
     with pytest.raises(ValueError, match="different qubit spaces"):
-        a.lookup(wrong_qubits)
+        a.lookup_index(wrong_qubits)
     with pytest.raises(ValueError, match="different qubit spaces"):
         a.remove(wrong_qubits)
 
@@ -362,8 +362,8 @@ def test_string_set():
     assert s.insert((X, X, X, Y)) == 3
     assert len(s) == 4
 
-    assert s.lookup((X, X, X, I)) == 2
-    assert s.lookup((X, X, X, Z)) is None
+    assert s.lookup_index((X, X, X, I)) == 2
+    assert s.lookup_index((X, X, X, Z)) is None
     with pytest.raises(KeyError) as err:
         s.remove((X, X, X, Z))
     assert str(err.value) == "'Value X0 X1 X2 Z3 not found in StringSet.'"

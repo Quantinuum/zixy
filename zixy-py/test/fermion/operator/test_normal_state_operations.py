@@ -67,7 +67,7 @@ def test_apply_coefficient_combinations(
     result = operator.apply(state)
 
     assert type(result) is result_type
-    assert result.lookup_coeff("[0, 1]") == coeff
+    assert result.get("[0, 1]") == coeff
 
 
 @pytest.mark.parametrize(
@@ -86,7 +86,7 @@ def test_symbolic_apply_ladder_actions(operator, state, result, sign):
 
     applied = op.apply(ket)
 
-    assert applied.lookup_coeff(result) == sign * Symbol("a") * Symbol("b")
+    assert applied.get(result) == sign * Symbol("a") * Symbol("b")
 
 
 @pytest.mark.parametrize(
@@ -125,7 +125,7 @@ def test_symbolic_apply_consolidates_duplicate_outputs():
     result = operator.apply(state)
 
     assert len(result) == 1
-    assert result.lookup_coeff("[1]") == 2
+    assert result.get("[1]") == 2
 
 
 @pytest.mark.parametrize(
@@ -147,7 +147,7 @@ def test_symbolic_apply_identity_on_empty_mode_space():
     result = operator.apply(state)
 
     assert len(result) == 1
-    assert result.lookup_coeff("") == 6
+    assert result.get("") == 6
 
 
 def test_symbolic_apply_rejects_different_modes():

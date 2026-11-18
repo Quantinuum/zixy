@@ -1335,50 +1335,65 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             self.insert(item)
 
     def lookup_index(
-        self, value: SpecT | String[ImplT, SpecT] | Term[ImplT, SpecT, C]
+        self, key: SpecT | String[ImplT, SpecT] | _AnyCoeffTerm[ImplT, SpecT]
     ) -> int | None:
-        """Try to find the index of the string specified by ``value`` in ``self``.
+        """Try to find the storage index of the string specified by ``key``.
 
         Args:
-            value: The string or term specifier.
+            key: String, string specifier, or compatible term. A term's coefficient
+                is ignored and is not converted to this collection's coefficient type.
 
         Returns:
-            The index of the string specified by ``value`` if it is present in
-            ``self``, and ``None`` otherwise.
-        """
-        value = self._get_working_term(value)
-        return self._string_set.lookup(value.string)
+            The current storage index, or ``None`` if the string is absent. Indices
+            may change when terms are removed.
 
-    def lookup_coeff(self, value: SpecT | String[ImplT, SpecT] | Term[ImplT, SpecT, C]) -> C | None:
-        """Try to find the coefficient of the term specified by ``value`` in ``self``.
+        Raises:
+            TypeError: The key is unsupported or belongs to an incompatible family.
+            ValueError: The key is invalid or belongs to an incompatible space.
+        """
+        if isinstance(key, Term):
+            key = key.string
+        string = self._get_working_string(key)
+        return self._string_set.lookup_index(string)
+
+    @overload
+    def get(
+        self,
+        key: SpecT | String[ImplT, SpecT] | _AnyCoeffTerm[ImplT, SpecT],
+        default: None = None,
+    ) -> C | None: ...
+
+    @overload
+    def get[T](
+        self,
+        key: SpecT | String[ImplT, SpecT] | _AnyCoeffTerm[ImplT, SpecT],
+        default: T,
+    ) -> C | T: ...
+
+    def get[T](
+        self,
+        key: SpecT | String[ImplT, SpecT] | _AnyCoeffTerm[ImplT, SpecT],
+        default: T | None = None,
+    ) -> C | T | None:
+        """Get the stored coefficient for ``key``, or ``default`` if it is absent.
 
         Args:
-            value: The string or term specifier.
+            key: String, string specifier, or compatible term. A term's coefficient
+                is ignored and is not converted to this collection's coefficient type.
+            default: Value returned for a missing key, without coefficient conversion.
 
         Returns:
-            The coefficient of the term specified by ``value`` if it is present in
-            ``self``, and ``None`` otherwise.
+            The stored coefficient if the key is present, including a stored zero,
+            or the supplied default otherwise.
+
+        Raises:
+            TypeError: The key is unsupported or belongs to an incompatible family.
+            ValueError: The key is invalid or belongs to an incompatible space.
         """
-        index = self.lookup_index(value)
+        index = self.lookup_index(key)
         if index is None:
-            return None
+            return default
         return self._impl.coeffs[index]
-
-    def lookup(
-        self, value: SpecT | String[ImplT, SpecT] | Term[ImplT, SpecT, C]
-    ) -> tuple[int, C] | None:
-        """Try to find the index and coefficient of the string specified by ``value``.
-
-        Args:
-            value: The string or term specifier.
-
-        Returns:
-            The index at which the value was inserted, or ``None`` if the value was not found.
-        """
-        index = self.lookup_index(value)
-        if index is None:
-            return None
-        return index, self._impl.coeffs[index]
 
     def __contains__(self, value: object) -> bool:
         """Check whether a string key or complete term is stored in ``self``.
@@ -1396,7 +1411,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         if not isinstance(value, Term):
             return value in self._string_set
         try:
-            index = self._string_set.lookup(value.string)
+            index = self._string_set.lookup_index(value.string)
         except (TypeError, ValueError, IndexError):
             return False
         return index is not None and self.terms_type.term_type._view(self._impl, index) == value
@@ -1422,21 +1437,24 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         self._impl.coeffs.swap_remove(i)
         return i
 
-    def __getitem__(self, value: SpecT | String[ImplT, SpecT] | Term[ImplT, SpecT, C]) -> C:
-        """Get the coefficient of the term with string specified by ``value``.
+    def __getitem__(self, key: SpecT | String[ImplT, SpecT] | _AnyCoeffTerm[ImplT, SpecT]) -> C:
+        """Get the coefficient of the term with string specified by ``key``.
 
         Args:
-            value: The string or term specifier.
+            key: String, string specifier, or compatible term. A term's coefficient
+                is ignored and is not converted to this collection's coefficient type.
 
         Returns:
-            The coefficient of the term with string specified by ``value``.
+            The coefficient of the term with string specified by ``key``.
 
         Raises:
-            KeyError: The string specified by ``value`` was not found in ``self``.
+            KeyError: The string specified by ``key`` was not found in ``self``.
+            TypeError: The key is unsupported or belongs to an incompatible family.
+            ValueError: The key is invalid or belongs to an incompatible space.
         """
-        out = self.lookup_coeff(value)
+        out = self.get(key)
         if out is None:
-            raise KeyError(f"Value {value} not found in TermSet.")
+            raise KeyError(f"Value {key} not found in TermSet.")
         return out
 
     def __setitem__(self, key: SpecT | Term[ImplT, SpecT, C], coeff: C) -> None:
@@ -1449,7 +1467,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             return NotImplemented
         if self._string_set != other._string_set:
             return False
-        return all(self.lookup_coeff(term.string) == term.coeff for term in other)
+        return all(self.get(term.string) == term.coeff for term in other)
 
     def __iter__[TermT: Term[Any, Any, Any]](
         self: _HasTermsType[_HasTermType[TermT]],
@@ -1463,7 +1481,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         """Compute a sparse symbolic inner product between compatible term sets."""
         result = sympify(0)
         for term in rhs:
-            lhs_coeff = self.lookup_coeff(term.string)
+            lhs_coeff = self.get(term.string)
             if lhs_coeff is not None:
                 conjugated = lhs_coeff.conjugate() if hasattr(lhs_coeff, "conjugate") else lhs_coeff
                 result += conjugated * term.coeff

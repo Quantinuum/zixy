@@ -188,9 +188,7 @@ def test_apply_adopts_native_map_without_python_reinsertion(mapper_type, monkeyp
     terms = mapper_type(2).apply(zfog.String(2, "F0 F1^"))
 
     assert len(terms) == 4
-    found = terms.lookup(terms.strings[0])
-    assert found is not None
-    assert found[0] == 0
+    assert terms.lookup_index(terms.strings[0]) == 0
 
 
 def test_apply_products_anticommute():

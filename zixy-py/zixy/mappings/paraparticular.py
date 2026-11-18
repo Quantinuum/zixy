@@ -14,8 +14,9 @@
 
 """Paraparticular mapper implementation."""
 
-from collections.abc import Sequence
-from typing import Any, Literal, overload
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, overload
 
 import zixy.fermion.state as zfs
 import zixy.qubit.operator as zqo
@@ -23,8 +24,16 @@ import zixy.qubit.state as zqs
 from zixy._zixy import ParaparticularMapper as ParaparticularImpl, Qubits
 from zixy.container.coeffs import ComplexCoeffs, RealCoeffs
 from zixy.container.data import TermData
-from zixy.fermion.operator._strings import String as FermionOperatorString
+from zixy.mappings._operators import _apply_operator, _get_operator_ops
 from zixy.mappings.base import Mapper
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from typing import Literal
+
+    import zixy.fermion.operator.general as zfog
+    import zixy.fermion.operator.normal as zfon
+    from zixy.mappings._operators import _NumericOperator
 
 
 class ParaparticularMapper(Mapper):
@@ -44,34 +53,55 @@ class ParaparticularMapper(Mapper):
 
     @overload
     def apply(
-        self, value: FermionOperatorString[Any, Any, Any], /, *, real: Literal[False] = False
+        self,
+        value: zfog.String | zfon.String | _NumericOperator,
+        /,
+        *,
+        real: Literal[False] | None = None,
     ) -> zqo.ComplexTermSum: ...
 
     @overload
     def apply(
-        self, value: FermionOperatorString[Any, Any, Any], /, *, real: Literal[True] = True
+        self,
+        value: zfog.String | zfon.String | _NumericOperator,
+        /,
+        *,
+        real: Literal[True],
     ) -> zqo.RealTermSum: ...
+
+    @overload
+    def apply(
+        self,
+        value: zfog.String | zfon.String | _NumericOperator,
+        /,
+        *,
+        real: bool | None,
+    ) -> zqo.ComplexTermSum | zqo.RealTermSum: ...
 
     @overload
     def apply(self, value: zfs.String, /, *, real: None = None) -> zqs.String: ...
 
     def apply(
         self,
-        value: FermionOperatorString[Any, Any, Any] | zfs.String,
+        value: zfog.String | zfon.String | _NumericOperator | zfs.String,
         /,
         *,
         real: bool | None = None,
     ) -> zqo.ComplexTermSum | zqo.RealTermSum | zqs.String:
         """Apply the mapper to ``value``."""
+        import zixy.fermion.operator.general as zfog  # noqa: PLC0415
+        import zixy.fermion.operator.normal as zfon  # noqa: PLC0415
+
         if isinstance(value, zfs.String):
             if real is not None:
                 raise TypeError("real must be None for fermionic state strings.")
             if len(value.modes) != len(self.qubits):
                 raise ValueError("Fermion mode count must equal qubit count.")
             return zqs.String._create(self._impl.apply_state(value._impl, value.index))
-        if isinstance(value, FermionOperatorString):
+        if isinstance(value, zfog.String | zfon.String):
+            ops = _get_operator_ops(value, self.qubits)
             if real:
-                real_strings, real_coeffs, map_ = self._impl.apply_real(value.get_ops())
+                real_strings, real_coeffs, map_ = self._impl.apply_real(ops)
                 real_data = TermData(
                     zqo.Strings._create(real_strings), RealCoeffs._create(real_coeffs)
                 )
@@ -79,7 +109,7 @@ class ParaparticularMapper(Mapper):
                     real_data,
                     map_,
                 )
-            complex_strings, complex_coeffs, map_ = self._impl.apply_complex(value.get_ops())
+            complex_strings, complex_coeffs, map_ = self._impl.apply_complex(ops)
             complex_data = TermData(
                 zqo.Strings._create(complex_strings), ComplexCoeffs._create(complex_coeffs)
             )
@@ -87,4 +117,4 @@ class ParaparticularMapper(Mapper):
                 complex_data,
                 map_,
             )
-        raise TypeError(f"Cannot map an instance of {type(value).__name__}.")
+        return _apply_operator(value, self.apply, self.qubits, real=bool(real))

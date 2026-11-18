@@ -451,3 +451,189 @@ def test_state_to_qubit_type_hints():
     assert get_type_hints(zfs.RealTermSum.to_qubit)["return"] is zqs.RealTermSum
     assert get_type_hints(zfs.ComplexTermSum.to_qubit)["return"] is zqs.ComplexTermSum
     assert get_type_hints(zfs.SymbolicTermSum.to_qubit)["return"] is zqs.SymbolicTermSum
+
+
+_NUMERIC_OPERATOR_TERMS = [
+    pytest.param(getattr(family, prefix + "Term"), coefficient, id=f"{family.__name__}.{prefix}")
+    for family in (zfog, zfon)
+    for prefix, coefficient in (
+        ("Sign", -1),
+        ("ComplexSign", 1j),
+        ("Real", 2.5),
+        ("Complex", 1.0 + 2.0j),
+    )
+    if hasattr(family, prefix + "Term")
+]
+
+
+@pytest.mark.parametrize("mapper_type", MAPPER_TYPES)
+@pytest.mark.parametrize("term_type,coefficient", _NUMERIC_OPERATOR_TERMS)
+@pytest.mark.parametrize("real", [False, True])
+def test_apply_operator_term(mapper_type, term_type, coefficient, real):
+    coefficient = term_type.coeffs_type.coeff_type(coefficient)
+    source = term_type(2, ("F0^ F1", coefficient))
+    before = source.to_dict()
+    mapper = mapper_type(2)
+    expected = mapper.apply(source.string) * complex(coefficient)
+
+    mapped = mapper.apply(source, real=real)
+
+    assert type(mapped) is (zqo.RealTermSum if real else zqo.ComplexTermSum)
+    assert mapped == (expected.real_part if real else expected)
+    assert source.to_dict() == before
+    assert mapped.strings.is_owning()
+    assert mapped.coeffs.is_owning()
+
+
+@pytest.mark.parametrize("mapper_type", MAPPER_TYPES)
+@pytest.mark.parametrize("family", [zfog, zfon])
+@pytest.mark.parametrize("prefix", ["Real", "Complex"])
+@pytest.mark.parametrize("real", [False, True])
+def test_apply_operator_sum(mapper_type, family, prefix, real):
+    cls = getattr(family, prefix + "TermSum")
+    values = [2.0, -1.0, 0.25] if prefix == "Real" else [2.0 + 1j, -1j, 0.25 - 0.5j]
+    kwargs = {"max_string_len": 2} if family is zfog else {}
+    source = cls.from_iterable(zip(["F0^", "F1", "F0^ F1"], values, strict=True), 2, **kwargs)
+    before = source.to_dict()
+    mapper = mapper_type(2)
+    expected = zqo.ComplexTermSum(2)
+    for term in source:
+        expected += mapper.apply(term.string) * complex(term.coeff)
+
+    mapped = mapper.apply(source, real=real)
+
+    assert type(mapped) is (zqo.RealTermSum if real else zqo.ComplexTermSum)
+    assert mapped == (expected.real_part if real else expected)
+    assert source.to_dict() == before
+
+
+@pytest.mark.parametrize("mapper_type", MAPPER_TYPES)
+def test_apply_complex_term_projects_after_scaling(mapper_type):
+    source = zfon.ComplexTerm(2, ("F0^", 1j))
+    mapper = mapper_type(2)
+    expected = -mapper.apply(source.string).imag_part
+
+    mapped = mapper.apply(source, real=True)
+
+    assert mapped == expected
+    assert any(coeff != 0 for coeff in mapped.coeffs)
+
+
+@pytest.mark.parametrize("mapper_type", MAPPER_TYPES)
+def test_apply_sum_accumulates_cancellations(mapper_type):
+    source = zfog.RealTermSum.from_iterable(
+        [("F0 F0^", 1.0), ("F0^ F0", 1.0), ("", -1.0)], 2, max_string_len=2
+    )
+
+    mapped = mapper_type(2).apply(source)
+
+    assert len(mapped.filter_nonzero()) == 0
+    assert len(source) == 3
+
+
+@pytest.mark.parametrize("mapper_type", MAPPER_TYPES)
+@pytest.mark.parametrize("family", [zfog, zfon])
+@pytest.mark.parametrize("prefix", ["Real", "Complex"])
+@pytest.mark.parametrize("real", [False, True])
+def test_apply_empty_operator_sum(mapper_type, family, prefix, real):
+    source = getattr(family, prefix + "TermSum")(2)
+    qubits = Qubits.from_inds([5, 2])
+    expected_type = (
+        zqo.SymbolicTermSum
+        if prefix == "Symbolic"
+        else zqo.RealTermSum
+        if real
+        else zqo.ComplexTermSum
+    )
+
+    mapped = mapper_type(qubits).apply(source, real=real)
+
+    assert type(mapped) is expected_type
+    assert len(mapped) == 0
+    assert mapped.qubits == qubits
+
+
+@pytest.mark.parametrize("mapper_type", MAPPER_TYPES)
+@pytest.mark.parametrize("family", [zfog, zfon])
+def test_apply_operator_term_view_and_mode_ordering(mapper_type, family):
+    kwargs = {"max_string_len": 1} if family is zfog else {}
+    terms = family.RealTerms.from_iterable([("F0^", 2.0), ("F1", -3.0)], 2, **kwargs)
+    source = terms[::-1][0]
+    before = terms.to_dict()
+    qubits = Qubits.from_inds([5, 2])
+    mapper = mapper_type(qubits, mode_ordering=[1, 0])
+    expected = mapper.apply(source.string) * source.coeff
+
+    mapped = mapper.apply(source)
+
+    assert mapped == expected
+    assert mapped.qubits == qubits
+    mapped.coeffs[0] = 10.0
+    assert terms.to_dict() == before
+
+
+@pytest.mark.parametrize("mapper_type", MAPPER_TYPES)
+@pytest.mark.parametrize("container", ["Term", "TermSum"])
+def test_apply_operator_out_of_bounds(mapper_type, container):
+    source = (
+        zfon.RealTerm(3, ("F2^", 2.0))
+        if container == "Term"
+        else zfon.RealTermSum.from_str("(2.0, F2^)", 3)
+    )
+    with pytest.raises(ValueError, match="mode index is outside"):
+        mapper_type(2).apply(source)
+
+
+@pytest.mark.parametrize("mapper_type", MAPPER_TYPES)
+def test_apply_operator_allows_larger_register(mapper_type):
+    source = zfon.RealTermSum.from_str("(2.0, F0^)", 2)
+    mapper = mapper_type(4)
+
+    mapped = mapper.apply(source)
+
+    assert mapped == mapper.apply(zfon.String(2, "F0^")) * 2.0
+    assert len(mapped.qubits) == 4
+
+
+@pytest.mark.parametrize("mapper_type", MAPPER_TYPES)
+@pytest.mark.parametrize("family", [zfog, zfon])
+@pytest.mark.parametrize("prefix", ["Real", "Complex"])
+def test_operator_to_qubit_matches_mapper(mapper_type, family, prefix):
+    coefficient = 1.0
+    kwargs = {"max_string_len": 1} if family is zfog else {}
+    source = getattr(family, prefix + "TermSum").from_iterable([("F0^", coefficient)], 2, **kwargs)
+    qubits = Qubits.from_inds([5, 2])
+
+    mapped = source.to_qubit(mapper=mapper_type, qubits=qubits)
+
+    assert mapped == mapper_type(qubits).apply(source)
+    assert type(mapped) is zqo.ComplexTermSum
+
+
+def test_operator_to_qubit_accepts_string_only_mapper():
+    class StringOnlyMapper(Mapper):
+        def __init__(self, qubits):
+            self.mapper = JordanWignerMapper(qubits)
+
+        def apply(self, value, /):
+            assert isinstance(value, zfon.String)
+            return self.mapper.apply(value)
+
+    source = zfon.RealTermSum.from_str("(2.0, F0^), (-1.0, F1)", 2)
+    assert source.to_qubit(mapper=StringOnlyMapper) == JordanWignerMapper(2).apply(source)
+
+
+@pytest.mark.parametrize("mapper_type", MAPPER_TYPES)
+@pytest.mark.parametrize("family", [zfog, zfon])
+@pytest.mark.parametrize("container", ["Term", "TermSum", "empty"])
+@pytest.mark.parametrize("real", [False, True])
+def test_apply_operator_rejects_symbolic_coefficients(mapper_type, family, container, real):
+    if container == "Term":
+        source = family.SymbolicTerm(2, ("F0^", Symbol("x")))
+    elif container == "TermSum":
+        kwargs = {"max_string_len": 1} if family is zfog else {}
+        source = family.SymbolicTermSum.from_iterable([("F0^", Symbol("x"))], 2, **kwargs)
+    else:
+        source = family.SymbolicTermSum(2)
+    with pytest.raises(TypeError, match="Only numeric fermionic operator coefficients"):
+        mapper_type(2).apply(source, real=real)

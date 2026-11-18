@@ -128,7 +128,7 @@ def test_sign_term_set():
     assert len(a._impl._strings) == len(a._impl._coeffs)
     assert len(a._impl._strings) == len(tuples)
     for i in range(len(tuples)):
-        assert a.contains(tuples[i][0])
+        assert tuples[i][0] in a
     for i in range(len(tuples)):
         assert a.insert(tuples[i]) == i
     assert len(a._impl._strings) == len(a._impl._coeffs)

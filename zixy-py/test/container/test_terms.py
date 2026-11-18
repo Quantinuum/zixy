@@ -47,11 +47,11 @@ def test_filter_nonzero_preserves_order_and_independence(kind, pattern):
         assert result.lookup_coeff(key) == coeff
     if expected:
         result.remove(expected[0][0])
-        assert not result.contains(expected[0][0])
-        assert source.contains(expected[0][0])
+        assert expected[0][0] not in result
+        assert expected[0][0] in source
     result.insert(("new", nonzero))
     assert result.lookup_coeff("new") == nonzero
-    assert not source.contains("new")
+    assert "new" not in source
 
 
 def _mock_term_from_str(cls: type[Term[StringsImplArray, str, object]], source: str) -> object:

@@ -519,7 +519,14 @@ def _make_term_case(family, prefix, container, space_kind):
         source = getattr(family, f"{prefix}{container}").from_terms(terms)
         if len(source) == 1:
             encoded_strings = encoded_strings[:1]
-            encoded_coeffs = encoded_coeffs[-1:]
+            if container == "TermSum" and prefix in ("Real", "Complex", "Symbolic"):
+                encoded_coeffs = {
+                    "Real": [-1.25],
+                    "Complex": [[-2, 6]],
+                    "Symbolic": ["x + y + 1"],
+                }[prefix]
+            else:
+                encoded_coeffs = encoded_coeffs[-1:]
     expected = {
         "schema_version": __schema_version__,
         "package_version": __version__,
@@ -692,14 +699,34 @@ def test_term_serialization_rebuilds_map(family, prefix, container, term_space_k
     assert source.to_dict() == expected
 
 
-@pytest.mark.parametrize("cls", [zqo.RealTermSet, zqo.RealTermSum])
-def test_term_deserialization_duplicate_strings(cls):
-    strings = zqo.Strings.from_iterable([[zqo.X], [zqo.X], [zqo.Y]], 2)
-    terms = zqo.RealTerms._create(TermData(strings, RealCoeffs.from_sequence([2.0, 3.0, 0.0])))
-    restored = cls.from_json(terms.to_json())
+@pytest.mark.parametrize("family", [zqo, zqs, zfs, zfon, zfog])
+@pytest.mark.parametrize("prefix", ["Real", "Complex", "Symbolic"])
+@pytest.mark.parametrize("container", ["TermSet", "TermSum"])
+@pytest.mark.parametrize("format_", ["dict", "json", "dispatch"])
+def test_term_deserialization_duplicate_strings(family, prefix, container, format_):
+    terms, _ = _make_term_case(family, prefix, "Terms", "count")
+    terms.strings[1] = terms.strings[0]
+    terms.coeffs[1] = terms.coeffs[2]
+    cls = getattr(family, f"{prefix}{container}")
+    payload = terms.to_dict()
+    payload["container"] = cls.__name__
+    before = terms.to_dict()
+
+    if format_ == "dict":
+        restored = cls.from_dict(payload)
+    elif format_ == "json":
+        restored = cls.from_json(json.dumps(payload))
+    else:
+        restored = deserialize(json.dumps(payload))
+
+    expected = terms.coeffs[1]
+    if container == "TermSum":
+        expected += terms.coeffs[0]
+    assert type(restored) is cls
     assert len(restored) == 2
-    assert restored.lookup_coeff(strings[0]) == 3.0
-    assert restored.lookup_coeff(strings[2]) == 0.0
+    assert restored.lookup_coeff(terms.strings[0]) == expected
+    assert restored.lookup_coeff(terms.strings[2]) == terms.coeffs[2]
+    assert terms.to_dict() == before
 
 
 def test_coefficient_serialization_dispatch(coefficient_case):

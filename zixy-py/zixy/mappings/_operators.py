@@ -37,7 +37,6 @@ if TYPE_CHECKING:
         | zfon.SignTerm
         | zfon.RealTerm
         | zfon.ComplexTerm
-        | zfon.SignTermSum
         | zfon.RealTermSum
         | zfon.ComplexTermSum
     )
@@ -136,7 +135,6 @@ def _apply_operator(
     sum_types = (
         zfog.RealTermSum,
         zfog.ComplexTermSum,
-        zfon.SignTermSum,
         zfon.RealTermSum,
         zfon.ComplexTermSum,
     )

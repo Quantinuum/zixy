@@ -170,7 +170,7 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
     terms_type: type[Terms[C]]
 
 
-class TermSum[C: (float, complex, Sign, ComplexSign, Expr)](
+class TermSum[C: (float, complex, Expr)](
     TermSumBase[QubitStateArray, StringSpec, C, bool], TermSet[C]
 ):
     """A sum of terms consisting of state strings and coefficients.

@@ -189,6 +189,12 @@ def weighted_operators(request):
     return request.param, *_weighted_operators(request.param)
 
 
+@pytest.mark.parametrize("sum_type", NUMERIC_TYPES)
+def test_identity_plus_number_squared(sum_type):
+    operator = _sum(sum_type, [("", 1), ("F0^ F0", 1)], 1)
+    _assert_matrix(operator * operator, np.diag([1, 4]))
+
+
 def test_sum_multiplication_and_associativity(weighted_operators):
     _, (a, b, c), (ma, mb, mc) = weighted_operators
     before = [str(operator) for operator in (a, b, c)]

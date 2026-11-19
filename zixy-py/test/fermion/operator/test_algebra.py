@@ -195,6 +195,39 @@ def test_identity_plus_number_squared(sum_type):
     _assert_matrix(operator * operator, np.diag([1, 4]))
 
 
+@pytest.mark.parametrize("sum_type", GENERAL_TYPES)
+@pytest.mark.parametrize("length", [2, 63, 64, 65])
+def test_general_product_collects_equal_words(sum_type, length):
+    word = ((0, True), (0, False)) * length
+    word = word[:length]
+    scale = 1j if sum_type is zfog.ComplexTermSum else 1
+    lhs = _sum(sum_type, [("", 1), (list(word), 2), (list(word * 2), -1)], 1)
+    rhs = _sum(sum_type, [("", scale), (list(word), -2 * scale), (list(word * 2), 3 * scale)], 1)
+
+    result = lhs * rhs
+    coeffs = {tuple(term.string.get_ops()): term.coeff for term in result}
+    assert len(coeffs) == len(result)
+    assert {w: c for w, c in coeffs.items() if c} == {
+        (): scale,
+        word * 2: -2 * scale,
+        word * 3: 8 * scale,
+        word * 4: -3 * scale,
+    }
+
+
+@pytest.mark.parametrize("sum_type", GENERAL_TYPES)
+def test_normal_ordering_cancels_across_terms(sum_type):
+    scale = 1j if sum_type is zfog.ComplexTermSum else 1
+    raw = _sum(
+        sum_type,
+        [("F0 F0^", scale), ("F1", 2 * scale), ("F0^ F0", scale), ("", -scale)],
+        2,
+    )
+
+    result = raw.to_normal_ordered().filter_nonzero()
+    assert [(term.string.get_ops(), term.coeff) for term in result] == [([(1, False)], 2 * scale)]
+
+
 def test_sum_multiplication_and_associativity(weighted_operators):
     _, (a, b, c), (ma, mb, mc) = weighted_operators
     before = [str(operator) for operator in (a, b, c)]

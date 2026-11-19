@@ -2,6 +2,9 @@
 
 use crate::container::coeffs::traits::FieldElem;
 use crate::container::traits::Elements;
+use crate::container::word_iters::term_set::AsViewMut;
+use crate::container::word_iters::WordIters;
+use crate::fermion::operator::general::cmpnt_list::CmpntList;
 use crate::fermion::operator::general::term_set::{
     self as general_term_set, TermSet as GeneralTermSet,
 };
@@ -15,6 +18,7 @@ pub fn rmul<C: FieldElem>(
     let max_string_len = lhs.word_iters.max_string_len + rhs.word_iters.max_string_len;
     let mut out = GeneralTermSet::<C>::new(max_string_len, lhs.to_modes());
     DifferentSpaces::check_transitive(lhs, rhs, &out)?;
+    let mut product = CmpntList::new(max_string_len, lhs.to_modes());
     let n_lhs = lhs.word_iters.len().min(lhs.coeffs.len());
     let n_rhs = rhs.word_iters.len().min(rhs.coeffs.len());
     for (i_lhs, lhs_coeff) in lhs.coeffs.iter().take(n_lhs).enumerate() {
@@ -22,7 +26,12 @@ pub fn rmul<C: FieldElem>(
         for (i_rhs, rhs_coeff) in rhs.coeffs.iter().take(n_rhs).enumerate() {
             let (rhs_modes, rhs_adj) = rhs.word_iters.get(i_rhs);
             let c = *lhs_coeff * *rhs_coeff;
-            out.push_concat_term(&lhs_modes, &lhs_adj, &rhs_modes, &rhs_adj, c);
+            product.push_concat(&lhs_modes, &lhs_adj, &rhs_modes, &rhs_adj);
+            let (index, inserted) = out.insert_u64it_or_get_index(product.elem_u64it(0), c);
+            if !inserted {
+                out.terms.coeffs[index] += c;
+            }
+            product.resize(0);
         }
     }
     Ok(out)

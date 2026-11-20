@@ -46,6 +46,8 @@ from zixy.container.terms import (
     NumericTermSum,
     SymbolicTermSum as SymbolicTermSumBase,
     TermSpecT,
+    _check_power,
+    _positive_power,
 )
 from zixy.fermion._strings import _check_modes_compatibility
 from zixy.fermion.operator._terms import (
@@ -293,6 +295,17 @@ class SignTerm(Term[Sign]):
             return NotImplemented
         return _rmul(self, lhs)
 
+    def __pow__(self, exponent: int) -> Self | RealTermSum:
+        """Return the operator raised to a positive integer power by multiplication."""
+        _check_power(exponent)
+        if exponent == 1:
+            return self.clone()
+        return _positive_power(
+            RealTermSum.from_iterable([self.into(RealTerm)], self.modes),
+            exponent,
+            lambda lhs, rhs: lhs * rhs,
+        )
+
 
 class SignTerms(Terms[Sign]):
     """A collection of terms with normal-ordered fermionic strings and sign coefficients.
@@ -395,6 +408,17 @@ class ComplexSignTerm(Term[ComplexSign]):
         if not isinstance(lhs, Coeff | String | Term):
             return NotImplemented
         return _rmul(self, lhs)
+
+    def __pow__(self, exponent: int) -> Self | ComplexTermSum:
+        """Return the operator raised to a positive integer power by multiplication."""
+        _check_power(exponent)
+        if exponent == 1:
+            return self.clone()
+        return _positive_power(
+            ComplexTermSum.from_iterable([self.into(ComplexTerm)], self.modes),
+            exponent,
+            lambda lhs, rhs: lhs * rhs,
+        )
 
 
 class ComplexSignTerms(Terms[ComplexSign]):
@@ -499,6 +523,17 @@ class RealTerm(Term[float]):
             return NotImplemented
         return _rmul(self, lhs)
 
+    def __pow__(self, exponent: int) -> Self | RealTermSum:
+        """Return the operator raised to a positive integer power by multiplication."""
+        _check_power(exponent)
+        if exponent == 1:
+            return self.clone()
+        return _positive_power(
+            RealTermSum.from_iterable([self.into(RealTerm)], self.modes),
+            exponent,
+            lambda lhs, rhs: lhs * rhs,
+        )
+
 
 class RealTerms(NumericTerms[NormalFermionOperatorArray, StringSpec, float], Terms[float]):
     """A collection of terms with normal-ordered fermionic strings and real coefficients.
@@ -561,6 +596,13 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
         impl, coeffs, map_ = lhs_impl.lincomb_mul_real(lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs)
         data = TermData(Strings._create(impl), RealCoeffs._create(coeffs))
         return RealTermSum._create(data, map_=map_)
+
+    def __pow__(self, exponent: int) -> RealTermSum:
+        """Return the operator raised to a positive integer power by multiplication."""
+        _check_power(exponent)
+        if exponent == 1:
+            return self.clone()
+        return _positive_power(self, exponent, RealTermSum.__mul__)
 
     def commutator(self, rhs: TermSum[float]) -> RealTermSum:
         """Return the commutator ``[self, rhs]``."""
@@ -784,6 +826,17 @@ class ComplexTerm(Term[complex]):
             return NotImplemented
         return _rmul(self, lhs)
 
+    def __pow__(self, exponent: int) -> Self | ComplexTermSum:
+        """Return the operator raised to a positive integer power by multiplication."""
+        _check_power(exponent)
+        if exponent == 1:
+            return self.clone()
+        return _positive_power(
+            ComplexTermSum.from_iterable([self.into(ComplexTerm)], self.modes),
+            exponent,
+            lambda lhs, rhs: lhs * rhs,
+        )
+
 
 class ComplexTerms(NumericTerms[NormalFermionOperatorArray, StringSpec, complex], Terms[complex]):
     """A collection of terms with normal-ordered fermionic strings and complex coefficients.
@@ -850,6 +903,13 @@ class ComplexTermSum(
         )
         data = TermData(Strings._create(impl), ComplexCoeffs._create(coeffs))
         return ComplexTermSum._create(data, map_=map_)
+
+    def __pow__(self, exponent: int) -> ComplexTermSum:
+        """Return the operator raised to a positive integer power by multiplication."""
+        _check_power(exponent)
+        if exponent == 1:
+            return self.clone()
+        return _positive_power(self, exponent, ComplexTermSum.__mul__)
 
     def commutator(self, rhs: TermSum[complex]) -> ComplexTermSum:
         """Return the commutator ``[self, rhs]``."""
@@ -1068,6 +1128,19 @@ class SymbolicTerm(Term[Expr]):
         if not isinstance(lhs, Coeff | String | Term):
             return NotImplemented
         return _rmul(self, lhs)
+
+    def __pow__(self, exponent: int) -> Self | SymbolicTermSum:
+        """Return the operator raised to a positive integer power by multiplication."""
+        _check_power(exponent)
+        if exponent == 1:
+            return self.clone()
+        result = self * self
+        for _ in range(2, exponent):
+            product = SymbolicTermSum(self.modes)
+            for term in result:
+                product += term * self
+            result = product
+        return result
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
         """Apply a partial substitution of the symbols in-place.

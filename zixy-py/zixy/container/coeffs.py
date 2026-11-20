@@ -101,6 +101,14 @@ def _convert_error(source: Any, t: type) -> ValueError:
     )
 
 
+def _check_power(exponent: int) -> None:
+    """Require a nonzero integer exponent for algebraic powers."""
+    if not isinstance(exponent, int) or isinstance(exponent, bool):
+        raise TypeError(f"Coefficient powers require a nonzero integer exponent, got {exponent!r}.")
+    if exponent == 0:
+        raise ValueError(f"Coefficient powers require a nonzero integer exponent, got {exponent}.")
+
+
 class RootOfUnity(Representable, ABC):
     """Abstract base class for types representing roots of unity."""
 
@@ -203,6 +211,11 @@ class Sign(RootOfUnity):
             :meth:`__mul__`
         """
         return self * other
+
+    def __pow__(self, exponent: int) -> Self:
+        """Return this sign raised to a nonzero integer power."""
+        _check_power(exponent)
+        return type(self)(self.phase and exponent % 2)
 
     def __imul__(self, rhs: Coeff) -> Self:
         """Multiply ``self`` by ``rhs``.
@@ -432,6 +445,11 @@ class ComplexSign(RootOfUnity):
             :meth:`__mul__`
         """
         return self * other
+
+    def __pow__(self, exponent: int) -> Self:
+        """Return this sign raised to a nonzero integer power."""
+        _check_power(exponent)
+        return type(self)(self.phase * exponent)
 
     def __imul__(self, rhs: Coeff) -> Self:  # type: ignore[misc]
         """Multiply ``self`` by ``rhs``.
@@ -1063,6 +1081,14 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
                     break
                 self._set_scalar(i, typesafe_mul(self[i], c))
         return self
+
+    def __pow__(self, exponent: int) -> Self:
+        """Return a new collection with each coefficient raised to a nonzero integer power."""
+        _check_power(exponent)
+        out = self._new()
+        for coeff in self:
+            out.append(coeff**exponent)
+        return out
 
     def to_tuple(self) -> tuple[C, ...]:
         """Get a tuple of clones of the elements of ``self``."""

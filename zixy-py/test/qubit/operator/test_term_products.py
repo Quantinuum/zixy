@@ -160,3 +160,26 @@ def test_sign_terms_canonicalize():
     empty = zqo.SignTerms(3)
     # the unique tableau with no strings is in canonical form, so no imuls
     assert empty.canonicalize_all() == []
+
+
+@pytest.mark.parametrize(
+    "term_type",
+    [zqo.RealTerm, zqo.ComplexTerm, zqo.SignTerm, zqo.ComplexSignTerm, zqo.SymbolicTerm],
+)
+def test_term_powers(term_type):
+    term = term_type.from_str("X0", 1)
+    assert term**1 == term
+    square = term * term
+    assert type(term**2) is type(square)
+    assert term**2 == square
+    assert term**3 == square * term
+
+
+def test_operator_power_domain():
+    operator = zqo.RealTerm(1, ("X0", 2.0))
+    for exponent in (0, -1):
+        with pytest.raises(ValueError):
+            operator**exponent
+    for value in (True, 1.5):
+        with pytest.raises(TypeError):
+            operator**value

@@ -51,6 +51,8 @@ from zixy.container.terms import (
     NumericTermSum,
     SymbolicTermSum as SymbolicTermSumBase,
     TermSpecT,
+    _check_power,
+    _positive_power,
 )
 from zixy.qubit._strings import _check_qubits_compatibility
 from zixy.qubit._terms import (
@@ -532,6 +534,13 @@ class SignTerm(Term[Sign]):
         lhs = normalize_scalar(lhs)
         return _rmul(self, lhs)
 
+    def __pow__(self, exponent: int) -> Self | ComplexSignTerm:
+        """Return the operator raised to a positive integer power by multiplication."""
+        _check_power(exponent)
+        if exponent == 1:
+            return self.clone()
+        return _positive_power(self.into(ComplexSignTerm), exponent, lambda lhs, rhs: lhs * rhs)
+
 
 class SignTerms(Terms[Sign]):
     """A collection of terms consisting of Pauli strings and sign coefficients.
@@ -630,6 +639,13 @@ class ComplexSignTerm(Term[ComplexSign]):
         """Multiplication of ``lhs`` by ``self``."""
         lhs = normalize_scalar(lhs)
         return _rmul(self, lhs)
+
+    def __pow__(self, exponent: int) -> ComplexSignTerm:
+        """Return the operator raised to a positive integer power by multiplication."""
+        _check_power(exponent)
+        if exponent == 1:
+            return self.clone()
+        return _positive_power(self, exponent, ComplexSignTerm.__mul__)
 
 
 class ComplexSignTerms(Terms[ComplexSign]):
@@ -730,6 +746,13 @@ class RealTerm(Term[float]):
         """Multiplication of ``lhs`` by ``self``."""
         lhs = normalize_scalar(lhs)
         return _rmul(self, lhs)
+
+    def __pow__(self, exponent: int) -> Self | ComplexTerm:
+        """Return the operator raised to a positive integer power by multiplication."""
+        _check_power(exponent)
+        if exponent == 1:
+            return self.clone()
+        return _positive_power(self.into(ComplexTerm), exponent, lambda lhs, rhs: lhs * rhs)
 
 
 class RealTerms(NumericTerms[QubitPauliArray, StringSpec, float], Terms[float]):
@@ -837,6 +860,13 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
             lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs, out_impl, out_map, out_coeffs
         )
         return out
+
+    def __pow__(self, exponent: int) -> Self | ComplexTermSum:
+        """Return the operator raised to a positive integer power by multiplication."""
+        _check_power(exponent)
+        if exponent == 1:
+            return self.clone()
+        return _positive_power(self.into(ComplexTermSum), exponent, lambda lhs, rhs: lhs * rhs)
 
     def project_into_ortho_subspace(self, subspace: zqs.Strings) -> NDArray[np.float64]:
         """Project the term into an orthogonal subspace defined by an ordered sequence of states.
@@ -1084,6 +1114,13 @@ class ComplexTerm(Term[complex]):
         lhs = normalize_scalar(lhs)
         return _rmul(self, lhs)
 
+    def __pow__(self, exponent: int) -> ComplexTerm:
+        """Return the operator raised to a positive integer power by multiplication."""
+        _check_power(exponent)
+        if exponent == 1:
+            return self.clone()
+        return _positive_power(self, exponent, ComplexTerm.__mul__)
+
 
 class ComplexTerms(NumericTerms[QubitPauliArray, StringSpec, complex], Terms[complex]):
     """A collection of terms consisting of Pauli strings and complex coefficients.
@@ -1201,6 +1238,13 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
             lhs_impl, lhs_coeffs, rhs_impl, rhs_coeffs, out_impl, out_map, out_coeffs
         )
         return out
+
+    def __pow__(self, exponent: int) -> ComplexTermSum:
+        """Return the operator raised to a positive integer power by multiplication."""
+        _check_power(exponent)
+        if exponent == 1:
+            return self.clone()
+        return _positive_power(self, exponent, ComplexTermSum.__mul__)
 
     def project_into_ortho_subspace(self, subspace: zqs.Strings) -> NDArray[np.complex128]:
         """Project the term into an orthogonal subspace defined by a set of states.
@@ -1386,6 +1430,13 @@ class SymbolicTerm(Term[Expr]):
         """Multiplication of ``lhs`` by ``self``."""
         lhs = normalize_scalar(lhs)
         return _rmul(self, lhs)
+
+    def __pow__(self, exponent: int) -> SymbolicTerm:
+        """Return the operator raised to a positive integer power by multiplication."""
+        _check_power(exponent)
+        if exponent == 1:
+            return self.clone()
+        return _positive_power(self, exponent, SymbolicTerm.__mul__)
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
         """Apply a partial substitution of the symbols in-place.
@@ -1597,6 +1648,13 @@ class SymbolicTermSum(SymbolicTermSumBase[QubitPauliArray, StringSpec], TermSum[
                 product.coeff = product.coeff.simplify()
                 out += product
         return out
+
+    def __pow__(self, exponent: int) -> SymbolicTermSum:
+        """Return the operator raised to a positive integer power by multiplication."""
+        _check_power(exponent)
+        if exponent == 1:
+            return self.clone()
+        return _positive_power(self, exponent, SymbolicTermSum.__mul__)
 
     def apply(self, state: State) -> zqs.SymbolicTermSum:
         """Apply ``self`` to a state.

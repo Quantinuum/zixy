@@ -36,6 +36,15 @@ def test_str():
         assert ComplexSign.from_str(value.to_str()) == value
 
 
+def test_conjugate():
+    for phase in range(4):
+        value = ComplexSign(phase)
+        conjugate = value.conjugate()
+        assert isinstance(conjugate, ComplexSign)
+        assert complex(conjugate) == (1j**phase).conjugate()
+        assert value.phase == phase
+
+
 def test_scalar_mul():
     # ComplexSign * ComplexSign results in ComplexSign
     assert ComplexSign(3) * ComplexSign(2) == ComplexSign(1)

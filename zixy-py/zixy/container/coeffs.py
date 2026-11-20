@@ -86,6 +86,11 @@ class RootOfUnity(Representable, ABC):
     _impl: _zixy.RootOfUnity
 
     @abstractmethod
+    def conjugate(self) -> Self:
+        """Return the complex conjugate of ``self``."""
+        pass
+
+    @abstractmethod
     def to_symbolic(self) -> Expr:
         """Convert ``self`` to a SymPy symbolic type."""
         pass
@@ -309,6 +314,10 @@ class Sign(RootOfUnity):
     def __abs__(self) -> Sign:
         """Return the absolute value of ``self``."""
         return Sign(False)
+
+    def conjugate(self) -> Self:
+        """Return the complex conjugate of ``self``."""
+        return type(self)(self.phase)
 
     def to_symbolic(self) -> Expr:
         """Convert ``self`` to a SymPy symbolic constant."""
@@ -563,6 +572,10 @@ class ComplexSign(RootOfUnity):
     def __abs__(self) -> ComplexSign:
         """Return the absolute value of ``self``."""
         return ComplexSign(0)
+
+    def conjugate(self) -> Self:
+        """Return the complex conjugate of ``self``."""
+        return type(self)(-self.phase)
 
     def to_symbolic(self) -> Expr:
         """Convert ``self`` to a SymPy symbolic constant."""

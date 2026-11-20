@@ -200,9 +200,9 @@ class Sign(RootOfUnity):
         if not isinstance(other, Coeff):
             return NotImplemented
         if isinstance(other, Sign):
-            return Sign(self._impl.to_phase() ^ other._impl.to_phase())
+            return Sign(self.phase ^ other.phase)
         elif isinstance(other, ComplexSign):
-            return ComplexSign(other._impl.to_phase() + (2 if self._impl.to_phase() else 0))
+            return ComplexSign(other.phase + (2 if self.phase else 0))
         return self.to_numeric() * other
 
     def __rmul__[C: (float, complex, Sign, ComplexSign, Expr)](self, other: C) -> C:
@@ -227,14 +227,14 @@ class Sign(RootOfUnity):
         """
         rhs = normalize_scalar(rhs)
         if isinstance(rhs, Sign):
-            Sign.__init__(self, self._impl.to_phase() ^ rhs._impl.to_phase())
+            Sign.__init__(self, self.phase ^ rhs.phase)
             return self
         elif isinstance(rhs, ComplexSign):
             return self.__imul__(int(rhs))
         elif isinstance(rhs, Number):
             if int(rhs.real) == rhs:
                 if int(rhs.real) == -1:
-                    Sign.__init__(self, not self._impl.to_phase())
+                    Sign.__init__(self, not self.phase)
                     return self
                 elif int(rhs.real) == 1:
                     return self
@@ -266,8 +266,8 @@ class Sign(RootOfUnity):
         if isinstance(other, Sign):
             return self * other
         elif isinstance(other, ComplexSign):
-            self_phase = 2 if self._impl.to_phase() else 0
-            return ComplexSign(self_phase - other._impl.to_phase())
+            self_phase = 2 if self.phase else 0
+            return ComplexSign(self_phase - other.phase)
         return self.to_numeric() / other
 
     @overload
@@ -291,7 +291,7 @@ class Sign(RootOfUnity):
         if isinstance(other, Sign):
             return self * other
         elif isinstance(other, ComplexSign):
-            return ComplexSign(other._impl.to_phase() + (2 if self._impl.to_phase() else 0))
+            return ComplexSign(other.phase + (2 if self.phase else 0))
         return other / self.to_numeric()
 
     @classmethod
@@ -334,7 +334,7 @@ class Sign(RootOfUnity):
 
     def __int__(self) -> int:
         """Convert ``self`` to an integer value."""
-        return -1 if self._impl.to_phase() else 1
+        return -1 if self.phase else 1
 
     def __float__(self) -> float:
         """Convert ``self`` to a floating point value."""
@@ -350,7 +350,7 @@ class Sign(RootOfUnity):
 
     def __neg__(self) -> Sign:
         """Return the negation of ``self``."""
-        return Sign(not self._impl.to_phase())
+        return Sign(not self.phase)
 
     def __abs__(self) -> Sign:
         """Return the absolute value of ``self``."""
@@ -423,7 +423,7 @@ class ComplexSign(RootOfUnity):
         if not isinstance(other, Coeff):
             return NotImplemented
         if isinstance(other, ComplexSign):
-            return ComplexSign(self._impl.to_phase() + other._impl.to_phase())
+            return ComplexSign(self.phase + other.phase)
         elif isinstance(other, Sign):
             return NotImplemented  # handled in Sign.__mul__
         return self.to_numeric() * other
@@ -463,7 +463,7 @@ class ComplexSign(RootOfUnity):
         if isinstance(rhs, Sign):
             return self.__imul__(complex(rhs))
         elif isinstance(rhs, ComplexSign):
-            ComplexSign.__init__(self, self._impl.to_phase() + rhs._impl.to_phase())
+            ComplexSign.__init__(self, self.phase + rhs.phase)
             return self
         elif isinstance(rhs, Number):
             if int(rhs.real) == rhs or complex(0, int(rhs.imag)) == rhs:
@@ -496,9 +496,9 @@ class ComplexSign(RootOfUnity):
         if not isinstance(other, Coeff):
             return NotImplemented
         if isinstance(other, ComplexSign):
-            return ComplexSign(self._impl.to_phase() - other._impl.to_phase())
+            return ComplexSign(self.phase - other.phase)
         elif isinstance(other, Sign):
-            return ComplexSign(self._impl.to_phase() + (2 if other._impl.to_phase() else 0))
+            return ComplexSign(self.phase + (2 if other.phase else 0))
         return self.to_numeric() / other
 
     @overload
@@ -522,9 +522,9 @@ class ComplexSign(RootOfUnity):
         if not isinstance(other, Coeff):
             return NotImplemented
         if isinstance(other, ComplexSign):
-            return ComplexSign(other._impl.to_phase() - self._impl.to_phase())
+            return ComplexSign(other.phase - self.phase)
         elif isinstance(other, Sign):
-            return ComplexSign((2 if other._impl.to_phase() else 0) - self._impl.to_phase())
+            return ComplexSign((2 if other.phase else 0) - self.phase)
         return other / self.to_numeric()
 
     @classmethod
@@ -579,7 +579,7 @@ class ComplexSign(RootOfUnity):
         Raises:
             ValueError: If the value of ``self`` is not representable as an integer.
         """
-        phase = self._impl.to_phase()
+        phase = self.phase
         assert phase >= 0 and phase < 4
         if phase == 0:
             return 1
@@ -600,7 +600,7 @@ class ComplexSign(RootOfUnity):
 
     def __complex__(self) -> complex:
         """Convert ``self`` to a complex floating point value."""
-        phase = self._impl.to_phase()
+        phase = self.phase
         assert phase >= 0 and phase < 4
         if phase == 0:
             return complex(1, 0)
@@ -617,7 +617,7 @@ class ComplexSign(RootOfUnity):
 
     def __neg__(self) -> ComplexSign:
         """Return the negation of ``self``."""
-        return ComplexSign(self._impl.to_phase() + 2)
+        return ComplexSign(self.phase + 2)
 
     def __abs__(self) -> ComplexSign:
         """Return the absolute value of ``self``."""
@@ -629,7 +629,7 @@ class ComplexSign(RootOfUnity):
 
     def to_symbolic(self) -> Expr:
         """Convert ``self`` to a SymPy symbolic constant."""
-        phase = self._impl.to_phase()
+        phase = self.phase
         assert phase >= 0 and phase < 4
         if phase == 0:
             return sympify(1)

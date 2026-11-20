@@ -11,6 +11,7 @@ import zixy.fermion.state as zfs
 import zixy.qubit.operator as zqo
 import zixy.qubit.state as zqs
 from zixy._zixy import Qubits
+from zixy.container.coeffs import ComplexSign, Sign
 from zixy.mappings import (
     BravyiKitaevMapper,
     JordanWignerMapper,
@@ -455,12 +456,11 @@ _NUMERIC_OPERATOR_TERMS = [
     pytest.param(getattr(family, prefix + "Term"), coefficient, id=f"{family.__name__}.{prefix}")
     for family in (zfog, zfon)
     for prefix, coefficient in (
-        ("Sign", -1),
-        ("ComplexSign", 1j),
+        ("Sign", Sign.from_scalar(-1)),
+        ("ComplexSign", ComplexSign.from_scalar(1j)),
         ("Real", 2.5),
         ("Complex", 1.0 + 2.0j),
     )
-    if hasattr(family, prefix + "Term")
 ]
 
 
@@ -468,7 +468,6 @@ _NUMERIC_OPERATOR_TERMS = [
 @pytest.mark.parametrize("term_type,coefficient", _NUMERIC_OPERATOR_TERMS)
 @pytest.mark.parametrize("real", [False, True])
 def test_apply_operator_term(mapper_type, term_type, coefficient, real):
-    coefficient = term_type.coeffs_type.coeff_type(coefficient)
     source = term_type(2, ("F0^ F1", coefficient))
     before = source.to_dict()
     mapper = mapper_type(2)

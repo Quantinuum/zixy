@@ -36,6 +36,7 @@ from zixy.container.coeffs import (
     RealCoeffs,
     Sign,
     SymbolicCoeffs,
+    normalize_scalar,
 )
 from zixy.container.data import TermData
 from zixy.container.strings import String as BaseString
@@ -456,6 +457,7 @@ class RealTerm(Term[float]):
         self, rhs: C | String | Term[C]
     ) -> Term[Any]:
         """Multiplication of ``self`` by ``rhs``."""
+        rhs = normalize_scalar(rhs)
         if not isinstance(rhs, Coeff | String | Term):
             return NotImplemented
         return _mul(self, rhs)
@@ -483,6 +485,7 @@ class RealTerm(Term[float]):
         self, lhs: C | String | Term[C]
     ) -> Term[Any]:
         """Multiplication of ``lhs`` by ``self``."""
+        lhs = normalize_scalar(lhs)
         if not isinstance(lhs, Coeff | String | Term):
             return NotImplemented
         return _rmul(self, lhs)
@@ -538,6 +541,7 @@ class RealTermSum(NumericTermSum[GeneralFermionOperatorArray, StringSpec, float]
         Term-sum multiplication in the general representation concatenates raw ladder-operator
         products without applying normal-ordering identities.
         """
+        rhs = normalize_scalar(rhs)
         if isinstance(rhs, Coeff | Coeffs):
             return super().__mul__(rhs)
         elif not isinstance(rhs, RealTermSum):
@@ -602,6 +606,7 @@ class ComplexTerm(Term[complex]):
         self, rhs: C | String | Term[C]
     ) -> Term[Any]:
         """Multiplication of ``self`` by ``rhs``."""
+        rhs = normalize_scalar(rhs)
         if not isinstance(rhs, Coeff | String | Term):
             return NotImplemented
         return _mul(self, rhs)
@@ -629,6 +634,7 @@ class ComplexTerm(Term[complex]):
         self, lhs: C | String | Term[C]
     ) -> Term[Any]:
         """Multiplication of ``lhs`` by ``self``."""
+        lhs = normalize_scalar(lhs)
         if not isinstance(lhs, Coeff | String | Term):
             return NotImplemented
         return _rmul(self, lhs)
@@ -686,6 +692,7 @@ class ComplexTermSum(
         Term-sum multiplication in the general representation concatenates raw ladder-operator
         products without applying normal-ordering identities.
         """
+        rhs = normalize_scalar(rhs)
         if isinstance(rhs, Coeff | Coeffs):
             return super().__mul__(rhs)
         elif not isinstance(rhs, ComplexTermSum):
@@ -752,6 +759,7 @@ class SymbolicTerm(Term[Expr]):
         self, rhs: C | String | Term[C]
     ) -> Term[Any]:
         """Multiplication of ``self`` by ``rhs``."""
+        rhs = normalize_scalar(rhs)
         if not isinstance(rhs, Coeff | String | Term):
             return NotImplemented
         return _mul(self, rhs)
@@ -779,6 +787,7 @@ class SymbolicTerm(Term[Expr]):
         self, lhs: C | String | Term[C]
     ) -> Term[Any]:
         """Multiplication of ``lhs`` by ``self``."""
+        lhs = normalize_scalar(lhs)
         if not isinstance(lhs, Coeff | String | Term):
             return NotImplemented
         return _rmul(self, lhs)

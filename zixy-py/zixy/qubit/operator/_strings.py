@@ -40,6 +40,7 @@ from zixy.container.coeffs import (
     ComplexSignCoeffs,
     Sign,
     _imul_factor_error,
+    normalize_scalar,
     unit,
 )
 from zixy.container.data import TermData
@@ -199,6 +200,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         self, rhs: C | String
     ) -> Term[C] | ComplexSignTerm:
         """Multiplication of ``self`` by ``rhs``."""
+        rhs = normalize_scalar(rhs)
         if not isinstance(rhs, Coeff | String):
             return NotImplemented
         from zixy.qubit.operator._terms import ComplexSignTerm, get_term_type  # noqa: PLC0415
@@ -212,6 +214,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
 
     def __rmul__[C: (float, complex, Sign, ComplexSign, Expr)](self, lhs: C) -> Term[C]:
         """Return the product of ``lhs`` and ``self``."""
+        lhs = normalize_scalar(lhs)
         if not isinstance(lhs, Coeff):
             return NotImplemented
         from zixy.qubit.operator._terms import get_term_type  # noqa: PLC0415
@@ -221,6 +224,7 @@ class String(StringBase[ImplT, SpecT, ElemT]):
 
     def __imul__(self, rhs: String) -> Self:  # type: ignore
         """In-place multiplication of ``self`` by ``rhs``."""
+        rhs = normalize_scalar(rhs)
         if not isinstance(rhs, String):
             raise TypeError("String is only in-place multiplicable by String")
         phase = self.phase_of_mul(rhs)

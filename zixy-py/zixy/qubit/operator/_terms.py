@@ -42,6 +42,7 @@ from zixy.container.coeffs import (
     SignCoeffs,
     SymbolicCoeffs,
     get_coeffs_type,
+    normalize_scalar,
     typesafe_mul,
 )
 from zixy.container.data import TermData
@@ -141,6 +142,7 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](
 
     def __imul__(self, rhs: Coeff | String | Term[C]) -> Self:
         """In-place multiplication of ``self`` by ``rhs``."""
+        rhs = normalize_scalar(rhs)
         init_coeff = None
         different_qubits = True
         try:
@@ -497,6 +499,7 @@ class SignTerm(Term[Sign]):
         self, rhs: C | String | Term[C]
     ) -> Term[Any]:
         """Multiplication of ``self`` by ``rhs``."""
+        rhs = normalize_scalar(rhs)
         return _mul(self, rhs)
 
     @overload
@@ -526,6 +529,7 @@ class SignTerm(Term[Sign]):
         self, lhs: C | String | Term[C]
     ) -> Term[Any]:
         """Multiplication of ``lhs`` by ``self``."""
+        lhs = normalize_scalar(lhs)
         return _rmul(self, lhs)
 
 
@@ -594,6 +598,7 @@ class ComplexSignTerm(Term[ComplexSign]):
         self, rhs: C | String | Term[C]
     ) -> Term[Any]:
         """Multiplication of ``self`` by ``rhs``."""
+        rhs = normalize_scalar(rhs)
         return _mul(self, rhs)
 
     @overload
@@ -623,6 +628,7 @@ class ComplexSignTerm(Term[ComplexSign]):
         self, lhs: C | String | Term[C]
     ) -> Term[Any]:
         """Multiplication of ``lhs`` by ``self``."""
+        lhs = normalize_scalar(lhs)
         return _rmul(self, lhs)
 
 
@@ -692,6 +698,7 @@ class RealTerm(Term[float]):
         self, rhs: C | String | Term[C]
     ) -> Term[Any]:
         """Multiplication of ``self`` by ``rhs``."""
+        rhs = normalize_scalar(rhs)
         return _mul(self, rhs)
 
     @overload
@@ -721,6 +728,7 @@ class RealTerm(Term[float]):
         self, lhs: C | String | Term[C]
     ) -> Term[Any]:
         """Multiplication of ``lhs`` by ``self``."""
+        lhs = normalize_scalar(lhs)
         return _rmul(self, lhs)
 
 
@@ -808,6 +816,7 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
 
     def __mul__(self, other: Self | Coeff | Coeffs[float]) -> Self | ComplexTermSum:
         """Multiplication of ``self`` by ``other``."""
+        other = normalize_scalar(other)
         if isinstance(other, Coeff | Coeffs):
             return super().__mul__(other)
         elif not isinstance(other, RealTermSum):
@@ -1042,6 +1051,7 @@ class ComplexTerm(Term[complex]):
         self, rhs: C | String | Term[C]
     ) -> Term[Any]:
         """Multiplication of ``self`` by ``rhs``."""
+        rhs = normalize_scalar(rhs)
         return _mul(self, rhs)
 
     @overload
@@ -1071,6 +1081,7 @@ class ComplexTerm(Term[complex]):
         self, lhs: C | String | Term[C]
     ) -> Term[Any]:
         """Multiplication of ``lhs`` by ``self``."""
+        lhs = normalize_scalar(lhs)
         return _rmul(self, lhs)
 
 
@@ -1169,6 +1180,7 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
 
     def __mul__(self, other: Self | Coeff | Coeffs[complex]) -> Self | ComplexTermSum:
         """Multiplication of ``self`` by ``other``."""
+        other = normalize_scalar(other)
         if isinstance(other, Coeff | Coeffs):
             return super().__mul__(other)
         elif not isinstance(other, ComplexTermSum):
@@ -1342,6 +1354,7 @@ class SymbolicTerm(Term[Expr]):
         self, rhs: C | String | Term[C]
     ) -> Term[Any]:
         """Multiplication of ``self`` by ``rhs``."""
+        rhs = normalize_scalar(rhs)
         return _mul(self, rhs)
 
     @overload
@@ -1371,6 +1384,7 @@ class SymbolicTerm(Term[Expr]):
         self, lhs: C | String | Term[C]
     ) -> Term[Any]:
         """Multiplication of ``lhs`` by ``self``."""
+        lhs = normalize_scalar(lhs)
         return _rmul(self, lhs)
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
@@ -1568,6 +1582,7 @@ class SymbolicTermSum(SymbolicTermSumBase[QubitPauliArray, StringSpec], TermSum[
 
     def __mul__(self, other: Self | Coeff | Coeffs[Expr]) -> Self | SymbolicTermSum:
         """Multiplication of ``self`` by ``other``."""
+        other = normalize_scalar(other)
         if isinstance(other, Coeff | Coeffs):
             return super().__mul__(other)
         elif not isinstance(other, SymbolicTermSum):

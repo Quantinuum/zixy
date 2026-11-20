@@ -6,6 +6,11 @@ import numpy as np
 import pytest
 from sympy import sympify
 
+import zixy.fermion.operator.general as zfog
+import zixy.fermion.operator.normal as zfon
+import zixy.fermion.state as zfs
+import zixy.qubit.operator as zqo
+import zixy.qubit.state as zqs
 from zixy.container.coeffs import (
     ComplexCoeffs,
     ComplexSign,
@@ -14,6 +19,7 @@ from zixy.container.coeffs import (
     Sign,
     SignCoeffs,
     SymbolicCoeffs,
+    convert,
 )
 
 
@@ -225,3 +231,72 @@ def test_array_dtype_conversion_rejects_nonzero_imaginary_parts(dtype):
 def test_real_conversion_rejects_even_small_imaginary_parts():
     with pytest.raises(ValueError, match="nonzero imaginary"):
         RealCoeffs.from_iterable([1 + 1e-300j])
+
+
+@pytest.mark.parametrize(
+    ("family", "word"), [(zfs, "[1]"), (zqs, "[1]"), (zqo, "X0"), (zfog, "F0"), (zfon, "F0")]
+)
+@pytest.mark.parametrize(
+    "scalar", [np.float32(0.5), np.float64(0.5), np.complex64(1j), np.complex128(1j)]
+)
+def test_numpy_scalar_multiplication(family, word, scalar):
+    value = scalar.item()
+    sum_type = family.ComplexTermSum if isinstance(value, complex) else family.RealTermSum
+    terms = sum_type.from_iterable([(word, 1)], 1)
+    for operand in (terms, terms.to_terms(), next(iter(terms)), next(iter(terms)).string):
+        expected = operand * value
+        for actual in (operand * scalar, scalar * operand):
+            assert type(actual) is type(expected)
+            assert actual == expected
+
+
+def test_add_numpy_scaled_fermion_states():
+    first = zfs.RealTermSum.from_str("[1, 1, 0, 0, 0, 0]", modes=6)
+    second = zfs.RealTermSum.from_str("[0, 0, 0, 0, 1, 1]", modes=6)
+    amplitude = np.sqrt(0.5)
+    result = amplitude * first + amplitude * second
+    assert isinstance(result, zfs.RealTermSum)
+    assert result == float(amplitude) * first + float(amplitude) * second
+
+
+def test_numpy_complex_promotes_real_term():
+    term = zfs.RealTerm.from_str("[1]", modes=1)
+    scalar = np.complex64(1j)
+    for result in (scalar * term, term * scalar):
+        assert isinstance(result, zfs.ComplexTerm)
+        assert result == 1j * term
+
+
+def test_numpy_complex_multiplies_sign():
+    sign = Sign.from_scalar(-1)
+    scalar = np.complex64(1j)
+    for result in (scalar * sign, sign * scalar):
+        assert type(result) is complex
+        assert result == -1j
+
+
+def test_numpy_scalar_inplace_scaling_and_division():
+    terms = zfs.RealTermSum.from_iterable([("[1]", 3.0)], 1)
+    alias = terms
+    factor = np.float32(2)
+    terms *= factor
+    assert terms is alias
+    assert list(alias.coeffs) == [6.0]
+
+    quotient = terms / factor
+    assert isinstance(quotient, zfs.RealTermSum)
+    assert list(quotient.coeffs) == [3.0]
+    assert list(terms.coeffs) == [6.0]
+
+    terms /= factor
+    assert terms is alias
+    assert list(alias.coeffs) == [3.0]
+
+
+@pytest.mark.parametrize("scalar_type", [complex, np.complex64])
+def test_convert_complex_scalar_to_float(scalar_type):
+    result = convert(scalar_type(2 + 0j), float)
+    assert type(result) is float
+    assert result == 2.0
+    with pytest.raises(ValueError):
+        convert(scalar_type(2 + 1j), float)

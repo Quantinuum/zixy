@@ -495,18 +495,24 @@ def test_termsum_vectorised_coeff_multiplication():
 
 def test_unary_term_algebra():
     term = RealMockTerm.from_string(String.from_str("alpha"), 2.0)
-    assert +term is term
+    positive_term = +term
+    assert str(positive_term) == str(term)
+    positive_term.coeff = 3.0
     assert str(-term) == "(-2.0, alpha)"
     assert str(term) == "(2.0, alpha)"
 
     terms = RealMockTerms.from_iterable((("alpha", 1.0), ("beta", -2.0)))
-    assert +terms is terms
+    positive_terms = +terms
+    assert str(positive_terms) == str(terms)
+    positive_terms *= 2
     assert str(-terms) == "(-1.0, alpha), (2.0, beta)"
     assert str(terms) == "(1.0, alpha), (-2.0, beta)"
     assert str(-terms[1]) == "(2.0, beta)"
 
     term_sum = RealMockTermSum.from_iterable((("alpha", 1.0), ("beta", -2.0)))
-    assert +term_sum is term_sum
+    positive_term_sum = +term_sum
+    assert str(positive_term_sum) == str(term_sum)
+    positive_term_sum.remove("alpha")
     assert str(-term_sum) == "(-1.0, alpha), (2.0, beta)"
     assert str(term_sum) == "(1.0, alpha), (-2.0, beta)"
 

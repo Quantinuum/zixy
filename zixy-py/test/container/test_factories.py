@@ -237,15 +237,15 @@ def test_term_from_string_defaults_and_ownership(family_case, source_kind, coeff
         assert isinstance(result.coeff, cls.coeff_type)
         assert result.coeff == expected
         assert result.string == source
-        assert result.to_dict()["space"] == before["space"]
+        assert result.string.to_dict()["space"] == before["space"]
         if hasattr(source, "max_string_len"):
             assert result.string.max_string_len == source.max_string_len
         result.string.clear()
         result.coeff = -expected
         assert source.to_dict() == before
-        snapshot = result.to_dict()
+        snapshot = result.clone()
         source.set(template[0])
-        assert result.to_dict() == snapshot
+        assert result == snapshot
 
 
 @pytest.mark.parametrize("prefix", ["Real", "Complex", "Symbolic"])

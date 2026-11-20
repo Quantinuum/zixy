@@ -175,6 +175,8 @@ class SerializableContainer(Serializable[SerializedContainer], ABC):
 def serialize(obj: SerializableContainer, **kwargs: Any) -> str:
     """Return a JSON string representation of a Zixy container.
 
+    Symbolic coefficients and containers of symbolic terms are unsupported.
+
     Args:
         obj: Coefficient, string, or term container to serialize.
         **kwargs: Keyword arguments to forward to ``json.dumps``.
@@ -190,6 +192,8 @@ def serialize(obj: SerializableContainer, **kwargs: Any) -> str:
 
 def deserialize(source: str) -> SerializableContainer:
     """Create a Zixy container from a JSON string representation.
+
+    Symbolic coefficients and containers of symbolic terms are unsupported.
 
     Args:
         source: JSON string containing ``schema_version``, ``package_version``,

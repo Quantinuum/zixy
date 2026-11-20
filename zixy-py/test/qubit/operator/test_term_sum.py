@@ -187,3 +187,10 @@ def test_complex_term_sum_to_sparse_raises_index_error():
 
     with pytest.raises(IndexError):
         op.to_sparse_matrix()
+
+
+@pytest.mark.parametrize("exponent", [1, 2, 3, 4, 5])
+def test_pauli_sum_power_includes_cross_terms(exponent):
+    operator = zqo.RealTermSum.from_iterable([("", 1.0), ("X0", 1.0)], 1)
+    expected_type = zqo.RealTermSum if exponent == 1 else zqo.ComplexTermSum
+    assert operator**exponent == (operator * (2.0 ** (exponent - 1))).into(expected_type)

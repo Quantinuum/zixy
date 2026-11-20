@@ -32,6 +32,7 @@ from zixy.container.coeffs import (
     Coeff,
     ComplexCoeffs,
     ComplexSign,
+    ComplexSignCoeffs,
     RealCoeffs,
     Sign,
     SignCoeffs,
@@ -69,6 +70,7 @@ ElemT = bool
 SpecT = StringSpec
 ImplT = FermionStateArray
 SignTermSpec = TermSpec[Sign]
+ComplexSignTermSpec = TermSpec[ComplexSign]
 RealTermSpec = TermSpec[float]
 ComplexTermSpec = TermSpec[complex]
 SymbolicTermSpec = TermSpec[Expr]
@@ -184,7 +186,7 @@ class SignTerm(Term[Sign]):
     @overload
     def __mul__(self, rhs: Sign) -> SignTerm: ...
     @overload
-    def __mul__(self, rhs: ComplexSign) -> ComplexTerm: ...
+    def __mul__(self, rhs: ComplexSign) -> ComplexSignTerm: ...
     @overload
     def __mul__(self, rhs: float) -> RealTerm: ...
     @overload
@@ -199,7 +201,7 @@ class SignTerm(Term[Sign]):
     @overload
     def __rmul__(self, lhs: Sign) -> SignTerm: ...
     @overload
-    def __rmul__(self, lhs: ComplexSign) -> ComplexTerm: ...
+    def __rmul__(self, lhs: ComplexSign) -> ComplexSignTerm: ...
     @overload
     def __rmul__(self, lhs: float) -> RealTerm: ...
     @overload
@@ -236,6 +238,75 @@ class SignTermSet(TermSet[Sign]):
     """
 
     terms_type = SignTerms
+
+
+class ComplexSignTerm(Term[ComplexSign]):
+    """A term consisting of a fermionic state string and a complex sign coefficient.
+
+    A single mode-based term consisting of a state string and a
+    :class:`~zixy.container.coeffs.ComplexSign` coefficient that may be an owning instance
+    referencing a single element in a :class:`~zixy.container.data.TermData` instance, or a view
+    on an element in another collection.
+    """
+
+    coeff_type = ComplexSign
+    coeffs_type = ComplexSignCoeffs
+
+    @overload
+    def __mul__(self, rhs: Sign) -> ComplexSignTerm: ...
+    @overload
+    def __mul__(self, rhs: ComplexSign) -> ComplexSignTerm: ...
+    @overload
+    def __mul__(self, rhs: float) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, rhs: complex) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, rhs: Expr) -> SymbolicTerm: ...
+
+    def __mul__[C: (float, complex, Sign, ComplexSign, Expr)](self, rhs: C) -> Term[Any]:
+        """Multiplication of ``self`` by ``rhs``."""
+        return _mul(self, rhs)
+
+    @overload
+    def __rmul__(self, lhs: Sign) -> ComplexSignTerm: ...
+    @overload
+    def __rmul__(self, lhs: ComplexSign) -> ComplexSignTerm: ...
+    @overload
+    def __rmul__(self, lhs: float) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, lhs: complex) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, lhs: Expr) -> SymbolicTerm: ...
+
+    def __rmul__[C: (float, complex, Sign, ComplexSign, Expr)](self, lhs: C) -> Term[Any]:
+        """Multiplication of ``lhs`` by ``self``."""
+        return _rmul(self, lhs)
+
+
+class ComplexSignTerms(Terms[ComplexSign]):
+    """A collection of terms consisting of state strings and complex sign coefficients.
+
+    An array-like container of mode-based terms consisting of state strings and
+    :class:`~zixy.container.coeffs.ComplexSign` coefficients that may be an owning instance
+    referencing a :class:`~zixy.container.data.TermData` instance, or a view on a slice of the
+    elements in another collection.
+    """
+
+    term_type = ComplexSignTerm
+
+
+class ComplexSignTermSet(TermSet[ComplexSign]):
+    """A collection of unique terms consisting of state strings and complex sign coefficients.
+
+    A set-like container of mode-based terms with :class:`~zixy.container.coeffs.ComplexSign`
+    coefficients that may be used to store unique terms and perform set-like operations on them.
+
+    Note:
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
+        are not.
+    """
+
+    terms_type = ComplexSignTerms
 
 
 class RealTerm(Term[float]):
@@ -866,8 +937,7 @@ def get_term_type[C: (float, complex, Sign, ComplexSign, Expr)](
     if issubclass(coeff_type, Sign):
         return SignTerm
     elif issubclass(coeff_type, ComplexSign):
-        # FIXME
-        return ComplexTerm  # type: ignore[return-value]
+        return ComplexSignTerm
     if not issubclass(coeff_type, complex) and issubclass(coeff_type, float | int):
         return RealTerm
     if not issubclass(coeff_type, float | int) and issubclass(coeff_type, complex):

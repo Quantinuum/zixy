@@ -233,9 +233,11 @@ def test_real_conversion_rejects_even_small_imaginary_parts():
         RealCoeffs.from_iterable([1 + 1e-300j])
 
 
-@pytest.mark.parametrize(
-    ("family", "word"), [(zfs, "[1]"), (zqs, "[1]"), (zqo, "X0"), (zfog, "F0"), (zfon, "F0")]
-)
+@pytest.fixture(params=[(zfs, "[1]"), (zqs, "[1]"), (zqo, "X0"), (zfog, "F0"), (zfon, "F0")])
+def family_word(request):
+    return request.param
+
+
 @pytest.mark.parametrize(
     "scalar",
     [
@@ -247,7 +249,8 @@ def test_real_conversion_rejects_even_small_imaginary_parts():
         np.complex128(1j),
     ],
 )
-def test_numpy_scalar_multiplication(family, word, scalar):
+def test_numpy_scalar_multiplication(family_word, scalar):
+    family, word = family_word
     value = scalar.item()
     sum_type = family.ComplexTermSum if isinstance(value, complex) else family.RealTermSum
     terms = sum_type.from_iterable([(word, 1)], 1)
@@ -256,6 +259,29 @@ def test_numpy_scalar_multiplication(family, word, scalar):
         for actual in (operand * scalar, scalar * operand):
             assert type(actual) is type(expected)
             assert actual == expected
+
+
+@pytest.mark.parametrize(
+    "weights",
+    [
+        np.array([-2, 3], dtype=np.int64),
+        np.array([[1j, 0], [-0.5j, 2]], dtype=np.complex64),
+        np.empty((0, 2)),
+    ],
+    ids=["vector", "matrix", "empty"],
+)
+def test_numpy_array_multiplies_individual_strings_and_terms(family_word, weights):
+    family, word = family_word
+    term = family.RealTerm.from_string(family.String(1, word), 2.0)
+    for operand in (term.string, term):
+        for result in (weights * operand, operand * weights):
+            assert isinstance(result, np.ndarray)
+            assert result.shape == weights.shape
+            assert result.dtype == object
+            for index in np.ndindex(weights.shape):
+                expected = operand * weights[index].item()
+                assert type(result[index]) is type(expected)
+                assert result[index] == expected
 
 
 def test_add_numpy_scaled_fermion_states():

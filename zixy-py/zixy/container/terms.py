@@ -423,8 +423,6 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         coeff = coeff.replace("-0j", "+0j")
         return f"({coeff}, {self.string})"
 
-    __array_priority__ = 1000
-
     def __pos__(self) -> Self:
         """Return ``self``."""
         return self

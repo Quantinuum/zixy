@@ -140,8 +140,6 @@ class String[ImplT: ImplArray, SpecT](ViewableItem[ImplT], Representable, Serial
             return False
         return self._impl.same_as(other._impl) and self.index == other.index
 
-    __array_priority__ = 1000
-
     def __eq__(self, other: object) -> bool:
         """Return whether ``self`` and ``other`` are equal."""
         if not isinstance(other, String):

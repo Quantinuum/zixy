@@ -344,7 +344,7 @@ class Sign(RootOfUnity):
 
     def conjugate(self) -> Self:
         """Return the complex conjugate of ``self``."""
-        return self
+        return type(self)(self.phase)
 
     def to_symbolic(self) -> Expr:
         """Convert ``self`` to a SymPy symbolic constant."""

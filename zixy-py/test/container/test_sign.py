@@ -36,7 +36,10 @@ def test_str():
 def test_conjugate():
     for scalar in (1, -1):
         value = Sign.from_scalar(scalar)
-        assert value.conjugate() is value
+        conjugate = value.conjugate()
+        assert conjugate == value
+        conjugate *= -1
+        assert int(conjugate) == -scalar
         assert int(value) == scalar
 
 

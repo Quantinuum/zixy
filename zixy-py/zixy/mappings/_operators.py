@@ -30,11 +30,14 @@ if TYPE_CHECKING:
     from zixy._zixy import Qubits
 
     type _NumericOperator = (
-        zfog.RealTerm
+        zfog.SignTerm
+        | zfog.ComplexSignTerm
+        | zfog.RealTerm
         | zfog.ComplexTerm
         | zfog.RealTermSum
         | zfog.ComplexTermSum
         | zfon.SignTerm
+        | zfon.ComplexSignTerm
         | zfon.RealTerm
         | zfon.ComplexTerm
         | zfon.RealTermSum
@@ -131,7 +134,16 @@ def _apply_operator(
         value, zfog.SymbolicTerm | zfog.SymbolicTermSum | zfon.SymbolicTerm | zfon.SymbolicTermSum
     ):
         raise TypeError("Only numeric fermionic operator coefficients are supported.")
-    term_types = (zfog.RealTerm, zfog.ComplexTerm, zfon.SignTerm, zfon.RealTerm, zfon.ComplexTerm)
+    term_types = (
+        zfog.SignTerm,
+        zfog.ComplexSignTerm,
+        zfog.RealTerm,
+        zfog.ComplexTerm,
+        zfon.SignTerm,
+        zfon.ComplexSignTerm,
+        zfon.RealTerm,
+        zfon.ComplexTerm,
+    )
     sum_types = (
         zfog.RealTermSum,
         zfog.ComplexTermSum,

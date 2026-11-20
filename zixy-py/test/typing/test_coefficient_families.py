@@ -956,3 +956,16 @@ def test_term_from_string_default_inference() -> None:
     assert_type(zqo.RealTerm.from_string(string), zqo.RealTerm)
     assert_type(zqo.ComplexTerm.from_string(string), zqo.ComplexTerm)
     assert_type(zqo.SymbolicTerm.from_string(string), zqo.SymbolicTerm)
+
+
+def test_fermion_sign_term_promotion() -> None:
+    sign = Sign.from_scalar(-1)
+    phase = ComplexSign.from_scalar(1j)
+    raw = zfog.SignTerm(1, ("F0", sign))
+    normal = zfon.ComplexSignTerm(1, ("F0", phase))
+    state = zfs.SignTerm.from_str("[0]", modes=1)
+    assert_type(raw * sign, zfog.SignTerm)
+    assert_type(raw * phase, zfog.ComplexSignTerm)
+    assert_type(normal * sign, zfon.ComplexSignTerm)
+    assert_type(normal * normal, zfon.ComplexTermSum)
+    assert_type(state * phase, zfs.ComplexSignTerm)

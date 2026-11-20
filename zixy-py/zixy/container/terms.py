@@ -56,6 +56,7 @@ from zixy.container.coeffs import (
     SymbolicCoeffs,
     convert,
     convert_vec,
+    normalize_scalar,
     typesafe_mul,
     unit,
     zero,
@@ -679,6 +680,7 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         Note:
             This method operates in-place.
         """
+        scalar = normalize_scalar(scalar)
         for term in self:
             term.coeff = typesafe_mul(term.coeff, scalar)
 
@@ -703,8 +705,11 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         for item, coeff in zip(self, coeffs):
             item.coeff = typesafe_mul(item.coeff, coeff)
 
+    __array_priority__ = 1000
+
     def __imul__(self, coeff: C | Coeffs[C]) -> Self:
         """Multiply ``self`` in-place by a scalar or coefficient vector."""
+        coeff = normalize_scalar(coeff)
         if isinstance(coeff, Coeffs):
             self.scale_by_coeffs(coeff)
         else:
@@ -713,12 +718,14 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
 
     def __mul__(self, coeff: C | Coeffs[C]) -> Self:
         """Return ``self`` multiplied by a scalar or coefficient vector."""
+        coeff = normalize_scalar(coeff)
         out = self.clone()
         out *= coeff
         return out
 
     def __rmul__(self, coeff: C | Coeffs[C]) -> Self:
         """Return ``self`` multiplied by a scalar or coefficient vector."""
+        coeff = normalize_scalar(coeff)
         out = self.clone()
         out *= coeff
         return out
@@ -1685,8 +1692,11 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Expr)](TermSet[ImplT,
         """Return the negation of ``self``."""
         return self * -1
 
+    __array_priority__ = 1000
+
     def __imul__(self, other: Coeff | Coeffs[C]) -> Self:
         """Multiply ``self`` in-place by a scalar or coefficient vector."""
+        other = normalize_scalar(other)
         if not isinstance(other, Coeff | Coeffs):
             return NotImplemented
         coeffs = self._impl.coeffs
@@ -1695,6 +1705,7 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Expr)](TermSet[ImplT,
 
     def __itruediv__(self, scalar: Coeff) -> Self:
         """In-place division of ``self`` by ``scalar``."""
+        scalar = normalize_scalar(scalar)
         if isinstance(scalar, RootOfUnity):
             self *= 1 / scalar.to_numeric()
         else:
@@ -1703,6 +1714,7 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Expr)](TermSet[ImplT,
 
     def __mul__(self, other: Coeff | Coeffs[C]) -> Self:
         """Return ``self`` multiplied by a scalar or coefficient vector."""
+        other = normalize_scalar(other)
         if not isinstance(other, Coeff | Coeffs):
             return NotImplemented
         out = self.clone()
@@ -1715,6 +1727,7 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Expr)](TermSet[ImplT,
 
     def __truediv__(self, scalar: Coeff) -> Self:
         """Division of ``self`` by ``scalar``."""
+        scalar = normalize_scalar(scalar)
         factor = 1 / scalar if not isinstance(scalar, RootOfUnity) else 1 / scalar.to_numeric()
         return self * factor
 

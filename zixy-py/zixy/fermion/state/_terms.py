@@ -37,6 +37,7 @@ from zixy.container.coeffs import (
     SignCoeffs,
     SymbolicCoeffs,
     get_coeffs_type,
+    normalize_scalar,
 )
 from zixy.container.data import TermData
 from zixy.container.terms import (
@@ -194,6 +195,7 @@ class SignTerm(Term[Sign]):
 
     def __mul__[C: (float, complex, Sign, ComplexSign, Expr)](self, rhs: C) -> Term[Any]:
         """Multiplication of ``self`` by ``rhs``."""
+        rhs = normalize_scalar(rhs)
         return _mul(self, rhs)
 
     @overload
@@ -209,6 +211,7 @@ class SignTerm(Term[Sign]):
 
     def __rmul__[C: (float, complex, Sign, ComplexSign, Expr)](self, lhs: C) -> Term[Any]:
         """Multiplication of ``lhs`` by ``self``."""
+        lhs = normalize_scalar(lhs)
         return _rmul(self, lhs)
 
 
@@ -263,6 +266,7 @@ class RealTerm(Term[float]):
 
     def __mul__[C: (float, complex, Sign, ComplexSign, Expr)](self, rhs: C) -> Term[Any]:
         """Multiplication of ``self`` by ``rhs``."""
+        rhs = normalize_scalar(rhs)
         return _mul(self, rhs)
 
     @overload
@@ -278,6 +282,7 @@ class RealTerm(Term[float]):
 
     def __rmul__[C: (float, complex, Sign, ComplexSign, Expr)](self, lhs: C) -> Term[Any]:
         """Multiplication of ``lhs`` by ``self``."""
+        lhs = normalize_scalar(lhs)
         return _rmul(self, lhs)
 
 
@@ -434,6 +439,7 @@ class ComplexTerm(Term[complex]):
 
     def __mul__[C: (float, complex, Sign, ComplexSign, Expr)](self, rhs: C) -> Term[Any]:
         """Multiplication of ``self`` by ``rhs``."""
+        rhs = normalize_scalar(rhs)
         return _mul(self, rhs)
 
     @overload
@@ -449,6 +455,7 @@ class ComplexTerm(Term[complex]):
 
     def __rmul__[C: (float, complex, Sign, ComplexSign, Expr)](self, lhs: C) -> Term[Any]:
         """Multiplication of ``lhs`` by ``self``."""
+        lhs = normalize_scalar(lhs)
         return _rmul(self, lhs)
 
 
@@ -619,6 +626,7 @@ class SymbolicTerm(Term[Expr]):
 
     def __mul__[C: (float, complex, Sign, ComplexSign, Expr)](self, rhs: C) -> Term[Any]:
         """Multiplication of ``self`` by ``rhs``."""
+        rhs = normalize_scalar(rhs)
         return _mul(self, rhs)
 
     @overload
@@ -634,6 +642,7 @@ class SymbolicTerm(Term[Expr]):
 
     def __rmul__[C: (float, complex, Sign, ComplexSign, Expr)](self, lhs: C) -> Term[Any]:
         """Multiplication of ``lhs`` by ``self``."""
+        lhs = normalize_scalar(lhs)
         return _rmul(self, lhs)
 
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:

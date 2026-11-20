@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, Self
 from sympy import Expr
 
 from zixy._zixy import BinarySprings, FermionStateArray, Modes
-from zixy.container.coeffs import Coeff, ComplexSign, Sign
+from zixy.container.coeffs import Coeff, ComplexSign, Sign, normalize_scalar
 from zixy.container.serialization import check_schema_version
 from zixy.fermion._strings import (
     String as FermionString,
@@ -191,6 +191,7 @@ class String(FermionString[ImplT, SpecT, ElemT]):
 
     def __mul__[C: (float, complex, Sign, ComplexSign, Expr)](self, rhs: C) -> Term[C]:
         """Return the product of ``self`` and ``rhs``."""
+        rhs = normalize_scalar(rhs)
         if not isinstance(rhs, Coeff):
             return NotImplemented
         from zixy.fermion.state._terms import get_term_type  # noqa: PLC0415
@@ -200,6 +201,7 @@ class String(FermionString[ImplT, SpecT, ElemT]):
 
     def __rmul__[C: (float, complex, Sign, ComplexSign, Expr)](self, lhs: C) -> Term[C]:
         """Return the product of ``lhs`` and ``self``."""
+        lhs = normalize_scalar(lhs)
         if not isinstance(lhs, Coeff):
             return NotImplemented
         from zixy.fermion.state._terms import get_term_type  # noqa: PLC0415

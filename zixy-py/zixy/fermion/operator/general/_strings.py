@@ -33,7 +33,7 @@ from sympy import Expr
 
 from zixy._zixy import FermionSprings, GeneralFermionOperatorArray, Modes
 from zixy.container.base import requires_ownership
-from zixy.container.coeffs import Coeff, ComplexSign, Sign
+from zixy.container.coeffs import Coeff, ComplexSign, Sign, normalize_scalar
 from zixy.container.serialization import check_schema_version
 from zixy.container.strings import (
     String as BaseString,
@@ -265,6 +265,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         Multiplication by a scalar returns a term. Multiplication by another raw string returns a
         single real term whose string is the concatenated ladder-operator product.
         """
+        rhs = normalize_scalar(rhs)
         from zixy.fermion.operator.general._terms import RealTerm, get_term_type  # noqa: PLC0415
 
         if isinstance(rhs, Coeff):
@@ -275,6 +276,13 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         _check_modes_compatibility(self.modes, rhs.modes)
         string = String(self.modes, self.get_ops() + rhs.get_ops())
         return RealTerm.from_string(string)
+
+    def __rmul__[C: (float, complex, Sign, ComplexSign, Expr)](self, lhs: C) -> Term[C]:
+        """Multiply a scalar by this operator string."""
+        lhs = normalize_scalar(lhs)
+        if not isinstance(lhs, Coeff):
+            return NotImplemented
+        return self * lhs
 
 
 class Strings(OperatorStrings[ImplT, SpecT, ElemT]):

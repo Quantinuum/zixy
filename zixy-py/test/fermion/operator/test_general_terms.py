@@ -491,3 +491,22 @@ def test_to_normal_ordered(term_sum_type, expected_type, source, modes, expected
 
     assert type(normal_ordered) is expected_type
     assert str(normal_ordered) == expected
+
+
+@pytest.mark.parametrize(
+    "term_type",
+    [zfog.RealTerm, zfog.ComplexTerm, zfog.SignTerm, zfog.ComplexSignTerm, zfog.SymbolicTerm],
+)
+def test_term_powers(term_type):
+    term = term_type.from_str("F0", 1)
+    assert term**1 == term
+    square = term * term
+    assert type(term**2) is type(square)
+    assert term**2 == square
+    assert term**3 == square * term
+
+
+@pytest.mark.parametrize("sum_type", [zfog.RealTermSum, zfog.ComplexTermSum])
+def test_sum_power(sum_type):
+    operator = sum_type.from_iterable([("", 1), ("F0", 2)], 1)
+    assert operator**3 == (operator * operator) * operator

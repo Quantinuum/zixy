@@ -1895,31 +1895,15 @@ class SymbolicCoeffs(Coeffs[Expr]):
             return self.try_to_complex().to_numpy()
 
     def to_dict(self) -> SerializedContainer:
-        """Return a JSON-serializable dictionary representation of ``self``.
-
-        Returns:
-            A JSON-serializable dictionary representation of ``self``.
-        """
-        return dict(
-            schema_version=__schema_version__,
-            package_version=__version__,
-            family="container",
-            container=self.__class__.__name__,
-            coeffs=[str(c) for c in self],
+        """Raise TypeError because JSON serialization of symbolic coefficients is unsupported."""
+        raise TypeError(
+            f"JSON serialization of {type(self).__name__} (symbolic coefficients) is unsupported."
         )
 
     @classmethod
     def from_dict(cls, source: SerializedContainer) -> Self:
-        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
-
-        Args:
-            source: JSON-serializable dictionary representation to parse.
-
-        Returns:
-            An instance of ``cls`` parsed from ``source``.
-        """
-        check_schema_version(source)
-        return cls.from_iterable([sympify(c) for c in source["coeffs"]])
+        """Raise TypeError because JSON deserialization of symbolic coefficients is unsupported."""
+        raise TypeError("JSON deserialization of symbolic coefficients is unsupported.")
 
 
 def convert_vec[Cs: Coeffs[Any]](source: Coeffs[Any], t: type[Cs]) -> Cs:

@@ -117,7 +117,7 @@ def test_term_membership_checks_coefficient(family_strings, suffix, prefix, coef
     term_type = collection_type.terms_type.term_type
     term = term_type.from_string(strings[0], coefficient)
     collection = collection_type.from_terms(collection_type.terms_type.from_iterable([term], space))
-    before = collection.to_dict()
+    before = collection.clone()
 
     assert term in collection
     assert term.clone() in collection
@@ -132,7 +132,7 @@ def test_term_membership_checks_coefficient(family_strings, suffix, prefix, coef
     assert family.String(3) not in collection
     for unsupported in (None, object(), 42):
         assert unsupported not in collection
-    assert collection.to_dict() == before
+    assert collection == before
     assert not hasattr(collection, "contains")
 
 
@@ -205,7 +205,7 @@ def test_term_get_and_index_lookup(family_strings, suffix, prefix, coefficient, 
     term = term_type.from_string(strings[0], coefficient)
     collection = collection_type.from_terms(collection_type.terms_type.from_iterable([term], space))
     marker = object()
-    before = collection.to_dict()
+    before = collection.clone()
 
     for key in (specs[0], strings[0], term, term_type.from_string(strings[0], different)):
         assert collection.lookup_index(key=key) == 0
@@ -225,7 +225,7 @@ def test_term_get_and_index_lookup(family_strings, suffix, prefix, coefficient, 
         collection.get(object(), marker)
     with pytest.raises(ValueError):
         collection.get(family.String(3), marker)
-    assert collection.to_dict() == before
+    assert collection == before
     assert not hasattr(collection, "lookup")
     assert not hasattr(collection, "lookup_coeff")
 

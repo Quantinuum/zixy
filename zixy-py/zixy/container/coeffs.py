@@ -59,6 +59,8 @@ Number: TypeAlias = int | float | complex  # noqa: UP040
 
 
 @overload
+def normalize_scalar(value: np.integer[Any]) -> int: ...
+@overload
 def normalize_scalar(value: np.floating[Any]) -> float: ...
 @overload
 def normalize_scalar(value: np.complexfloating[Any, Any]) -> complex: ...
@@ -66,8 +68,10 @@ def normalize_scalar(value: np.complexfloating[Any, Any]) -> complex: ...
 def normalize_scalar[T](value: T) -> T: ...
 
 
-def normalize_scalar[T](value: T) -> T | float | complex:
-    """Convert NumPy floating and complex scalars to their Python equivalents."""
+def normalize_scalar[T](value: T) -> T | int | float | complex:
+    """Convert NumPy integer, floating and complex scalars to their Python equivalents."""
+    if isinstance(value, np.integer) and value.dtype.kind in "iu":
+        return int(value)
     if isinstance(value, np.floating):
         return float(value)
     if isinstance(value, np.complexfloating):

@@ -237,7 +237,15 @@ def test_real_conversion_rejects_even_small_imaginary_parts():
     ("family", "word"), [(zfs, "[1]"), (zqs, "[1]"), (zqo, "X0"), (zfog, "F0"), (zfon, "F0")]
 )
 @pytest.mark.parametrize(
-    "scalar", [np.float32(0.5), np.float64(0.5), np.complex64(1j), np.complex128(1j)]
+    "scalar",
+    [
+        np.int64(-2),
+        np.uint8(2),
+        np.float32(0.5),
+        np.float64(0.5),
+        np.complex64(1j),
+        np.complex128(1j),
+    ],
 )
 def test_numpy_scalar_multiplication(family, word, scalar):
     value = scalar.item()

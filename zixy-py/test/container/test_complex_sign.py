@@ -45,6 +45,15 @@ def test_conjugate():
         assert value.phase == phase
 
 
+def test_unary_plus_returns_independent_sign():
+    for phase in range(4):
+        value = ComplexSign(phase)
+        result = +value
+        assert result == value
+        result *= -1
+        assert value.phase == phase
+
+
 def test_scalar_mul():
     # ComplexSign * ComplexSign results in ComplexSign
     assert ComplexSign(3) * ComplexSign(2) == ComplexSign(1)

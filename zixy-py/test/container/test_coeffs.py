@@ -29,6 +29,16 @@ def extension_coeffs(request):
     return cls.from_iterable(values)
 
 
+def test_unary_plus_copies_view(extension_coeffs):
+    view = extension_coeffs[::-2]
+    expected = list(view)
+    result = +view
+    assert type(result) is type(view)
+    assert list(result) == expected
+    result[0] = -result[0]
+    assert list(view) == expected
+
+
 @pytest.mark.parametrize(
     "source_form", ["collection", "view", "list", "tuple", "iterator", "generator"]
 )

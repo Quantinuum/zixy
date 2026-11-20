@@ -318,7 +318,7 @@ class Sign(RootOfUnity):
 
     def __pos__(self) -> Self:
         """Return ``self``."""
-        return self
+        return type(self)(self.phase)
 
     def __neg__(self) -> Sign:
         """Return the negation of ``self``."""
@@ -581,7 +581,7 @@ class ComplexSign(RootOfUnity):
 
     def __pos__(self) -> Self:
         """Return ``self``."""
-        return self
+        return type(self)(self.phase)
 
     def __neg__(self) -> ComplexSign:
         """Return the negation of ``self``."""
@@ -888,7 +888,7 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
 
     def __pos__(self) -> Self:
         """Return ``self``."""
-        return self
+        return self.clone()
 
     def __neg__(self) -> Self:
         """Return the negation of ``self``."""

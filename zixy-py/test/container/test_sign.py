@@ -43,6 +43,15 @@ def test_conjugate():
         assert int(value) == scalar
 
 
+def test_unary_plus_returns_independent_sign():
+    for phase in (False, True):
+        value = Sign(phase)
+        result = +value
+        assert result == value
+        result *= -1
+        assert value.phase == phase
+
+
 def test_scalar_mul():
     # only Sign * Sign results in Sign
     assert Sign(False) * Sign(False) == Sign(False)

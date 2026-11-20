@@ -33,14 +33,13 @@ def symbolic_sum(request):
 def test_subs_preserves_keys_space_and_independence(symbolic_sum):
     _, _, specs, _, source = symbolic_sum
     x, _, z = symbols("x y z")
-    before = source.to_dict()
+    before = source.clone()
 
     result = source.subs({x: 2, "y": z})
 
     assert type(result) is type(source)
     assert list(result.coeffs) == [2 + z, 4 - z]
-    assert result.to_dict()["strings"] == before["strings"]
-    assert result.to_dict()["space"] == before["space"]
+    assert result.strings == before.strings
     assert result.strings.is_owning()
     assert not result.coeffs.is_owning()
     assert result._string_set._map is not source._string_set._map
@@ -51,13 +50,13 @@ def test_subs_preserves_keys_space_and_independence(symbolic_sum):
         assert result.max_string_len == source.max_string_len == 64
     result.coeffs[0] = sympify(10)
     result.remove(specs[1])
-    assert source.to_dict() == before
+    assert source == before
 
 
 def test_isubs_updates_coefficient_views_and_preserves_iterated_terms(symbolic_sum):
     _, _, specs, _, source = symbolic_sum
     x, _, z = symbols("x y z")
-    before = source.to_dict()
+    before = source.clone()
     term_copy = next(iter(source))
     original_coeff = term_copy.coeff
     coeff_view = source.coeffs[::-1]
@@ -69,8 +68,7 @@ def test_isubs_updates_coefficient_views_and_preserves_iterated_terms(symbolic_s
     assert term_copy.coeff == original_coeff
     assert list(coeff_view) == [4 - z, 2 + z]
     assert source._string_set._map is mapping
-    assert source.to_dict()["strings"] == before["strings"]
-    assert source.to_dict()["space"] == before["space"]
+    assert source.strings == before.strings
     assert [source.lookup_index(spec) for spec in specs] == [0, 1]
 
 
@@ -104,14 +102,14 @@ def test_subs_with_empty_mapping_clones_and_preserves_subclass(symbolic_sum):
 def test_empty_sum_substitution_preserves_configuration(symbolic_sum):
     family, space, _, kwargs, _ = symbolic_sum
     source = family.SymbolicTermSum(space, **kwargs)
-    before = source.to_dict()
+    before = source.clone()
 
     assert source.isubs({"x": 2}) is None
     result = source.subs({"x": 2})
 
     assert type(result) is type(source)
     assert len(result) == 0
-    assert result.to_dict() == source.to_dict() == before
+    assert result == source == before
     assert not result.coeffs.is_owning()
     assert result.strings.is_owning()
     if hasattr(source, "max_string_len"):

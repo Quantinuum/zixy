@@ -86,6 +86,21 @@ impl ProductHelper {
             ) != 0
     }
 
+    /// Return whether a common mode must contract to avoid a repeated outer operator.
+    fn must_contract(lhs: &StringRef, rhs: &StringRef, mode: usize) -> bool {
+        lhs.get_cre_part().get_bit_unchecked(mode) || rhs.get_ann_part().get_bit_unchecked(mode)
+    }
+
+    /// Count common modes with both contracted and uncontracted results.
+    fn count_branch_points(lhs: &StringRef, rhs: &StringRef) -> usize {
+        lhs.get_ann_part()
+            .iter_set_bits_flat()
+            .filter(|&mode| {
+                rhs.get_cre_part().get_bit_unchecked(mode) && !Self::must_contract(lhs, rhs, mode)
+            })
+            .count()
+    }
+
     /// Compute and store every branch of the product `lhs * rhs`, including their signs.
     pub fn set(&mut self, lhs: &StringRef, rhs: &StringRef) {
         self.strings = StringList::new(lhs.modes().clone());
@@ -93,18 +108,13 @@ impl ProductHelper {
         if Self::destroys(lhs, rhs) {
             return;
         }
-        let n_bif = lhs
-            .get_ann_part()
-            .intersection_hamming_weight(&rhs.get_cre_part());
-        self.strings.resize(1 << n_bif);
+        self.n_bif = Self::count_branch_points(lhs, rhs);
+        self.strings.resize(1 << self.n_bif);
         self.signs.resize(self.strings.len());
         self.n_lhs_ann = lhs.get_ann_part().hamming_weight();
         self.n_rhs_ann = rhs.get_ann_part().hamming_weight();
         self.n_lhs_cre = lhs.get_cre_part().hamming_weight();
         self.n_rhs_cre = rhs.get_cre_part().hamming_weight();
-        self.n_bif = rhs
-            .get_cre_part()
-            .intersection_hamming_weight(&lhs.get_ann_part());
         // copy the LHS^ and RHS_ strings to the last element of the result
         let i_branch_last = self.strings.len().saturating_sub(1);
         // these are the parts that are already in normal order
@@ -140,7 +150,23 @@ impl ProductHelper {
         self.strings.cre_part.get_elem_mut_ref(branch)
     }
 
+    /// Insert a creator from the right of its sorted block and return the number of exchanges.
+    fn insert_creation(&mut self, branch: usize, mode: usize) -> usize {
+        let exchanges = self.res_cre(branch).count_set_bits_after(mode);
+        self.res_cre_mut(branch).set_bit_unchecked(mode, true);
+        exchanges
+    }
+
+    /// Insert an annihilator from the left of its sorted block and return the number of exchanges.
+    fn insert_annihilation(&mut self, branch: usize, mode: usize) -> usize {
+        let exchanges = self.res_ann(branch).count_set_bits_before(mode);
+        self.res_ann_mut(branch).set_bit_unchecked(mode, true);
+        exchanges
+    }
+
     /// Handle a branch (recursively) of the normal-ordering product operation.
+    ///
+    /// Creation and annihilation blocks are each ordered by increasing mode index.
     ///
     /// The generic situation at input is:
     /// `L^(0) L^(1) ... L^(n_lc-1) L_(0) L_(1) ... L_(n_la-1) R^(0) R^(1) ... R^(n_rc-1) R_(0) R_(1) ... R_(n_ra)`.
@@ -168,85 +194,27 @@ impl ProductHelper {
         let mut i_rhs_maybe = rhs.get_cre_part().lowest_set_bit_not_before(i_rhs);
         while let (Some(i_lhs), Some(i_rhs)) = (i_lhs_maybe, i_rhs_maybe) {
             if i_lhs < i_rhs {
-                /*
-                 * LHS_ index gets moved to RHS_, not a common mode index. The relevant portion of the current state of
-                 * the product is:
-                 *  L_(0) L_(1) ... L_(n_la-1) R^(0) R^(1) ... R^(n_rc-1) RHS_
-                 * which can be thought of as being manipulated in 3 steps:
-                 * moving L_(0) to:
-                 *                            A
-                 * makes n_la-1 exchanges,
-                 * moving L_(0) to
-                 *                                                        B
-                 * makes a further n_rc exchanges,
-                 * and moving L_(0) to its position within RHS_
-                 *                                                           C
-                 * makes a further number of exchanges equal to the number of set bits after L_(0) in RHS_
-                 */
-                // anti-commute to A
+                // Move the annihilator right across the remaining LHS annihilators
+                // and RHS creators, then insert it from the left of the output block.
                 inds.exchange += self.n_lhs_ann.saturating_sub(inds.lhs_ann + 1);
-                // anti-commute to B
                 inds.exchange += self.n_rhs_cre.saturating_sub(inds.rhs_cre);
-                // anti-commute to C
-                inds.exchange += self.res_ann(i_branch).count_set_bits_after(i_lhs);
-                self.res_ann_mut(i_branch).set_bit_unchecked(i_lhs, true);
+                inds.exchange += self.insert_annihilation(i_branch, i_lhs);
                 i_lhs_maybe = lhs.get_ann_part().lowest_set_bit_after(i_lhs);
                 inds.lhs_ann += 1;
             } else if i_lhs > i_rhs {
-                /*
-                 * RHS^ index gets moved to LHS^, not a common mode index. The relevant portion of the current state of
-                 * the product is:
-                 *  LHS^ L_(0) L_(1) ... L_(n_la-1) R^(0) R^(1) ... R^(n_rc-1)
-                 * which can be thought of as being manipulated in 2 steps:
-                 * moving R^(0) to
-                 *      A
-                 * makes n_la exchanges,
-                 * and moving R^(0) to its position within LHS^
-                 *  B?
-                 * makes a further number of exchanges equal to the number of set bits before R^(0) in LHS^
-                 */
-                // anti-commute to A
+                // Move the creator left across the remaining LHS annihilators,
+                // then insert it from the right of the output creation block.
                 inds.exchange += self.n_lhs_ann.saturating_sub(inds.lhs_ann);
-                // anti-commute to B
-                inds.exchange += self.res_cre(i_branch).count_set_bits_before(i_rhs);
-                self.res_cre_mut(i_branch).set_bit_unchecked(i_rhs, true);
+                inds.exchange += self.insert_creation(i_branch, i_rhs);
                 i_rhs_maybe = rhs.get_cre_part().lowest_set_bit_after(i_rhs);
                 inds.rhs_cre += 1;
             } else {
-                /*
-                 * Common mode index.
-                 * The current state of the product is (with L_(0) same mode as R^(0)):
-                 *  LHS^ L_(0) L_(1) ... L_(n_la-1) R^(0) R^(1) ... R^(n_rc-1) RHS_
-                 * which can be thought of as being manipulated in 6 steps:
-                 * moving R^(0) to:
-                 *            A
-                 * makes n_la-1 exchanges,
-                 * and moving R^(0) to:
-                 *      B
-                 * makes 1 exchange in the high-rank branch, and 0 exchanges in the low-rank branch
-                 * at this point, call perform for the low-rank branch, with (n_la-1) exchanges
-                 * moving R^(0) to its position within LHS^
-                 *  C?
-                 * makes a further number of exchanges equal to the number of set bits before R^(0) in LHS^
-                 * moving L_(0) to:
-                 *                                 D
-                 * makes n_la-1 exchanges,
-                 * moving L_(0) to:
-                 *                                                             E
-                 * makes n_rc-1 exchanges,
-                 *
-                 * and moving L_(0) to its position within RHS_
-                 *                                                               F?
-                 * makes a further number of exchanges equal to the number of set bits after L_(0) in RHS_
-                 */
+                // Bring the equal-mode operators together and apply a_i a_i^dagger
+                // = 1 - a_i^dagger a_i. Recurse on the contracted contribution first.
                 assert_eq!(i_lhs, i_rhs);
                 let i = i_lhs;
-                /*
-                 * only bifurcate if both LHS^ and RHS_ are given, and the mode index is not set in LHS^ or RHS_,
-                 * otherwise, the high-rank branch is destroyed and only the low-rank branch survives
-                 */
-                let is_bif: bool = !lhs.get_cre_part().get_bit_unchecked(i)
-                    && !rhs.get_ann_part().get_bit_unchecked(i);
+                // Match the allocation count: a forced contraction has no high-rank branch.
+                let is_bif = !Self::must_contract(lhs, rhs, i);
                 let mut i_branch_next = i_branch;
                 if is_bif {
                     i_branch_next &= !(1 << self.n_bif.saturating_sub(1 + inds.bif));
@@ -258,7 +226,7 @@ impl ProductHelper {
                     self.strings.copy(i_branch_next, i_branch);
                 }
 
-                // anti-commute to A
+                // Move the creator left to the matching annihilator.
                 inds.exchange += self.n_lhs_ann.saturating_sub(inds.lhs_ann + 1);
                 self.do_branch(
                     i_branch_next,
@@ -278,42 +246,28 @@ impl ProductHelper {
                     return;
                 }
 
-                // anti-commute to B
+                // The uncontracted contribution has the minus sign from anticommutation.
                 inds.exchange += 1;
-                // anti-commute to C
-                inds.exchange += self.res_cre(i_branch).count_set_bits_after(i);
-                // anti-commute to D
+                inds.exchange += self.insert_creation(i_branch, i);
+                // Move the annihilator right through the remaining middle blocks.
                 inds.exchange += self.n_lhs_ann.saturating_sub(inds.lhs_ann + 1);
-                // anti-commute to E
                 inds.exchange += self.n_rhs_cre.saturating_sub(inds.rhs_cre + 1);
-                // anti-commute to F
-                inds.exchange += self.res_ann(i_branch).count_set_bits_before(i);
-
-                self.res_ann_mut(i_branch).set_bit_unchecked(i, true);
-                self.res_cre_mut(i_branch).set_bit_unchecked(i, true);
+                inds.exchange += self.insert_annihilation(i_branch, i);
 
                 inds.lhs_ann += 1;
                 inds.rhs_cre += 1;
             }
         }
         while let Some(i_lhs) = i_lhs_maybe {
-            /*
-             * all RHS^ modes have been processed, now finish off LHS_
-             * just like the *lhs_ann_iter > *rhs_cre_iter case but with no modes in RHS^
-             */
+            // No RHS creators remain; move past the remaining LHS annihilators.
             inds.exchange += self.n_lhs_ann.saturating_sub(inds.lhs_ann + 1);
-            inds.exchange += self.res_ann(i_branch).count_set_bits_before(i_lhs);
-            self.res_ann_mut(i_branch).set_bit_unchecked(i_lhs, true);
+            inds.exchange += self.insert_annihilation(i_branch, i_lhs);
             inds.lhs_ann += 1;
             i_lhs_maybe = lhs.get_ann_part().lowest_set_bit_after(i_lhs);
         }
         while let Some(i_rhs) = i_rhs_maybe {
-            /*
-             * all LHS_ modes have been processed, now finish off RHS^
-             * just like the *lhs_ann_iter < *rhs_cre_iter case but with no modes in LHS_
-             */
-            inds.exchange += self.res_cre(i_branch).count_set_bits_after(i_rhs);
-            self.res_cre_mut(i_branch).set_bit_unchecked(i_rhs, true);
+            // No LHS annihilators remain; insert the remaining creators directly.
+            inds.exchange += self.insert_creation(i_branch, i_rhs);
             inds.rhs_cre += 1;
             i_rhs_maybe = rhs.get_cre_part().lowest_set_bit_after(i_rhs);
         }
@@ -380,7 +334,138 @@ mod tests {
     use super::*;
     use rstest::rstest;
 
+    // Construct the action on occupation states directly, without normal ordering.
+    fn occupation_matrix(cre: &[usize], ann: &[usize], n_mode: usize) -> Vec<i32> {
+        let dimension = 1 << n_mode;
+        let mut matrix = vec![0; dimension * dimension];
+        for column in 0..dimension {
+            let mut occupied: Vec<bool> =
+                (0..n_mode).map(|mode| column & (1 << mode) != 0).collect();
+            let mut amplitude = 1;
+            // The rightmost annihilator acts first, followed by the creators in reverse order.
+            for (mode, creation) in ann
+                .iter()
+                .rev()
+                .map(|&mode| (mode, false))
+                .chain(cre.iter().rev().map(|&mode| (mode, true)))
+            {
+                if occupied[mode] == creation {
+                    amplitude = 0;
+                    break;
+                }
+                for &lower_occupied in &occupied[..mode] {
+                    if lower_occupied {
+                        amplitude = -amplitude;
+                    }
+                }
+                occupied[mode] = creation;
+            }
+            let row: usize = occupied
+                .iter()
+                .enumerate()
+                .filter(|(_, present)| **present)
+                .map(|(mode, _)| 1 << mode)
+                .sum();
+            matrix[row * dimension + column] = amplitude;
+        }
+        matrix
+    }
+
     #[rstest]
+    #[case(1)]
+    #[case(2)]
+    #[case(3)]
+    fn products_match_occupation_matrices(#[case] n_mode: usize) {
+        use crate::container::traits::proj::Borrow;
+        use crate::fermion::operator::normal::string::String;
+
+        let dimension = 1 << n_mode;
+        let mut operators = Vec::new();
+        for cre in 0..dimension {
+            for ann in 0..dimension {
+                let creations: Vec<_> = (0..n_mode).filter(|mode| cre & (1 << mode) != 0).collect();
+                let annihilations: Vec<_> =
+                    (0..n_mode).filter(|mode| ann & (1 << mode) != 0).collect();
+                let matrix = occupation_matrix(&creations, &annihilations, n_mode);
+                let operator = String::from_sets_unchecked(
+                    Modes::from_count(n_mode),
+                    creations.into_iter().collect(),
+                    annihilations.into_iter().collect(),
+                );
+                operators.push((operator, matrix));
+            }
+        }
+
+        for (lhs, lhs_matrix) in &operators {
+            for (rhs, rhs_matrix) in &operators {
+                let mut product = ProductHelper::new();
+                product.set(&lhs.borrow(), &rhs.borrow());
+                let mut actual = vec![0; dimension * dimension];
+                for term in 0..product.strings.len() {
+                    let creations: Vec<_> = product.res_cre(term).iter_set_bits_flat().collect();
+                    let annihilations: Vec<_> =
+                        product.res_ann(term).iter_set_bits_flat().collect();
+                    let contribution = occupation_matrix(&creations, &annihilations, n_mode);
+                    let sign = if product.signs.get_unchecked(term).0 {
+                        -1
+                    } else {
+                        1
+                    };
+                    for (entry, value) in actual.iter_mut().zip(contribution) {
+                        *entry += sign * value;
+                    }
+                }
+                for row in 0..dimension {
+                    for column in 0..dimension {
+                        let expected: i32 = (0..dimension)
+                            .map(|inner| {
+                                lhs_matrix[row * dimension + inner]
+                                    * rhs_matrix[inner * dimension + column]
+                            })
+                            .sum();
+                        assert_eq!(
+                            actual[row * dimension + column],
+                            expected,
+                            "{lhs} * {rhs}, matrix entry ({row}, {column})"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[rstest]
+    // Distinct number operators commute, including across storage words.
+    #[case(66, (vec![0], vec![0]), (vec![65], vec![65]),
+        vec![vec![0, 65]], vec![vec![0, 65]], vec![true])]
+    #[case(66, (vec![65], vec![65]), (vec![0], vec![0]),
+        vec![vec![0, 65]], vec![vec![0, 65]], vec![true])]
+    // Forced contractions must not leave unused identity rows.
+    #[case(2, (vec![0], vec![0]), (vec![0], vec![]),
+        vec![vec![0]], vec![vec![]], vec![false])]
+    #[case(2, (vec![], vec![0]), (vec![0], vec![0]),
+        vec![vec![]], vec![vec![0]], vec![false])]
+    // Number operators are projectors: n_0^2 = n_0.
+    #[case(2, (vec![0], vec![0]), (vec![0], vec![0]),
+        vec![vec![0]], vec![vec![0]], vec![false])]
+    // T = a_0^dagger a_1^dagger a_0 a_1 = -n_0 n_1, so T^2 = -T.
+    #[case(2, (vec![0, 1], vec![0, 1]), (vec![0, 1], vec![0, 1]),
+        vec![vec![0, 1]], vec![vec![0, 1]], vec![true])]
+    // A forced contraction followed by a genuine split produces exactly two rows.
+    #[case(2, (vec![0], vec![0, 1]), (vec![0, 1], vec![]),
+        vec![vec![0], vec![0, 1]], vec![vec![], vec![1]], vec![true, false])]
+    // Count forced contractions across storage words.
+    #[case(66, (vec![0, 65], vec![0, 65]), (vec![0, 65], vec![0, 65]),
+        vec![vec![0, 65]], vec![vec![0, 65]], vec![true])]
+    // Seventy forced contractions need one row, not a shift by seventy bits.
+    #[case(70, ((0..70).collect(), (0..70).collect()),
+        ((0..70).collect(), (0..70).collect()),
+        vec![(0..70).collect()], vec![(0..70).collect()], vec![true])]
+    // Empty operator products remain identity on either side.
+    #[case(2, (vec![], vec![]), (vec![0], vec![1]),
+        vec![vec![0]], vec![vec![1]], vec![false])]
+    #[case(2, (vec![0], vec![1]), (vec![], vec![]),
+        vec![vec![0]], vec![vec![1]], vec![false])]
     // creation ops only
     #[case(6, (vec![0, 1], vec![]), (vec![2, 3], vec![]),
         vec![vec![0, 1, 2, 3]], vec![vec![]], vec![false])]
@@ -439,13 +524,13 @@ mod tests {
     #[case(6, (vec![], vec![0, 3]), (vec![0, 1, 3], vec![]),
         vec![vec![1], vec![1, 3], vec![0, 1], vec![0, 1, 3]],
         vec![vec![], vec![3], vec![0], vec![0, 3]],
-        vec![false, true, true, true])]
+        vec![false, true, false, false])]
     #[case(6, (vec![], vec![2, 3]), (vec![], vec![2, 1]),
         vec![], vec![], vec![])] // destruction criterion met with F2 F2 product
     #[case(10, (vec![4, 7], vec![0, 3, 4, 5]), (vec![0, 1, 3], vec![2, 6]),
         vec![vec![1, 4, 7], vec![1, 3, 4, 7], vec![0, 1, 4, 7], vec![0, 1, 3, 4, 7]],
         vec![vec![2, 4, 5, 6], vec![2, 3, 4, 5, 6], vec![0, 2, 4, 5, 6], vec![0, 2, 3, 4, 5, 6]],
-        vec![false, false, true, false])]
+        vec![false, false, false, true])]
     fn test_fermion_products(
         #[case] n_mode: usize,
         #[case] lhs: (Vec<usize>, Vec<usize>),

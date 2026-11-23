@@ -6,17 +6,26 @@ import zixy.fermion.operator.normal as zfon
 import zixy.fermion.state as zfs
 
 
-@pytest.mark.parametrize(
-    "term_type", [zfon.SignTerm, zfon.RealTerm, zfon.ComplexTerm, zfon.SymbolicTerm]
+product_term_types = pytest.mark.parametrize(
+    ("term_type", "expected_term_type"),
+    [
+        (zfon.SignTerm, zfon.RealTerm),
+        (zfon.RealTerm, zfon.RealTerm),
+        (zfon.ComplexTerm, zfon.ComplexTerm),
+        (zfon.SymbolicTerm, zfon.SymbolicTerm),
+    ],
 )
+
+
+@product_term_types
 @pytest.mark.parametrize(("source", "sign"), [("F0^ F0", 1), ("F0^ F1^ F0 F1", -1)])
-def test_term_squares_have_no_unused_identity_rows(term_type, source, sign):
+def test_term_squares_have_no_unused_identity_rows(term_type, expected_term_type, source, sign):
     term = term_type(2, source)
 
     product = term * term
 
     assert len(product) == 1
-    assert next(iter(product)) == term_type(2, (source, sign))
+    assert next(iter(product)) == expected_term_type(2, (source, sign))
 
 
 @pytest.mark.parametrize(
@@ -33,21 +42,17 @@ def test_sum_squares_have_no_unused_identity_rows(sum_type, coefficient, source,
     assert next(iter(product)) == expected
 
 
-@pytest.mark.parametrize(
-    "term_type", [zfon.SignTerm, zfon.RealTerm, zfon.ComplexTerm, zfon.SymbolicTerm]
-)
-def test_contraction_preserves_legitimate_identity(term_type):
+@product_term_types
+def test_contraction_preserves_legitimate_identity(term_type, expected_term_type):
     annihilation = term_type(2, "F0")
     creation = term_type(2, "F0^")
 
     product = annihilation * creation
 
-    assert list(product) == [term_type(2, ""), term_type(2, ("F0^ F0", -1))]
+    assert list(product) == [expected_term_type(2, ""), expected_term_type(2, ("F0^ F0", -1))]
 
 
-@pytest.mark.parametrize(
-    "term_type", [zfon.SignTerm, zfon.RealTerm, zfon.ComplexTerm, zfon.SymbolicTerm]
-)
+@product_term_types
 @pytest.mark.parametrize(
     ("lhs", "rhs", "expected", "sign"),
     [
@@ -59,11 +64,11 @@ def test_contraction_preserves_legitimate_identity(term_type):
         ("F0^ F2^ F3", "F1^", "F0^ F1^ F2^ F3", 1),
     ],
 )
-def test_product_insertion_signs(term_type, lhs, rhs, expected, sign):
+def test_product_insertion_signs(term_type, expected_term_type, lhs, rhs, expected, sign):
     product = term_type(4, lhs) * term_type(4, rhs)
 
     assert len(product) == 1
-    assert next(iter(product)) == term_type(4, (expected, sign))
+    assert next(iter(product)) == expected_term_type(4, (expected, sign))
 
 
 @pytest.mark.parametrize(

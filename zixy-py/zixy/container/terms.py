@@ -1040,7 +1040,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             raise TypeError("String storage does not match its factory")
         if not isinstance(terms._data.coeffs, self.terms_type.term_type.coeffs_type):
             raise TypeError("Coefficient storage does not match its factory")
-        self._bind(terms._new()._impl, terms.strings_type._set_type.map_type())
+        self._bind(terms._new()._impl, terms.strings_type._set_type().map_type())
         if isinstance(terms._impl.coeffs, RealCoeffs | ComplexCoeffs):
             self._collect_terms(terms, sum_duplicates=False)
         else:
@@ -1135,7 +1135,7 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             raise TypeError("Coefficient storage does not match its factory")
         assert len(data) == len(map_)
         self._impl = data
-        string_set_type = type(data.strings)._set_type
+        string_set_type = data.strings._set_type()
         self._string_set = string_set_type._create(data.strings._impl, map_=map_)
         self._working_term = self.terms_type._view(data, slice(None)).new_term()
 

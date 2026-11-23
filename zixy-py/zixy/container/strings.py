@@ -533,7 +533,11 @@ class Strings[ImplT: ImplArray, SpecT](
     string_type: type[String[ImplT, SpecT]]
 
     _impl: ImplT
-    _set_type: type[StringSet[ImplT, SpecT]] = StringSet
+
+    @classmethod
+    @abstractmethod
+    def _set_type(cls) -> type[StringSet[ImplT, SpecT]]:
+        """Return the string set class paired with this collection."""
 
     @classmethod
     @abstractmethod
@@ -558,7 +562,7 @@ class Strings[ImplT: ImplArray, SpecT](
                 The default value of ``slice(None)`` indicates that ``self`` is taken to be an
                 owning view on all elements of ``impl``.
         """
-        assert self._set_type.strings_type is type(self)
+        assert self._set_type().strings_type is type(self)
         assert isinstance(impl, self.string_type.impl_type), type(impl)
         self._impl = impl
         self._slice = indexer
@@ -774,7 +778,7 @@ class Strings[ImplT: ImplArray, SpecT](
 
     def filter_unique(self) -> Self:
         """Create a new collection containing the unique strings of ``self``."""
-        unique = self._set_type.from_strings(self)
+        unique = self._set_type().from_strings(self)
         return self._create(unique._impl.strings_clone(None))
 
     def iter_filter_populated[StringT: String[Any, Any]](

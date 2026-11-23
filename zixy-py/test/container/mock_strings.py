@@ -234,6 +234,10 @@ class String(BaseString[StringsImplArray, StringSpecT]):
 class Strings(BaseStrings[StringsImplArray, StringSpecT]):
     string_type = String
 
+    @classmethod
+    def _set_type(cls) -> type[StringSet]:
+        return StringSet
+
     def to_dict(self) -> SerializedContainer:
         """Return a JSON-serializable dictionary representation of ``self``.
 
@@ -299,6 +303,3 @@ class StringSet(BaseStringSet[StringsImplArray, StringSpecT]):
 
     def __init__(self):
         super().__init__(StringsImplArray())
-
-
-Strings._set_type = StringSet

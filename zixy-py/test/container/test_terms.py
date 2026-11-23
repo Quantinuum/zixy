@@ -267,7 +267,6 @@ def test_sign_terms():
 
     class MockTermSet(TermSet[StringsImplArray, str, Sign]):
         terms_type = MockTerms
-        _set_type = StringSet
 
     terms = MockTerms(TermData(Strings(0), SignCoeffs(size=0)))
     assert (len(terms), len(terms.strings), len(terms.coeffs)) == (0,) * 3

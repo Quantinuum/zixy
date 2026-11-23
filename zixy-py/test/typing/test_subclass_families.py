@@ -14,12 +14,12 @@ import zixy.qubit.state as zqs
 
 def test_extend_preserves_subclass_types() -> None:
     class CustomStrings(zqo.Strings):
-        _set_type: type[CustomStringSet]
+        @classmethod
+        def _set_type(cls) -> type[CustomStringSet]:
+            return CustomStringSet
 
     class CustomStringSet(zqo.StringSet):
         strings_type = CustomStrings
-
-    CustomStrings._set_type = CustomStringSet
 
     class CustomTerms(zqo.RealTerms):
         pass
@@ -72,15 +72,16 @@ def test_qubit_operator_overridden_factories() -> None:
 
     class CustomStrings(zqo.Strings):
         string_type = CustomString
-        _set_type: type[CustomStringSet]
+
+        @classmethod
+        def _set_type(cls) -> type[CustomStringSet]:
+            return CustomStringSet
 
         def custom_marker(self) -> str:
             return "custom strings"
 
     class CustomStringSet(zqo.StringSet):
         strings_type = CustomStrings
-
-    CustomStrings._set_type = CustomStringSet
 
     class CustomTerm(zqo.RealTerm):
         strings_type = CustomStrings
@@ -234,15 +235,16 @@ def test_qubit_state_overridden_factories() -> None:
 
     class CustomStrings(zqs.Strings):
         string_type = CustomString
-        _set_type: type[CustomStringSet]
+
+        @classmethod
+        def _set_type(cls) -> type[CustomStringSet]:
+            return CustomStringSet
 
         def custom_marker(self) -> str:
             return "custom strings"
 
     class CustomStringSet(zqs.StringSet):
         strings_type = CustomStrings
-
-    CustomStrings._set_type = CustomStringSet
 
     class CustomTerm(zqs.RealTerm):
         strings_type = CustomStrings
@@ -394,15 +396,16 @@ def test_fermion_general_overridden_factories() -> None:
 
     class CustomStrings(zfog.Strings):
         string_type = CustomString
-        _set_type: type[CustomStringSet]
+
+        @classmethod
+        def _set_type(cls) -> type[CustomStringSet]:
+            return CustomStringSet
 
         def custom_marker(self) -> str:
             return "custom strings"
 
     class CustomStringSet(zfog.StringSet):
         strings_type = CustomStrings
-
-    CustomStrings._set_type = CustomStringSet
 
     class CustomTerm(zfog.RealTerm):
         strings_type = CustomStrings
@@ -554,15 +557,16 @@ def test_fermion_normal_overridden_factories() -> None:
 
     class CustomStrings(zfon.Strings):
         string_type = CustomString
-        _set_type: type[CustomStringSet]
+
+        @classmethod
+        def _set_type(cls) -> type[CustomStringSet]:
+            return CustomStringSet
 
         def custom_marker(self) -> str:
             return "custom strings"
 
     class CustomStringSet(zfon.StringSet):
         strings_type = CustomStrings
-
-    CustomStrings._set_type = CustomStringSet
 
     class CustomTerm(zfon.RealTerm):
         strings_type = CustomStrings
@@ -714,15 +718,16 @@ def test_fermion_state_overridden_factories() -> None:
 
     class CustomStrings(zfs.Strings):
         string_type = CustomString
-        _set_type: type[CustomStringSet]
+
+        @classmethod
+        def _set_type(cls) -> type[CustomStringSet]:
+            return CustomStringSet
 
         def custom_marker(self) -> str:
             return "custom strings"
 
     class CustomStringSet(zfs.StringSet):
         strings_type = CustomStrings
-
-    CustomStrings._set_type = CustomStringSet
 
     class CustomTerm(zfs.RealTerm):
         strings_type = CustomStrings
@@ -851,9 +856,12 @@ def test_non_identity_filters_dispatch_to_overrides() -> None:
 
     class CustomStrings(zqo.Strings):
         string_type = CustomString
-        _set_type: type[CustomStringSet]
         lazy_calls = 0
         eager_calls = 0
+
+        @classmethod
+        def _set_type(cls) -> type[CustomStringSet]:
+            return CustomStringSet
 
         def iter_filter_populated(self) -> Iterator[CustomString]:
             self.lazy_calls += 1
@@ -866,7 +874,6 @@ def test_non_identity_filters_dispatch_to_overrides() -> None:
     class CustomStringSet(zqo.StringSet):
         strings_type = CustomStrings
 
-    CustomStrings._set_type = CustomStringSet
     strings = CustomStrings.from_iterable(["X0", "Y0", "Z0"], 1)
     lazy = strings.iter_filter_non_identity()
     eager = strings.filter_non_identity()

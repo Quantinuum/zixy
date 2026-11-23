@@ -211,8 +211,12 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
 
     string_type = String
 
-    _set_type: type[StringSet]
     _springs_type = BinarySprings
+
+    @classmethod
+    def _set_type(cls) -> type[StringSet]:
+        """Return the string set class paired with this collection."""
+        return StringSet
 
     def to_dict(self) -> SerializedContainer:
         """Return a JSON-serializable dictionary representation of ``self``.
@@ -295,6 +299,3 @@ class StringSet(StringSetBase[ImplT, SpecT, ElemT]):
         data["space"] = {"qubits": self._impl.qubits.get_inds()}
         data["strings"] = [string.get_list() for string in self]
         return data
-
-
-Strings._set_type = StringSet

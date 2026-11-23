@@ -834,7 +834,7 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
     """
 
     coeff_type: type[C]
-    coeffs_type: type[_zixy.BaseVec]
+    impl_type: type[_zixy.BaseVec]
 
     _impl: _zixy.BaseVec
 
@@ -849,7 +849,7 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
         """
         if size < 0:
             raise ValueError("size must be non-negative.")
-        self._bind(self.coeffs_type(size), slice(None))
+        self._bind(self.impl_type(size), slice(None))
 
     def _bind(self, data: _zixy.BaseVec, indexer: slice) -> None:
         """Install coefficient storage and its selection without allocating or copying.
@@ -858,7 +858,7 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
             data: Coefficient storage matching the concrete vector factory.
             indexer: Slice selecting the coefficients; ``slice(None)`` denotes ownership.
         """
-        assert type(data) is self.coeffs_type, (type(data), self.coeffs_type)
+        assert type(data) is self.impl_type, (type(data), self.impl_type)
         self._impl = data
         self._slice = indexer
 
@@ -1097,7 +1097,7 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
 
     def _new(self) -> Self:
         """Create an empty instance with the same type and configuration."""
-        return self._create(self.coeffs_type(0))
+        return self._create(self.impl_type(0))
 
     def reordered(self, inds: Sequence[int]) -> Self:
         """Get a new instance with the elements of ``self`` in a new order.
@@ -1158,11 +1158,7 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
         Note:
             This method operates in-place.
         """
-        if (
-            isinstance(source, Coeffs)
-            and source.coeffs_type is self.coeffs_type
-            and source.is_owning()
-        ):
+        if isinstance(source, Coeffs) and source.impl_type is self.impl_type and source.is_owning():
             if self._impl.same_as(source._impl):
                 self._impl.extend_internal()
             else:
@@ -1216,9 +1212,9 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
         # Parse the string
         out = cls()
         if not string:
-            out._impl = cls.coeffs_type(0)
+            out._impl = cls.impl_type(0)
         else:
-            out._impl = cls.coeffs_type.parse(string)
+            out._impl = cls.impl_type.parse(string)
 
         return out
 
@@ -1334,7 +1330,7 @@ class RootOfUnityCoeffs[C: (float, complex, Sign, ComplexSign, Expr)](Coeffs[C])
     contiguous Rust-bound data object, or a view on a slice of the elements in another collection.
     """
 
-    coeffs_type: type[_zixy.SignVec | _zixy.ComplexSignVec]
+    impl_type: type[_zixy.SignVec | _zixy.ComplexSignVec]
 
 
 class SignCoeffs(RootOfUnityCoeffs[Sign]):
@@ -1345,7 +1341,7 @@ class SignCoeffs(RootOfUnityCoeffs[Sign]):
     """
 
     coeff_type = Sign
-    coeffs_type = _zixy.SignVec
+    impl_type = _zixy.SignVec
 
     _impl: _zixy.SignVec
 
@@ -1399,7 +1395,7 @@ class ComplexSignCoeffs(RootOfUnityCoeffs[ComplexSign]):
     """
 
     coeff_type = ComplexSign
-    coeffs_type = _zixy.ComplexSignVec
+    impl_type = _zixy.ComplexSignVec
 
     _impl: _zixy.ComplexSignVec
 
@@ -1454,7 +1450,7 @@ class NumericalCoeffs[C: (float, complex)](Coeffs[C]):
     contiguous Rust-bound data object, or a view on a slice of the elements in another collection.
     """
 
-    coeffs_type: type[_zixy.RealVec | _zixy.ComplexVec]
+    impl_type: type[_zixy.RealVec | _zixy.ComplexVec]
     _impl: _zixy.RealVec | _zixy.ComplexVec
 
     def clone(self) -> Self:
@@ -1492,7 +1488,7 @@ class NumericalCoeffs[C: (float, complex)](Coeffs[C]):
             values = np.asarray(source, dtype=cls.coeff_type)
         else:
             values = np.fromiter(source, dtype=cls.coeff_type)
-        return cls._create(cls.coeffs_type.from_array(values))
+        return cls._create(cls.impl_type.from_array(values))
 
 
 def _real_from_scalar(value: float | complex) -> float:
@@ -1512,7 +1508,7 @@ class RealCoeffs(NumericalCoeffs[float]):
     """
 
     coeff_type = float
-    coeffs_type = _zixy.RealVec
+    impl_type = _zixy.RealVec
 
     _impl: _zixy.RealVec
 
@@ -1589,7 +1585,7 @@ class ComplexCoeffs(NumericalCoeffs[complex]):
     """
 
     coeff_type = complex
-    coeffs_type = _zixy.ComplexVec
+    impl_type = _zixy.ComplexVec
 
     _impl: _zixy.ComplexVec
 
@@ -1819,7 +1815,7 @@ class SymbolicCoeffs(Coeffs[Expr]):
     """
 
     coeff_type = Expr
-    coeffs_type = ExprListWrapper
+    impl_type = ExprListWrapper
 
     _impl: ExprListWrapper
 

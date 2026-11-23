@@ -86,17 +86,27 @@ type NumericState = zfs.RealTermSum | zfs.ComplexTermSum
 type State = NumericState | zfs.SymbolicTermSum
 
 
+def _new_product_sum(base_coeff: Coeff, modes: Modes) -> TermSum[Any]:
+    """Create an empty normal-ordered sum for the product coefficient."""
+    if isinstance(base_coeff, Sign | int | float):
+        return RealTermSum(modes)
+    if isinstance(base_coeff, ComplexSign | complex):
+        return ComplexTermSum(modes)
+    if isinstance(base_coeff, Expr):
+        return SymbolicTermSum(modes)
+    raise TypeError(f"Unsupported coefficient type {type(base_coeff)}.")
+
+
 def _term_sum_from_product(
-    term_type: type[Term[Any]],
     modes: Modes,
     lhs: String,
     rhs: String,
     base_coeff: Any,
 ) -> TermSum[Any]:
     """Compute the product of two normal-ordered strings."""
-    out = term_type._term_sum_type(modes)
+    out = _new_product_sum(base_coeff, modes)
     impl, signs = lhs._impl.string_mul(lhs.index, rhs._impl, rhs.index)
-    strings = term_type.strings_type._create(impl)
+    strings = Strings._create(impl)
     for i in range(len(impl)):
         coeff = typesafe_mul(base_coeff, Sign(signs[i]))
         term = out.terms_type.term_type.from_string(strings[i], coeff)
@@ -113,13 +123,9 @@ def _mul[
         scalar_product = lhs.coeff * rhs
         return get_term_type(type(scalar_product)).from_string(lhs.string, scalar_product)
     if isinstance(rhs, String):
-        return _term_sum_from_product(
-            get_term_type(type(lhs.coeff)), lhs.modes, lhs.string, rhs, lhs.coeff
-        )
+        return _term_sum_from_product(lhs.modes, lhs.string, rhs, lhs.coeff)
     base_coeff = lhs.coeff * rhs.coeff
-    return _term_sum_from_product(
-        get_term_type(type(base_coeff)), lhs.modes, lhs.string, rhs.string, base_coeff
-    )
+    return _term_sum_from_product(lhs.modes, lhs.string, rhs.string, base_coeff)
 
 
 def _rmul[
@@ -130,13 +136,9 @@ def _rmul[
     if isinstance(lhs, Coeff):
         return _mul(rhs, lhs)
     if isinstance(lhs, String):
-        return _term_sum_from_product(
-            get_term_type(type(rhs.coeff)), rhs.modes, lhs, rhs.string, rhs.coeff
-        )
+        return _term_sum_from_product(rhs.modes, lhs, rhs.string, rhs.coeff)
     base_coeff = lhs.coeff * rhs.coeff
-    return _term_sum_from_product(
-        get_term_type(type(base_coeff)), rhs.modes, lhs.string, rhs.string, base_coeff
-    )
+    return _term_sum_from_product(rhs.modes, lhs.string, rhs.string, base_coeff)
 
 
 class Term[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerm[ImplT, SpecT, C, ElemT]):
@@ -149,7 +151,6 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerm[ImplT, Spe
 
     strings_type = Strings
     coeff_type: type[C]
-    _term_sum_type: type[TermSum[Any]]
 
     def dagger(self) -> None:
         """Take the adjoint of ``self`` in-place, including the fermionic sign."""
@@ -1351,13 +1352,3 @@ def get_term_type[C: (float, complex, Sign, ComplexSign, Expr)](
         return SymbolicTerm
     else:
         raise TypeError(f"Unsupported coefficient type {coeff_type}.")
-
-
-for _term_type, _sum_type in (
-    (SignTerm, RealTermSum),
-    (ComplexSignTerm, ComplexTermSum),
-    (RealTerm, RealTermSum),
-    (ComplexTerm, ComplexTermSum),
-    (SymbolicTerm, SymbolicTermSum),
-):
-    setattr(_term_type, "_term_sum_type", _sum_type)

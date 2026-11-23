@@ -73,7 +73,10 @@ pub trait AsBitMatrix: WordIters {
 
     /// Assign the row at index `i_row` a value from a vector of bit values with bounds checking.
     fn assign_vec(&mut self, i_row: usize, value: Vec<bool>) -> Result<(), OutOfBounds> {
-        self.check_bounds(i_row, value.len().saturating_sub(1))?;
+        self.check_row_bounds(i_row)?;
+        if let Some(last) = value.len().checked_sub(1) {
+            self.check_bit_bounds(last)?;
+        }
         self.assign_vec_unchecked(i_row, value);
         Ok(())
     }
@@ -88,7 +91,10 @@ pub trait AsBitMatrix: WordIters {
 
     /// Assign the row at index `i_row` a value from a vector of set bit indices with bounds checking.
     fn assign_set(&mut self, i_row: usize, value: HashSet<usize>) -> Result<(), OutOfBounds> {
-        self.check_bounds(i_row, value.iter().max().copied().unwrap_or_default())?;
+        self.check_row_bounds(i_row)?;
+        if let Some(&last) = value.iter().max() {
+            self.check_bit_bounds(last)?;
+        }
         self.assign_set_unchecked(i_row, value);
         Ok(())
     }
@@ -762,6 +768,32 @@ mod tests {
             v.get_elem_mut_ref(0).set_bit_unchecked(i, true);
             assert!(v.get_elem_ref(0).get_bit_unchecked(i));
         }
+    }
+
+    #[rstest]
+    #[case(0)]
+    #[case(1)]
+    #[case(64)]
+    #[case(65)]
+    fn test_empty_assignments_validate_rows_without_requiring_bits(#[case] n_bit: usize) {
+        let mut matrix = BitMatrix::new(n_bit);
+        matrix.resize(1);
+        if n_bit > 0 {
+            matrix.set_bit(0, n_bit - 1, true).unwrap();
+        }
+        matrix.assign_vec(0, vec![]).unwrap();
+        assert!(matrix.get_elem_ref(0).is_clear());
+        if n_bit > 0 {
+            matrix.set_bit(0, n_bit - 1, true).unwrap();
+        }
+        matrix.assign_set(0, HashSet::new()).unwrap();
+        assert!(matrix.get_elem_ref(0).is_clear());
+
+        assert!(matrix.assign_vec(1, vec![]).is_err());
+        assert!(matrix.assign_set(1, HashSet::new()).is_err());
+        assert!(matrix.assign_vec(0, vec![false; n_bit + 1]).is_err());
+        assert!(matrix.assign_set(0, HashSet::from([n_bit])).is_err());
+        assert!(matrix.get_elem_ref(0).is_clear());
     }
 
     #[rstest]

@@ -5,7 +5,6 @@ import pytest
 import zixy.fermion.operator.normal as zfon
 import zixy.fermion.state as zfs
 
-
 product_term_types = pytest.mark.parametrize(
     ("term_type", "expected_term_type"),
     [

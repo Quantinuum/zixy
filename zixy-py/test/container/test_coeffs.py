@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 from sympy import Expr, sympify
 
@@ -1178,6 +1179,10 @@ def test_coeffs_power(extension_coeffs, exponent):
 
 @pytest.mark.parametrize("value", [Sign(True), ComplexSign(1), RealCoeffs()])
 def test_power_requires_integer(value):
-    for exponent in (True, 1.5):
+    assert value**True == value**1
+    assert value**False == value**0
+    for exponent in (np.int64(1), np.uint32(2)):
+        assert value**exponent == value ** int(exponent)
+    for exponent in (0.0, 1.0, 1.5, np.float32(2), np.float64(1)):
         with pytest.raises(TypeError):
             value**exponent

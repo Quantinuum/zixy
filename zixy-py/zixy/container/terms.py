@@ -162,16 +162,10 @@ def _coeffs_from_str[C: (float, complex, Sign, ComplexSign, Expr)](
     return coeffs
 
 
-def _check_power(exponent: int) -> None:
-    """Require a nonnegative integer exponent for term multiplication."""
-    if not isinstance(exponent, int) or isinstance(exponent, bool):
-        raise TypeError(f"Term powers require a nonnegative integer exponent, got {exponent!r}.")
-    if exponent < 0:
-        raise ValueError(f"Term powers require a nonnegative integer exponent, got {exponent}.")
-
-
 def _positive_power[T](base: T, exponent: int, multiply: Callable[[T, T], T]) -> T:
     """Compute a validated positive power by repeated squaring."""
+    if exponent < 0:
+        raise ValueError(f"Term powers require a nonnegative integer exponent, got {exponent}.")
     result = base
     for bit in bin(exponent)[3:]:
         result = multiply(result, result)

@@ -681,6 +681,8 @@ def test_term_powers(term_type, product_type, coeff):
     assert term**1 == term
     assert term**2 == product_type.from_iterable([("", coeff**2)], 1)
     assert term**3 == product_type.from_iterable([("", coeff**3)], 1)
+    with pytest.raises(ValueError, match="nonnegative integer exponent"):
+        term**-1
     annihilation = term_type(1, ("F0", coeff))
     assert len((annihilation**2).filter_nonzero()) == 0
     assert len((annihilation**3).filter_nonzero()) == 0

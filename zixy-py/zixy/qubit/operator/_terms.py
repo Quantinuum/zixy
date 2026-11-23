@@ -41,6 +41,7 @@ from zixy.container.coeffs import (
     Sign,
     SignCoeffs,
     SymbolicCoeffs,
+    _integer_exponent,
     get_coeffs_type,
     normalize_scalar,
     typesafe_mul,
@@ -51,7 +52,6 @@ from zixy.container.terms import (
     NumericTermSum,
     SymbolicTermSum as SymbolicTermSumBase,
     TermSpecT,
-    _check_power,
     _positive_power,
 )
 from zixy.qubit._strings import _check_qubits_compatibility
@@ -534,9 +534,9 @@ class SignTerm(Term[Sign]):
         lhs = normalize_scalar(lhs)
         return _rmul(self, lhs)
 
-    def __pow__(self, exponent: int) -> Self | ComplexSignTerm:
+    def __pow__(self, exponent: int | np.integer[Any]) -> Self | ComplexSignTerm:
         """Return the operator raised to a nonnegative integer power by multiplication."""
-        _check_power(exponent)
+        exponent = _integer_exponent(exponent)
         if exponent == 0:
             return self._identity()
         if exponent == 1:
@@ -642,9 +642,9 @@ class ComplexSignTerm(Term[ComplexSign]):
         lhs = normalize_scalar(lhs)
         return _rmul(self, lhs)
 
-    def __pow__(self, exponent: int) -> ComplexSignTerm:
+    def __pow__(self, exponent: int | np.integer[Any]) -> ComplexSignTerm:
         """Return the operator raised to a nonnegative integer power by multiplication."""
-        _check_power(exponent)
+        exponent = _integer_exponent(exponent)
         if exponent == 0:
             return self._identity()
         if exponent == 1:
@@ -751,9 +751,9 @@ class RealTerm(Term[float]):
         lhs = normalize_scalar(lhs)
         return _rmul(self, lhs)
 
-    def __pow__(self, exponent: int) -> Self | ComplexTerm:
+    def __pow__(self, exponent: int | np.integer[Any]) -> Self | ComplexTerm:
         """Return the operator raised to a nonnegative integer power by multiplication."""
-        _check_power(exponent)
+        exponent = _integer_exponent(exponent)
         if exponent == 0:
             return self._identity()
         if exponent == 1:
@@ -867,9 +867,9 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         )
         return out
 
-    def __pow__(self, exponent: int) -> Self | ComplexTermSum:
+    def __pow__(self, exponent: int | np.integer[Any]) -> Self | ComplexTermSum:
         """Return the operator raised to a nonnegative integer power by multiplication."""
-        _check_power(exponent)
+        exponent = _integer_exponent(exponent)
         if exponent == 0:
             return self._identity()
         if exponent == 1:
@@ -1122,9 +1122,9 @@ class ComplexTerm(Term[complex]):
         lhs = normalize_scalar(lhs)
         return _rmul(self, lhs)
 
-    def __pow__(self, exponent: int) -> ComplexTerm:
+    def __pow__(self, exponent: int | np.integer[Any]) -> ComplexTerm:
         """Return the operator raised to a nonnegative integer power by multiplication."""
-        _check_power(exponent)
+        exponent = _integer_exponent(exponent)
         if exponent == 0:
             return self._identity()
         if exponent == 1:
@@ -1249,9 +1249,9 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         )
         return out
 
-    def __pow__(self, exponent: int) -> ComplexTermSum:
+    def __pow__(self, exponent: int | np.integer[Any]) -> ComplexTermSum:
         """Return the operator raised to a nonnegative integer power by multiplication."""
-        _check_power(exponent)
+        exponent = _integer_exponent(exponent)
         if exponent == 0:
             return self._identity()
         if exponent == 1:
@@ -1443,9 +1443,9 @@ class SymbolicTerm(Term[Expr]):
         lhs = normalize_scalar(lhs)
         return _rmul(self, lhs)
 
-    def __pow__(self, exponent: int) -> SymbolicTerm:
+    def __pow__(self, exponent: int | np.integer[Any]) -> SymbolicTerm:
         """Return the operator raised to a nonnegative integer power by multiplication."""
-        _check_power(exponent)
+        exponent = _integer_exponent(exponent)
         if exponent == 0:
             return self._identity()
         if exponent == 1:
@@ -1663,9 +1663,9 @@ class SymbolicTermSum(SymbolicTermSumBase[QubitPauliArray, StringSpec], TermSum[
                 out += product
         return out
 
-    def __pow__(self, exponent: int) -> SymbolicTermSum:
+    def __pow__(self, exponent: int | np.integer[Any]) -> SymbolicTermSum:
         """Return the operator raised to a nonnegative integer power by multiplication."""
-        _check_power(exponent)
+        exponent = _integer_exponent(exponent)
         if exponent == 0:
             return self._identity()
         if exponent == 1:

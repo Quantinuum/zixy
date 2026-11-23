@@ -79,6 +79,15 @@ def normalize_scalar[T](value: T) -> T | int | float | complex:
     return value
 
 
+def _integer_exponent(exponent: int | np.integer[Any]) -> int:
+    """Return the integer value of a power exponent."""
+    if isinstance(exponent, int):
+        return exponent
+    if isinstance(exponent, np.integer) and exponent.dtype.kind in {"i", "u"}:
+        return int(exponent)
+    raise TypeError(f"Powers require an integer exponent, got {exponent!r}.")
+
+
 def _imul_factor_error(lhs: Any, rhs: Any, factor: Any) -> ValueError:
     """Get an exception for an invalid in-place multiplication due to the resulting factor."""
     return ValueError(
@@ -99,12 +108,6 @@ def _convert_error(source: Any, t: type) -> ValueError:
     return ValueError(
         f"Cannot represent coefficient value {source} of type {type(source)} as type {t}"
     )
-
-
-def _check_power(exponent: int) -> None:
-    """Require an integer exponent for algebraic powers."""
-    if not isinstance(exponent, int) or isinstance(exponent, bool):
-        raise TypeError(f"Coefficient powers require an integer exponent, got {exponent!r}.")
 
 
 class RootOfUnity(Representable, ABC):
@@ -210,9 +213,9 @@ class Sign(RootOfUnity):
         """
         return self * other
 
-    def __pow__(self, exponent: int) -> Self:
+    def __pow__(self, exponent: int | np.integer[Any]) -> Self:
         """Return this sign raised to an integer power."""
-        _check_power(exponent)
+        exponent = _integer_exponent(exponent)
         return type(self)(self.phase and exponent % 2)
 
     def __imul__(self, rhs: Coeff) -> Self:
@@ -444,9 +447,9 @@ class ComplexSign(RootOfUnity):
         """
         return self * other
 
-    def __pow__(self, exponent: int) -> Self:
+    def __pow__(self, exponent: int | np.integer[Any]) -> Self:
         """Return this sign raised to an integer power."""
-        _check_power(exponent)
+        exponent = _integer_exponent(exponent)
         return type(self)(self.phase * exponent)
 
     def __imul__(self, rhs: Coeff) -> Self:  # type: ignore[misc]
@@ -1080,9 +1083,9 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
                 self._set_scalar(i, typesafe_mul(self[i], c))
         return self
 
-    def __pow__(self, exponent: int) -> Self:
+    def __pow__(self, exponent: int | np.integer[Any]) -> Self:
         """Return a new collection with each coefficient raised to an integer power."""
-        _check_power(exponent)
+        exponent = _integer_exponent(exponent)
         out = self._new()
         for coeff in self:
             out.append(coeff**exponent)

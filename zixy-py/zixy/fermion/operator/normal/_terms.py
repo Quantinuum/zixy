@@ -38,6 +38,7 @@ from zixy.container.coeffs import (
     SignCoeffs,
     SymbolicCoeffs,
     normalize_scalar,
+    _integer_exponent,
     typesafe_mul,
 )
 from zixy.container.data import TermData
@@ -46,7 +47,6 @@ from zixy.container.terms import (
     NumericTermSum,
     SymbolicTermSum as SymbolicTermSumBase,
     TermSpecT,
-    _check_power,
     _positive_power,
 )
 from zixy.fermion._strings import _check_modes_compatibility
@@ -64,6 +64,7 @@ from zixy.fermion.operator.normal._strings import (
 )
 
 if TYPE_CHECKING:
+    import numpy as np
     from sympy import Symbol
 
     import zixy.fermion.operator.general as zfog
@@ -295,9 +296,9 @@ class SignTerm(Term[Sign]):
             return NotImplemented
         return _rmul(self, lhs)
 
-    def __pow__(self, exponent: int) -> Self | RealTermSum:
+    def __pow__(self, exponent: int | np.integer[Any]) -> Self | RealTermSum:
         """Return the operator raised to a nonnegative integer power by multiplication."""
-        _check_power(exponent)
+        exponent = _integer_exponent(exponent)
         if exponent == 0:
             return self._identity()
         if exponent == 1:
@@ -411,9 +412,9 @@ class ComplexSignTerm(Term[ComplexSign]):
             return NotImplemented
         return _rmul(self, lhs)
 
-    def __pow__(self, exponent: int) -> Self | ComplexTermSum:
+    def __pow__(self, exponent: int | np.integer[Any]) -> Self | ComplexTermSum:
         """Return the operator raised to a nonnegative integer power by multiplication."""
-        _check_power(exponent)
+        exponent = _integer_exponent(exponent)
         if exponent == 0:
             return self._identity()
         if exponent == 1:
@@ -527,9 +528,9 @@ class RealTerm(Term[float]):
             return NotImplemented
         return _rmul(self, lhs)
 
-    def __pow__(self, exponent: int) -> Self | RealTermSum:
+    def __pow__(self, exponent: int | np.integer[Any]) -> Self | RealTermSum:
         """Return the operator raised to a nonnegative integer power by multiplication."""
-        _check_power(exponent)
+        exponent = _integer_exponent(exponent)
         if exponent == 0:
             return self._identity()
         if exponent == 1:
@@ -603,9 +604,9 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
         data = TermData(Strings._create(impl), RealCoeffs._create(coeffs))
         return RealTermSum._create(data, map_=map_)
 
-    def __pow__(self, exponent: int) -> RealTermSum:
+    def __pow__(self, exponent: int | np.integer[Any]) -> RealTermSum:
         """Return the operator raised to a nonnegative integer power by multiplication."""
-        _check_power(exponent)
+        exponent = _integer_exponent(exponent)
         if exponent == 0:
             return self._identity()
         if exponent == 1:
@@ -834,9 +835,9 @@ class ComplexTerm(Term[complex]):
             return NotImplemented
         return _rmul(self, lhs)
 
-    def __pow__(self, exponent: int) -> Self | ComplexTermSum:
+    def __pow__(self, exponent: int | np.integer[Any]) -> Self | ComplexTermSum:
         """Return the operator raised to a nonnegative integer power by multiplication."""
-        _check_power(exponent)
+        exponent = _integer_exponent(exponent)
         if exponent == 0:
             return self._identity()
         if exponent == 1:
@@ -914,9 +915,9 @@ class ComplexTermSum(
         data = TermData(Strings._create(impl), ComplexCoeffs._create(coeffs))
         return ComplexTermSum._create(data, map_=map_)
 
-    def __pow__(self, exponent: int) -> ComplexTermSum:
+    def __pow__(self, exponent: int | np.integer[Any]) -> ComplexTermSum:
         """Return the operator raised to a nonnegative integer power by multiplication."""
-        _check_power(exponent)
+        exponent = _integer_exponent(exponent)
         if exponent == 0:
             return self._identity()
         if exponent == 1:
@@ -1141,13 +1142,15 @@ class SymbolicTerm(Term[Expr]):
             return NotImplemented
         return _rmul(self, lhs)
 
-    def __pow__(self, exponent: int) -> Self | SymbolicTermSum:
+    def __pow__(self, exponent: int | np.integer[Any]) -> Self | SymbolicTermSum:
         """Return the operator raised to a nonnegative integer power by multiplication."""
-        _check_power(exponent)
+        exponent = _integer_exponent(exponent)
         if exponent == 0:
             return self._identity()
         if exponent == 1:
             return self.clone()
+        if exponent < 0:
+            raise ValueError(f"Term powers require a nonnegative integer exponent, got {exponent}.")
         result = self * self
         for _ in range(2, exponent):
             product = SymbolicTermSum(self.modes)

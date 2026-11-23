@@ -28,7 +28,7 @@ jobs:
           echo "Publishing Rust crate from '${{ env.CRATE_DIR }}' to crates.io..."
           echo "  - event_name: ${{ github.event_name }}"
           echo "  - ref_type: ${{ github.ref_type }}"
-          echo "  - ref: ${{ github.ref }}"
+          echo "  - ref: $GITHUB_REF"
       - name: Authenticate with crates.io
         id: auth
         uses: rust-lang/crates-io-auth-action@v1

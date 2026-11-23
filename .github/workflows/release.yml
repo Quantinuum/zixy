@@ -226,7 +226,7 @@ jobs:
           echo "Based on the following workflow variables, this is a new version tag push:"
           echo "  - event_name: ${{ github.event_name }}"
           echo "  - ref_type: ${{ github.ref_type }}"
-          echo "  - ref: ${{ github.ref }}"
+          echo "  - ref: $GITHUB_REF"
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:

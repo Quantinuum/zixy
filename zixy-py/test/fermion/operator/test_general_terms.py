@@ -436,14 +436,15 @@ def test_complex_term_sum_dagger():
             NormalRealTermSum,
             "F2 F0^ F1^",
             3,
-            "(-1.0, F0^ F1^ F2)",
+            # Two anticommutations preserve the sign.
+            "(1.0, F0^ F1^ F2)",
         ),
         (
             ComplexTermSum,
             NormalComplexTermSum,
             "F2 F0^ F1^",
             3,
-            "((-1+0j), F0^ F1^ F2)",
+            "((1+0j), F0^ F1^ F2)",
         ),
         (
             RealTermSum,

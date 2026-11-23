@@ -1161,7 +1161,7 @@ def test_symbolic_vec():
         assert el == v[i]
 
 
-@pytest.mark.parametrize("exponent", [-3, -2, 1, 2, 3])
+@pytest.mark.parametrize("exponent", [-3, -2, 0, 1, 2, 3])
 def test_coeffs_power(extension_coeffs, exponent):
     view = extension_coeffs[::-1]
     result = view**exponent
@@ -1177,9 +1177,7 @@ def test_coeffs_power(extension_coeffs, exponent):
 
 
 @pytest.mark.parametrize("value", [Sign(True), ComplexSign(1), RealCoeffs()])
-def test_power_requires_nonzero_integer(value):
-    with pytest.raises(ValueError):
-        value**0
+def test_power_requires_integer(value):
     for exponent in (True, 1.5):
         with pytest.raises(TypeError):
             value**exponent

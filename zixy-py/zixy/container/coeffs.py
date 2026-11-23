@@ -102,11 +102,9 @@ def _convert_error(source: Any, t: type) -> ValueError:
 
 
 def _check_power(exponent: int) -> None:
-    """Require a nonzero integer exponent for algebraic powers."""
+    """Require an integer exponent for algebraic powers."""
     if not isinstance(exponent, int) or isinstance(exponent, bool):
-        raise TypeError(f"Coefficient powers require a nonzero integer exponent, got {exponent!r}.")
-    if exponent == 0:
-        raise ValueError(f"Coefficient powers require a nonzero integer exponent, got {exponent}.")
+        raise TypeError(f"Coefficient powers require an integer exponent, got {exponent!r}.")
 
 
 class RootOfUnity(Representable, ABC):
@@ -213,7 +211,7 @@ class Sign(RootOfUnity):
         return self * other
 
     def __pow__(self, exponent: int) -> Self:
-        """Return this sign raised to a nonzero integer power."""
+        """Return this sign raised to an integer power."""
         _check_power(exponent)
         return type(self)(self.phase and exponent % 2)
 
@@ -447,7 +445,7 @@ class ComplexSign(RootOfUnity):
         return self * other
 
     def __pow__(self, exponent: int) -> Self:
-        """Return this sign raised to a nonzero integer power."""
+        """Return this sign raised to an integer power."""
         _check_power(exponent)
         return type(self)(self.phase * exponent)
 
@@ -1083,7 +1081,7 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
         return self
 
     def __pow__(self, exponent: int) -> Self:
-        """Return a new collection with each coefficient raised to a nonzero integer power."""
+        """Return a new collection with each coefficient raised to an integer power."""
         _check_power(exponent)
         out = self._new()
         for coeff in self:

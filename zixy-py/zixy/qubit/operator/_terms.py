@@ -535,8 +535,10 @@ class SignTerm(Term[Sign]):
         return _rmul(self, lhs)
 
     def __pow__(self, exponent: int) -> Self | ComplexSignTerm:
-        """Return the operator raised to a positive integer power by multiplication."""
+        """Return the operator raised to a nonnegative integer power by multiplication."""
         _check_power(exponent)
+        if exponent == 0:
+            return self._identity()
         if exponent == 1:
             return self.clone()
         return _positive_power(self.into(ComplexSignTerm), exponent, lambda lhs, rhs: lhs * rhs)
@@ -641,8 +643,10 @@ class ComplexSignTerm(Term[ComplexSign]):
         return _rmul(self, lhs)
 
     def __pow__(self, exponent: int) -> ComplexSignTerm:
-        """Return the operator raised to a positive integer power by multiplication."""
+        """Return the operator raised to a nonnegative integer power by multiplication."""
         _check_power(exponent)
+        if exponent == 0:
+            return self._identity()
         if exponent == 1:
             return self.clone()
         return _positive_power(self, exponent, ComplexSignTerm.__mul__)
@@ -748,8 +752,10 @@ class RealTerm(Term[float]):
         return _rmul(self, lhs)
 
     def __pow__(self, exponent: int) -> Self | ComplexTerm:
-        """Return the operator raised to a positive integer power by multiplication."""
+        """Return the operator raised to a nonnegative integer power by multiplication."""
         _check_power(exponent)
+        if exponent == 0:
+            return self._identity()
         if exponent == 1:
             return self.clone()
         return _positive_power(self.into(ComplexTerm), exponent, lambda lhs, rhs: lhs * rhs)
@@ -862,8 +868,10 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         return out
 
     def __pow__(self, exponent: int) -> Self | ComplexTermSum:
-        """Return the operator raised to a positive integer power by multiplication."""
+        """Return the operator raised to a nonnegative integer power by multiplication."""
         _check_power(exponent)
+        if exponent == 0:
+            return self._identity()
         if exponent == 1:
             return self.clone()
         return _positive_power(self.into(ComplexTermSum), exponent, lambda lhs, rhs: lhs * rhs)
@@ -1115,8 +1123,10 @@ class ComplexTerm(Term[complex]):
         return _rmul(self, lhs)
 
     def __pow__(self, exponent: int) -> ComplexTerm:
-        """Return the operator raised to a positive integer power by multiplication."""
+        """Return the operator raised to a nonnegative integer power by multiplication."""
         _check_power(exponent)
+        if exponent == 0:
+            return self._identity()
         if exponent == 1:
             return self.clone()
         return _positive_power(self, exponent, ComplexTerm.__mul__)
@@ -1240,8 +1250,10 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         return out
 
     def __pow__(self, exponent: int) -> ComplexTermSum:
-        """Return the operator raised to a positive integer power by multiplication."""
+        """Return the operator raised to a nonnegative integer power by multiplication."""
         _check_power(exponent)
+        if exponent == 0:
+            return self._identity()
         if exponent == 1:
             return self.clone()
         return _positive_power(self, exponent, ComplexTermSum.__mul__)
@@ -1432,8 +1444,10 @@ class SymbolicTerm(Term[Expr]):
         return _rmul(self, lhs)
 
     def __pow__(self, exponent: int) -> SymbolicTerm:
-        """Return the operator raised to a positive integer power by multiplication."""
+        """Return the operator raised to a nonnegative integer power by multiplication."""
         _check_power(exponent)
+        if exponent == 0:
+            return self._identity()
         if exponent == 1:
             return self.clone()
         return _positive_power(self, exponent, SymbolicTerm.__mul__)
@@ -1650,8 +1664,10 @@ class SymbolicTermSum(SymbolicTermSumBase[QubitPauliArray, StringSpec], TermSum[
         return out
 
     def __pow__(self, exponent: int) -> SymbolicTermSum:
-        """Return the operator raised to a positive integer power by multiplication."""
+        """Return the operator raised to a nonnegative integer power by multiplication."""
         _check_power(exponent)
+        if exponent == 0:
+            return self._identity()
         if exponent == 1:
             return self.clone()
         return _positive_power(self, exponent, SymbolicTermSum.__mul__)

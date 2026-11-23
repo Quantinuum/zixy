@@ -197,3 +197,12 @@ def test_pauli_sum_power_includes_cross_terms(exponent):
     identity = (3**exponent + (-1) ** exponent) / 2
     pauli_x = (3**exponent - (-1) ** exponent) / 2
     assert operator**exponent == expected_type.from_iterable([("", identity), ("X0", pauli_x)], 1)
+
+
+@pytest.mark.parametrize("sum_type", [zqo.RealTermSum, zqo.ComplexTermSum, zqo.SymbolicTermSum])
+def test_empty_sum_to_zero_power(sum_type):
+    source = sum_type(2)
+    result = source**0
+    assert type(result) is sum_type
+    assert result == sum_type.from_iterable([("", 1)], 2)
+    assert len(source) == 0

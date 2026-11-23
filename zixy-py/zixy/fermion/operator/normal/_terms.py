@@ -296,8 +296,10 @@ class SignTerm(Term[Sign]):
         return _rmul(self, lhs)
 
     def __pow__(self, exponent: int) -> Self | RealTermSum:
-        """Return the operator raised to a positive integer power by multiplication."""
+        """Return the operator raised to a nonnegative integer power by multiplication."""
         _check_power(exponent)
+        if exponent == 0:
+            return self._identity()
         if exponent == 1:
             return self.clone()
         return _positive_power(
@@ -410,8 +412,10 @@ class ComplexSignTerm(Term[ComplexSign]):
         return _rmul(self, lhs)
 
     def __pow__(self, exponent: int) -> Self | ComplexTermSum:
-        """Return the operator raised to a positive integer power by multiplication."""
+        """Return the operator raised to a nonnegative integer power by multiplication."""
         _check_power(exponent)
+        if exponent == 0:
+            return self._identity()
         if exponent == 1:
             return self.clone()
         return _positive_power(
@@ -524,8 +528,10 @@ class RealTerm(Term[float]):
         return _rmul(self, lhs)
 
     def __pow__(self, exponent: int) -> Self | RealTermSum:
-        """Return the operator raised to a positive integer power by multiplication."""
+        """Return the operator raised to a nonnegative integer power by multiplication."""
         _check_power(exponent)
+        if exponent == 0:
+            return self._identity()
         if exponent == 1:
             return self.clone()
         return _positive_power(
@@ -598,8 +604,10 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
         return RealTermSum._create(data, map_=map_)
 
     def __pow__(self, exponent: int) -> RealTermSum:
-        """Return the operator raised to a positive integer power by multiplication."""
+        """Return the operator raised to a nonnegative integer power by multiplication."""
         _check_power(exponent)
+        if exponent == 0:
+            return self._identity()
         if exponent == 1:
             return self.clone()
         return _positive_power(self, exponent, RealTermSum.__mul__)
@@ -827,8 +835,10 @@ class ComplexTerm(Term[complex]):
         return _rmul(self, lhs)
 
     def __pow__(self, exponent: int) -> Self | ComplexTermSum:
-        """Return the operator raised to a positive integer power by multiplication."""
+        """Return the operator raised to a nonnegative integer power by multiplication."""
         _check_power(exponent)
+        if exponent == 0:
+            return self._identity()
         if exponent == 1:
             return self.clone()
         return _positive_power(
@@ -905,8 +915,10 @@ class ComplexTermSum(
         return ComplexTermSum._create(data, map_=map_)
 
     def __pow__(self, exponent: int) -> ComplexTermSum:
-        """Return the operator raised to a positive integer power by multiplication."""
+        """Return the operator raised to a nonnegative integer power by multiplication."""
         _check_power(exponent)
+        if exponent == 0:
+            return self._identity()
         if exponent == 1:
             return self.clone()
         return _positive_power(self, exponent, ComplexTermSum.__mul__)
@@ -1130,8 +1142,10 @@ class SymbolicTerm(Term[Expr]):
         return _rmul(self, lhs)
 
     def __pow__(self, exponent: int) -> Self | SymbolicTermSum:
-        """Return the operator raised to a positive integer power by multiplication."""
+        """Return the operator raised to a nonnegative integer power by multiplication."""
         _check_power(exponent)
+        if exponent == 0:
+            return self._identity()
         if exponent == 1:
             return self.clone()
         result = self * self

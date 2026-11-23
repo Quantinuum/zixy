@@ -174,6 +174,7 @@ def test_sign_terms_canonicalize():
 )
 def test_term_powers(term_type, product_type, coeff):
     term = term_type(1, ("X0", coeff))
+    assert term**0 == term_type(1, "")
     assert term**1 == term
     assert term**2 == product_type(1, ("", coeff**2))
     assert term**3 == product_type(1, ("X0", coeff**3))
@@ -181,9 +182,8 @@ def test_term_powers(term_type, product_type, coeff):
 
 def test_operator_power_domain():
     operator = zqo.RealTerm(1, ("X0", 2.0))
-    for exponent in (0, -1):
-        with pytest.raises(ValueError):
-            operator**exponent
+    with pytest.raises(ValueError):
+        operator**-1
     for value in (True, 1.5):
         with pytest.raises(TypeError):
             operator**value

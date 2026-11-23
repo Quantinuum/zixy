@@ -297,8 +297,6 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
 
     string_type = String
 
-    _springs_type = PauliSprings
-
     @classmethod
     def _set_type(cls) -> type[StringSet]:
         """Return the string set class paired with this collection."""
@@ -343,26 +341,6 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
             if values:
                 out[i].set(values)
         return out
-
-    @classmethod
-    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Self:
-        """Create an instance of ``cls`` from a string.
-
-        Args:
-            source: String to parse.
-            qubits: The qubit register or qubit count. If ``None``, the qubit register is
-                inferred from the string specifier.
-
-        Returns:
-            An instance of ``cls`` parsed from ``source``.
-        """
-        if isinstance(qubits, int):
-            qubits = Qubits.from_count(qubits)
-        if not source.strip():
-            out = cls._create(cls.string_type.impl_type(qubits))
-            out.resize(0)
-            return out
-        return cls._create(cls.string_type.impl_type(qubits, PauliSprings(source)))
 
     def get_dicts(self) -> tuple[dict[int, PauliMatrix], ...]:
         """Get the strings as a list of dictionaries of their elements."""

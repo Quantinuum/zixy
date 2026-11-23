@@ -169,7 +169,6 @@ class Strings[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseStrings[ImplT, Spec
     """
 
     string_type: type[String[ImplT, SpecT, ElemT]]
-    _springs_type: type[Springs]
 
     def __init__(self, qubits: int | Qubits = 0, *, size: int = 0):
         """Initialize the string array.
@@ -200,14 +199,10 @@ class Strings[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseStrings[ImplT, Spec
         if isinstance(qubits, int):
             qubits = Qubits.from_count(qubits)
         if not source.strip():
-            out = cls._create(cls.string_type.impl_type(qubits if qubits is not None else None))
+            out = cls._create(cls.string_type.impl_type(qubits))
             out.resize(0)
             return out
-        return cls._create(
-            cls.string_type.impl_type(
-                qubits if qubits is not None else None, cls._springs_type(source)
-            )
-        )
+        return cls._create(cls.string_type.impl_type(qubits, cls.string_type._springs_type(source)))
 
     @property
     def qubits(self) -> Qubits:

@@ -666,19 +666,26 @@ def test_to_general(term_sum_type, expected_type, source, expected, expected_ops
 
 
 @pytest.mark.parametrize(
-    "term_type",
-    [zfon.RealTerm, zfon.ComplexTerm, zfon.SignTerm, zfon.ComplexSignTerm, zfon.SymbolicTerm],
+    ("term_type", "product_type", "coeff"),
+    [
+        (zfon.RealTerm, zfon.RealTermSum, -2),
+        (zfon.ComplexTerm, zfon.ComplexTermSum, 2j),
+        (zfon.SignTerm, zfon.RealTermSum, -1),
+        (zfon.ComplexSignTerm, zfon.ComplexTermSum, 1j),
+        (zfon.SymbolicTerm, zfon.SymbolicTermSum, sympify("x")),
+    ],
 )
-def test_term_powers(term_type):
-    term = term_type.from_str("F0", 1)
+def test_term_powers(term_type, product_type, coeff):
+    term = term_type(1, ("", coeff))
     assert term**1 == term
-    square = term * term
-    assert type(term**2) is type(square)
-    assert term**2 == square
-    assert len((term**3).filter_nonzero()) == 0
+    assert term**2 == product_type.from_iterable([("", coeff**2)], 1)
+    assert term**3 == product_type.from_iterable([("", coeff**3)], 1)
+    annihilation = term_type(1, ("F0", coeff))
+    assert len((annihilation**2).filter_nonzero()) == 0
+    assert len((annihilation**3).filter_nonzero()) == 0
 
 
 @pytest.mark.parametrize("sum_type", [zfon.RealTermSum, zfon.ComplexTermSum])
 def test_sum_power(sum_type):
     operator = sum_type.from_iterable([("", 1), ("F0", 2)], 1)
-    assert operator**3 == (operator * operator) * operator
+    assert operator**3 == sum_type.from_iterable([("", 1), ("F0", 6)], 1)

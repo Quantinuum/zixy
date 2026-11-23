@@ -163,16 +163,20 @@ def test_sign_terms_canonicalize():
 
 
 @pytest.mark.parametrize(
-    "term_type",
-    [zqo.RealTerm, zqo.ComplexTerm, zqo.SignTerm, zqo.ComplexSignTerm, zqo.SymbolicTerm],
+    ("term_type", "product_type", "coeff"),
+    [
+        (zqo.RealTerm, zqo.ComplexTerm, -2),
+        (zqo.ComplexTerm, zqo.ComplexTerm, 2j),
+        (zqo.SignTerm, zqo.ComplexSignTerm, -1),
+        (zqo.ComplexSignTerm, zqo.ComplexSignTerm, 1j),
+        (zqo.SymbolicTerm, zqo.SymbolicTerm, sympify("1.5*x")),
+    ],
 )
-def test_term_powers(term_type):
-    term = term_type.from_str("X0", 1)
+def test_term_powers(term_type, product_type, coeff):
+    term = term_type(1, ("X0", coeff))
     assert term**1 == term
-    square = term * term
-    assert type(term**2) is type(square)
-    assert term**2 == square
-    assert term**3 == square * term
+    assert term**2 == product_type(1, ("", coeff**2))
+    assert term**3 == product_type(1, ("X0", coeff**3))
 
 
 def test_operator_power_domain():

@@ -191,6 +191,9 @@ def test_complex_term_sum_to_sparse_raises_index_error():
 
 @pytest.mark.parametrize("exponent", [1, 2, 3, 4, 5])
 def test_pauli_sum_power_includes_cross_terms(exponent):
-    operator = zqo.RealTermSum.from_iterable([("", 1.0), ("X0", 1.0)], 1)
+    operator = zqo.RealTermSum.from_iterable([("", 1.0), ("X0", 2.0)], 1)
     expected_type = zqo.RealTermSum if exponent == 1 else zqo.ComplexTermSum
-    assert operator**exponent == (operator * (2.0 ** (exponent - 1))).into(expected_type)
+    # I + 2X has eigenvalues 3 and -1 on the two X eigenspaces.
+    identity = (3**exponent + (-1) ** exponent) / 2
+    pauli_x = (3**exponent - (-1) ** exponent) / 2
+    assert operator**exponent == expected_type.from_iterable([("", identity), ("X0", pauli_x)], 1)

@@ -495,19 +495,25 @@ def test_to_normal_ordered(term_sum_type, expected_type, source, modes, expected
 
 
 @pytest.mark.parametrize(
-    "term_type",
-    [zfog.RealTerm, zfog.ComplexTerm, zfog.SignTerm, zfog.ComplexSignTerm, zfog.SymbolicTerm],
+    ("term_type", "product_type", "coeff"),
+    [
+        (zfog.RealTerm, zfog.RealTerm, -2),
+        (zfog.ComplexTerm, zfog.ComplexTerm, 2j),
+        (zfog.SignTerm, zfog.SignTerm, -1),
+        (zfog.ComplexSignTerm, zfog.ComplexSignTerm, 1j),
+        (zfog.SymbolicTerm, zfog.SymbolicTerm, sympify("x")),
+    ],
 )
-def test_term_powers(term_type):
-    term = term_type.from_str("F0", 1)
+def test_term_powers(term_type, product_type, coeff):
+    term = term_type(1, ("F0", coeff))
     assert term**1 == term
-    square = term * term
-    assert type(term**2) is type(square)
-    assert term**2 == square
-    assert term**3 == square * term
+    assert term**2 == product_type(1, ("F0 F0", coeff**2))
+    assert term**3 == product_type(1, ("F0 F0 F0", coeff**3))
 
 
 @pytest.mark.parametrize("sum_type", [zfog.RealTermSum, zfog.ComplexTermSum])
 def test_sum_power(sum_type):
     operator = sum_type.from_iterable([("", 1), ("F0", 2)], 1)
-    assert operator**3 == (operator * operator) * operator
+    assert operator**3 == sum_type.from_iterable(
+        [("", 1), ("F0", 6), ("F0 F0", 12), ("F0 F0 F0", 8)], 1
+    )

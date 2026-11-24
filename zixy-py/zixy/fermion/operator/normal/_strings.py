@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, Self, overload
 from sympy import Expr
 
 from zixy._zixy import FermionSprings, Modes, NormalFermionOperatorArray
-from zixy.container.coeffs import Coeff, ComplexSign, Sign
+from zixy.container.coeffs import Coeff, ComplexSign, Sign, normalize_scalar
 from zixy.container.serialization import check_schema_version
 from zixy.fermion._strings import _deserialize_modes, _serialize_modes
 from zixy.fermion.operator._strings import (
@@ -214,6 +214,7 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         Multiplication by a scalar returns a term. Multiplication by another normal-ordered string
         returns a term sum, since normal-ordering can produce zero, one, or multiple terms.
         """
+        rhs = normalize_scalar(rhs)
         from zixy.fermion.operator.normal._terms import RealTermSum, get_term_type  # noqa: PLC0415
 
         if isinstance(rhs, Coeff):
@@ -228,6 +229,13 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
                 Strings._create(impl)[i], float(int(Sign(signs[i])))
             )
         return out
+
+    def __rmul__[C: (float, complex, Sign, ComplexSign, Expr)](self, lhs: C) -> Term[C]:
+        """Multiply a scalar by this operator string."""
+        lhs = normalize_scalar(lhs)
+        if not isinstance(lhs, Coeff):
+            return NotImplemented
+        return self * lhs
 
 
 class Strings(OperatorStrings[ImplT, SpecT, ElemT]):

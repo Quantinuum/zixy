@@ -58,6 +58,27 @@ if TYPE_CHECKING:
 Number: TypeAlias = int | float | complex  # noqa: UP040
 
 
+@overload
+def normalize_scalar(value: np.integer[Any]) -> int: ...
+@overload
+def normalize_scalar(value: np.floating[Any]) -> float: ...
+@overload
+def normalize_scalar(value: np.complexfloating[Any, Any]) -> complex: ...
+@overload
+def normalize_scalar[T](value: T) -> T: ...
+
+
+def normalize_scalar[T](value: T) -> T | int | float | complex:
+    """Convert NumPy integer, floating and complex scalars to their Python equivalents."""
+    if isinstance(value, np.integer) and value.dtype.kind in "iu":
+        return int(value)
+    if isinstance(value, np.floating):
+        return float(value)
+    if isinstance(value, np.complexfloating):
+        return complex(value)
+    return value
+
+
 def _imul_factor_error(lhs: Any, rhs: Any, factor: Any) -> ValueError:
     """Get an exception for an invalid in-place multiplication due to the resulting factor."""
     return ValueError(
@@ -111,6 +132,8 @@ class RootOfUnity(Representable, ABC):
         """
         pass
 
+    __array_priority__ = 1000
+
     def _sympy_(self) -> Expr:  # noqa: PLW3201
         """Hook for SymPy to convert this object to a SymPy expression."""
         return self.to_symbolic()
@@ -159,6 +182,7 @@ class Sign(RootOfUnity):
             The return type is determined by the type of the right-hand operand ``other``,
             with appropriate type promotion rules.
         """
+        other = normalize_scalar(other)
         if not isinstance(other, Coeff):
             return NotImplemented
         if isinstance(other, Sign):
@@ -182,6 +206,7 @@ class Sign(RootOfUnity):
             ValueError: If the result of the multiplication cannot be represented by the type of
                 ``self``.
         """
+        rhs = normalize_scalar(rhs)
         if isinstance(rhs, Sign):
             Sign.__init__(self, self._impl.to_phase() ^ rhs._impl.to_phase())
             return self
@@ -218,6 +243,7 @@ class Sign(RootOfUnity):
         See Also:
             :meth:`__mul__`
         """
+        other = normalize_scalar(other)
         if isinstance(other, Sign):
             return self * other
         elif isinstance(other, ComplexSign):
@@ -242,6 +268,7 @@ class Sign(RootOfUnity):
         See Also:
             :meth:`__mul__`, :meth:`__truediv__`
         """
+        other = normalize_scalar(other)
         if isinstance(other, Sign):
             return self * other
         elif isinstance(other, ComplexSign):
@@ -369,6 +396,7 @@ class ComplexSign(RootOfUnity):
             The return type is determined by the type of the right-hand operand ``other``,
             with appropriate type promotion rules.
         """
+        other = normalize_scalar(other)
         if not isinstance(other, Coeff):
             return NotImplemented
         if isinstance(other, ComplexSign):
@@ -403,6 +431,7 @@ class ComplexSign(RootOfUnity):
             ValueError: If the result of the multiplication cannot be represented by the type of
                 ``self``.
         """
+        rhs = normalize_scalar(rhs)
         if isinstance(rhs, Sign):
             return self.__imul__(complex(rhs))
         elif isinstance(rhs, ComplexSign):
@@ -435,6 +464,7 @@ class ComplexSign(RootOfUnity):
         See Also:
             :meth:`__mul__`
         """
+        other = normalize_scalar(other)
         if not isinstance(other, Coeff):
             return NotImplemented
         if isinstance(other, ComplexSign):
@@ -460,6 +490,7 @@ class ComplexSign(RootOfUnity):
         See Also:
             :meth:`__mul__`, :meth:`__truediv__`
         """
+        other = normalize_scalar(other)
         if not isinstance(other, Coeff):
             return NotImplemented
         if isinstance(other, ComplexSign):
@@ -667,6 +698,7 @@ def convert[C: (float, complex, Sign, ComplexSign, Expr)](source: Coeff, cls: ty
     Raises:
         ValueError: If ``source`` cannot be represented as type ``cls``.
     """
+    source = normalize_scalar(source)
     if not isinstance(source, Coeff):
         raise TypeError
     elif isinstance(source, cls):
@@ -976,6 +1008,7 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
         Note:
             This method operates in-place.
         """
+        scalar = normalize_scalar(scalar)
         for i in range(len(self)):
             self[i] = typesafe_mul(self[i], scalar)
 
@@ -1006,6 +1039,7 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
             ValueError: If the result of the multiplication cannot be represented by the type of
                 ``self``.
         """
+        rhs = normalize_scalar(rhs)
         if isinstance(rhs, Coeff):
             self.scale(rhs)
         elif isinstance(rhs, Coeffs):
@@ -1475,6 +1509,7 @@ class RealCoeffs(NumericalCoeffs[float]):
 
     def scale(self, scalar: Coeff) -> None:
         """Scale the viewed real coefficients in Rust."""
+        scalar = normalize_scalar(scalar)
         if len(self):
             self._impl.scale_slice(self.slice, convert(scalar, float))
 
@@ -1520,6 +1555,7 @@ class ComplexCoeffs(NumericalCoeffs[complex]):
 
     def scale(self, scalar: Coeff) -> None:
         """Scale the viewed complex coefficients in Rust."""
+        scalar = normalize_scalar(scalar)
         if len(self):
             self._impl.scale_slice(self.slice, convert(scalar, complex))
 

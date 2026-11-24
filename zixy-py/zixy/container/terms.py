@@ -588,10 +588,10 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         """The concrete coefficient container type of ``self``."""
         return cast("type[Cs]", type(self._data.coeffs))
 
-    @property
-    def coeff_type(self) -> type[C]:
-        """The coefficient type of ``self``."""
-        return self._impl.coeffs.coeff_type
+    @classproperty
+    def coeff_type(cls: type[Terms[ImplT, SpecT, C]]) -> type[C]:
+        """The scalar type supplied by the term class."""
+        return cls.term_type.coeff_type
 
     @property
     def strings_type[StringsT: Strings[Any, Any]](
@@ -1095,10 +1095,10 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         """The coefficients of ``self``, preserving their concrete container type."""
         return cast("Cs", self._data.coeffs)
 
-    @property
-    def coeff_type(self) -> type[C]:
-        """The coefficient type of ``self``."""
-        return self._data.coeffs.coeff_type
+    @classproperty
+    def coeff_type(cls: type[TermSet[ImplT, SpecT, C]]) -> type[C]:
+        """The scalar type supplied by the term sequence class."""
+        return cls.terms_type.coeff_type
 
     @property
     def strings_type[StringsT: Strings[Any, Any]](

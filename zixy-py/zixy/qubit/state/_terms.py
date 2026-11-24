@@ -35,7 +35,6 @@ from zixy.container.coeffs import (
     Sign,
     SignCoeffs,
     SymbolicCoeffs,
-    get_coeffs_type,
     normalize_scalar,
     typesafe_mul,
 )
@@ -719,7 +718,7 @@ class SymbolicTerm(Term[Expr]):
             :meth:`~zixy.container.coeffs.SymbolicCoeffs.try_to_real`
         """
         strings = RealTerm.strings_type.from_string(self.string.clone())
-        coeffs = get_coeffs_type(RealTerm.coeff_type).from_scalar(float(self.coeff.evalf()))
+        coeffs = RealTerm.coeffs_type.from_scalar(float(self.coeff.evalf()))
         term_data = TermData(strings, coeffs)
         return RealTerm._create(term_data)
 
@@ -737,7 +736,7 @@ class SymbolicTerm(Term[Expr]):
             :meth:`~zixy.container.coeffs.SymbolicCoeffs.try_to_complex`
         """
         strings = ComplexTerm.strings_type.from_string(self.string.clone())
-        coeffs = get_coeffs_type(ComplexTerm.coeff_type).from_scalar(complex(self.coeff.evalf()))
+        coeffs = ComplexTerm.coeffs_type.from_scalar(complex(self.coeff.evalf()))
         term_data = TermData(strings, coeffs)
         return ComplexTerm._create(term_data)
 

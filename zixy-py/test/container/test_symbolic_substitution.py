@@ -42,7 +42,7 @@ def test_subs_preserves_keys_space_and_independence(symbolic_sum):
     assert result.to_dict()["strings"] == before["strings"]
     assert result.to_dict()["space"] == before["space"]
     assert result.strings.is_owning()
-    assert result.coeffs.is_owning()
+    assert not result.coeffs.is_owning()
     assert result._string_set._map is not source._string_set._map
     for index, spec in enumerate(specs):
         assert result.lookup_index(spec) == index
@@ -54,18 +54,19 @@ def test_subs_preserves_keys_space_and_independence(symbolic_sum):
     assert source.to_dict() == before
 
 
-def test_isubs_updates_existing_views_without_changing_keys(symbolic_sum):
+def test_isubs_updates_coefficient_views_and_preserves_iterated_terms(symbolic_sum):
     _, _, specs, _, source = symbolic_sum
     x, _, z = symbols("x y z")
     before = source.to_dict()
-    term_view = next(iter(source))
+    term_copy = next(iter(source))
+    original_coeff = term_copy.coeff
     coeff_view = source.coeffs[::-1]
     mapping = source._string_set._map
 
     assert source.isubs({x: 2, "y": z}) is None
 
     assert list(source.coeffs) == [2 + z, 4 - z]
-    assert term_view.coeff == 2 + z
+    assert term_copy.coeff == original_coeff
     assert list(coeff_view) == [4 - z, 2 + z]
     assert source._string_set._map is mapping
     assert source.to_dict()["strings"] == before["strings"]
@@ -111,7 +112,7 @@ def test_empty_sum_substitution_preserves_configuration(symbolic_sum):
     assert type(result) is type(source)
     assert len(result) == 0
     assert result.to_dict() == source.to_dict() == before
-    assert result.coeffs.is_owning()
+    assert not result.coeffs.is_owning()
     assert result.strings.is_owning()
     if hasattr(source, "max_string_len"):
         assert result.max_string_len == source.max_string_len == 64

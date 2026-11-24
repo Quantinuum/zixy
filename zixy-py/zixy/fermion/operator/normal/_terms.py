@@ -614,8 +614,8 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
         """Return the commutator ``[self, rhs]``."""
         rhs_coeffs = rhs.coeffs
         assert isinstance(rhs_coeffs, RealCoeffs)
-        impl, coeffs, map_ = self.strings._impl.lincomb_commutator_real(
-            self.strings._impl, self.coeffs._impl, rhs.strings._impl, rhs_coeffs._impl
+        impl, coeffs, map_ = self._string_set._impl.lincomb_commutator_real(
+            self._string_set._impl, self.coeffs._impl, rhs._string_set._impl, rhs_coeffs._impl
         )
         data = TermData(Strings._create(impl), RealCoeffs._create(coeffs))
         return RealTermSum._create(data, map_=map_)
@@ -624,38 +624,42 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
         """Return the anticommutator ``{self, rhs}``."""
         rhs_coeffs = rhs.coeffs
         assert isinstance(rhs_coeffs, RealCoeffs)
-        impl, coeffs, map_ = self.strings._impl.lincomb_anticommutator_real(
-            self.strings._impl, self.coeffs._impl, rhs.strings._impl, rhs_coeffs._impl
+        impl, coeffs, map_ = self._string_set._impl.lincomb_anticommutator_real(
+            self._string_set._impl, self.coeffs._impl, rhs._string_set._impl, rhs_coeffs._impl
         )
         data = TermData(Strings._create(impl), RealCoeffs._create(coeffs))
         return RealTermSum._create(data, map_=map_)
 
     def is_hermitian(self, atol: float = 1e-10) -> bool:
         """Check whether ``self`` is Hermitian within the given tolerance."""
-        return self.strings._impl.lincomb_is_hermitian_real(
-            self.strings._impl, self.coeffs._impl, atol
+        return self._string_set._impl.lincomb_is_hermitian_real(
+            self._string_set._impl, self.coeffs._impl, atol
         )
 
     def conserves_particle_number(self, atol: float = 1e-10) -> bool:
         """Check whether ``self`` conserves particle number within the given tolerance."""
-        return self.strings._impl.lincomb_conserves_particle_number_real(
-            self.strings._impl, self.coeffs._impl, atol
+        return self._string_set._impl.lincomb_conserves_particle_number_real(
+            self._string_set._impl, self.coeffs._impl, atol
         )
 
     def max_n_body(self) -> int:
         """Return the maximum n-body order across all terms."""
-        return self.strings._impl.lincomb_max_n_body_real(self.strings._impl, self.coeffs._impl)
+        return self._string_set._impl.lincomb_max_n_body_real(
+            self._string_set._impl, self.coeffs._impl
+        )
 
     def active_modes(self) -> set[int]:
         """Return the set of mode indices on which ``self`` acts."""
-        return self.strings._impl.lincomb_active_modes_real(self.strings._impl, self.coeffs._impl)
+        return self._string_set._impl.lincomb_active_modes_real(
+            self._string_set._impl, self.coeffs._impl
+        )
 
     def to_general(self) -> zfog.RealTermSum:
         """Convert this normal-ordered term sum to the raw general representation."""
         import zixy.fermion.operator.general as zfog  # noqa: PLC0415
 
-        impl, coeffs, map_ = self.strings._impl.lincomb_to_general_real(
-            self.strings._impl, self._string_set._map, self.coeffs._impl
+        impl, coeffs, map_ = self._string_set._impl.lincomb_to_general_real(
+            self._string_set._impl, self._string_set._map, self.coeffs._impl
         )
         term_data = TermData(
             zfog.Strings._create(impl),
@@ -924,8 +928,8 @@ class ComplexTermSum(
         """Return the commutator ``[self, rhs]``."""
         rhs_coeffs = rhs.coeffs
         assert isinstance(rhs_coeffs, ComplexCoeffs)
-        impl, coeffs, map_ = self.strings._impl.lincomb_commutator_complex(
-            self.strings._impl, self.coeffs._impl, rhs.strings._impl, rhs_coeffs._impl
+        impl, coeffs, map_ = self._string_set._impl.lincomb_commutator_complex(
+            self._string_set._impl, self.coeffs._impl, rhs._string_set._impl, rhs_coeffs._impl
         )
         data = TermData(Strings._create(impl), ComplexCoeffs._create(coeffs))
         return ComplexTermSum._create(data, map_=map_)
@@ -934,40 +938,42 @@ class ComplexTermSum(
         """Return the anticommutator ``{self, rhs}``."""
         rhs_coeffs = rhs.coeffs
         assert isinstance(rhs_coeffs, ComplexCoeffs)
-        impl, coeffs, map_ = self.strings._impl.lincomb_anticommutator_complex(
-            self.strings._impl, self.coeffs._impl, rhs.strings._impl, rhs_coeffs._impl
+        impl, coeffs, map_ = self._string_set._impl.lincomb_anticommutator_complex(
+            self._string_set._impl, self.coeffs._impl, rhs._string_set._impl, rhs_coeffs._impl
         )
         data = TermData(Strings._create(impl), ComplexCoeffs._create(coeffs))
         return ComplexTermSum._create(data, map_=map_)
 
     def is_hermitian(self, atol: float = 1e-10) -> bool:
         """Check whether ``self`` is Hermitian within the given tolerance."""
-        return self.strings._impl.lincomb_is_hermitian_complex(
-            self.strings._impl, self.coeffs._impl, atol
+        return self._string_set._impl.lincomb_is_hermitian_complex(
+            self._string_set._impl, self.coeffs._impl, atol
         )
 
     def conserves_particle_number(self, atol: float = 1e-10) -> bool:
         """Check whether ``self`` conserves particle number within the given tolerance."""
-        return self.strings._impl.lincomb_conserves_particle_number_complex(
-            self.strings._impl, self.coeffs._impl, atol
+        return self._string_set._impl.lincomb_conserves_particle_number_complex(
+            self._string_set._impl, self.coeffs._impl, atol
         )
 
     def max_n_body(self) -> int:
         """Return the maximum n-body order across all terms."""
-        return self.strings._impl.lincomb_max_n_body_complex(self.strings._impl, self.coeffs._impl)
+        return self._string_set._impl.lincomb_max_n_body_complex(
+            self._string_set._impl, self.coeffs._impl
+        )
 
     def active_modes(self) -> set[int]:
         """Return the set of mode indices on which ``self`` acts."""
-        return self.strings._impl.lincomb_active_modes_complex(
-            self.strings._impl, self.coeffs._impl
+        return self._string_set._impl.lincomb_active_modes_complex(
+            self._string_set._impl, self.coeffs._impl
         )
 
     def to_general(self) -> zfog.ComplexTermSum:
         """Convert this normal-ordered term sum to the raw general representation."""
         import zixy.fermion.operator.general as zfog  # noqa: PLC0415
 
-        impl, coeffs, map_ = self.strings._impl.lincomb_to_general_complex(
-            self.strings._impl, self._string_set._map, self.coeffs._impl
+        impl, coeffs, map_ = self._string_set._impl.lincomb_to_general_complex(
+            self._string_set._impl, self._string_set._map, self.coeffs._impl
         )
         term_data = TermData(
             zfog.Strings._create(impl),

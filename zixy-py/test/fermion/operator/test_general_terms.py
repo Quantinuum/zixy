@@ -30,7 +30,7 @@ def test_numeric_product_retains_rust_map(term_sum_type, empty_side, monkeypatch
     assert type(result) is term_sum_type
     assert result == expected
     assert result.strings.is_owning()
-    assert result.coeffs.is_owning()
+    assert not result.coeffs.is_owning()
     assert len(result._string_set._map) == len(result)
     for term in expected:
         assert result.get(term.string) == term.coeff

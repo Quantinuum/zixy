@@ -479,7 +479,7 @@ def test_apply_operator_term(mapper_type, term_type, coefficient, real):
     assert mapped == (expected.real_part if real else expected)
     assert source.to_dict() == before
     assert mapped.strings.is_owning()
-    assert mapped.coeffs.is_owning()
+    assert not mapped.coeffs.is_owning()
 
 
 @pytest.mark.parametrize("mapper_type", MAPPER_TYPES)

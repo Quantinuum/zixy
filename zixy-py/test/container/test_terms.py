@@ -214,7 +214,7 @@ def test_term_sum_from_terms_accumulates_duplicates(cls, values, slices):
     assert type(result) is cls
     assert [(str(term.string), term.coeff) for term in result] == list(expected.items())
     assert result.strings.is_owning()
-    assert result.coeffs.is_owning()
+    assert not result.coeffs.is_owning()
     for key, coeff in expected.items():
         assert result.get(key) == coeff
     assert [(str(term.string), term.coeff) for term in source] == before

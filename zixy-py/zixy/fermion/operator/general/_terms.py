@@ -38,8 +38,8 @@ from zixy.container.coeffs import (
     Sign,
     SignCoeffs,
     SymbolicCoeffs,
-    normalize_scalar,
     _integer_exponent,
+    normalize_scalar,
 )
 from zixy.container.data import TermData
 from zixy.container.strings import String as BaseString

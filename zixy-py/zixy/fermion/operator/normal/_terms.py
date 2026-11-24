@@ -37,8 +37,8 @@ from zixy.container.coeffs import (
     Sign,
     SignCoeffs,
     SymbolicCoeffs,
-    normalize_scalar,
     _integer_exponent,
+    normalize_scalar,
     typesafe_mul,
 )
 from zixy.container.data import TermData

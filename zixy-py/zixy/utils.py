@@ -22,7 +22,19 @@ from typing import TYPE_CHECKING, Final, TypeGuard
 import numpy
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
+
+
+class classproperty[Owner, R]:
+    """Evaluate a getter on the concrete owner for class and instance access."""
+
+    def __init__(self, getter: Callable[[type[Owner]], R]) -> None:
+        """Store the getter used for attribute access."""
+        self._getter = getter
+
+    def __get__(self, instance: object, owner: type[Owner]) -> R:
+        """Return the value for the class through which the attribute was accessed."""
+        return self._getter(owner)
 
 
 def isclass[T](cls: type[object], target: type[T]) -> TypeGuard[type[T]]:

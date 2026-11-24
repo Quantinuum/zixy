@@ -67,6 +67,7 @@ from zixy.container.strings import String, Strings
 from zixy.utils import (
     DEFAULT_ATOL,
     DEFAULT_RTOL,
+    classproperty,
     slice_index,
     slice_index_gen,
     slice_of_slice,
@@ -186,7 +187,6 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
     a view on an element in another collection.
     """
 
-    coeff_type: type[C]
     coeffs_type: type[Coeffs[C]]
     strings_type: type[Strings[ImplT, SpecT]]
 
@@ -254,6 +254,11 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
     def _data(self) -> _TermData[ImplT, SpecT, C]:
         """The raw term data object underlying ``self``."""
         return self._impl
+
+    @classproperty
+    def coeff_type(cls: type[Term[ImplT, SpecT, C]]) -> type[C]:
+        """The scalar type supplied by the coefficient container."""
+        return cls.coeffs_type.coeff_type
 
     @property
     def string_type[StringT: String[Any, Any]](

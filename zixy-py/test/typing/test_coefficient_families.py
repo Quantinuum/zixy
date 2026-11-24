@@ -33,6 +33,19 @@ if TYPE_CHECKING:
     from zixy.container.terms import Terms, TermSet
 
 
+def test_term_coeff_type() -> None:
+    def check[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
+        cls: type[TermBase[ImplT, SpecT, C]], term: TermBase[ImplT, SpecT, C]
+    ) -> None:
+        assert assert_type(cls.coeff_type, type[C]) is cls.coeffs_type.coeff_type
+        assert assert_type(term.coeff_type, type[C]) is cls.coeff_type
+
+    assert assert_type(zqo.RealTerm.coeff_type, type[float]) is float
+    term = zqo.ComplexTerm(1)
+    assert assert_type(term.coeff_type, type[complex]) is complex
+    check(zqo.ComplexTerm, term)
+
+
 def test_coefficient_iterable_inference() -> None:
     class DerivedCoeffs(RealCoeffs):
         pass

@@ -94,35 +94,6 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
     impl_type = ImplT
     _clear_spec = ""
 
-    def to_dict(self) -> SerializedContainer:
-        """Return a JSON-serializable dictionary representation of ``self``.
-
-        Returns:
-            A dictionary containing container metadata, the string, and the full mode space.
-        """
-        data = super().to_dict()
-        data["family"] = "fermion.operator.general"
-        data["space"] = _serialize_modes(self.modes)
-        data["strings"] = [[list(op) for op in self.get_ops()]]
-        return data
-
-    @classmethod
-    def from_dict(cls, source: SerializedContainer) -> Self:
-        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
-
-        Args:
-            source: JSON-serializable dictionary representation to parse.
-
-        Returns:
-            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
-            the source dictionary and any existing containers.
-        """
-        check_schema_version(source)
-        if len(source["strings"]) != 1:
-            raise ValueError("A serialized String must contain exactly one string.")
-        strings = Strings.from_dict(source)
-        return cls._create(strings._impl)
-
     def __init__(
         self,
         modes: int | Modes | None = None,
@@ -155,22 +126,45 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
         """The maximum number of operators per string."""
         return self._impl.max_string_len
 
-    @classmethod
-    def from_str(
-        cls, source: str, modes: int | Modes | None = None, *, max_string_len: int = 0
-    ) -> Self:
-        """Create an instance of ``cls`` by parsing an input string.
+    def __getitem__(self, item: LadderOp) -> bool:
+        """Return whether an operator appears on a mode.
 
         Args:
-            source: String to parse.
-            modes: The mode space or mode count. If ``None``, the mode space is inferred from
-                the string specifier.
-            max_string_len: Maximum number of operators per string.
+            item: Pair of ``(mode, is_creation)``, where ``is_creation`` is ``True`` for a
+                creation operator and ``False`` for an annihilation operator.
 
-        Returns:
-            An instance of ``cls`` parsed from ``source``.
+        Note:
+            Raw fermionic strings store an ordered product rather than creation and annihilation
+            bitsets. This check scans the operator product, so it scales linearly with the string
+            length and only reports whether the requested operator appears at least once.
         """
-        return cls(modes, source, max_string_len=max_string_len)
+        mode, is_creation = item
+        if not isinstance(is_creation, bool):
+            raise KeyError(is_creation)
+        return any(
+            op_mode == mode and op_is_creation is is_creation
+            for op_mode, op_is_creation in self.get_ops()
+        )
+
+    def get_ops(self) -> list[LadderOp]:
+        """Get the raw ladder-operator product as ``(mode, is_creation)`` pairs."""
+        modes, adj = self._impl.string_get_ops(self.index)
+        return list(zip(modes, adj, strict=True))
+
+    def get_sets(self) -> tuple[list[int], list[int]]:
+        """Get the creation and annihilation mode lists.
+
+        This is a grouped view of the ordered ladder-operator product and does not preserve
+        operator order.
+        """
+        cre: list[int] = []
+        ann: list[int] = []
+        for mode, is_creation in self.get_ops():
+            if is_creation:
+                cre.append(mode)
+            else:
+                ann.append(mode)
+        return cre, ann
 
     def _set_spec(self, source: SpecT) -> None:
         """Set the value of the string.
@@ -196,60 +190,6 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
             ops = list(source)
             mode_inds, adj = zip(*ops, strict=True) if ops else ((), ())
             self._impl.string_set_from_ops(self.index, list(mode_inds), list(adj))
-
-    def get_ops(self) -> list[LadderOp]:
-        """Get the raw ladder-operator product as ``(mode, is_creation)`` pairs."""
-        modes, adj = self._impl.string_get_ops(self.index)
-        return list(zip(modes, adj, strict=True))
-
-    def get_sets(self) -> tuple[list[int], list[int]]:
-        """Get the creation and annihilation mode lists.
-
-        This is a grouped view of the ordered ladder-operator product and does not preserve
-        operator order.
-        """
-        cre: list[int] = []
-        ann: list[int] = []
-        for mode, is_creation in self.get_ops():
-            if is_creation:
-                cre.append(mode)
-            else:
-                ann.append(mode)
-        return cre, ann
-
-    def __getitem__(self, item: LadderOp) -> bool:
-        """Return whether an operator appears on a mode.
-
-        Args:
-            item: Pair of ``(mode, is_creation)``, where ``is_creation`` is ``True`` for a
-                creation operator and ``False`` for an annihilation operator.
-
-        Note:
-            Raw fermionic strings store an ordered product rather than creation and annihilation
-            bitsets. This check scans the operator product, so it scales linearly with the string
-            length and only reports whether the requested operator appears at least once.
-        """
-        mode, is_creation = item
-        if not isinstance(is_creation, bool):
-            raise KeyError(is_creation)
-        return any(
-            op_mode == mode and op_is_creation is is_creation
-            for op_mode, op_is_creation in self.get_ops()
-        )
-
-    def dagger(self) -> None:
-        """Take the adjoint of ``self`` in-place, ignoring the scalar sign.
-
-        The adjoint of a raw ladder-operator product reverses the operator order and swaps each
-        creation operator with an annihilation operator.
-        """
-        self.set([(mode, not is_creation) for mode, is_creation in reversed(self.get_ops())])
-
-    def daggered(self) -> Self:
-        """Return the adjoint of ``self``, ignoring the scalar sign."""
-        out = self.clone()
-        out.dagger()
-        return out
 
     @overload
     def __mul__(self, rhs: String) -> Term[float]: ...
@@ -284,6 +224,66 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
             return NotImplemented
         return self * lhs
 
+    def dagger(self) -> None:
+        """Take the adjoint of ``self`` in-place, ignoring the scalar sign.
+
+        The adjoint of a raw ladder-operator product reverses the operator order and swaps each
+        creation operator with an annihilation operator.
+        """
+        self.set([(mode, not is_creation) for mode, is_creation in reversed(self.get_ops())])
+
+    def daggered(self) -> Self:
+        """Return the adjoint of ``self``, ignoring the scalar sign."""
+        out = self.clone()
+        out.dagger()
+        return out
+
+    @classmethod
+    def from_str(
+        cls, source: str, modes: int | Modes | None = None, *, max_string_len: int = 0
+    ) -> Self:
+        """Create an instance of ``cls`` by parsing an input string.
+
+        Args:
+            source: String to parse.
+            modes: The mode space or mode count. If ``None``, the mode space is inferred from
+                the string specifier.
+            max_string_len: Maximum number of operators per string.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        return cls(modes, source, max_string_len=max_string_len)
+
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            A dictionary containing container metadata, the string, and the full mode space.
+        """
+        data = super().to_dict()
+        data["family"] = "fermion.operator.general"
+        data["space"] = _serialize_modes(self.modes)
+        data["strings"] = [[list(op) for op in self.get_ops()]]
+        return data
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
+            the source dictionary and any existing containers.
+        """
+        check_schema_version(source)
+        if len(source["strings"]) != 1:
+            raise ValueError("A serialized String must contain exactly one string.")
+        strings = Strings.from_dict(source)
+        return cls._create(strings._impl)
+
 
 class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
     """A collection of raw fermionic ladder-operator strings.
@@ -295,10 +295,92 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
 
     string_type = String
 
+    def __init__(self, modes: int | Modes = 0, *, size: int = 0, max_string_len: int = 0):
+        """Initialize the string array.
+
+        Args:
+            modes: The mode space or number of modes.
+            size: Number of default elements with which to create the instance.
+            max_string_len: Maximum number of operators per string.
+        """
+        modes = Modes.from_count(modes) if isinstance(modes, int) else modes
+        BaseStrings.__init__(self, self.string_type.impl_type(modes, max_string_len))
+        self.resize(size)
+
+    @classmethod
+    def from_iterable(
+        cls,
+        source: Iterable[SpecT | BaseString[ImplT, SpecT]],
+        modes: int | Modes = 0,
+        *,
+        max_string_len: int = 0,
+    ) -> Self:
+        """Create an owning collection from an iterable of strings.
+
+        Args:
+            source: Iterable of compatible strings or string specifiers.
+            modes: The mode space or number of modes.
+            max_string_len: Initial maximum number of operators per string. Known sequences
+                reserve the required length before insertion; other iterables grow as needed.
+
+        Returns:
+            An independent owning instance of ``cls``.
+        """
+        out = cls(modes, max_string_len=max_string_len)
+        if isinstance(source, Sequence):
+            out._impl._reserve_string_length(
+                max(map(_string_length, source), default=0), warn=False
+            )
+        out.extend(source)
+        return out
+
     @classmethod
     def _set_type(cls) -> type[StringSet]:
         """Return the string set class paired with this collection."""
         return StringSet
+
+    @property
+    def max_string_len(self) -> int:
+        """The maximum number of operators per string."""
+        return self._impl.max_string_len
+
+    @requires_ownership
+    def append_n(self, n: int, source: SpecT | BaseString[ImplT, SpecT]) -> Self:
+        """Append a string repeatedly."""
+        if n < 0:
+            raise ValueError("The number of strings to append must be non-negative.")
+        if n == 0:
+            return self
+        value = self.string_type(self.modes, max_string_len=_string_length(source))
+        value.set(source)
+        self._impl._reserve_string_length(_string_length(value))
+        return super().append_n(n, value)
+
+    @classmethod
+    def from_str(
+        cls, source: str, modes: int | Modes | None = None, *, max_string_len: int = 0
+    ) -> Self:
+        """Create an instance of ``cls`` by parsing an input string.
+
+        Args:
+            source: String to parse.
+            modes: The mode space or mode count. If ``None``, the mode space is inferred from
+                the string specifier.
+            max_string_len: Maximum number of operators per string.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        if isinstance(modes, int):
+            modes = Modes.from_count(modes)
+        if not source.strip():
+            out = cls(modes or 0, max_string_len=max_string_len)
+            out.resize(0)
+            return out
+        springs = FermionSprings(source)
+        if modes is None:
+            modes = Modes.from_count(springs.default_n_mode())
+        return cls._create(cls.string_type.impl_type(modes, max_string_len, springs))
 
     def to_dict(self) -> SerializedContainer:
         """Return a JSON-serializable dictionary representation of ``self``.
@@ -349,88 +431,6 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
         rows = [[(mode, creation) for mode, creation in row] for row in source["strings"]]
         return cls.from_iterable(rows, space)
 
-    def __init__(self, modes: int | Modes = 0, *, size: int = 0, max_string_len: int = 0):
-        """Initialize the string array.
-
-        Args:
-            modes: The mode space or number of modes.
-            size: Number of default elements with which to create the instance.
-            max_string_len: Maximum number of operators per string.
-        """
-        modes = Modes.from_count(modes) if isinstance(modes, int) else modes
-        BaseStrings.__init__(self, self.string_type.impl_type(modes, max_string_len))
-        self.resize(size)
-
-    @property
-    def max_string_len(self) -> int:
-        """The maximum number of operators per string."""
-        return self._impl.max_string_len
-
-    @requires_ownership
-    def append_n(self, n: int, source: SpecT | BaseString[ImplT, SpecT]) -> Self:
-        """Append a string repeatedly."""
-        if n < 0:
-            raise ValueError("The number of strings to append must be non-negative.")
-        if n == 0:
-            return self
-        value = self.string_type(self.modes, max_string_len=_string_length(source))
-        value.set(source)
-        self._impl._reserve_string_length(_string_length(value))
-        return super().append_n(n, value)
-
-    @classmethod
-    def from_iterable(
-        cls,
-        source: Iterable[SpecT | BaseString[ImplT, SpecT]],
-        modes: int | Modes = 0,
-        *,
-        max_string_len: int = 0,
-    ) -> Self:
-        """Create an owning collection from an iterable of strings.
-
-        Args:
-            source: Iterable of compatible strings or string specifiers.
-            modes: The mode space or number of modes.
-            max_string_len: Initial maximum number of operators per string. Known sequences
-                reserve the required length before insertion; other iterables grow as needed.
-
-        Returns:
-            An independent owning instance of ``cls``.
-        """
-        out = cls(modes, max_string_len=max_string_len)
-        if isinstance(source, Sequence):
-            out._impl._reserve_string_length(
-                max(map(_string_length, source), default=0), warn=False
-            )
-        out.extend(source)
-        return out
-
-    @classmethod
-    def from_str(
-        cls, source: str, modes: int | Modes | None = None, *, max_string_len: int = 0
-    ) -> Self:
-        """Create an instance of ``cls`` by parsing an input string.
-
-        Args:
-            source: String to parse.
-            modes: The mode space or mode count. If ``None``, the mode space is inferred from
-                the string specifier.
-            max_string_len: Maximum number of operators per string.
-
-        Returns:
-            An instance of ``cls`` parsed from ``source``.
-        """
-        if isinstance(modes, int):
-            modes = Modes.from_count(modes)
-        if not source.strip():
-            out = cls(modes or 0, max_string_len=max_string_len)
-            out.resize(0)
-            return out
-        springs = FermionSprings(source)
-        if modes is None:
-            modes = Modes.from_count(springs.default_n_mode())
-        return cls._create(cls.string_type.impl_type(modes, max_string_len, springs))
-
 
 class StringSet(OperatorStringSet[ImplT, SpecT, ElemT]):
     """A collection of unique raw fermionic ladder-operator strings.
@@ -441,18 +441,6 @@ class StringSet(OperatorStringSet[ImplT, SpecT, ElemT]):
 
     strings_type = Strings
 
-    def to_dict(self) -> SerializedContainer:
-        """Return a JSON-serializable dictionary representation of ``self``.
-
-        Returns:
-            A dictionary containing container metadata, the unique strings, and the full mode space.
-        """
-        data = super().to_dict()
-        data["family"] = "fermion.operator.general"
-        data["space"] = _serialize_modes(self._impl.modes)
-        data["strings"] = [[list(op) for op in string.get_ops()] for string in self]
-        return data
-
     def __init__(self, modes: int | Modes = 0, *, max_string_len: int = 0):
         """Initialize the string set.
 
@@ -461,18 +449,6 @@ class StringSet(OperatorStringSet[ImplT, SpecT, ElemT]):
             max_string_len: Maximum number of operators per string.
         """
         BaseStringSet.__init__(self, self.strings_type(modes, max_string_len=max_string_len)._impl)
-
-    @property
-    def max_string_len(self) -> int:
-        """The maximum number of operators per string."""
-        return self._impl.max_string_len
-
-    def _get_working_string(
-        self, value: SpecT | BaseString[ImplT, SpecT]
-    ) -> BaseString[ImplT, SpecT]:
-        """Prepare a lookup or insertion string without warning about temporary storage."""
-        self._working_string._impl._reserve_string_length(_string_length(value), warn=False)
-        return super()._get_working_string(value)
 
     @classmethod
     def from_iterable(
@@ -501,3 +477,27 @@ class StringSet(OperatorStringSet[ImplT, SpecT, ElemT]):
             )
         out.insert_iterable(source)
         return out
+
+    @property
+    def max_string_len(self) -> int:
+        """The maximum number of operators per string."""
+        return self._impl.max_string_len
+
+    def _get_working_string(
+        self, value: SpecT | BaseString[ImplT, SpecT]
+    ) -> BaseString[ImplT, SpecT]:
+        """Prepare a lookup or insertion string without warning about temporary storage."""
+        self._working_string._impl._reserve_string_length(_string_length(value), warn=False)
+        return super()._get_working_string(value)
+
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            A dictionary containing container metadata, the unique strings, and the full mode space.
+        """
+        data = super().to_dict()
+        data["family"] = "fermion.operator.general"
+        data["space"] = _serialize_modes(self._impl.modes)
+        data["strings"] = [[list(op) for op in string.get_ops()] for string in self]
+        return data

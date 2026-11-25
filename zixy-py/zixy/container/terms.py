@@ -193,37 +193,6 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
     _impl: _TermData[ImplT, SpecT, C]
     _index: int | None
 
-    def to_dict(self) -> SerializedContainer:
-        """Return a JSON-serializable dictionary representation of ``self``.
-
-        Returns:
-            An independent dictionary containing the container metadata, full space, and
-            one string with its coefficient, using their respective serialization formats.
-        """
-        data = self.string.to_dict()
-        data["container"] = type(self).__name__
-        data["coeffs"] = self._data.coeffs[self.index : self.index + 1].to_dict()["coeffs"]
-        return data
-
-    @classmethod
-    def from_dict(cls, source: SerializedContainer) -> Self:
-        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
-
-        Args:
-            source: Dictionary containing the schema version, space, strings, and coefficients.
-                String and coefficient values must be compatible with the factories of ``cls``.
-
-        Returns:
-            A new owning instance of ``cls`` with independent string and coefficient storage.
-        """
-        check_schema_version(source)
-        strings = cls.strings_type.from_dict(source)
-        coeffs = cls.coeffs_type.from_dict(source)
-        data = TermData(strings, coeffs)
-        if len(data) != 1:
-            raise ValueError("A serialized Term must contain exactly one term.")
-        return cls._create(data)
-
     def __init__(self, data: _TermData[ImplT, SpecT, C], indexer: int | None = None):
         """Initialize the term.
 
@@ -249,24 +218,6 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
             indexer = slice_index(slice(None), indexer, len(data))
         self._impl = data
         self._index = indexer
-
-    @property
-    def _data(self) -> _TermData[ImplT, SpecT, C]:
-        """The raw term data object underlying ``self``."""
-        return self._impl
-
-    @classproperty
-    def coeff_type(cls: type[Term[ImplT, SpecT, C]]) -> type[C]:
-        """The scalar type supplied by the coefficient container."""
-        return cls.coeffs_type.coeff_type
-
-    @property
-    def string_type[StringT: String[Any, Any]](
-        self: _HasStringsType[_HasStringType[StringT]],
-    ) -> type[StringT]:
-        """The concrete string type of ``self``."""
-        term = cast("Term[Any, Any, Any]", self)
-        return cast("type[StringT]", term.strings_type.string_type)
 
     @classmethod
     def _create(cls, data: _TermData[ImplT, SpecT, C]) -> Self:
@@ -304,13 +255,6 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         Term.__init__(out, data, indexer)
         return out
 
-    def _identity(self) -> Self:
-        """Create a multiplicative identity of the same space and configuration as ``self``."""
-        data = self._impl._new()
-        data.resize(1)
-        data.coeffs[0] = unit(self.coeff_type)
-        return self._create(data)
-
     @classmethod
     def from_string(cls, string: String[ImplT, SpecT], coeff: C | None = None) -> Self:
         """Create an owning term from a string and an optional coefficient.
@@ -330,31 +274,27 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         term_data = TermData(strings, coeffs)
         return cls._create(term_data)
 
-    @classmethod
-    def from_str(cls, source: str, *args: Any, **kwargs: Any) -> Self:
-        """Create an instance of ``cls`` from a string.
-
-        Args:
-            source: String to parse.
-            *args: Positional arguments to forward to the string constructor.
-            **kwargs: Keyword arguments to forward to the string constructor.
-
-        Returns:
-            An instance of ``cls`` parsed from ``source``.
-        """
-        source_coeff, source_string = _parse_term_str(source)
-        strings = cls.strings_type.from_str(source_string, *args, **kwargs)
-        coeffs = _coeffs_from_str(source_coeff, cls.coeffs_type, len(strings))
-        data = TermData(strings, coeffs)
-        if len(data) != 1:
-            raise ValueError(
-                f"There should be exactly one Term string in the input, not {len(data)}."
-            )
-        return cls._create(data)
-
     def clone(self) -> Self:
         """Return a deep copy of ``self``."""
         return type(self)._create(self._impl.clone(self.index))
+
+    @classproperty
+    def coeff_type(cls: type[Term[ImplT, SpecT, C]]) -> type[C]:
+        """The scalar type supplied by the coefficient container."""
+        return cls.coeffs_type.coeff_type
+
+    @property
+    def string_type[StringT: String[Any, Any]](
+        self: _HasStringsType[_HasStringType[StringT]],
+    ) -> type[StringT]:
+        """The concrete string type of ``self``."""
+        term = cast("Term[Any, Any, Any]", self)
+        return cast("type[StringT]", term.strings_type.string_type)
+
+    @property
+    def _data(self) -> _TermData[ImplT, SpecT, C]:
+        """The raw term data object underlying ``self``."""
+        return self._impl
 
     @property
     def string[StringT: String[Any, Any]](
@@ -380,24 +320,6 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
             This method operates in-place.
         """
         self._data.coeffs[self.index] = convert(value, self._data.coeffs.coeff_type)
-
-    def aliases(self, other: Term[Any, Any, Any]) -> bool:
-        """Determine whether ``self`` is a view of the same string as ``other``."""
-        if type(self) is not type(other):
-            return False
-        return self.string.aliases(other.string)
-
-    def __eq__(self, other: object) -> bool:
-        """Return whether ``self`` and ``other`` are equal."""
-        if not isinstance(other, Term):
-            return NotImplemented
-        result: bool = (
-            self._impl.strings._impl.strings_eq(
-                [self.index], other._impl.strings._impl, [other.index]
-            )
-            and self._impl.coeffs[self.index] == other._impl.coeffs[other.index]
-        )
-        return result
 
     def set(self, source: TermSpecT[ImplT, SpecT, C]) -> None:
         """Assign a specification, string/coefficient pair, or compatible term.
@@ -441,11 +363,30 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         """
         self.set("")  # type: ignore[arg-type]
 
-    def __repr__(self) -> str:
-        """Return a string representation of ``self``."""
-        coeff = repr(self.coeff)
-        coeff = coeff.replace("-0j", "+0j")
-        return f"({coeff}, {self.string})"
+    def __eq__(self, other: object) -> bool:
+        """Return whether ``self`` and ``other`` are equal."""
+        if not isinstance(other, Term):
+            return NotImplemented
+        result: bool = (
+            self._impl.strings._impl.strings_eq(
+                [self.index], other._impl.strings._impl, [other.index]
+            )
+            and self._impl.coeffs[self.index] == other._impl.coeffs[other.index]
+        )
+        return result
+
+    def aliases(self, other: Term[Any, Any, Any]) -> bool:
+        """Determine whether ``self`` is a view of the same string as ``other``."""
+        if type(self) is not type(other):
+            return False
+        return self.string.aliases(other.string)
+
+    def _identity(self) -> Self:
+        """Create a multiplicative identity of the same space and configuration as ``self``."""
+        data = self._impl._new()
+        data.resize(1)
+        data.coeffs[0] = unit(self.coeff_type)
+        return self._create(data)
 
     def __pos__(self) -> Self:
         """Return ``self``."""
@@ -456,6 +397,65 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         out = self.clone()
         out.coeff = typesafe_mul(out.coeff, -1)
         return out
+
+    def __repr__(self) -> str:
+        """Return a string representation of ``self``."""
+        coeff = repr(self.coeff)
+        coeff = coeff.replace("-0j", "+0j")
+        return f"({coeff}, {self.string})"
+
+    @classmethod
+    def from_str(cls, source: str, *args: Any, **kwargs: Any) -> Self:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+            *args: Positional arguments to forward to the string constructor.
+            **kwargs: Keyword arguments to forward to the string constructor.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        source_coeff, source_string = _parse_term_str(source)
+        strings = cls.strings_type.from_str(source_string, *args, **kwargs)
+        coeffs = _coeffs_from_str(source_coeff, cls.coeffs_type, len(strings))
+        data = TermData(strings, coeffs)
+        if len(data) != 1:
+            raise ValueError(
+                f"There should be exactly one Term string in the input, not {len(data)}."
+            )
+        return cls._create(data)
+
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            An independent dictionary containing the container metadata, full space, and
+            one string with its coefficient, using their respective serialization formats.
+        """
+        data = self.string.to_dict()
+        data["container"] = type(self).__name__
+        data["coeffs"] = self._data.coeffs[self.index : self.index + 1].to_dict()["coeffs"]
+        return data
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: Dictionary containing the schema version, space, strings, and coefficients.
+                String and coefficient values must be compatible with the factories of ``cls``.
+
+        Returns:
+            A new owning instance of ``cls`` with independent string and coefficient storage.
+        """
+        check_schema_version(source)
+        strings = cls.strings_type.from_dict(source)
+        coeffs = cls.coeffs_type.from_dict(source)
+        data = TermData(strings, coeffs)
+        if len(data) != 1:
+            raise ValueError("A serialized Term must contain exactly one term.")
+        return cls._create(data)
 
 
 class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
@@ -474,49 +474,7 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
 
     _impl: _TermData[ImplT, SpecT, C]
 
-    def to_dict(self) -> SerializedContainer:
-        """Return a JSON-serializable dictionary representation of ``self``.
-
-        Returns:
-            An independent dictionary containing the container metadata, full space, and aligned
-            lists of strings and coefficients, using their respective serialization formats.
-
-        Note:
-            For a view, only the selected terms are included, in iteration order. Empty
-            collections retain their space. View metadata is not serialized.
-        """
-        data = self.strings.to_dict()
-        data["container"] = type(self).__name__
-        data["coeffs"] = self.coeffs.to_dict()["coeffs"]
-        return data
-
-    @classmethod
-    def from_dict(cls, source: SerializedContainer) -> Self:
-        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
-
-        Args:
-            source: Dictionary containing the schema version, space, strings, and coefficients.
-                String and coefficient values must be compatible with the factories of ``cls``.
-
-        Returns:
-            A new owning instance of ``cls`` with independent string and coefficient storage.
-
-        Raises:
-            KeyError: A required field is missing.
-            TypeError: A string, coefficient, or space value has an incompatible type.
-            ValueError: The schema version or contents are invalid, or the string and
-                coefficient counts differ.
-            IndexError: A serialized mode index is outside its space.
-
-        Note:
-            The family and container tags are not checked. The term factory determines the
-            decoded string and coefficient types; view metadata is not restored.
-        """
-        check_schema_version(source)
-        strings = cls.term_type.strings_type.from_dict(source)
-        coeffs = cls.term_type.coeffs_type.from_dict(source)
-        data = TermData(strings, coeffs)
-        return cls._create(data)
+    __array_priority__ = 1000
 
     def __init__(self, data: _TermData[ImplT, SpecT, C], indexer: slice = slice(None)):
         """Initialize the term array.
@@ -532,11 +490,6 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
             raise TypeError("Coefficient storage does not match its factory")
         self._impl = data
         self._slice = indexer
-
-    @property
-    def _data(self) -> _TermData[ImplT, SpecT, C]:
-        """The raw term data object underlying ``self``."""
-        return self._impl
 
     @classmethod
     def _create(cls, data: _TermData[ImplT, SpecT, C]) -> Self:
@@ -569,17 +522,50 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         Terms.__init__(out, data, indexer)
         return out
 
+    def _new(self) -> Self:
+        """Create an empty instance with the same type and configuration."""
+        return self._create(self._impl._new())
+
+    @classmethod
+    def from_iterable(
+        cls,
+        source: Iterable[TermSpecT[ImplT, SpecT, C]],
+        *args: Any,
+        **kwargs: Any,
+    ) -> Self:
+        """Create a new instance of ``cls`` from an iterable.
+
+        Args:
+            source: Iterable returning specifiers of all the terms to be appended.
+            args: Positional arguments to forward to the constructor of ``cls``.
+            kwargs: Keyword arguments to forward to the constructor of ``cls``.
+
+        Returns:
+            New instance of ``cls`` containing the terms specified by ``source``.
+        """
+        out = cls(*args, **kwargs)
+        out.extend(source)
+        return out
+
+    def new_term[TermT: Term[Any, Any, Any]](self: _HasTermType[TermT]) -> TermT:
+        """Create an independent term with the same space and configuration.
+
+        Returns:
+            An owning instance of ``self.term_type`` with independent string and
+            coefficient storage.
+        """
+        terms = cast("Terms[Any, Any, Any]", self)
+        data = terms._new().resize(1)
+        return self.term_type._create(data._impl)
+
     def clone(self) -> Self:
         """Return a deep copy of ``self``."""
         return self._create(self._impl.clone(self.slice))
 
-    def __eq__(self, other: object) -> bool:
-        """Return whether ``self`` and ``other`` are equal."""
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        if len(self) != len(other):
-            return False
-        return all(self[i] == other[i] for i in range(len(self)))
+    @classproperty
+    def coeff_type(cls: type[Terms[ImplT, SpecT, C]]) -> type[C]:
+        """The scalar type supplied by the term class."""
+        return cls.term_type.coeff_type
 
     @property
     def coeffs_type[Cs: Coeffs[Any]](
@@ -588,10 +574,13 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         """The concrete coefficient container type of ``self``."""
         return cast("type[Cs]", type(self._data.coeffs))
 
-    @classproperty
-    def coeff_type(cls: type[Terms[ImplT, SpecT, C]]) -> type[C]:
-        """The scalar type supplied by the term class."""
-        return cls.term_type.coeff_type
+    @property
+    def string_type[StringT: String[Any, Any]](
+        self: _HasTermType[_HasStringsType[_HasStringType[StringT]]],
+    ) -> type[StringT]:
+        """The concrete string type of ``self``."""
+        terms = cast("Terms[Any, Any, Any]", self)
+        return cast("type[StringT]", terms._impl.strings.string_type)
 
     @property
     def strings_type[StringsT: Strings[Any, Any]](
@@ -602,12 +591,9 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         return cast("type[StringsT]", type(terms._data.strings))
 
     @property
-    def string_type[StringT: String[Any, Any]](
-        self: _HasTermType[_HasStringsType[_HasStringType[StringT]]],
-    ) -> type[StringT]:
-        """The concrete string type of ``self``."""
-        terms = cast("Terms[Any, Any, Any]", self)
-        return cast("type[StringT]", terms._impl.strings.string_type)
+    def _data(self) -> _TermData[ImplT, SpecT, C]:
+        """The raw term data object underlying ``self``."""
+        return self._impl
 
     @property
     def strings[StringsT: Strings[Any, Any]](
@@ -623,10 +609,6 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
     ) -> Cs:
         """The coefficients of ``self``, preserving their concrete container type."""
         return cast("Cs", self._data.coeffs[self.slice])
-
-    def __repr__(self) -> str:
-        """Return a string representation of ``self``."""
-        return ", ".join(str(s) for s in self)
 
     @overload
     def __getitem__[TermT: Term[Any, Any, Any]](
@@ -695,6 +677,107 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
                 )
             self[indexer].set(source)
 
+    @requires_ownership
+    def append(
+        self,
+        source: TermSpecT[ImplT, SpecT, C] = "",  # type: ignore[assignment]
+    ) -> Self:
+        """Append ``source`` to the end of ``self``.
+
+        Args:
+            source: Value to append.
+
+        Note:
+            This method operates in-place.
+        """
+        return self.append_n(1, source)
+
+    def append_n(
+        self,
+        n: int,
+        source: TermSpecT[ImplT, SpecT, C] = "",  # type: ignore[assignment]
+    ) -> Self:
+        """Append ``source`` to the end of ``self`` ``n`` times.
+
+        Args:
+            n: Number of times to repeatedly append ``source``.
+            source: Value to append.
+
+        Note:
+            This method operates in-place.
+        """
+        n_old = len(self)
+        self.resize(n_old + n)
+        for i in range(n_old, len(self)):
+            self[i] = source
+        assert len(self) == n_old + n
+        return self
+
+    @requires_ownership
+    def extend(
+        self,
+        source: Iterable[TermSpecT[ImplT, SpecT, C]] = tuple(),
+    ) -> Self:
+        """Append the elements of ``source`` to the end of ``self``.
+
+        Args:
+            source: Iterable of compatible terms or term specifiers.
+
+        Returns:
+            ``self`` with the source elements appended in iteration order.
+
+        Raises:
+            ValueError: If ``self`` is a non-owning view, including for an empty source.
+
+        Note:
+            This method operates in-place. Extending from ``self`` or an overlapping
+            view appends the original visible elements once, in source order.
+        """
+        for item in source:
+            self.append(item)
+        return self
+
+    def __eq__(self, other: object) -> bool:
+        """Return whether ``self`` and ``other`` are equal."""
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        if len(self) != len(other):
+            return False
+        return all(self[i] == other[i] for i in range(len(self)))
+
+    def __pos__(self) -> Self:
+        """Return ``self``."""
+        return self.clone()
+
+    def __neg__(self) -> Self:
+        """Return the negation of ``self``."""
+        out = self.clone()
+        out *= cast("C", -1)
+        return out
+
+    def __mul__(self, coeff: C | Coeffs[C]) -> Self:
+        """Return ``self`` multiplied by a scalar or coefficient vector."""
+        coeff = normalize_scalar(coeff)
+        out = self.clone()
+        out *= coeff
+        return out
+
+    def __rmul__(self, coeff: C | Coeffs[C]) -> Self:
+        """Return ``self`` multiplied by a scalar or coefficient vector."""
+        coeff = normalize_scalar(coeff)
+        out = self.clone()
+        out *= coeff
+        return out
+
+    def __imul__(self, coeff: C | Coeffs[C]) -> Self:
+        """Multiply ``self`` in-place by a scalar or coefficient vector."""
+        coeff = normalize_scalar(coeff)
+        if isinstance(coeff, Coeffs):
+            self.scale_by_coeffs(coeff)
+        else:
+            self.scale(coeff)
+        return self
+
     def scale(self, scalar: C) -> None:
         """Scale all elements by a scalar factor.
 
@@ -728,73 +811,6 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
 
         for item, coeff in zip(self, coeffs):
             item.coeff = typesafe_mul(item.coeff, coeff)
-
-    __array_priority__ = 1000
-
-    def __imul__(self, coeff: C | Coeffs[C]) -> Self:
-        """Multiply ``self`` in-place by a scalar or coefficient vector."""
-        coeff = normalize_scalar(coeff)
-        if isinstance(coeff, Coeffs):
-            self.scale_by_coeffs(coeff)
-        else:
-            self.scale(coeff)
-        return self
-
-    def __mul__(self, coeff: C | Coeffs[C]) -> Self:
-        """Return ``self`` multiplied by a scalar or coefficient vector."""
-        coeff = normalize_scalar(coeff)
-        out = self.clone()
-        out *= coeff
-        return out
-
-    def __rmul__(self, coeff: C | Coeffs[C]) -> Self:
-        """Return ``self`` multiplied by a scalar or coefficient vector."""
-        coeff = normalize_scalar(coeff)
-        out = self.clone()
-        out *= coeff
-        return out
-
-    def __pos__(self) -> Self:
-        """Return ``self``."""
-        return self.clone()
-
-    def __neg__(self) -> Self:
-        """Return the negation of ``self``."""
-        out = self.clone()
-        out *= cast("C", -1)
-        return out
-
-    def _new(self) -> Self:
-        """Create an empty instance with the same type and configuration."""
-        return self._create(self._impl._new())
-
-    def reordered(self, inds: Sequence[int]) -> Self:
-        """Get a new instance with the elements of ``self`` in a new order.
-
-        Args:
-            inds: Sequence of indices defining the new order. Should be a permutation of
-                ``tuple(range(len(self)))``.
-
-        Returns:
-            A new instance with the reordered elements.
-        """
-        if not all(i < len(self) for i in inds):
-            raise IndexError("Index out of bounds in reorder.")
-        out = self._new()
-        for i in inds:
-            out.append(self[i])
-        return out
-
-    def new_term[TermT: Term[Any, Any, Any]](self: _HasTermType[TermT]) -> TermT:
-        """Create an independent term with the same space and configuration.
-
-        Returns:
-            An owning instance of ``self.term_type`` with independent string and
-            coefficient storage.
-        """
-        terms = cast("Terms[Any, Any, Any]", self)
-        data = terms._new().resize(1)
-        return self.term_type._create(data._impl)
 
     def iter_filter_map(
         self, f: Callable[[Term[ImplT, SpecT, C]], bool]
@@ -831,95 +847,26 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         out.extend(self.iter_filter_map(f))
         return out
 
-    def append_n(
-        self,
-        n: int,
-        source: TermSpecT[ImplT, SpecT, C] = "",  # type: ignore[assignment]
-    ) -> Self:
-        """Append ``source`` to the end of ``self`` ``n`` times.
+    def reordered(self, inds: Sequence[int]) -> Self:
+        """Get a new instance with the elements of ``self`` in a new order.
 
         Args:
-            n: Number of times to repeatedly append ``source``.
-            source: Value to append.
-
-        Note:
-            This method operates in-place.
-        """
-        n_old = len(self)
-        self.resize(n_old + n)
-        for i in range(n_old, len(self)):
-            self[i] = source
-        assert len(self) == n_old + n
-        return self
-
-    @requires_ownership
-    def append(
-        self,
-        source: TermSpecT[ImplT, SpecT, C] = "",  # type: ignore[assignment]
-    ) -> Self:
-        """Append ``source`` to the end of ``self``.
-
-        Args:
-            source: Value to append.
-
-        Note:
-            This method operates in-place.
-        """
-        return self.append_n(1, source)
-
-    @requires_ownership
-    def extend(
-        self,
-        source: Iterable[TermSpecT[ImplT, SpecT, C]] = tuple(),
-    ) -> Self:
-        """Append the elements of ``source`` to the end of ``self``.
-
-        Args:
-            source: Iterable of compatible terms or term specifiers.
+            inds: Sequence of indices defining the new order. Should be a permutation of
+                ``tuple(range(len(self)))``.
 
         Returns:
-            ``self`` with the source elements appended in iteration order.
-
-        Raises:
-            ValueError: If ``self`` is a non-owning view, including for an empty source.
-
-        Note:
-            This method operates in-place. Extending from ``self`` or an overlapping
-            view appends the original visible elements once, in source order.
+            A new instance with the reordered elements.
         """
-        for item in source:
-            self.append(item)
-        return self
-
-    def to_dataframe(self) -> pd.DataFrame:
-        """Convert ``self`` to a :class:`~pandas.DataFrame`."""
-        return pd.DataFrame(
-            {
-                "String": (str(c) for c in self.strings),
-                "Coefficient": (str(c) for c in self.coeffs),
-            }
-        )
-
-    @classmethod
-    def from_iterable(
-        cls,
-        source: Iterable[TermSpecT[ImplT, SpecT, C]],
-        *args: Any,
-        **kwargs: Any,
-    ) -> Self:
-        """Create a new instance of ``cls`` from an iterable.
-
-        Args:
-            source: Iterable returning specifiers of all the terms to be appended.
-            args: Positional arguments to forward to the constructor of ``cls``.
-            kwargs: Keyword arguments to forward to the constructor of ``cls``.
-
-        Returns:
-            New instance of ``cls`` containing the terms specified by ``source``.
-        """
-        out = cls(*args, **kwargs)
-        out.extend(source)
+        if not all(i < len(self) for i in inds):
+            raise IndexError("Index out of bounds in reorder.")
+        out = self._new()
+        for i in inds:
+            out.append(self[i])
         return out
+
+    def __repr__(self) -> str:
+        """Return a string representation of ``self``."""
+        return ", ".join(str(s) for s in self)
 
     @classmethod
     def from_str(cls, source: str, *args: Any, **kwargs: Any) -> Self:
@@ -940,6 +887,59 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         coeffs = _coeffs_from_str(source_coeff, cls.term_type.coeffs_type, len(strings))
         term_data = TermData(strings, coeffs)
         return cls._create(term_data)
+
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            An independent dictionary containing the container metadata, full space, and aligned
+            lists of strings and coefficients, using their respective serialization formats.
+
+        Note:
+            For a view, only the selected terms are included, in iteration order. Empty
+            collections retain their space. View metadata is not serialized.
+        """
+        data = self.strings.to_dict()
+        data["container"] = type(self).__name__
+        data["coeffs"] = self.coeffs.to_dict()["coeffs"]
+        return data
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: Dictionary containing the schema version, space, strings, and coefficients.
+                String and coefficient values must be compatible with the factories of ``cls``.
+
+        Returns:
+            A new owning instance of ``cls`` with independent string and coefficient storage.
+
+        Raises:
+            KeyError: A required field is missing.
+            TypeError: A string, coefficient, or space value has an incompatible type.
+            ValueError: The schema version or contents are invalid, or the string and
+                coefficient counts differ.
+            IndexError: A serialized mode index is outside its space.
+
+        Note:
+            The family and container tags are not checked. The term factory determines the
+            decoded string and coefficient types; view metadata is not restored.
+        """
+        check_schema_version(source)
+        strings = cls.term_type.strings_type.from_dict(source)
+        coeffs = cls.term_type.coeffs_type.from_dict(source)
+        data = TermData(strings, coeffs)
+        return cls._create(data)
+
+    def to_dataframe(self) -> pd.DataFrame:
+        """Convert ``self`` to a :class:`~pandas.DataFrame`."""
+        return pd.DataFrame(
+            {
+                "String": (str(c) for c in self.strings),
+                "Coefficient": (str(c) for c in self.coeffs),
+            }
+        )
 
 
 class NumericTerms[ImplT: ImplArray, SpecT, C: (float, complex)](Terms[ImplT, SpecT, C]):
@@ -988,48 +988,6 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
     _string_set: StringSet[ImplT, SpecT]
     _working_term: Term[ImplT, SpecT, C]
 
-    def to_dict(self) -> SerializedContainer:
-        """Return a JSON-serializable dictionary representation of ``self``.
-
-        Returns:
-            An independent dictionary containing the container metadata, full space, and aligned
-            lists of unique strings and coefficients, using their serialization formats.
-
-        Note:
-            Terms are stored in iteration order, including terms with zero coefficients. The
-            string lookup map is not serialized. Term sums use the same representation.
-        """
-        data = self._data.strings.to_dict()
-        data["container"] = type(self).__name__
-        data["coeffs"] = self._data.coeffs.to_dict()["coeffs"]
-        return data
-
-    @classmethod
-    def from_dict(cls, source: SerializedContainer) -> Self:
-        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
-
-        Args:
-            source: Dictionary containing the schema version, space, strings, and coefficients.
-                Values must be compatible with the factories of ``terms_type``.
-
-        Returns:
-            A new instance of ``cls`` owning independent string and coefficient storage and
-            a rebuilt string lookup map.
-
-        Raises:
-            KeyError: A required field is missing.
-            TypeError: A string, coefficient, or space value has an incompatible type.
-            ValueError: The schema version or contents are invalid, or the string and
-                coefficient counts differ.
-            IndexError: A serialized mode index is outside its space.
-
-        Note:
-            The family and container tags are not checked. Duplicate strings follow
-            ``from_terms`` semantics: term sets retain the last coefficient, while term sums
-            add coefficients together.
-        """
-        return cls.from_terms(cls.terms_type.from_dict(source))
-
     def __init__(self, terms: Terms[ImplT, SpecT, C]):
         """Initialize the term set.
 
@@ -1050,79 +1008,6 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             self._collect_terms(terms, sum_duplicates=False)
         else:
             self.insert_iterable(terms)
-
-    def _collect_terms(self, terms: Terms[ImplT, SpecT, C], sum_duplicates: bool) -> None:
-        """Collect numeric terms in Rust, normalizing sliced inputs first."""
-        if (
-            not terms.is_owning()
-            or not terms._impl.strings.is_owning()
-            or not terms._impl.coeffs.is_owning()
-        ):
-            terms = terms.clone()
-        source = terms._impl.strings._impl
-        coeffs = terms._impl.coeffs
-        out_coeffs = self._impl.coeffs
-        if isinstance(coeffs, RealCoeffs):
-            assert isinstance(out_coeffs, RealCoeffs)
-            array, mapping, values = source.collect_terms_real(coeffs._impl, sum_duplicates)
-            out_coeffs._impl = values
-        else:
-            assert isinstance(coeffs, ComplexCoeffs)
-            assert isinstance(out_coeffs, ComplexCoeffs)
-            array, mapping, complex_values = source.collect_terms_complex(
-                coeffs._impl, sum_duplicates
-            )
-            out_coeffs._impl = complex_values
-        self._impl.strings._impl = array
-        self._bind(self._impl, mapping)
-
-    @property
-    def _data(self) -> _TermData[ImplT, SpecT, C]:
-        """The raw term data object underlying ``self``."""
-        return self._impl
-
-    @property
-    def coeffs_type[Cs: Coeffs[Any]](
-        self: _TermSetCoeffs[Cs],
-    ) -> type[Cs]:
-        """The concrete coefficient container type of ``self``."""
-        return cast("type[Cs]", type(self._data.coeffs))
-
-    @property
-    def coeffs[Cs: Coeffs[Any]](
-        self: _TermSetCoeffs[Cs],
-    ) -> Cs:
-        """A fixed-length view supporting write-through coefficient updates."""
-        return cast("Cs", self._data.coeffs.as_view())
-
-    @classproperty
-    def coeff_type(cls: type[TermSet[ImplT, SpecT, C]]) -> type[C]:
-        """The scalar type supplied by the term sequence class."""
-        return cls.terms_type.coeff_type
-
-    @property
-    def strings_type[StringsT: Strings[Any, Any]](
-        self: _HasTermsType[_HasTermType[_HasStringsType[StringsT]]],
-    ) -> type[StringsT]:
-        """The concrete string container type of ``self``."""
-        terms = cast("TermSet[Any, Any, Any]", self)
-        return cast("type[StringsT]", type(terms._impl.strings))
-
-    @property
-    def string_type[StringT: String[Any, Any]](
-        self: _HasTermsType[_HasTermType[_HasStringsType[_HasStringType[StringT]]]],
-    ) -> type[StringT]:
-        """The concrete string type of ``self``."""
-        terms = cast("TermSet[Any, Any, Any]", self)
-        return cast("type[StringT]", terms._data.strings.string_type)
-
-    @property
-    def strings[StringsT: Strings[Any, Any]](
-        self: _HasTermsType[_HasTermType[_HasStringsType[StringsT]]],
-    ) -> StringsT:
-        """An independent copy of the keys in iteration order."""
-        terms = cast("TermSet[Any, Any, Any]", self)
-        return cast("StringsT", terms._impl.strings.clone())
 
     def _bind(self, data: _TermData[ImplT, SpecT, C], map_: Map) -> None:
         """Set the term data and lookup map for ``self``.
@@ -1164,6 +1049,72 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         term_data = TermData(self._impl.strings._new(), self._impl.coeffs._new())
         return self._create(term_data, map_=self._string_set.map_type())
 
+    @classmethod
+    def from_terms(cls, terms: Terms[ImplT, SpecT, C]) -> Self:
+        """Create a new instance of ``cls`` from ``terms``.
+
+        Args:
+            terms: Terms-derived object from which to construct the set of terms.
+
+        Returns:
+            A new instance of ``cls`` containing the terms in ``terms``.
+        """
+        out = cls.__new__(cls)
+        TermSet.__init__(out, terms)
+        return out
+
+    @classmethod
+    def from_iterable(
+        cls,
+        source: Iterable[TermSpecT[ImplT, SpecT, C]],
+        *args: Any,
+        **kwargs: Any,
+    ) -> Self:
+        """Create a new instance of ``cls`` from an iterable.
+
+        Args:
+            source: Iterable returning specifiers of all the terms to be appended.
+            args: Positional arguments to forward to the constructor of ``cls``.
+            kwargs: Keyword arguments to forward to the constructor of ``cls``.
+
+        Returns:
+            New instance of ``cls`` containing the terms specified by ``source``.
+        """
+        out = cls(*args, **kwargs)
+        out.insert_iterable(source)
+        return out
+
+    def _from_generator(self, gen: Iterator[Term[ImplT, SpecT, C]]) -> Self:
+        """Creates a new instance from a generator yielding instances of :class:`Term`."""
+        out = self._new()
+        out.insert_iterable(gen)
+        return out
+
+    def _collect_terms(self, terms: Terms[ImplT, SpecT, C], sum_duplicates: bool) -> None:
+        """Collect numeric terms in Rust, normalizing sliced inputs first."""
+        if (
+            not terms.is_owning()
+            or not terms._impl.strings.is_owning()
+            or not terms._impl.coeffs.is_owning()
+        ):
+            terms = terms.clone()
+        source = terms._impl.strings._impl
+        coeffs = terms._impl.coeffs
+        out_coeffs = self._impl.coeffs
+        if isinstance(coeffs, RealCoeffs):
+            assert isinstance(out_coeffs, RealCoeffs)
+            array, mapping, values = source.collect_terms_real(coeffs._impl, sum_duplicates)
+            out_coeffs._impl = values
+        else:
+            assert isinstance(coeffs, ComplexCoeffs)
+            assert isinstance(out_coeffs, ComplexCoeffs)
+            array, mapping, complex_values = source.collect_terms_complex(
+                coeffs._impl, sum_duplicates
+            )
+            out_coeffs._impl = complex_values
+        self._impl.strings._impl = array
+        self._bind(self._impl, mapping)
+
     def clone(self) -> Self:
         """Return a deep copy of ``self``."""
         if isinstance(self._impl.coeffs, RealCoeffs | ComplexCoeffs):
@@ -1192,181 +1143,110 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         out._bind(out._impl, mapping)
         return out
 
-    def to_terms(self) -> Terms[ImplT, SpecT, C]:
-        """Get a collection of terms containing the same data as ``self``."""
-        return self.terms_type._create(self._impl.clone())
+    @classproperty
+    def coeff_type(cls: type[TermSet[ImplT, SpecT, C]]) -> type[C]:
+        """The scalar type supplied by the term sequence class."""
+        return cls.terms_type.coeff_type
 
-    @classmethod
-    def from_terms(cls, terms: Terms[ImplT, SpecT, C]) -> Self:
-        """Create a new instance of ``cls`` from ``terms``.
+    @property
+    def coeffs_type[Cs: Coeffs[Any]](
+        self: _TermSetCoeffs[Cs],
+    ) -> type[Cs]:
+        """The concrete coefficient container type of ``self``."""
+        return cast("type[Cs]", type(self._data.coeffs))
 
-        Args:
-            terms: Terms-derived object from which to construct the set of terms.
+    @property
+    def string_type[StringT: String[Any, Any]](
+        self: _HasTermsType[_HasTermType[_HasStringsType[_HasStringType[StringT]]]],
+    ) -> type[StringT]:
+        """The concrete string type of ``self``."""
+        terms = cast("TermSet[Any, Any, Any]", self)
+        return cast("type[StringT]", terms._data.strings.string_type)
 
-        Returns:
-            A new instance of ``cls`` containing the terms in ``terms``.
-        """
-        out = cls.__new__(cls)
-        TermSet.__init__(out, terms)
-        return out
+    @property
+    def strings_type[StringsT: Strings[Any, Any]](
+        self: _HasTermsType[_HasTermType[_HasStringsType[StringsT]]],
+    ) -> type[StringsT]:
+        """The concrete string container type of ``self``."""
+        terms = cast("TermSet[Any, Any, Any]", self)
+        return cast("type[StringsT]", type(terms._impl.strings))
 
-    @classmethod
-    def from_str(cls, source: str, *args: Any, **kwargs: Any) -> Self:
-        """Create a new instance of ``cls`` from a string.
+    @property
+    def _data(self) -> _TermData[ImplT, SpecT, C]:
+        """The raw term data object underlying ``self``."""
+        return self._impl
 
-        Args:
-            source: String to parse.
-            *args: Positional arguments to forward to the string constructor.
-            **kwargs: Keyword arguments to forward to the string constructor.
+    @property
+    def strings[StringsT: Strings[Any, Any]](
+        self: _HasTermsType[_HasTermType[_HasStringsType[StringsT]]],
+    ) -> StringsT:
+        """An independent copy of the keys in iteration order."""
+        terms = cast("TermSet[Any, Any, Any]", self)
+        return cast("StringsT", terms._impl.strings.clone())
 
-        Returns:
-            An instance of ``cls`` parsed from ``source``.
-        """
-        terms = cls.terms_type.from_str(source, *args, **kwargs)
-        return cls.from_terms(terms)
-
-    @overload
-    def into[T: TermSet[Any, Any, Any]](self, t: type[T]) -> T: ...
-    @overload
-    def into[T: ViewableBase[Any, Any]](self, t: type[T]) -> T: ...
-
-    def into[T: ViewableBase[Any, Any], COther: (float, complex, Sign, ComplexSign, Expr)](
-        self, t: type[T] | type[TermSet[ImplT, SpecT, COther]]
-    ) -> T | TermSet[ImplT, SpecT, COther]:
-        """Clone ``self`` into a new related container of type ``t``.
-
-        Args:
-            t: Type of the new container to create.
-
-        Returns:
-            A new instance of ``t`` containing the same data as ``self``.
-        """
-        if issubclass(t, TermSet):
-            coeffs_type = t.terms_type.term_type.coeffs_type
-            strings = self._impl.strings
-            coeffs = convert_vec(self._impl.coeffs, coeffs_type)
-            term_data = TermData(strings, coeffs)
-            return t.from_terms(t.terms_type._create(term_data))
-        try:
-            return self.to_terms().into(t)
-        except (TypeError, ValueError) as e:
-            raise TypeError(f"Cannot convert {type(self)} into unsupported target type {t}.") from e
-
-    def to_dataframe(self) -> pd.DataFrame:
-        """Convert ``self`` to a :class:`~pandas.DataFrame`."""
-        return self.to_terms().to_dataframe()
-
-    def __repr__(self) -> str:
-        """Return a string representation of ``self``."""
-        return ", ".join(str(s) for s in self)
+    @property
+    def coeffs[Cs: Coeffs[Any]](
+        self: _TermSetCoeffs[Cs],
+    ) -> Cs:
+        """A fixed-length view supporting write-through coefficient updates."""
+        return cast("Cs", self._data.coeffs.as_view())
 
     def __len__(self) -> int:
         """Get the number of elements in ``self``."""
         return len(self._impl)
 
-    def _check_term(self, value: Term[ImplT, SpecT, C]) -> None:
-        """Hook to check whether a term is valid for insertion into ``self``."""
-        pass
+    def __iter__[TermT: Term[Any, Any, Any]](
+        self: _HasTermsType[_HasTermType[TermT]],
+    ) -> Iterator[TermT]:
+        """Yield an independent, owning copy of each term."""
+        terms = cast("TermSet[Any, Any, Any]", self)
+        for i in range(len(terms)):
+            yield cast("TermT", terms.terms_type.term_type._create(terms._impl.clone(i)))
 
-    def _check_string(self, value: String[ImplT, SpecT]) -> None:
-        """Hook to check whether a string is valid for insertion into ``self``."""
-        pass
-
-    def _get_working_term(self, value: TermSpecT[ImplT, SpecT, C]) -> Term[ImplT, SpecT, C]:
-        """Get a term that contains the data specified by ``value``.
+    def __getitem__(self, key: SpecT | String[ImplT, SpecT] | _AnyCoeffTerm[ImplT, SpecT]) -> C:
+        """Get the coefficient of the term with string specified by ``key``.
 
         Args:
-            value: Term or term specifier required.
+            key: String, string specifier, or compatible term. A term's coefficient
+                is ignored and is not converted to this collection's coefficient type.
 
         Returns:
-            If ``value`` already has the destination term type, return it. Otherwise, copy or
-            parse it into the working term, applying checked coefficient conversion.
-        """
-        if isinstance(value, self.terms_type.term_type):
-            term = value
-        else:
-            self._working_term.set(value)
-            term = self._working_term
-        self._check_term(term)
-        return term
+            The coefficient of the term with string specified by ``key``.
 
-    def _get_working_string(self, value: String[ImplT, SpecT] | SpecT) -> String[ImplT, SpecT]:
-        """Get a string that contains the data specified by ``value``.
+        Raises:
+            KeyError: The string specified by ``key`` was not found in ``self``.
+            TypeError: The key is unsupported or belongs to an incompatible family.
+            ValueError: The key is invalid or belongs to an incompatible space.
+        """
+        out = self.get(key)
+        if out is None:
+            raise KeyError(f"Value {key} not found in TermSet.")
+        return out
+
+    def __setitem__(self, key: SpecT | Term[ImplT, SpecT, C], coeff: C) -> None:
+        """Set the coefficient of the term with string specified by ``key``."""
+        self._impl.coeffs[self.insert(key)] = coeff
+
+    def __contains__(self, value: object) -> bool:
+        """Check whether a string key or complete term is stored in ``self``.
 
         Args:
-            value: String or string specifier required.
+            value: String, string specifier, or term to look up. Strings and string
+                specifiers test key membership; terms also require an equal coefficient.
 
         Returns:
-            If ``value`` is an instance of :class:`~zixy.container.strings.String`, return
-            it. Otherwise, set the string of the internally-allocated working term to the data
-            specified by ``value`` and return that string.
+            Whether the key or complete term is present. Unsupported objects, out-of-range
+            string specifiers, and objects from incompatible families or spaces return
+            ``False``. A missing key is not a member, including when querying a
+            zero-coefficient term.
         """
-        string_type = self._impl.strings.string_type
-        assert issubclass(string_type, String)
-        if isinstance(value, string_type):
-            string = value
-        else:
-            self._working_term.string.set(value)
-            string = self._working_term.string
-        self._check_string(string)
-        return string
-
-    def insert(self, key: TermSpecT[ImplT, SpecT, C]) -> int:
-        """Try to insert the given term.
-
-        Args:
-            key: The term specifier.
-
-        Returns:
-            The index at which the term was inserted, or the index at which it already was
-            stored if insertion is unsuccessful.
-
-        Note:
-            This method operates in-place.
-        """
-        term = self._get_working_term(key)
-        index = self._string_set.insert(term.string)
-        self._impl.coeffs.resize(len(self._impl.strings))
-        self._impl.coeffs[index] = term.coeff
-        return index
-
-    def soft_insert(self, key: TermSpecT[ImplT, SpecT, C]) -> tuple[int, bool]:
-        """Insertion method which does not overwrite coefficient values.
-
-        Operates similarly to :meth:`insert`, but does not overwrite coefficient values if the
-        string specified by ``key`` is already present in ``self``.
-
-        Args:
-            key: The term specifier.
-
-        Returns:
-            Index at which the term was inserted or found, and a boolean indicating whether
-            insertion was successful (i.e. whether the string specified by ``key`` was not
-            already present in ``self``).
-
-        Note:
-            This method operates in-place.
-        """
-        term = self._get_working_term(key)
-        index = self.lookup_index(term)
-        if index is None:
-            return self.insert(term), True
-        return index, False
-
-    def insert_iterable(
-        self,
-        source: Iterable[TermSpecT[ImplT, SpecT, C]] = tuple(),
-    ) -> None:
-        """Insert many terms from an iterable source.
-
-        Args:
-            source: Iterable over any term specifiers.
-
-        Note:
-            This method operates in-place.
-        """
-        for item in source:
-            self.insert(item)
+        if not isinstance(value, Term):
+            return value in self._string_set
+        try:
+            index = self._string_set.lookup_index(value.string)
+        except (TypeError, ValueError, IndexError):
+            return False
+        return index is not None and self.terms_type.term_type._view(self._impl, index) == value
 
     def lookup_index(
         self, key: SpecT | String[ImplT, SpecT] | _AnyCoeffTerm[ImplT, SpecT]
@@ -1429,26 +1309,109 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             return default
         return self._impl.coeffs[index]
 
-    def __contains__(self, value: object) -> bool:
-        """Check whether a string key or complete term is stored in ``self``.
+    def _check_string(self, value: String[ImplT, SpecT]) -> None:
+        """Hook to check whether a string is valid for insertion into ``self``."""
+        pass
+
+    def _check_term(self, value: Term[ImplT, SpecT, C]) -> None:
+        """Hook to check whether a term is valid for insertion into ``self``."""
+        pass
+
+    def _get_working_string(self, value: String[ImplT, SpecT] | SpecT) -> String[ImplT, SpecT]:
+        """Get a string that contains the data specified by ``value``.
 
         Args:
-            value: String, string specifier, or term to look up. Strings and string
-                specifiers test key membership; terms also require an equal coefficient.
+            value: String or string specifier required.
 
         Returns:
-            Whether the key or complete term is present. Unsupported objects, out-of-range
-            string specifiers, and objects from incompatible families or spaces return
-            ``False``. A missing key is not a member, including when querying a
-            zero-coefficient term.
+            If ``value`` is an instance of :class:`~zixy.container.strings.String`, return
+            it. Otherwise, set the string of the internally-allocated working term to the data
+            specified by ``value`` and return that string.
         """
-        if not isinstance(value, Term):
-            return value in self._string_set
-        try:
-            index = self._string_set.lookup_index(value.string)
-        except (TypeError, ValueError, IndexError):
-            return False
-        return index is not None and self.terms_type.term_type._view(self._impl, index) == value
+        string_type = self._impl.strings.string_type
+        assert issubclass(string_type, String)
+        if isinstance(value, string_type):
+            string = value
+        else:
+            self._working_term.string.set(value)
+            string = self._working_term.string
+        self._check_string(string)
+        return string
+
+    def _get_working_term(self, value: TermSpecT[ImplT, SpecT, C]) -> Term[ImplT, SpecT, C]:
+        """Get a term that contains the data specified by ``value``.
+
+        Args:
+            value: Term or term specifier required.
+
+        Returns:
+            If ``value`` already has the destination term type, return it. Otherwise, copy or
+            parse it into the working term, applying checked coefficient conversion.
+        """
+        if isinstance(value, self.terms_type.term_type):
+            term = value
+        else:
+            self._working_term.set(value)
+            term = self._working_term
+        self._check_term(term)
+        return term
+
+    def insert(self, key: TermSpecT[ImplT, SpecT, C]) -> int:
+        """Try to insert the given term.
+
+        Args:
+            key: The term specifier.
+
+        Returns:
+            The index at which the term was inserted, or the index at which it already was
+            stored if insertion is unsuccessful.
+
+        Note:
+            This method operates in-place.
+        """
+        term = self._get_working_term(key)
+        index = self._string_set.insert(term.string)
+        self._impl.coeffs.resize(len(self._impl.strings))
+        self._impl.coeffs[index] = term.coeff
+        return index
+
+    def soft_insert(self, key: TermSpecT[ImplT, SpecT, C]) -> tuple[int, bool]:
+        """Insertion method which does not overwrite coefficient values.
+
+        Operates similarly to :meth:`insert`, but does not overwrite coefficient values if the
+        string specified by ``key`` is already present in ``self``.
+
+        Args:
+            key: The term specifier.
+
+        Returns:
+            Index at which the term was inserted or found, and a boolean indicating whether
+            insertion was successful (i.e. whether the string specified by ``key`` was not
+            already present in ``self``).
+
+        Note:
+            This method operates in-place.
+        """
+        term = self._get_working_term(key)
+        index = self.lookup_index(term)
+        if index is None:
+            return self.insert(term), True
+        return index, False
+
+    def insert_iterable(
+        self,
+        source: Iterable[TermSpecT[ImplT, SpecT, C]] = tuple(),
+    ) -> None:
+        """Insert many terms from an iterable source.
+
+        Args:
+            source: Iterable over any term specifiers.
+
+        Note:
+            This method operates in-place.
+        """
+        for item in source:
+            self.insert(item)
 
     def remove(self, value: SpecT | String[ImplT, SpecT] | Term[ImplT, SpecT, C]) -> int:
         """Try to remove the string specified by ``value`` from ``self``.
@@ -1471,30 +1434,6 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         self._impl.coeffs.swap_remove(i)
         return i
 
-    def __getitem__(self, key: SpecT | String[ImplT, SpecT] | _AnyCoeffTerm[ImplT, SpecT]) -> C:
-        """Get the coefficient of the term with string specified by ``key``.
-
-        Args:
-            key: String, string specifier, or compatible term. A term's coefficient
-                is ignored and is not converted to this collection's coefficient type.
-
-        Returns:
-            The coefficient of the term with string specified by ``key``.
-
-        Raises:
-            KeyError: The string specified by ``key`` was not found in ``self``.
-            TypeError: The key is unsupported or belongs to an incompatible family.
-            ValueError: The key is invalid or belongs to an incompatible space.
-        """
-        out = self.get(key)
-        if out is None:
-            raise KeyError(f"Value {key} not found in TermSet.")
-        return out
-
-    def __setitem__(self, key: SpecT | Term[ImplT, SpecT, C], coeff: C) -> None:
-        """Set the coefficient of the term with string specified by ``key``."""
-        self._impl.coeffs[self.insert(key)] = coeff
-
     def __eq__(self, other: object) -> bool:
         """Return whether ``self`` and ``other`` are equal."""
         if not isinstance(other, type(self)):
@@ -1502,14 +1441,6 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         if self._string_set != other._string_set:
             return False
         return all(self.get(term.string) == term.coeff for term in other)
-
-    def __iter__[TermT: Term[Any, Any, Any]](
-        self: _HasTermsType[_HasTermType[TermT]],
-    ) -> Iterator[TermT]:
-        """Yield an independent, owning copy of each term."""
-        terms = cast("TermSet[Any, Any, Any]", self)
-        for i in range(len(terms)):
-            yield cast("TermT", terms.terms_type.term_type._create(terms._impl.clone(i)))
 
     def _symbolic_vdot(self: TermSet[ImplT, SpecT, Expr], rhs: TermSet[ImplT, SpecT, Expr]) -> Expr:
         """Compute a sparse symbolic inner product between compatible term sets."""
@@ -1520,12 +1451,6 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
                 conjugated = lhs_coeff.conjugate() if hasattr(lhs_coeff, "conjugate") else lhs_coeff
                 result += conjugated * term.coeff
         return simplify(result)
-
-    def _from_generator(self, gen: Iterator[Term[ImplT, SpecT, C]]) -> Self:
-        """Creates a new instance from a generator yielding instances of :class:`Term`."""
-        out = self._new()
-        out.insert_iterable(gen)
-        return out
 
     def iter_filter_map(
         self, f: Callable[[Term[ImplT, SpecT, C]], bool]
@@ -1566,27 +1491,6 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         """
         return self._from_generator(self.iter_filter_map(f))
 
-    @classmethod
-    def from_iterable(
-        cls,
-        source: Iterable[TermSpecT[ImplT, SpecT, C]],
-        *args: Any,
-        **kwargs: Any,
-    ) -> Self:
-        """Create a new instance of ``cls`` from an iterable.
-
-        Args:
-            source: Iterable returning specifiers of all the terms to be appended.
-            args: Positional arguments to forward to the constructor of ``cls``.
-            kwargs: Keyword arguments to forward to the constructor of ``cls``.
-
-        Returns:
-            New instance of ``cls`` containing the terms specified by ``source``.
-        """
-        out = cls(*args, **kwargs)
-        out.insert_iterable(source)
-        return out
-
     def iter_filter_nonzero(self) -> Iterator[Term[ImplT, SpecT, C]]:
         """Iterate over the non-zero terms of ``self``."""
         return (term for term in self if term.coeff != 0)
@@ -1606,6 +1510,102 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
                 coeffs.append(coeff)
         return out
 
+    def __repr__(self) -> str:
+        """Return a string representation of ``self``."""
+        return ", ".join(str(s) for s in self)
+
+    @classmethod
+    def from_str(cls, source: str, *args: Any, **kwargs: Any) -> Self:
+        """Create a new instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+            *args: Positional arguments to forward to the string constructor.
+            **kwargs: Keyword arguments to forward to the string constructor.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        terms = cls.terms_type.from_str(source, *args, **kwargs)
+        return cls.from_terms(terms)
+
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            An independent dictionary containing the container metadata, full space, and aligned
+            lists of unique strings and coefficients, using their serialization formats.
+
+        Note:
+            Terms are stored in iteration order, including terms with zero coefficients. The
+            string lookup map is not serialized. Term sums use the same representation.
+        """
+        data = self._data.strings.to_dict()
+        data["container"] = type(self).__name__
+        data["coeffs"] = self._data.coeffs.to_dict()["coeffs"]
+        return data
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: Dictionary containing the schema version, space, strings, and coefficients.
+                Values must be compatible with the factories of ``terms_type``.
+
+        Returns:
+            A new instance of ``cls`` owning independent string and coefficient storage and
+            a rebuilt string lookup map.
+
+        Raises:
+            KeyError: A required field is missing.
+            TypeError: A string, coefficient, or space value has an incompatible type.
+            ValueError: The schema version or contents are invalid, or the string and
+                coefficient counts differ.
+            IndexError: A serialized mode index is outside its space.
+
+        Note:
+            The family and container tags are not checked. Duplicate strings follow
+            ``from_terms`` semantics: term sets retain the last coefficient, while term sums
+            add coefficients together.
+        """
+        return cls.from_terms(cls.terms_type.from_dict(source))
+
+    @overload
+    def into[T: TermSet[Any, Any, Any]](self, t: type[T]) -> T: ...
+    @overload
+    def into[T: ViewableBase[Any, Any]](self, t: type[T]) -> T: ...
+
+    def into[T: ViewableBase[Any, Any], COther: (float, complex, Sign, ComplexSign, Expr)](
+        self, t: type[T] | type[TermSet[ImplT, SpecT, COther]]
+    ) -> T | TermSet[ImplT, SpecT, COther]:
+        """Clone ``self`` into a new related container of type ``t``.
+
+        Args:
+            t: Type of the new container to create.
+
+        Returns:
+            A new instance of ``t`` containing the same data as ``self``.
+        """
+        if issubclass(t, TermSet):
+            coeffs_type = t.terms_type.term_type.coeffs_type
+            strings = self._impl.strings
+            coeffs = convert_vec(self._impl.coeffs, coeffs_type)
+            term_data = TermData(strings, coeffs)
+            return t.from_terms(t.terms_type._create(term_data))
+        try:
+            return self.to_terms().into(t)
+        except (TypeError, ValueError) as e:
+            raise TypeError(f"Cannot convert {type(self)} into unsupported target type {t}.") from e
+
+    def to_terms(self) -> Terms[ImplT, SpecT, C]:
+        """Get a collection of terms containing the same data as ``self``."""
+        return self.terms_type._create(self._impl.clone())
+
+    def to_dataframe(self) -> pd.DataFrame:
+        """Convert ``self`` to a :class:`~pandas.DataFrame`."""
+        return self.to_terms().to_dataframe()
+
 
 class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Expr)](TermSet[ImplT, SpecT, C]):
     """A sum of terms consisting of strings and coefficients.
@@ -1620,13 +1620,7 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Expr)](TermSet[ImplT,
         are not.
     """
 
-    def _identity(self) -> Self:
-        """Create a multiplicative identity of the same space and configuration as ``self``."""
-        out = self._new()
-        term = out._working_term
-        term.coeff = unit(term.coeff_type)
-        out.insert(term)
-        return out
+    __array_priority__ = 1000
 
     @classmethod
     def from_terms(cls, terms: Terms[ImplT, SpecT, C]) -> Self:
@@ -1646,6 +1640,78 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Expr)](TermSet[ImplT,
         else:
             out.add_iterable(terms)
         return out
+
+    @classmethod
+    def from_iterable(
+        cls,
+        source: Iterable[TermSpecT[ImplT, SpecT, C]],
+        *args: Any,
+        **kwargs: Any,
+    ) -> Self:
+        """Create a new instance of ``cls`` from an iterable.
+
+        Args:
+            source: Iterable returning specifiers of all the terms to be appended.
+            args: Positional arguments to forward to the constructor of ``cls``.
+            kwargs: Keyword arguments to forward to the constructor of ``cls``.
+
+        Returns:
+            New instance of ``cls`` containing the terms specified by ``source``.
+        """
+        return cls.from_terms(cls.terms_type.from_iterable(source, *args, **kwargs))
+
+    def _from_generator(self, gen: Iterator[Term[ImplT, SpecT, C]]) -> Self:
+        """Create a new instance based on ``self`` with contents given by a generator.
+
+        Args:
+            gen: Generator of terms to be summed into the new instance.
+
+        Returns:
+            New instance with contents given by ``gen``.
+        """
+        out = self._new()
+        out.add_iterable(gen)
+        return out
+
+    def add_iterable(self, source: Iterable[TermSpecT[ImplT, SpecT, C]]) -> None:
+        """In-place addition of the terms in ``iterable`` to ``self``.
+
+        Args:
+            source: Iterable of term specifiers or compatible terms to add to ``self``.
+
+        Note:
+            This method operates in-place.
+        """
+        for item in source:
+            term = self._get_working_term(item)
+            self += term
+
+    def _identity(self) -> Self:
+        """Create a multiplicative identity of the same space and configuration as ``self``."""
+        out = self._new()
+        term = out._working_term
+        term.coeff = unit(term.coeff_type)
+        out.insert(term)
+        return out
+
+    def __pos__(self) -> Self:
+        """Return ``self``."""
+        return self.clone()
+
+    def __neg__(self) -> Self:
+        """Return the negation of ``self``."""
+        return self * -1
+
+    def __add__(self, rhs: Term[ImplT, SpecT, C] | Self) -> Self:
+        """Addition of ``self`` and ``rhs``."""
+        out = self.clone()
+        out += rhs
+        return out
+
+    def __iadd__(self, rhs: Term[ImplT, SpecT, C] | Self) -> Self:
+        """Add ``rhs`` to ``self`` in-place."""
+        self._scaled_iadd(rhs, 1)
+        return self
 
     def _scaled_iadd(self, rhs: Term[ImplT, SpecT, C] | Self, scalar: Coeff) -> None:
         """Add ``scalar`` times ``rhs`` to ``self`` in-place."""
@@ -1693,54 +1759,15 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Expr)](TermSet[ImplT,
             filtered = self.filter_nonzero()
             self._bind(filtered._impl, filtered._string_set._map)
 
-    def __iadd__(self, rhs: Term[ImplT, SpecT, C] | Self) -> Self:
-        """Add ``rhs`` to ``self`` in-place."""
-        self._scaled_iadd(rhs, 1)
-        return self
-
-    def __isub__(self, rhs: Term[ImplT, SpecT, C] | Self) -> Self:
-        """Subtract ``rhs`` from ``self`` in-place."""
-        self._scaled_iadd(rhs, -1)
-        return self
-
-    def __add__(self, rhs: Term[ImplT, SpecT, C] | Self) -> Self:
-        """Addition of ``self`` and ``rhs``."""
-        out = self.clone()
-        out += rhs
-        return out
-
     def __sub__(self, rhs: Term[ImplT, SpecT, C] | Self) -> Self:
         """Subtraction of ``rhs`` from ``self``."""
         out = self.clone()
         out -= rhs
         return out
 
-    def __pos__(self) -> Self:
-        """Return ``self``."""
-        return self.clone()
-
-    def __neg__(self) -> Self:
-        """Return the negation of ``self``."""
-        return self * -1
-
-    __array_priority__ = 1000
-
-    def __imul__(self, other: Coeff | Coeffs[C]) -> Self:
-        """Multiply ``self`` in-place by a scalar or coefficient vector."""
-        other = normalize_scalar(other)
-        if not isinstance(other, Coeff | Coeffs):
-            return NotImplemented
-        coeffs = self._impl.coeffs
-        coeffs *= other
-        return self
-
-    def __itruediv__(self, scalar: Coeff) -> Self:
-        """In-place division of ``self`` by ``scalar``."""
-        scalar = normalize_scalar(scalar)
-        if isinstance(scalar, RootOfUnity):
-            self *= 1 / scalar.to_numeric()
-        else:
-            self *= 1 / scalar
+    def __isub__(self, rhs: Term[ImplT, SpecT, C] | Self) -> Self:
+        """Subtract ``rhs`` from ``self`` in-place."""
+        self._scaled_iadd(rhs, -1)
         return self
 
     def __mul__(self, other: Coeff | Coeffs[C]) -> Self:
@@ -1756,24 +1783,29 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Expr)](TermSet[ImplT,
         """Return ``self`` multiplied by a scalar or coefficient vector."""
         return self * coeff
 
+    def __imul__(self, other: Coeff | Coeffs[C]) -> Self:
+        """Multiply ``self`` in-place by a scalar or coefficient vector."""
+        other = normalize_scalar(other)
+        if not isinstance(other, Coeff | Coeffs):
+            return NotImplemented
+        coeffs = self._impl.coeffs
+        coeffs *= other
+        return self
+
     def __truediv__(self, scalar: Coeff) -> Self:
         """Division of ``self`` by ``scalar``."""
         scalar = normalize_scalar(scalar)
         factor = 1 / scalar if not isinstance(scalar, RootOfUnity) else 1 / scalar.to_numeric()
         return self * factor
 
-    def add_iterable(self, source: Iterable[TermSpecT[ImplT, SpecT, C]]) -> None:
-        """In-place addition of the terms in ``iterable`` to ``self``.
-
-        Args:
-            source: Iterable of term specifiers or compatible terms to add to ``self``.
-
-        Note:
-            This method operates in-place.
-        """
-        for item in source:
-            term = self._get_working_term(item)
-            self += term
+    def __itruediv__(self, scalar: Coeff) -> Self:
+        """In-place division of ``self`` by ``scalar``."""
+        scalar = normalize_scalar(scalar)
+        if isinstance(scalar, RootOfUnity):
+            self *= 1 / scalar.to_numeric()
+        else:
+            self *= 1 / scalar
+        return self
 
     @classmethod
     def from_str(cls, source: str, *args: Any, **kwargs: Any) -> Self:
@@ -1790,38 +1822,6 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Expr)](TermSet[ImplT,
         terms = cls.terms_type.from_str(source, *args, **kwargs)
         return cls.from_terms(terms)
 
-    def _from_generator(self, gen: Iterator[Term[ImplT, SpecT, C]]) -> Self:
-        """Create a new instance based on ``self`` with contents given by a generator.
-
-        Args:
-            gen: Generator of terms to be summed into the new instance.
-
-        Returns:
-            New instance with contents given by ``gen``.
-        """
-        out = self._new()
-        out.add_iterable(gen)
-        return out
-
-    @classmethod
-    def from_iterable(
-        cls,
-        source: Iterable[TermSpecT[ImplT, SpecT, C]],
-        *args: Any,
-        **kwargs: Any,
-    ) -> Self:
-        """Create a new instance of ``cls`` from an iterable.
-
-        Args:
-            source: Iterable returning specifiers of all the terms to be appended.
-            args: Positional arguments to forward to the constructor of ``cls``.
-            kwargs: Keyword arguments to forward to the constructor of ``cls``.
-
-        Returns:
-            New instance of ``cls`` containing the terms specified by ``source``.
-        """
-        return cls.from_terms(cls.terms_type.from_iterable(source, *args, **kwargs))
-
 
 class SymbolicTermSum[ImplT: ImplArray, SpecT](TermSum[ImplT, SpecT, Expr]):
     """A sum of terms consisting of strings and symbolic coefficients.
@@ -1829,20 +1829,6 @@ class SymbolicTermSum[ImplT: ImplArray, SpecT](TermSum[ImplT, SpecT, Expr]):
     Coefficient substitution preserves the string keys and their space. Out-of-place
     substitution returns an independent owning sum of the same concrete type.
     """
-
-    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
-        """Apply a partial substitution of the symbols in-place.
-
-        Args:
-            values: Map from a symbol or symbol name to its new expression or numeric value.
-
-        Note:
-            This method operates in-place. String keys and explicitly stored zero
-            coefficients are retained.
-        """
-        coeffs = self._impl.coeffs
-        assert isinstance(coeffs, SymbolicCoeffs)
-        coeffs.isubs(values)
 
     def subs(self, values: dict[Symbol | str, Number | Expr]) -> Self:
         """Apply a partial substitution of the symbols out of place.
@@ -1857,6 +1843,20 @@ class SymbolicTermSum[ImplT: ImplArray, SpecT](TermSum[ImplT, SpecT, Expr]):
         out = self.clone()
         out.isubs(values)
         return out
+
+    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
+        """Apply a partial substitution of the symbols in-place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Note:
+            This method operates in-place. String keys and explicitly stored zero
+            coefficients are retained.
+        """
+        coeffs = self._impl.coeffs
+        assert isinstance(coeffs, SymbolicCoeffs)
+        coeffs.isubs(values)
 
 
 class NumericTermSum[ImplT: ImplArray, SpecT, C: (float, complex)](TermSum[ImplT, SpecT, C]):
@@ -1881,6 +1881,14 @@ class NumericTermSum[ImplT: ImplArray, SpecT, C: (float, complex)](TermSum[ImplT
             result += self.coeff_type(abs(coeff))
         return result
 
+    def l1_normalize(self) -> None:
+        """Divide ``self`` by its L1 norm.
+
+        Note:
+            This method operates in-place.
+        """
+        self._impl.coeffs.scale(1 / self.l1_norm)
+
     @property
     def l2_norm_square(self) -> C:
         """The square of the L2 norm of ``self``."""
@@ -1896,14 +1904,6 @@ class NumericTermSum[ImplT: ImplArray, SpecT, C: (float, complex)](TermSum[ImplT
     def l2_norm(self) -> Number:
         """The L2 norm of ``self``."""
         return cast("Number", self.l2_norm_square**0.5)
-
-    def l1_normalize(self) -> None:
-        """Divide ``self`` by its L1 norm.
-
-        Note:
-            This method operates in-place.
-        """
-        self._impl.coeffs.scale(1 / self.l1_norm)
 
     def l2_normalize(self) -> None:
         """Divide ``self`` by its L2 norm.

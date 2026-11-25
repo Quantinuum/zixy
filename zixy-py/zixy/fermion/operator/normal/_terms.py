@@ -578,6 +578,12 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
 
     terms_type = RealTerms
 
+    def is_hermitian(self, atol: float = 1e-10) -> bool:
+        """Check whether ``self`` is Hermitian within the given tolerance."""
+        return self._string_set._impl.lincomb_is_hermitian_real(
+            self._string_set._impl, self.coeffs._impl, atol
+        )
+
     @overload  # type: ignore[override]
     def __mul__(self, rhs: Coeff | Coeffs[float]) -> Self: ...
     @overload
@@ -629,78 +635,6 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
         )
         data = TermData(Strings._create(impl), RealCoeffs._create(coeffs))
         return RealTermSum._create(data, map_=map_)
-
-    def is_hermitian(self, atol: float = 1e-10) -> bool:
-        """Check whether ``self`` is Hermitian within the given tolerance."""
-        return self._string_set._impl.lincomb_is_hermitian_real(
-            self._string_set._impl, self.coeffs._impl, atol
-        )
-
-    def conserves_particle_number(self, atol: float = 1e-10) -> bool:
-        """Check whether ``self`` conserves particle number within the given tolerance."""
-        return self._string_set._impl.lincomb_conserves_particle_number_real(
-            self._string_set._impl, self.coeffs._impl, atol
-        )
-
-    def max_n_body(self) -> int:
-        """Return the maximum n-body order across all terms."""
-        return self._string_set._impl.lincomb_max_n_body_real(
-            self._string_set._impl, self.coeffs._impl
-        )
-
-    def active_modes(self) -> set[int]:
-        """Return the set of mode indices on which ``self`` acts."""
-        return self._string_set._impl.lincomb_active_modes_real(
-            self._string_set._impl, self.coeffs._impl
-        )
-
-    def to_general(self) -> zfog.RealTermSum:
-        """Convert this normal-ordered term sum to the raw general representation."""
-        import zixy.fermion.operator.general as zfog  # noqa: PLC0415
-
-        impl, coeffs, map_ = self._string_set._impl.lincomb_to_general_real(
-            self._string_set._impl, self._string_set._map, self.coeffs._impl
-        )
-        term_data = TermData(
-            zfog.Strings._create(impl),
-            RealCoeffs._create(coeffs),
-        )
-        return zfog.RealTermSum._create(term_data, map_=map_)
-
-    @overload
-    def apply(self, state: zfs.RealTermSum) -> zfs.RealTermSum: ...
-    @overload
-    def apply(self, state: zfs.ComplexTermSum) -> zfs.ComplexTermSum: ...
-    @overload
-    def apply(self, state: zfs.SymbolicTermSum) -> zfs.SymbolicTermSum: ...
-
-    def apply(self, state: State) -> State:
-        """Apply ``self`` to a state.
-
-        Args:
-            state: The state to apply to.
-
-        Returns:
-            The resulting state.
-        """
-        _check_modes_compatibility(self.modes, state.modes)
-        if isinstance(state, zfs.ComplexTermSum):
-            return self.into(ComplexTermSum).apply(state)
-        if isinstance(state, zfs.SymbolicTermSum):
-            return self.into(SymbolicTermSum).apply(state)
-        out = zfs.RealTermSum(self.modes)
-        assert isinstance(self._impl.coeffs, RealCoeffs)
-        assert isinstance(state._impl.coeffs, RealCoeffs)
-        assert isinstance(out._impl.coeffs, RealCoeffs)
-        self._impl.strings._impl.apply_to_state_real(
-            self._impl.coeffs._impl,
-            state._impl.strings._impl,
-            state._impl.coeffs._impl,
-            out._impl.strings._impl,
-            out._string_set._map,
-            out._impl.coeffs._impl,
-        )
-        return out.filter_nonzero()
 
     @overload
     def mat_elem(self, bra: zfs.RealTermSum, ket: zfs.RealTermSum) -> float: ...
@@ -758,6 +692,72 @@ class RealTermSum(NumericTermSum[NormalFermionOperatorArray, StringSpec, float],
             The resulting expectation value.
         """
         return self.mat_elem(state, state)
+
+    @overload
+    def apply(self, state: zfs.RealTermSum) -> zfs.RealTermSum: ...
+    @overload
+    def apply(self, state: zfs.ComplexTermSum) -> zfs.ComplexTermSum: ...
+    @overload
+    def apply(self, state: zfs.SymbolicTermSum) -> zfs.SymbolicTermSum: ...
+
+    def apply(self, state: State) -> State:
+        """Apply ``self`` to a state.
+
+        Args:
+            state: The state to apply to.
+
+        Returns:
+            The resulting state.
+        """
+        _check_modes_compatibility(self.modes, state.modes)
+        if isinstance(state, zfs.ComplexTermSum):
+            return self.into(ComplexTermSum).apply(state)
+        if isinstance(state, zfs.SymbolicTermSum):
+            return self.into(SymbolicTermSum).apply(state)
+        out = zfs.RealTermSum(self.modes)
+        assert isinstance(self._impl.coeffs, RealCoeffs)
+        assert isinstance(state._impl.coeffs, RealCoeffs)
+        assert isinstance(out._impl.coeffs, RealCoeffs)
+        self._impl.strings._impl.apply_to_state_real(
+            self._impl.coeffs._impl,
+            state._impl.strings._impl,
+            state._impl.coeffs._impl,
+            out._impl.strings._impl,
+            out._string_set._map,
+            out._impl.coeffs._impl,
+        )
+        return out.filter_nonzero()
+
+    def active_modes(self) -> set[int]:
+        """Return the set of mode indices on which ``self`` acts."""
+        return self._string_set._impl.lincomb_active_modes_real(
+            self._string_set._impl, self.coeffs._impl
+        )
+
+    def max_n_body(self) -> int:
+        """Return the maximum n-body order across all terms."""
+        return self._string_set._impl.lincomb_max_n_body_real(
+            self._string_set._impl, self.coeffs._impl
+        )
+
+    def conserves_particle_number(self, atol: float = 1e-10) -> bool:
+        """Check whether ``self`` conserves particle number within the given tolerance."""
+        return self._string_set._impl.lincomb_conserves_particle_number_real(
+            self._string_set._impl, self.coeffs._impl, atol
+        )
+
+    def to_general(self) -> zfog.RealTermSum:
+        """Convert this normal-ordered term sum to the raw general representation."""
+        import zixy.fermion.operator.general as zfog  # noqa: PLC0415
+
+        impl, coeffs, map_ = self._string_set._impl.lincomb_to_general_real(
+            self._string_set._impl, self._string_set._map, self.coeffs._impl
+        )
+        term_data = TermData(
+            zfog.Strings._create(impl),
+            RealCoeffs._create(coeffs),
+        )
+        return zfog.RealTermSum._create(term_data, map_=map_)
 
 
 class ComplexTerm(Term[complex]):
@@ -890,6 +890,12 @@ class ComplexTermSum(
 
     terms_type = ComplexTerms
 
+    def is_hermitian(self, atol: float = 1e-10) -> bool:
+        """Check whether ``self`` is Hermitian within the given tolerance."""
+        return self._string_set._impl.lincomb_is_hermitian_complex(
+            self._string_set._impl, self.coeffs._impl, atol
+        )
+
     @overload  # type: ignore[override]
     def __mul__(self, rhs: Coeff | Coeffs[complex]) -> Self: ...
     @overload
@@ -944,76 +950,6 @@ class ComplexTermSum(
         data = TermData(Strings._create(impl), ComplexCoeffs._create(coeffs))
         return ComplexTermSum._create(data, map_=map_)
 
-    def is_hermitian(self, atol: float = 1e-10) -> bool:
-        """Check whether ``self`` is Hermitian within the given tolerance."""
-        return self._string_set._impl.lincomb_is_hermitian_complex(
-            self._string_set._impl, self.coeffs._impl, atol
-        )
-
-    def conserves_particle_number(self, atol: float = 1e-10) -> bool:
-        """Check whether ``self`` conserves particle number within the given tolerance."""
-        return self._string_set._impl.lincomb_conserves_particle_number_complex(
-            self._string_set._impl, self.coeffs._impl, atol
-        )
-
-    def max_n_body(self) -> int:
-        """Return the maximum n-body order across all terms."""
-        return self._string_set._impl.lincomb_max_n_body_complex(
-            self._string_set._impl, self.coeffs._impl
-        )
-
-    def active_modes(self) -> set[int]:
-        """Return the set of mode indices on which ``self`` acts."""
-        return self._string_set._impl.lincomb_active_modes_complex(
-            self._string_set._impl, self.coeffs._impl
-        )
-
-    def to_general(self) -> zfog.ComplexTermSum:
-        """Convert this normal-ordered term sum to the raw general representation."""
-        import zixy.fermion.operator.general as zfog  # noqa: PLC0415
-
-        impl, coeffs, map_ = self._string_set._impl.lincomb_to_general_complex(
-            self._string_set._impl, self._string_set._map, self.coeffs._impl
-        )
-        term_data = TermData(
-            zfog.Strings._create(impl),
-            ComplexCoeffs._create(coeffs),
-        )
-        return zfog.ComplexTermSum._create(term_data, map_=map_)
-
-    @overload
-    def apply(self, state: NumericState) -> zfs.ComplexTermSum: ...
-    @overload
-    def apply(self, state: zfs.SymbolicTermSum) -> zfs.SymbolicTermSum: ...
-
-    def apply(self, state: State) -> zfs.ComplexTermSum | zfs.SymbolicTermSum:
-        """Apply ``self`` to a state.
-
-        Args:
-            state: The state to apply to.
-
-        Returns:
-            The resulting state.
-        """
-        _check_modes_compatibility(self.modes, state.modes)
-        if isinstance(state, zfs.RealTermSum):
-            state = state.into(zfs.ComplexTermSum)
-        elif isinstance(state, zfs.SymbolicTermSum):
-            return self.into(SymbolicTermSum).apply(state)
-        out = zfs.ComplexTermSum(self.modes)
-        assert isinstance(self._impl.coeffs, ComplexCoeffs)
-        assert isinstance(state._impl.coeffs, ComplexCoeffs)
-        assert isinstance(out._impl.coeffs, ComplexCoeffs)
-        self._impl.strings._impl.apply_to_state_complex(
-            self._impl.coeffs._impl,
-            state._impl.strings._impl,
-            state._impl.coeffs._impl,
-            out._impl.strings._impl,
-            out._string_set._map,
-            out._impl.coeffs._impl,
-        )
-        return out.filter_nonzero()
-
     @overload
     def mat_elem(self, bra: NumericState, ket: NumericState) -> complex: ...
     @overload
@@ -1066,6 +1002,70 @@ class ComplexTermSum(
             The resulting expectation value.
         """
         return self.mat_elem(state, state)
+
+    @overload
+    def apply(self, state: NumericState) -> zfs.ComplexTermSum: ...
+    @overload
+    def apply(self, state: zfs.SymbolicTermSum) -> zfs.SymbolicTermSum: ...
+
+    def apply(self, state: State) -> zfs.ComplexTermSum | zfs.SymbolicTermSum:
+        """Apply ``self`` to a state.
+
+        Args:
+            state: The state to apply to.
+
+        Returns:
+            The resulting state.
+        """
+        _check_modes_compatibility(self.modes, state.modes)
+        if isinstance(state, zfs.RealTermSum):
+            state = state.into(zfs.ComplexTermSum)
+        elif isinstance(state, zfs.SymbolicTermSum):
+            return self.into(SymbolicTermSum).apply(state)
+        out = zfs.ComplexTermSum(self.modes)
+        assert isinstance(self._impl.coeffs, ComplexCoeffs)
+        assert isinstance(state._impl.coeffs, ComplexCoeffs)
+        assert isinstance(out._impl.coeffs, ComplexCoeffs)
+        self._impl.strings._impl.apply_to_state_complex(
+            self._impl.coeffs._impl,
+            state._impl.strings._impl,
+            state._impl.coeffs._impl,
+            out._impl.strings._impl,
+            out._string_set._map,
+            out._impl.coeffs._impl,
+        )
+        return out.filter_nonzero()
+
+    def active_modes(self) -> set[int]:
+        """Return the set of mode indices on which ``self`` acts."""
+        return self._string_set._impl.lincomb_active_modes_complex(
+            self._string_set._impl, self.coeffs._impl
+        )
+
+    def max_n_body(self) -> int:
+        """Return the maximum n-body order across all terms."""
+        return self._string_set._impl.lincomb_max_n_body_complex(
+            self._string_set._impl, self.coeffs._impl
+        )
+
+    def conserves_particle_number(self, atol: float = 1e-10) -> bool:
+        """Check whether ``self`` conserves particle number within the given tolerance."""
+        return self._string_set._impl.lincomb_conserves_particle_number_complex(
+            self._string_set._impl, self.coeffs._impl, atol
+        )
+
+    def to_general(self) -> zfog.ComplexTermSum:
+        """Convert this normal-ordered term sum to the raw general representation."""
+        import zixy.fermion.operator.general as zfog  # noqa: PLC0415
+
+        impl, coeffs, map_ = self._string_set._impl.lincomb_to_general_complex(
+            self._string_set._impl, self._string_set._map, self.coeffs._impl
+        )
+        term_data = TermData(
+            zfog.Strings._create(impl),
+            ComplexCoeffs._create(coeffs),
+        )
+        return zfog.ComplexTermSum._create(term_data, map_=map_)
 
 
 class SymbolicTerm(Term[Expr]):
@@ -1160,6 +1160,19 @@ class SymbolicTerm(Term[Expr]):
             result = product
         return result
 
+    def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTerm:
+        """Apply a partial substitution of the symbols out of place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Returns:
+            A new contiguously stored instance with the substitution applied.
+        """
+        out = self.clone()
+        out.isubs(values)
+        return out
+
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
         """Apply a partial substitution of the symbols in-place.
 
@@ -1174,19 +1187,6 @@ class SymbolicTerm(Term[Expr]):
         """
         self.coeff = self.coeff.subs(values)
 
-    def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTerm:
-        """Apply a partial substitution of the symbols out of place.
-
-        Args:
-            values: Map from a symbol or symbol name to its new expression or numeric value.
-
-        Returns:
-            A new contiguously stored instance with the substitution applied.
-        """
-        out = self.clone()
-        out.isubs(values)
-        return out
-
 
 class SymbolicTerms(Terms[Expr]):
     """A collection of terms with normal-ordered fermionic strings and symbolic coefficients.
@@ -1199,17 +1199,6 @@ class SymbolicTerms(Terms[Expr]):
 
     term_type = SymbolicTerm
 
-    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
-        """Apply a partial substitution of the symbols in-place.
-
-        Args:
-            values: Map from a symbol or symbol name to its new expression or numeric value.
-
-        Note:
-            This method operates in-place.
-        """
-        self.coeffs.isubs(values)
-
     def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTerms:
         """Apply a partial substitution of the symbols out of place.
 
@@ -1221,6 +1210,17 @@ class SymbolicTerms(Terms[Expr]):
         """
         term_data = TermData(self.strings.clone(), self.coeffs.subs(values))
         return SymbolicTerms._create(term_data)
+
+    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
+        """Apply a partial substitution of the symbols in-place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Note:
+            This method operates in-place.
+        """
+        self.coeffs.isubs(values)
 
 
 class SymbolicTermSet(TermSet[Expr]):
@@ -1236,17 +1236,6 @@ class SymbolicTermSet(TermSet[Expr]):
 
     terms_type = SymbolicTerms
 
-    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
-        """Apply a partial substitution of the symbols in-place.
-
-        Args:
-            values: Map from a symbol or symbol name to its new expression or numeric value.
-
-        Note:
-            This method operates in-place.
-        """
-        self.coeffs.isubs(values)
-
     def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTermSet:
         """Apply a partial substitution of the symbols out of place.
 
@@ -1259,6 +1248,17 @@ class SymbolicTermSet(TermSet[Expr]):
         out = self.clone()
         out.isubs(values)
         return out
+
+    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
+        """Apply a partial substitution of the symbols in-place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Note:
+            This method operates in-place.
+        """
+        self.coeffs.isubs(values)
 
 
 class SymbolicTermSum(SymbolicTermSumBase[ImplT, SpecT], TermSum[Expr]):
@@ -1273,32 +1273,6 @@ class SymbolicTermSum(SymbolicTermSumBase[ImplT, SpecT], TermSum[Expr]):
     """
 
     terms_type = SymbolicTerms
-
-    def apply(self, state: State) -> zfs.SymbolicTermSum:
-        """Apply ``self`` to a state.
-
-        Args:
-            state: The state to apply to.
-
-        Returns:
-            The resulting symbolic state.
-        """
-        _check_modes_compatibility(self.modes, state.modes)
-        if not isinstance(state, zfs.SymbolicTermSum):
-            state = state.into(zfs.SymbolicTermSum)
-        out = zfs.SymbolicTermSum(self.modes)
-        for op_term in self:
-            assert isinstance(op_term, SymbolicTerm)
-            for state_term in state:
-                assert isinstance(state_term, zfs.SymbolicTerm)
-                string = state_term.string.clone()
-                assert isinstance(string, zfs.String)
-                sign = string._impl.string_operator_string_imul(
-                    string.index, op_term.string._impl, op_term.string.index
-                )
-                if sign is not None:
-                    out += string * (op_term.coeff * state_term.coeff * Sign(sign).to_symbolic())
-        return out.filter_nonzero()
 
     def mat_elem(self, bra: State, ket: State) -> Expr:
         """Evaluate the matrix element of ``self`` between a bra and ket state.
@@ -1327,6 +1301,32 @@ class SymbolicTermSum(SymbolicTermSumBase[ImplT, SpecT], TermSum[Expr]):
             The resulting symbolic expectation value.
         """
         return self.mat_elem(state, state)
+
+    def apply(self, state: State) -> zfs.SymbolicTermSum:
+        """Apply ``self`` to a state.
+
+        Args:
+            state: The state to apply to.
+
+        Returns:
+            The resulting symbolic state.
+        """
+        _check_modes_compatibility(self.modes, state.modes)
+        if not isinstance(state, zfs.SymbolicTermSum):
+            state = state.into(zfs.SymbolicTermSum)
+        out = zfs.SymbolicTermSum(self.modes)
+        for op_term in self:
+            assert isinstance(op_term, SymbolicTerm)
+            for state_term in state:
+                assert isinstance(state_term, zfs.SymbolicTerm)
+                string = state_term.string.clone()
+                assert isinstance(string, zfs.String)
+                sign = string._impl.string_operator_string_imul(
+                    string.index, op_term.string._impl, op_term.string.index
+                )
+                if sign is not None:
+                    out += string * (op_term.coeff * state_term.coeff * Sign(sign).to_symbolic())
+        return out.filter_nonzero()
 
 
 def get_term_type[C: (float, complex, Sign, ComplexSign, Expr)](

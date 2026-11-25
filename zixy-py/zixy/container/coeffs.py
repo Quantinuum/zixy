@@ -115,20 +115,7 @@ class RootOfUnity(Representable, ABC):
 
     _impl: _zixy.RootOfUnity
 
-    @abstractmethod
-    def conjugate(self) -> Self:
-        """Return the complex conjugate of ``self``."""
-        pass
-
-    @abstractmethod
-    def to_symbolic(self) -> Expr:
-        """Convert ``self`` to a SymPy symbolic type."""
-        pass
-
-    @abstractmethod
-    def to_numeric(self) -> Number:
-        """Convert ``self`` to a built-in numeric type."""
-        pass
+    __array_priority__ = 1000
 
     @classmethod
     @abstractmethod
@@ -146,15 +133,28 @@ class RootOfUnity(Representable, ABC):
         """
         pass
 
-    __array_priority__ = 1000
+    @abstractmethod
+    def conjugate(self) -> Self:
+        """Return the complex conjugate of ``self``."""
+        pass
+
+    def __repr__(self) -> str:
+        """Return a string representation of ``self``."""
+        return str(self._impl)
 
     def _sympy_(self) -> Expr:  # noqa: PLW3201
         """Hook for SymPy to convert this object to a SymPy expression."""
         return self.to_symbolic()
 
-    def __repr__(self) -> str:
-        """Return a string representation of ``self``."""
-        return str(self._impl)
+    @abstractmethod
+    def to_numeric(self) -> Number:
+        """Convert ``self`` to a built-in numeric type."""
+        pass
+
+    @abstractmethod
+    def to_symbolic(self) -> Expr:
+        """Convert ``self`` to a SymPy symbolic type."""
+        pass
 
 
 class Sign(RootOfUnity):
@@ -178,6 +178,25 @@ class Sign(RootOfUnity):
         else:
             self._impl = _zixy.Sign(bool(source))
 
+    @classmethod
+    def from_scalar(cls, value: Number) -> Self:
+        """Construct a sign from its scalar value.
+
+        Args:
+            value: Numeric value, which must equal +1 or -1. This is not a phase exponent.
+
+        Returns:
+            An instance of ``cls`` representing ``value``.
+
+        Raises:
+            ValueError: If ``value`` is not exactly representable as ``cls``.
+        """
+        if value == 1:
+            return cls(0)
+        elif value == -1:
+            return cls(1)
+        raise ValueError(f"value {value} is not an exact square root of unity.")
+
     @property
     def phase(self) -> bool:
         """The phase :math:`k` such that the sign equals :math:`(-1)^k`."""
@@ -188,6 +207,18 @@ class Sign(RootOfUnity):
         if not isinstance(other, Sign):
             return NotImplemented
         return self._impl == other._impl
+
+    def __pos__(self) -> Self:
+        """Return ``self``."""
+        return type(self)(self.phase)
+
+    def __neg__(self) -> Sign:
+        """Return the negation of ``self``."""
+        return Sign(not self.phase)
+
+    def __abs__(self) -> Sign:
+        """Return the absolute value of ``self``."""
+        return Sign(False)
 
     def __mul__[C: (float, complex, Expr, Sign, ComplexSign)](self, other: C) -> C:
         """Out-of-place multiplication of ``self`` by ``other``.
@@ -212,11 +243,6 @@ class Sign(RootOfUnity):
             :meth:`__mul__`
         """
         return self * other
-
-    def __pow__(self, exponent: int | np.integer[Any]) -> Self:
-        """Return this sign raised to an integer power."""
-        exponent = _integer_exponent(exponent)
-        return type(self)(self.phase and exponent % 2)
 
     def __imul__(self, rhs: Coeff) -> Self:
         """Multiply ``self`` by ``rhs``.
@@ -294,24 +320,14 @@ class Sign(RootOfUnity):
             return ComplexSign(other.phase + (2 if self.phase else 0))
         return other / self.to_numeric()
 
-    @classmethod
-    def from_scalar(cls, value: Number) -> Self:
-        """Construct a sign from its scalar value.
+    def __pow__(self, exponent: int | np.integer[Any]) -> Self:
+        """Return this sign raised to an integer power."""
+        exponent = _integer_exponent(exponent)
+        return type(self)(self.phase and exponent % 2)
 
-        Args:
-            value: Numeric value, which must equal +1 or -1. This is not a phase exponent.
-
-        Returns:
-            An instance of ``cls`` representing ``value``.
-
-        Raises:
-            ValueError: If ``value`` is not exactly representable as ``cls``.
-        """
-        if value == 1:
-            return cls(0)
-        elif value == -1:
-            return cls(1)
-        raise ValueError(f"value {value} is not an exact square root of unity.")
+    def conjugate(self) -> Self:
+        """Return the complex conjugate of ``self``."""
+        return type(self)(self.phase)
 
     @classmethod
     def from_str(cls, source: str) -> Self:
@@ -344,29 +360,13 @@ class Sign(RootOfUnity):
         """Convert ``self`` to a complex floating point value."""
         return complex(int(self))
 
-    def __pos__(self) -> Self:
-        """Return ``self``."""
-        return type(self)(self.phase)
-
-    def __neg__(self) -> Sign:
-        """Return the negation of ``self``."""
-        return Sign(not self.phase)
-
-    def __abs__(self) -> Sign:
-        """Return the absolute value of ``self``."""
-        return Sign(False)
-
-    def conjugate(self) -> Self:
-        """Return the complex conjugate of ``self``."""
-        return type(self)(self.phase)
+    def to_numeric(self) -> int:
+        """Convert ``self`` to a built-in numeric type."""
+        return int(self)
 
     def to_symbolic(self) -> Expr:
         """Convert ``self`` to a SymPy symbolic constant."""
         return sympify(int(self))
-
-    def to_numeric(self) -> int:
-        """Convert ``self`` to a built-in numeric type."""
-        return int(self)
 
 
 class ComplexSign(RootOfUnity):
@@ -390,6 +390,29 @@ class ComplexSign(RootOfUnity):
         else:
             self._impl = _zixy.ComplexSign(source % 4)
 
+    @classmethod
+    def from_scalar(cls, value: Number) -> Self:
+        """Construct a complex sign from its scalar value.
+
+        Args:
+            value: Numeric value, which must equal +1, -1, +i, or -i. This is not a phase exponent.
+
+        Returns:
+            An instance of ``cls`` representing ``value``.
+
+        Raises:
+            ValueError: If ``value`` is not exactly representable as ``cls``.
+        """
+        if value == complex(1, 0):
+            return cls(0)
+        elif value == complex(0, 1):
+            return cls(1)
+        elif value == complex(-1, 0):
+            return cls(2)
+        elif value == complex(0, -1):
+            return cls(3)
+        raise ValueError(f"value {value} is not an exact fourth root of unity.")
+
     @property
     def phase(self) -> int:
         """The phase :math:`k` such that the sign equals :math:`i^k`."""
@@ -400,6 +423,18 @@ class ComplexSign(RootOfUnity):
         if not isinstance(other, ComplexSign):
             return NotImplemented
         return self._impl == other._impl
+
+    def __pos__(self) -> Self:
+        """Return ``self``."""
+        return type(self)(self.phase)
+
+    def __neg__(self) -> ComplexSign:
+        """Return the negation of ``self``."""
+        return ComplexSign(self.phase + 2)
+
+    def __abs__(self) -> ComplexSign:
+        """Return the absolute value of ``self``."""
+        return ComplexSign(0)
 
     @overload
     def __mul__(self, other: float) -> complex: ...
@@ -446,11 +481,6 @@ class ComplexSign(RootOfUnity):
             :meth:`__mul__`
         """
         return self * other
-
-    def __pow__(self, exponent: int | np.integer[Any]) -> Self:
-        """Return this sign raised to an integer power."""
-        exponent = _integer_exponent(exponent)
-        return type(self)(self.phase * exponent)
 
     def __imul__(self, rhs: Coeff) -> Self:  # type: ignore[misc]
         """Multiply ``self`` by ``rhs``.
@@ -527,28 +557,14 @@ class ComplexSign(RootOfUnity):
             return ComplexSign((2 if other.phase else 0) - self.phase)
         return other / self.to_numeric()
 
-    @classmethod
-    def from_scalar(cls, value: Number) -> Self:
-        """Construct a complex sign from its scalar value.
+    def __pow__(self, exponent: int | np.integer[Any]) -> Self:
+        """Return this sign raised to an integer power."""
+        exponent = _integer_exponent(exponent)
+        return type(self)(self.phase * exponent)
 
-        Args:
-            value: Numeric value, which must equal +1, -1, +i, or -i. This is not a phase exponent.
-
-        Returns:
-            An instance of ``cls`` representing ``value``.
-
-        Raises:
-            ValueError: If ``value`` is not exactly representable as ``cls``.
-        """
-        if value == complex(1, 0):
-            return cls(0)
-        elif value == complex(0, 1):
-            return cls(1)
-        elif value == complex(-1, 0):
-            return cls(2)
-        elif value == complex(0, -1):
-            return cls(3)
-        raise ValueError(f"value {value} is not an exact fourth root of unity.")
+    def conjugate(self) -> Self:
+        """Return the complex conjugate of ``self``."""
+        return type(self)(-self.phase)
 
     @classmethod
     def from_str(cls, source: str) -> Self:
@@ -611,21 +627,9 @@ class ComplexSign(RootOfUnity):
         else:
             return complex(0, -1)
 
-    def __pos__(self) -> Self:
-        """Return ``self``."""
-        return type(self)(self.phase)
-
-    def __neg__(self) -> ComplexSign:
-        """Return the negation of ``self``."""
-        return ComplexSign(self.phase + 2)
-
-    def __abs__(self) -> ComplexSign:
-        """Return the absolute value of ``self``."""
-        return ComplexSign(0)
-
-    def conjugate(self) -> Self:
-        """Return the complex conjugate of ``self``."""
-        return type(self)(-self.phase)
+    def to_numeric(self) -> complex:
+        """Convert ``self`` to a built-in numeric type."""
+        return complex(self)
 
     def to_symbolic(self) -> Expr:
         """Convert ``self`` to a SymPy symbolic constant."""
@@ -639,10 +643,6 @@ class ComplexSign(RootOfUnity):
             return sympify(-1)
         else:
             return -I
-
-    def to_numeric(self) -> complex:
-        """Convert ``self`` to a built-in numeric type."""
-        return complex(self)
 
 
 Scalar: TypeAlias = Number | Sign | ComplexSign  # noqa: UP040
@@ -862,25 +862,6 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
         self._impl = data
         self._slice = indexer
 
-    def fill(self, coeff: C) -> None:
-        """Set all the coefficients in the vector to the given value.
-
-        Args:
-            coeff: Coefficient value to which to set all coefficients in the vector.
-        """
-        for i in range(len(self)):
-            self[i] = coeff
-
-    def set(self, source: Iterable[C]) -> None:
-        """Assign the viewed coefficients according to the values yielded by the given iterable.
-
-        Args:
-            source: Iterable containing the values to be assigned to the viewed coefficients of
-                ``self``.
-        """
-        for i, c in enumerate(source):
-            self[i] = convert(c, self.coeff_type)
-
     @classmethod
     def _create(cls, data: _zixy.BaseVec) -> Self:
         """Create an owning instance of ``cls``.
@@ -912,35 +893,46 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
         out._bind(data, indexer)
         return out
 
+    def _new(self) -> Self:
+        """Create an empty instance with the same type and configuration."""
+        return self._create(self.impl_type(0))
+
+    @classmethod
+    def from_scalar(cls, coeff: C, n: int = 1) -> Self:
+        """Get a new instance of ``cls`` with the given scalar repeated ``n`` times.
+
+        Args:
+            coeff: Coefficient value.
+            n: Number of times to repeat ``coeff``.
+
+        Returns:
+            New instance with ``coeff`` repeated ``n`` times.
+        """
+        out = cls()
+        out.append_n(n, coeff)
+        return out
+
+    @classmethod
+    def from_iterable(cls, source: Iterable[C]) -> Self:
+        """Create an owning vector from an iterable of coefficients.
+
+        Args:
+            source: Iterable of coefficients.
+
+        Returns:
+            Owning instance containing the coefficients in ``source``.
+        """
+        out = cls()
+        for coeff in source:
+            out.append(coeff)
+        return out
+
     def clone(self) -> Self:
         """Return a deep copy of ``self``."""
         out = self._new()
         for c in self:
             out.append(c)
         return out
-
-    def __pos__(self) -> Self:
-        """Return ``self``."""
-        return self.clone()
-
-    def __neg__(self) -> Self:
-        """Return the negation of ``self``."""
-        out: Self = self._new()
-        for item in self:
-            out.append(-item)
-        return out
-
-    def __repr__(self) -> str:
-        """Return a string representation of ``self``."""
-        return "[" + (", ".join(str(c) for c in self)) + "]"
-
-    def __eq__(self, other: object) -> bool:
-        """Return whether ``self`` and ``other`` are equal."""
-        if not isinstance(other, Coeffs):
-            return NotImplemented
-        if len(self) != len(other):
-            return False
-        return all(left == right for left, right in zip(self, other, strict=False))
 
     def map_index(self, index: int) -> int:
         """Map an index in ``self`` to an index in the underlying data.
@@ -1031,90 +1023,36 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
                 )
             self._set_scalar(indexer, source)
 
-    def scale(self, scalar: Coeff) -> None:
-        """Scale all elements by a given factor.
+    def set(self, source: Iterable[C]) -> None:
+        """Assign the viewed coefficients according to the values yielded by the given iterable.
 
         Args:
-            scalar: Scalar factor by which to scale all elements.
-
-        Note:
-            This method operates in-place.
-        """
-        scalar = normalize_scalar(scalar)
-        for i in range(len(self)):
-            self[i] = typesafe_mul(self[i], scalar)
-
-    def scale_by_coeffs(self, coeffs: Coeffs[C]) -> None:
-        """Scale all elements by the corresponding elements of ``coeffs``.
-
-        Args:
-            coeffs: Coefficients by which to scale the elements of ``self``.
-
-        Note:
-            This method operates in-place.
-        """
-        if len(coeffs) != len(self):
-            raise ValueError(
-                f"Length of coeffs ({len(coeffs)}) does not match length of self ({len(self)})"
-            )
-
-        if type(coeffs) is type(self) and self._impl.same_as(coeffs._impl):
-            coeffs = coeffs.clone()
-
-        for i in range(len(self)):
-            self[i] = typesafe_mul(self[i], coeffs[i])
-
-    def __imul__(self, rhs: Coeff | Coeffs[C] | Iterable[Coeff]) -> Self:
-        """Multiply ``self`` by ``rhs`` in-place.
-
-        Raises:
-            ValueError: If the result of the multiplication cannot be represented by the type of
+            source: Iterable containing the values to be assigned to the viewed coefficients of
                 ``self``.
         """
-        rhs = normalize_scalar(rhs)
-        if isinstance(rhs, Coeff):
-            self.scale(rhs)
-        elif isinstance(rhs, Coeffs):
-            self.scale_by_coeffs(rhs)
-        else:
-            for i, c in enumerate(rhs):
-                if i >= len(self):
-                    break
-                self._set_scalar(i, typesafe_mul(self[i], c))
-        return self
+        for i, c in enumerate(source):
+            self[i] = convert(c, self.coeff_type)
 
-    def __pow__(self, exponent: int | np.integer[Any]) -> Self:
-        """Return a new collection with each coefficient raised to an integer power."""
-        exponent = _integer_exponent(exponent)
-        out = self._new()
-        for coeff in self:
-            out.append(coeff**exponent)
-        return out
-
-    def to_tuple(self) -> tuple[C, ...]:
-        """Get a tuple of clones of the elements of ``self``."""
-        return tuple(c for c in self)
-
-    def _new(self) -> Self:
-        """Create an empty instance with the same type and configuration."""
-        return self._create(self.impl_type(0))
-
-    def reordered(self, inds: Sequence[int]) -> Self:
-        """Get a new instance with the elements of ``self`` in a new order.
+    def fill(self, coeff: C) -> None:
+        """Set all the coefficients in the vector to the given value.
 
         Args:
-            inds: Sequence of indices defining the new order. Should be a permutation of
-                ``range(len(self))``.
-
-        Returns:
-            A new instance with the reordered elements.
+            coeff: Coefficient value to which to set all coefficients in the vector.
         """
-        if not all(i < len(self) for i in inds):
-            raise IndexError("Index out of bounds in reorder.")
-        out = self._new()
-        for i in inds:
-            out.append(self[i])
-        return out
+        for i in range(len(self)):
+            self[i] = coeff
+
+    @requires_ownership
+    def append(self, value: C) -> None:
+        """Append ``value`` to the end of ``self``.
+
+        Args:
+            value: Value to append.
+
+        Note:
+            This method operates in-place.
+        """
+        self.append_n(1, value)
 
     @requires_ownership
     def append_n(self, n: int, value: C) -> None:
@@ -1132,18 +1070,6 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
                 self._impl.append(value._impl)
             else:
                 self._impl.append(value)
-
-    @requires_ownership
-    def append(self, value: C) -> None:
-        """Append ``value`` to the end of ``self``.
-
-        Args:
-            value: Value to append.
-
-        Note:
-            This method operates in-place.
-        """
-        self.append_n(1, value)
 
     @requires_ownership
     def extend(self, source: Iterable[C]) -> None:
@@ -1179,6 +1105,129 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
         """
         self[index] = self[-1]
         self.resize(len(self) - 1)
+
+    def __eq__(self, other: object) -> bool:
+        """Return whether ``self`` and ``other`` are equal."""
+        if not isinstance(other, Coeffs):
+            return NotImplemented
+        if len(self) != len(other):
+            return False
+        return all(left == right for left, right in zip(self, other, strict=False))
+
+    def allclose(
+        self, other: Coeffs[Any], rtol: float = DEFAULT_RTOL, atol: float = DEFAULT_ATOL
+    ) -> bool:
+        """Check whether ``self`` and ``other`` are within a certain tolerance.
+
+        Args:
+            other: Other instance to compare to.
+            rtol: Relative tolerance.
+            atol: Absolute tolerance.
+
+        Returns:
+            Whether ``self`` and ``other`` are within the given tolerances of each other.
+
+        Note:
+            This method operates by comparing the NumPy arrays returned by
+            :meth:`~zixy.container.coeffs.Coeffs.to_numpy`.
+        """
+        if len(self) != len(other):
+            return False
+        if self is other:
+            return True
+        return np.allclose(self.to_numpy(), other.to_numpy(), rtol=rtol, atol=atol)
+
+    def __pos__(self) -> Self:
+        """Return ``self``."""
+        return self.clone()
+
+    def __neg__(self) -> Self:
+        """Return the negation of ``self``."""
+        out: Self = self._new()
+        for item in self:
+            out.append(-item)
+        return out
+
+    def __imul__(self, rhs: Coeff | Coeffs[C] | Iterable[Coeff]) -> Self:
+        """Multiply ``self`` by ``rhs`` in-place.
+
+        Raises:
+            ValueError: If the result of the multiplication cannot be represented by the type of
+                ``self``.
+        """
+        rhs = normalize_scalar(rhs)
+        if isinstance(rhs, Coeff):
+            self.scale(rhs)
+        elif isinstance(rhs, Coeffs):
+            self.scale_by_coeffs(rhs)
+        else:
+            for i, c in enumerate(rhs):
+                if i >= len(self):
+                    break
+                self._set_scalar(i, typesafe_mul(self[i], c))
+        return self
+
+    def scale(self, scalar: Coeff) -> None:
+        """Scale all elements by a given factor.
+
+        Args:
+            scalar: Scalar factor by which to scale all elements.
+
+        Note:
+            This method operates in-place.
+        """
+        scalar = normalize_scalar(scalar)
+        for i in range(len(self)):
+            self[i] = typesafe_mul(self[i], scalar)
+
+    def scale_by_coeffs(self, coeffs: Coeffs[C]) -> None:
+        """Scale all elements by the corresponding elements of ``coeffs``.
+
+        Args:
+            coeffs: Coefficients by which to scale the elements of ``self``.
+
+        Note:
+            This method operates in-place.
+        """
+        if len(coeffs) != len(self):
+            raise ValueError(
+                f"Length of coeffs ({len(coeffs)}) does not match length of self ({len(self)})"
+            )
+
+        if type(coeffs) is type(self) and self._impl.same_as(coeffs._impl):
+            coeffs = coeffs.clone()
+
+        for i in range(len(self)):
+            self[i] = typesafe_mul(self[i], coeffs[i])
+
+    def __pow__(self, exponent: int | np.integer[Any]) -> Self:
+        """Return a new collection with each coefficient raised to an integer power."""
+        exponent = _integer_exponent(exponent)
+        out = self._new()
+        for coeff in self:
+            out.append(coeff**exponent)
+        return out
+
+    def reordered(self, inds: Sequence[int]) -> Self:
+        """Get a new instance with the elements of ``self`` in a new order.
+
+        Args:
+            inds: Sequence of indices defining the new order. Should be a permutation of
+                ``range(len(self))``.
+
+        Returns:
+            A new instance with the reordered elements.
+        """
+        if not all(i < len(self) for i in inds):
+            raise IndexError("Index out of bounds in reorder.")
+        out = self._new()
+        for i in inds:
+            out.append(self[i])
+        return out
+
+    def __repr__(self) -> str:
+        """Return a string representation of ``self``."""
+        return "[" + (", ".join(str(c) for c in self)) + "]"
 
     @classmethod
     def from_str(cls, source: str) -> Self:
@@ -1218,14 +1267,23 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
 
         return out
 
-    @abstractmethod
-    def to_numpy(self) -> NDArray[np.int64] | NDArray[np.float64] | NDArray[np.complex128]:
-        """Return a flat NumPy array copy of the contents of ``self``.
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
 
         Returns:
-            An independent one-dimensional NumPy array containing the elements in iteration order.
+            A JSON-serializable dictionary representation of ``self``.
         """
-        pass
+        return dict(
+            schema_version=__schema_version__,
+            package_version=__version__,
+            family="container",
+            container=self.__class__.__name__,
+            coeffs=serialize_numpy_array(self.to_numpy()),
+        )
+
+    def to_tuple(self) -> tuple[C, ...]:
+        """Get a tuple of clones of the elements of ``self``."""
+        return tuple(c for c in self)
 
     def __array__(self, dtype: DTypeLike | None = None, copy: bool | None = None) -> NDArray[Any]:
         """Convert the coefficients through NumPy's array protocol.
@@ -1255,72 +1313,14 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
             array = array.real
         return array.astype(requested_dtype, copy=False)
 
-    def allclose(
-        self, other: Coeffs[Any], rtol: float = DEFAULT_RTOL, atol: float = DEFAULT_ATOL
-    ) -> bool:
-        """Check whether ``self`` and ``other`` are within a certain tolerance.
-
-        Args:
-            other: Other instance to compare to.
-            rtol: Relative tolerance.
-            atol: Absolute tolerance.
+    @abstractmethod
+    def to_numpy(self) -> NDArray[np.int64] | NDArray[np.float64] | NDArray[np.complex128]:
+        """Return a flat NumPy array copy of the contents of ``self``.
 
         Returns:
-            Whether ``self`` and ``other`` are within the given tolerances of each other.
-
-        Note:
-            This method operates by comparing the NumPy arrays returned by
-            :meth:`~zixy.container.coeffs.Coeffs.to_numpy`.
+            An independent one-dimensional NumPy array containing the elements in iteration order.
         """
-        if len(self) != len(other):
-            return False
-        if self is other:
-            return True
-        return np.allclose(self.to_numpy(), other.to_numpy(), rtol=rtol, atol=atol)
-
-    @classmethod
-    def from_scalar(cls, coeff: C, n: int = 1) -> Self:
-        """Get a new instance of ``cls`` with the given scalar repeated ``n`` times.
-
-        Args:
-            coeff: Coefficient value.
-            n: Number of times to repeat ``coeff``.
-
-        Returns:
-            New instance with ``coeff`` repeated ``n`` times.
-        """
-        out = cls()
-        out.append_n(n, coeff)
-        return out
-
-    @classmethod
-    def from_iterable(cls, source: Iterable[C]) -> Self:
-        """Create an owning vector from an iterable of coefficients.
-
-        Args:
-            source: Iterable of coefficients.
-
-        Returns:
-            Owning instance containing the coefficients in ``source``.
-        """
-        out = cls()
-        for coeff in source:
-            out.append(coeff)
-        return out
-
-    def to_dict(self) -> SerializedContainer:
-        """Return a JSON-serializable dictionary representation of ``self``.
-
-        Returns:
-            A JSON-serializable dictionary representation of ``self``.
-        """
-        return dict(
-            schema_version=__schema_version__,
-            package_version=__version__,
-            family="container",
-            container=self.__class__.__name__,
-            coeffs=serialize_numpy_array(self.to_numpy()),
-        )
+        pass
 
 
 class RootOfUnityCoeffs[C: (float, complex, Sign, ComplexSign, Expr)](Coeffs[C]):
@@ -1365,14 +1365,6 @@ class SignCoeffs(RootOfUnityCoeffs[Sign]):
         assert len(out) == len(source)
         return out
 
-    def to_numpy(self) -> NDArray[np.int64]:
-        """Return a flat NumPy array copy of the contents of ``self``.
-
-        Returns:
-            An independent one-dimensional NumPy array containing the elements in iteration order.
-        """
-        return np.array([int(s) for s in self], dtype=np.int64).ravel()
-
     @classmethod
     def from_dict(cls, source: SerializedContainer) -> Self:
         """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
@@ -1385,6 +1377,14 @@ class SignCoeffs(RootOfUnityCoeffs[Sign]):
         """
         check_schema_version(source)
         return cls.from_iterable([cls.coeff_type.from_scalar(value) for value in source["coeffs"]])
+
+    def to_numpy(self) -> NDArray[np.int64]:
+        """Return a flat NumPy array copy of the contents of ``self``.
+
+        Returns:
+            An independent one-dimensional NumPy array containing the elements in iteration order.
+        """
+        return np.array([int(s) for s in self], dtype=np.int64).ravel()
 
 
 class ComplexSignCoeffs(RootOfUnityCoeffs[ComplexSign]):
@@ -1419,14 +1419,6 @@ class ComplexSignCoeffs(RootOfUnityCoeffs[ComplexSign]):
         assert len(out) == len(source)
         return out
 
-    def to_numpy(self) -> NDArray[np.complex128]:
-        """Return a flat NumPy array copy of the contents of ``self``.
-
-        Returns:
-            An independent one-dimensional NumPy array containing the elements in iteration order.
-        """
-        return np.array([complex(s) for s in self], dtype=np.complex128).ravel()
-
     @classmethod
     def from_dict(cls, source: SerializedContainer) -> Self:
         """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
@@ -1442,6 +1434,14 @@ class ComplexSignCoeffs(RootOfUnityCoeffs[ComplexSign]):
             [cls.coeff_type.from_scalar(complex(real, imag)) for real, imag in source["coeffs"]]
         )
 
+    def to_numpy(self) -> NDArray[np.complex128]:
+        """Return a flat NumPy array copy of the contents of ``self``.
+
+        Returns:
+            An independent one-dimensional NumPy array containing the elements in iteration order.
+        """
+        return np.array([complex(s) for s in self], dtype=np.complex128).ravel()
+
 
 class NumericalCoeffs[C: (float, complex)](Coeffs[C]):
     """A collection of numerical coefficients.
@@ -1452,6 +1452,22 @@ class NumericalCoeffs[C: (float, complex)](Coeffs[C]):
 
     impl_type: type[_zixy.RealVec | _zixy.ComplexVec]
     _impl: _zixy.RealVec | _zixy.ComplexVec
+
+    @classmethod
+    def from_iterable(cls, source: Iterable[C] | NDArray[np.inexact]) -> Self:
+        """Create an owning numeric vector from an iterable of coefficients.
+
+        Args:
+            source: Iterable of coefficients.
+
+        Returns:
+            Owning instance containing the coefficients in ``source``.
+        """
+        if isinstance(source, Sequence | np.ndarray):
+            values = np.asarray(source, dtype=cls.coeff_type)
+        else:
+            values = np.fromiter(source, dtype=cls.coeff_type)
+        return cls._create(cls.impl_type.from_array(values))
 
     def clone(self) -> Self:
         """Copy the viewed coefficients into an independent contiguous vector."""
@@ -1473,22 +1489,6 @@ class NumericalCoeffs[C: (float, complex)](Coeffs[C]):
             Whether any element of ``self`` is significantly different from zero.
         """
         return not np.allclose(self.to_numpy(), 0, rtol=0, atol=atol)
-
-    @classmethod
-    def from_iterable(cls, source: Iterable[C] | NDArray[np.inexact]) -> Self:
-        """Create an owning numeric vector from an iterable of coefficients.
-
-        Args:
-            source: Iterable of coefficients.
-
-        Returns:
-            Owning instance containing the coefficients in ``source``.
-        """
-        if isinstance(source, Sequence | np.ndarray):
-            values = np.asarray(source, dtype=cls.coeff_type)
-        else:
-            values = np.fromiter(source, dtype=cls.coeff_type)
-        return cls._create(cls.impl_type.from_array(values))
 
 
 def _real_from_scalar(value: float | complex) -> float:
@@ -1543,25 +1543,16 @@ class RealCoeffs(NumericalCoeffs[float]):
             source = values
         return super().from_iterable(_real_from_scalar(value) for value in source)
 
-    def scale(self, scalar: Coeff) -> None:
-        """Scale the viewed real coefficients in Rust."""
-        scalar = normalize_scalar(scalar)
-        if len(self):
-            self._impl.scale_slice(self.slice, convert(scalar, float))
-
     def fill(self, coeff: float) -> None:
         """Fill the viewed real coefficients in Rust."""
         if len(self):
             self._impl.fill_slice(self.slice, convert(coeff, float))
 
-    def to_numpy(self) -> NDArray[np.float64]:
-        """Return a flat NumPy array copy of the contents of ``self``.
-
-        Returns:
-            An independent one-dimensional NumPy array containing the elements in iteration order.
-        """
-        impl = self._impl if self.is_owning() else self._impl.copy_slice(self.slice)
-        return np.asarray(impl.to_array(), dtype=np.float64)
+    def scale(self, scalar: Coeff) -> None:
+        """Scale the viewed real coefficients in Rust."""
+        scalar = normalize_scalar(scalar)
+        if len(self):
+            self._impl.scale_slice(self.slice, convert(scalar, float))
 
     @classmethod
     def from_dict(cls, source: SerializedContainer) -> Self:
@@ -1576,6 +1567,15 @@ class RealCoeffs(NumericalCoeffs[float]):
         check_schema_version(source)
         return cls.from_iterable([cls.coeff_type(value) for value in source["coeffs"]])
 
+    def to_numpy(self) -> NDArray[np.float64]:
+        """Return a flat NumPy array copy of the contents of ``self``.
+
+        Returns:
+            An independent one-dimensional NumPy array containing the elements in iteration order.
+        """
+        impl = self._impl if self.is_owning() else self._impl.copy_slice(self.slice)
+        return np.asarray(impl.to_array(), dtype=np.float64)
+
 
 class ComplexCoeffs(NumericalCoeffs[complex]):
     """A collection of ``complex``.
@@ -1589,26 +1589,6 @@ class ComplexCoeffs(NumericalCoeffs[complex]):
 
     _impl: _zixy.ComplexVec
 
-    def scale(self, scalar: Coeff) -> None:
-        """Scale the viewed complex coefficients in Rust."""
-        scalar = normalize_scalar(scalar)
-        if len(self):
-            self._impl.scale_slice(self.slice, convert(scalar, complex))
-
-    def fill(self, coeff: complex) -> None:
-        """Fill the viewed complex coefficients in Rust."""
-        if len(self):
-            self._impl.fill_slice(self.slice, convert(coeff, complex))
-
-    def to_numpy(self) -> NDArray[np.complex128]:
-        """Return a flat NumPy array copy of the contents of ``self``.
-
-        Returns:
-            An independent one-dimensional NumPy array containing the elements in iteration order.
-        """
-        impl = self._impl if self.is_owning() else self._impl.copy_slice(self.slice)
-        return np.asarray(impl.to_array(), dtype=np.complex128)
-
     @property
     def real_part(self) -> RealCoeffs:
         """The real part of ``self`` as a new instance of :class:`RealCoeffs`."""
@@ -1618,6 +1598,17 @@ class ComplexCoeffs(NumericalCoeffs[complex]):
     def imag_part(self) -> RealCoeffs:
         """The imaginary part of ``self`` as a new instance of :class:`RealCoeffs`."""
         return RealCoeffs.from_iterable(self.to_numpy().imag)
+
+    def fill(self, coeff: complex) -> None:
+        """Fill the viewed complex coefficients in Rust."""
+        if len(self):
+            self._impl.fill_slice(self.slice, convert(coeff, complex))
+
+    def scale(self, scalar: Coeff) -> None:
+        """Scale the viewed complex coefficients in Rust."""
+        scalar = normalize_scalar(scalar)
+        if len(self):
+            self._impl.scale_slice(self.slice, convert(scalar, complex))
 
     @classmethod
     def from_dict(cls, source: SerializedContainer) -> Self:
@@ -1637,6 +1628,15 @@ class ComplexCoeffs(NumericalCoeffs[complex]):
             ]
         )
 
+    def to_numpy(self) -> NDArray[np.complex128]:
+        """Return a flat NumPy array copy of the contents of ``self``.
+
+        Returns:
+            An independent one-dimensional NumPy array containing the elements in iteration order.
+        """
+        impl = self._impl if self.is_owning() else self._impl.copy_slice(self.slice)
+        return np.asarray(impl.to_array(), dtype=np.complex128)
+
 
 class ExprListWrapper(BaseVec):
     """A collection of :class:`~sympy.Expr` coefficients.
@@ -1652,65 +1652,6 @@ class ExprListWrapper(BaseVec):
             n: The number of items.
         """
         self._list = [sympify(1) for _ in range(n)]
-
-    def __len__(self) -> int:
-        """Get the number of elements in ``self``."""
-        return len(self._list)
-
-    @classmethod
-    def from_str(cls, source: str) -> Self:
-        """Create an instance of ``cls`` from a string.
-
-        Args:
-            source: String to parse.
-
-        Returns:
-            An instance of ``cls`` parsed from ``source``.
-        """
-        out = cls()
-        out._list = [
-            sympify(s)
-            for s in split_top_level(source.strip().removeprefix("[").removesuffix("]"), ",")
-        ]
-        return out
-
-    def __getitem__(self, index: int) -> Expr:
-        """Get the element or elements selected by ``index``.
-
-        Args:
-            index: Index or slice selecting the element(s) to return.
-
-        Returns:
-            Element or slice selected by ``index``.
-        """
-        return self._list[index]
-
-    def __setitem__(self, index: int, value: Coeff) -> None:
-        """Set the indexed element(s) to the given value(s).
-
-        Args:
-            index: Index or slice of coefficient(s) within ``self`` to assign.
-            value: Value(s) specifying the coefficient(s) to assign.
-        """
-        self._list[index] = ExprListWrapper.simplify_integer_floats(sympify(value))
-
-    def __eq__(self, other: object) -> bool:
-        """Return whether ``self`` and ``other`` are equal."""
-        if not isinstance(other, ExprListWrapper):
-            return NotImplemented
-        return self.same_as(other) or self._list == other._list
-
-    @staticmethod
-    def simplify_integer_floats(expr: Expr) -> Expr:
-        """Simplify any floating point numbers that are exactly representable as integers.
-
-        Args:
-            expr: The expression to simplify.
-
-        Returns:
-            The simplified expression.
-        """
-        return expr.xreplace({x: Integer(int(x)) for x in expr.atoms(Float) if x.num == int(x.num)})
 
     @classmethod
     def from_list(cls, source: list[Expr]) -> ExprListWrapper:
@@ -1741,6 +1682,30 @@ class ExprListWrapper(BaseVec):
         out = cls()
         out._list = ExprListWrapper._sympify_coeffs(source)
         return out
+
+    def __len__(self) -> int:
+        """Get the number of elements in ``self``."""
+        return len(self._list)
+
+    def __getitem__(self, index: int) -> Expr:
+        """Get the element or elements selected by ``index``.
+
+        Args:
+            index: Index or slice selecting the element(s) to return.
+
+        Returns:
+            Element or slice selected by ``index``.
+        """
+        return self._list[index]
+
+    def __setitem__(self, index: int, value: Coeff) -> None:
+        """Set the indexed element(s) to the given value(s).
+
+        Args:
+            index: Index or slice of coefficient(s) within ``self`` to assign.
+            value: Value(s) specifying the coefficient(s) to assign.
+        """
+        self._list[index] = ExprListWrapper.simplify_integer_floats(sympify(value))
 
     @staticmethod
     def _sympify_coeff(coeff: Coeff) -> Expr:
@@ -1776,9 +1741,6 @@ class ExprListWrapper(BaseVec):
             return [ExprListWrapper._sympify_coeff(coeff) for coeff in coeffs]
         return [ExprListWrapper._sympify_coeff(coeffs)]
 
-    def same_as(self, other: ExprListWrapper) -> bool:
-        return self._list is other._list
-
     def append(self, value: Expr) -> None:
         """Append ``value`` to the end of ``self``.
 
@@ -1806,6 +1768,44 @@ class ExprListWrapper(BaseVec):
         self._list = self._list[:n]
         assert len(self) == n
 
+    def __eq__(self, other: object) -> bool:
+        """Return whether ``self`` and ``other`` are equal."""
+        if not isinstance(other, ExprListWrapper):
+            return NotImplemented
+        return self.same_as(other) or self._list == other._list
+
+    def same_as(self, other: ExprListWrapper) -> bool:
+        return self._list is other._list
+
+    @staticmethod
+    def simplify_integer_floats(expr: Expr) -> Expr:
+        """Simplify any floating point numbers that are exactly representable as integers.
+
+        Args:
+            expr: The expression to simplify.
+
+        Returns:
+            The simplified expression.
+        """
+        return expr.xreplace({x: Integer(int(x)) for x in expr.atoms(Float) if x.num == int(x.num)})
+
+    @classmethod
+    def from_str(cls, source: str) -> Self:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        out = cls()
+        out._list = [
+            sympify(s)
+            for s in split_top_level(source.strip().removeprefix("[").removesuffix("]"), ",")
+        ]
+        return out
+
 
 class SymbolicCoeffs(Coeffs[Expr]):
     """A collection of :class:`~sympy.Expr`.
@@ -1818,16 +1818,6 @@ class SymbolicCoeffs(Coeffs[Expr]):
     impl_type = ExprListWrapper
 
     _impl: ExprListWrapper
-
-    def __eq__(self, other: object) -> bool:
-        """Return whether ``self`` and ``other`` are equal."""
-        if not isinstance(other, SymbolicCoeffs):
-            return NotImplemented
-        if len(self) != len(other):
-            return False
-        return all(
-            left.simplify() == right.simplify() for left, right in zip(self, other, strict=False)
-        )
 
     @property
     def free_symbols(self) -> set[Symbol]:
@@ -1857,17 +1847,15 @@ class SymbolicCoeffs(Coeffs[Expr]):
         for value in source:
             self.append(value)
 
-    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
-        """Apply a partial substitution of the symbols in-place.
-
-        Args:
-            values: Map from a symbol or symbol name to its new expression or numeric value.
-
-        Note:
-            This method operates in-place.
-        """
-        coeffs = [coeff.subs(values) for coeff in self]
-        self._impl._list[self.slice] = coeffs
+    def __eq__(self, other: object) -> bool:
+        """Return whether ``self`` and ``other`` are equal."""
+        if not isinstance(other, SymbolicCoeffs):
+            return NotImplemented
+        if len(self) != len(other):
+            return False
+        return all(
+            left.simplify() == right.simplify() for left, right in zip(self, other, strict=False)
+        )
 
     def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicCoeffs:
         """Apply a partial substitution of the symbols out of place.
@@ -1880,6 +1868,32 @@ class SymbolicCoeffs(Coeffs[Expr]):
         """
         out = self.clone()
         out.isubs(values)
+        return out
+
+    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
+        """Apply a partial substitution of the symbols in-place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Note:
+            This method operates in-place.
+        """
+        coeffs = [coeff.subs(values) for coeff in self]
+        self._impl._list[self.slice] = coeffs
+
+    def diff(self, variable: Symbol | str) -> SymbolicCoeffs:
+        """Differentiate partially with respect to ``variable`` out of place.
+
+        Args:
+            variable: Symbol or name of symbol by which to differentiate the viewed symbolic
+                expressions.
+
+        Returns:
+            A new contiguously stored instance with the differentiation applied.
+        """
+        out = self.clone()
+        out.idiff(variable)
         return out
 
     def idiff(self, variable: Symbol | str) -> None:
@@ -1897,19 +1911,38 @@ class SymbolicCoeffs(Coeffs[Expr]):
         coeffs = [diff(coeff, variable) for coeff in self]
         self._impl._list[self.slice] = coeffs
 
-    def diff(self, variable: Symbol | str) -> SymbolicCoeffs:
-        """Differentiate partially with respect to ``variable`` out of place.
+    @classmethod
+    def from_str(cls, source: str) -> Self:  # noqa: D102
+        raise NotImplementedError("Cannot parse SymbolicCoeffs from string.")
 
-        Args:
-            variable: Symbol or name of symbol by which to differentiate the viewed symbolic
-                expressions.
+    from_str.__doc__ = Coeffs.from_str.__doc__
+
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
 
         Returns:
-            A new contiguously stored instance with the differentiation applied.
+            A JSON-serializable dictionary representation of ``self``.
         """
-        out = self.clone()
-        out.idiff(variable)
-        return out
+        return dict(
+            schema_version=__schema_version__,
+            package_version=__version__,
+            family="container",
+            container=self.__class__.__name__,
+            coeffs=[str(c) for c in self],
+        )
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        check_schema_version(source)
+        return cls.from_iterable([sympify(c) for c in source["coeffs"]])
 
     def try_to_real(self) -> RealCoeffs:
         """Try to evaluate ``self`` as a vector of real coefficients.
@@ -1945,12 +1978,6 @@ class SymbolicCoeffs(Coeffs[Expr]):
             out.append(complex(v))
         return ComplexCoeffs.from_iterable(out)
 
-    @classmethod
-    def from_str(cls, source: str) -> Self:  # noqa: D102
-        raise NotImplementedError("Cannot parse SymbolicCoeffs from string.")
-
-    from_str.__doc__ = Coeffs.from_str.__doc__
-
     def to_numpy(self) -> NDArray[np.float64] | NDArray[np.complex128]:
         """Return a flat NumPy array copy of the contents of ``self``.
 
@@ -1965,33 +1992,6 @@ class SymbolicCoeffs(Coeffs[Expr]):
             return self.try_to_real().to_numpy()
         except TypeError:
             return self.try_to_complex().to_numpy()
-
-    def to_dict(self) -> SerializedContainer:
-        """Return a JSON-serializable dictionary representation of ``self``.
-
-        Returns:
-            A JSON-serializable dictionary representation of ``self``.
-        """
-        return dict(
-            schema_version=__schema_version__,
-            package_version=__version__,
-            family="container",
-            container=self.__class__.__name__,
-            coeffs=[str(c) for c in self],
-        )
-
-    @classmethod
-    def from_dict(cls, source: SerializedContainer) -> Self:
-        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
-
-        Args:
-            source: JSON-serializable dictionary representation to parse.
-
-        Returns:
-            An instance of ``cls`` parsed from ``source``.
-        """
-        check_schema_version(source)
-        return cls.from_iterable([sympify(c) for c in source["coeffs"]])
 
 
 def convert_vec[Cs: Coeffs[Any]](source: Coeffs[Any], t: type[Cs]) -> Cs:

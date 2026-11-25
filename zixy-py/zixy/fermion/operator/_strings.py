@@ -38,9 +38,25 @@ type LadderOp = tuple[int, bool]
 class String[ImplT: FermionArray, SpecT, ElemT](FermionString[ImplT, SpecT, ElemT]):
     """A fermionic ladder-operator string."""
 
-    def __repr__(self) -> str:
-        """Return a sparse-string representation of ``self``."""
-        return self._impl.string_to_string(self.index)
+    @property
+    def creations(self) -> list[int]:
+        """The creation mode indices."""
+        return self.get_sets()[0]
+
+    @property
+    def annihilations(self) -> list[int]:
+        """The annihilation mode indices."""
+        return self.get_sets()[1]
+
+    @abstractmethod
+    def __getitem__(self, item: LadderOp) -> bool:
+        """Return whether an operator is present on a mode.
+
+        Args:
+            item: Pair of ``(mode, is_creation)``, where ``is_creation`` is ``True`` for a
+                creation operator and ``False`` for an annihilation operator.
+        """
+        pass
 
     @abstractmethod
     def get_ops(self) -> list[LadderOp]:
@@ -53,26 +69,6 @@ class String[ImplT: FermionArray, SpecT, ElemT](FermionString[ImplT, SpecT, Elem
         pass
 
     @abstractmethod
-    def __getitem__(self, item: LadderOp) -> bool:
-        """Return whether an operator is present on a mode.
-
-        Args:
-            item: Pair of ``(mode, is_creation)``, where ``is_creation`` is ``True`` for a
-                creation operator and ``False`` for an annihilation operator.
-        """
-        pass
-
-    @property
-    def creations(self) -> list[int]:
-        """The creation mode indices."""
-        return self.get_sets()[0]
-
-    @property
-    def annihilations(self) -> list[int]:
-        """The annihilation mode indices."""
-        return self.get_sets()[1]
-
-    @abstractmethod
     def dagger(self) -> None:
         """Take the adjoint of ``self`` in-place, ignoring the scalar sign."""
         pass
@@ -81,6 +77,10 @@ class String[ImplT: FermionArray, SpecT, ElemT](FermionString[ImplT, SpecT, Elem
     def daggered(self) -> Self:
         """Return the adjoint of ``self``, ignoring the scalar sign."""
         pass
+
+    def __repr__(self) -> str:
+        """Return a sparse-string representation of ``self``."""
+        return self._impl.string_to_string(self.index)
 
 
 class Strings[ImplT: FermionArray, SpecT, ElemT](FermionStrings[ImplT, SpecT, ElemT]):

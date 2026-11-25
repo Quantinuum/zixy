@@ -221,29 +221,6 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerms[ImplT, S
         term_data = TermData(strings, coeffs)
         TermsBase.__init__(self, term_data)
 
-    @property
-    def max_string_len(self) -> int:
-        """The maximum number of operators per string."""
-        return self.strings.max_string_len
-
-    @requires_ownership
-    def append_n(
-        self,
-        n: int,
-        source: terms.TermSpecT[ImplT, SpecT, C] = "",
-    ) -> Self:
-        """Append a term repeatedly."""
-        if n < 0:
-            raise ValueError("The number of terms to append must be non-negative.")
-        if n == 0:
-            return self
-        value: TermBase[ImplT, SpecT, C] = self.term_type(
-            self.modes, max_string_len=_max_string_len_from_source(source)
-        )
-        value.set(source)
-        self.strings._impl._reserve_string_length(_max_string_len_from_source(value))
-        return TermsBase[ImplT, SpecT, C].append_n(self, n, value)
-
     @classmethod
     def from_iterable(
         cls,
@@ -272,6 +249,29 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](OperatorTerms[ImplT, S
         out.extend(source)
         return out
 
+    @property
+    def max_string_len(self) -> int:
+        """The maximum number of operators per string."""
+        return self.strings.max_string_len
+
+    @requires_ownership
+    def append_n(
+        self,
+        n: int,
+        source: terms.TermSpecT[ImplT, SpecT, C] = "",
+    ) -> Self:
+        """Append a term repeatedly."""
+        if n < 0:
+            raise ValueError("The number of terms to append must be non-negative.")
+        if n == 0:
+            return self
+        value: TermBase[ImplT, SpecT, C] = self.term_type(
+            self.modes, max_string_len=_max_string_len_from_source(source)
+        )
+        value.set(source)
+        self.strings._impl._reserve_string_length(_max_string_len_from_source(value))
+        return TermsBase[ImplT, SpecT, C].append_n(self, n, value)
+
 
 class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
     OperatorTermSet[ImplT, SpecT, C, ElemT]
@@ -296,29 +296,6 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
             max_string_len: Maximum number of operators per string.
         """
         TermSetBase.__init__(self, self.terms_type(modes, max_string_len=max_string_len))
-
-    @property
-    def max_string_len(self) -> int:
-        """The maximum number of operators per string."""
-        return self._string_set._impl.max_string_len
-
-    def _get_working_term(
-        self,
-        value: terms.TermSpecT[ImplT, SpecT, C],
-    ) -> TermBase[ImplT, SpecT, C]:
-        """Prepare a term without warning about temporary storage."""
-        self._working_term.string._impl._reserve_string_length(
-            _max_string_len_from_source(value),
-            warn=False,
-        )
-        return TermSetBase._get_working_term(self, value)
-
-    def _get_working_string(
-        self, value: BaseString[ImplT, SpecT] | SpecT
-    ) -> BaseString[ImplT, SpecT]:
-        """Prepare a lookup string without warning about temporary storage."""
-        self._working_term.string._impl._reserve_string_length(_string_length(value), warn=False)
-        return super()._get_working_string(value)
 
     @classmethod
     def from_iterable(
@@ -348,6 +325,29 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
             )
         out.insert_iterable(source)
         return out
+
+    @property
+    def max_string_len(self) -> int:
+        """The maximum number of operators per string."""
+        return self._string_set._impl.max_string_len
+
+    def _get_working_string(
+        self, value: BaseString[ImplT, SpecT] | SpecT
+    ) -> BaseString[ImplT, SpecT]:
+        """Prepare a lookup string without warning about temporary storage."""
+        self._working_term.string._impl._reserve_string_length(_string_length(value), warn=False)
+        return super()._get_working_string(value)
+
+    def _get_working_term(
+        self,
+        value: terms.TermSpecT[ImplT, SpecT, C],
+    ) -> TermBase[ImplT, SpecT, C]:
+        """Prepare a term without warning about temporary storage."""
+        self._working_term.string._impl._reserve_string_length(
+            _max_string_len_from_source(value),
+            warn=False,
+        )
+        return TermSetBase._get_working_term(self, value)
 
 
 class TermSum[C: (float, complex, Expr)](OperatorTermSum[ImplT, SpecT, C, ElemT], TermSet[C]):
@@ -394,12 +394,9 @@ class TermSum[C: (float, complex, Expr)](OperatorTermSum[ImplT, SpecT, C, ElemT]
             cls.terms_type.from_iterable(source, modes, max_string_len=max_string_len)
         )
 
-    def dagger(self) -> None:
-        """Take the adjoint of ``self`` in-place."""
-        out = type(self)(self.modes, max_string_len=self.max_string_len)
-        for term in self:
-            out += term.into(self.terms_type.term_type).daggered()
-        terms.TermSum.__init__(self, out.to_terms())
+    def __add__(self, rhs: TermBase[ImplT, SpecT, C] | Self) -> Self:
+        """Add two operators, preallocating the result's string storage."""
+        return self._added(rhs, 1)
 
     def _added(self, rhs: TermBase[ImplT, SpecT, C] | Self, scalar: int) -> Self:
         """Allocate a sum with enough string storage for both operands."""
@@ -413,13 +410,16 @@ class TermSum[C: (float, complex, Expr)](OperatorTermSum[ImplT, SpecT, C, ElemT]
         terms.TermSum[ImplT, SpecT, C]._scaled_iadd(out, rhs, scalar)
         return out
 
-    def __add__(self, rhs: TermBase[ImplT, SpecT, C] | Self) -> Self:
-        """Add two operators, preallocating the result's string storage."""
-        return self._added(rhs, 1)
-
     def __sub__(self, rhs: TermBase[ImplT, SpecT, C] | Self) -> Self:
         """Subtract two operators, preallocating the result's string storage."""
         return self._added(rhs, -1)
+
+    def dagger(self) -> None:
+        """Take the adjoint of ``self`` in-place."""
+        out = type(self)(self.modes, max_string_len=self.max_string_len)
+        for term in self:
+            out += term.into(self.terms_type.term_type).daggered()
+        terms.TermSum.__init__(self, out.to_terms())
 
     def daggered(self) -> Self:
         """Return the adjoint of ``self``."""
@@ -1082,6 +1082,19 @@ class SymbolicTerm(Term[Expr]):
             return self.clone()
         return _positive_power(self, exponent, SymbolicTerm.__mul__)
 
+    def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTerm:
+        """Apply a partial substitution of the symbols out of place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Returns:
+            A new contiguously stored instance with the substitution applied.
+        """
+        out = self.clone()
+        out.isubs(values)
+        return out
+
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
         """Apply a partial substitution of the symbols in-place.
 
@@ -1096,19 +1109,6 @@ class SymbolicTerm(Term[Expr]):
         """
         self.coeff = self.coeff.subs(values)
 
-    def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTerm:
-        """Apply a partial substitution of the symbols out of place.
-
-        Args:
-            values: Map from a symbol or symbol name to its new expression or numeric value.
-
-        Returns:
-            A new contiguously stored instance with the substitution applied.
-        """
-        out = self.clone()
-        out.isubs(values)
-        return out
-
 
 class SymbolicTerms(Terms[Expr]):
     """A collection of terms consisting of raw fermionic strings and symbolic coefficients.
@@ -1121,17 +1121,6 @@ class SymbolicTerms(Terms[Expr]):
 
     term_type = SymbolicTerm
 
-    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
-        """Apply a partial substitution of the symbols in-place.
-
-        Args:
-            values: Map from a symbol or symbol name to its new expression or numeric value.
-
-        Note:
-            This method operates in-place.
-        """
-        self.coeffs.isubs(values)
-
     def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTerms:
         """Apply a partial substitution of the symbols out of place.
 
@@ -1143,6 +1132,17 @@ class SymbolicTerms(Terms[Expr]):
         """
         term_data = TermData(self.strings.clone(), self.coeffs.subs(values))
         return SymbolicTerms._create(term_data)
+
+    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
+        """Apply a partial substitution of the symbols in-place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Note:
+            This method operates in-place.
+        """
+        self.coeffs.isubs(values)
 
 
 class SymbolicTermSet(TermSet[Expr]):
@@ -1158,17 +1158,6 @@ class SymbolicTermSet(TermSet[Expr]):
 
     terms_type = SymbolicTerms
 
-    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
-        """Apply a partial substitution of the symbols in-place.
-
-        Args:
-            values: Map from a symbol or symbol name to its new expression or numeric value.
-
-        Note:
-            This method operates in-place.
-        """
-        self.coeffs.isubs(values)
-
     def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTermSet:
         """Apply a partial substitution of the symbols out of place.
 
@@ -1181,6 +1170,17 @@ class SymbolicTermSet(TermSet[Expr]):
         out = self.clone()
         out.isubs(values)
         return out
+
+    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
+        """Apply a partial substitution of the symbols in-place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Note:
+            This method operates in-place.
+        """
+        self.coeffs.isubs(values)
 
 
 class SymbolicTermSum(SymbolicTermSumBase[ImplT, SpecT], TermSum[Expr]):

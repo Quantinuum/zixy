@@ -202,6 +202,8 @@ jobs:
           no-cache: true
       - name: Build wheels
         uses: PyO3/maturin-action@v1
+        env:
+          MATURIN_PYEMSCRIPTEN_PLATFORM_VERSION: "2025_0"
         with:
           working-directory: ${{ env.MODULE_DIR }}
           target: wasm32-unknown-emscripten
@@ -214,7 +216,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: wheels-wasm
-          path: dist/zixy-*-emscripten_4_0_9_wasm32.whl
+          path: dist/zixy-*-pyemscripten_2025_0_wasm32.whl
           if-no-files-found: error
 
   dry-run:
@@ -236,7 +238,7 @@ jobs:
     uses: ./.github/workflows/release_crate.yml
 
   release:
-    name: Release wheels
+    name: Release to PyPI
     runs-on: ubuntu-24.04
     needs: [check-tag, linux, musllinux, windows, macos, sdist, wasm]
     if: ${{ needs.check-tag.outputs.publish == 'true' }}
@@ -252,12 +254,7 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           path: dist
-          pattern: wheels-{linux-*,musllinux-*,windows-*,macos-*,sdist}
           merge-multiple: true
-      - uses: actions/download-artifact@v8
-        with:
-          name: wheels-wasm
-          path: wasm-dist
       - name: Report
         run: |
           echo "Publishing to PyPI..."
@@ -270,10 +267,3 @@ jobs:
         with:
           verbose: true
           skip-existing: true
-      - name: Attach the Pyodide wheel to the GitHub release
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: ${{ github.ref_name }}
-          files: wasm-dist/*.whl
-          fail_on_unmatched_files: true
-          overwrite_files: false

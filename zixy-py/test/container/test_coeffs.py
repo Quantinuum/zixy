@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 from sympy import Expr, sympify
 
@@ -1159,3 +1160,29 @@ def test_symbolic_vec():
             assert el is not v[i]
         el *= sympify(2)
         assert el == v[i]
+
+
+@pytest.mark.parametrize("exponent", [-3, -2, 0, 1, 2, 3])
+def test_coeffs_power(extension_coeffs, exponent):
+    view = extension_coeffs[::-1]
+    result = view**exponent
+    assert type(result) is type(view)
+    expected = []
+    for coeff in view:
+        if isinstance(coeff, Sign | ComplexSign):
+            expected.append(type(coeff).from_scalar(complex(coeff) ** exponent))
+        else:
+            expected.append(coeff**exponent)
+    assert list(result) == expected
+    assert result.is_owning()
+
+
+@pytest.mark.parametrize("value", [Sign(True), ComplexSign(1), RealCoeffs()])
+def test_power_requires_integer(value):
+    assert value**True == value**1
+    assert value**False == value**0
+    for exponent in (np.int64(1), np.uint32(2)):
+        assert value**exponent == value ** int(exponent)
+    for exponent in (0.0, 1.0, 1.5, np.float32(2), np.float64(1)):
+        with pytest.raises(TypeError):
+            value**exponent

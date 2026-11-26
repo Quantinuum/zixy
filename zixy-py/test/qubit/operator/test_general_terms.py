@@ -463,3 +463,8 @@ def test_extend():
     assert len(a[::-1]) == len(a)
     assert a[::-1][0].string.get_tuple() == (Y, Z, Z, I, X, Z)
     assert a[::-1][1].string.get_tuple() == (X, Y, Z, Z, Y, X)
+
+
+def test_terms_power_is_unsupported():
+    with pytest.raises(TypeError):
+        zqo.RealTerms(1) ** 2

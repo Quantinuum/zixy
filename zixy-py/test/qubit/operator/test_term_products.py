@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 from sympy import sympify
 
@@ -160,3 +161,34 @@ def test_sign_terms_canonicalize():
     empty = zqo.SignTerms(3)
     # the unique tableau with no strings is in canonical form, so no imuls
     assert empty.canonicalize_all() == []
+
+
+@pytest.mark.parametrize(
+    ("term_type", "product_type", "coeff"),
+    [
+        (zqo.RealTerm, zqo.ComplexTerm, -2),
+        (zqo.ComplexTerm, zqo.ComplexTerm, 2j),
+        (zqo.SignTerm, zqo.ComplexSignTerm, -1),
+        (zqo.ComplexSignTerm, zqo.ComplexSignTerm, 1j),
+        (zqo.SymbolicTerm, zqo.SymbolicTerm, sympify("1.5*x")),
+    ],
+)
+def test_term_powers(term_type, product_type, coeff):
+    term = term_type(1, ("X0", coeff))
+    assert term**0 == term_type(1, "")
+    assert term**1 == term
+    assert term**2 == product_type(1, ("", coeff**2))
+    assert term**3 == product_type(1, ("X0", coeff**3))
+
+
+def test_operator_power_domain():
+    operator = zqo.RealTerm(1, ("X0", 2.0))
+    with pytest.raises(ValueError):
+        operator**-1
+    assert operator**True == operator**1
+    assert operator**False == operator**0
+    for exponent in (np.int64(1), np.uint32(2)):
+        assert operator**exponent == operator ** int(exponent)
+    for exponent in (0.0, 1.0, 1.5, np.float32(2), np.float64(1)):
+        with pytest.raises(TypeError):
+            operator**exponent

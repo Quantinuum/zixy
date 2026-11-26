@@ -408,3 +408,8 @@ def test_terms_slice():
 
     assert len(terms[1:]) == 1
     assert terms[1].coeff == 2.0j
+
+
+def test_state_sum_power_is_unsupported():
+    with pytest.raises(TypeError):
+        zfs.RealTermSum(1) ** 2

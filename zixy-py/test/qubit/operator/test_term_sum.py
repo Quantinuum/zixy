@@ -187,3 +187,22 @@ def test_complex_term_sum_to_sparse_raises_index_error():
 
     with pytest.raises(IndexError):
         op.to_sparse_matrix()
+
+
+@pytest.mark.parametrize("exponent", [1, 2, 3, 4, 5])
+def test_pauli_sum_power_includes_cross_terms(exponent):
+    operator = zqo.RealTermSum.from_iterable([("", 1.0), ("X0", 2.0)], 1)
+    expected_type = zqo.RealTermSum if exponent == 1 else zqo.ComplexTermSum
+    # I + 2X has eigenvalues 3 and -1 on the two X eigenspaces.
+    identity = (3**exponent + (-1) ** exponent) / 2
+    pauli_x = (3**exponent - (-1) ** exponent) / 2
+    assert operator**exponent == expected_type.from_iterable([("", identity), ("X0", pauli_x)], 1)
+
+
+@pytest.mark.parametrize("sum_type", [zqo.RealTermSum, zqo.ComplexTermSum, zqo.SymbolicTermSum])
+def test_empty_sum_to_zero_power(sum_type):
+    source = sum_type(2)
+    result = source**0
+    assert type(result) is sum_type
+    assert result == sum_type.from_iterable([("", 1)], 2)
+    assert len(source) == 0

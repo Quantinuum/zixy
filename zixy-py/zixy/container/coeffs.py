@@ -79,6 +79,15 @@ def normalize_scalar[T](value: T) -> T | int | float | complex:
     return value
 
 
+def _integer_exponent(exponent: int | np.integer[Any]) -> int:
+    """Return the integer value of a power exponent."""
+    if isinstance(exponent, int):
+        return exponent
+    if isinstance(exponent, np.integer) and exponent.dtype.kind in {"i", "u"}:
+        return int(exponent)
+    raise TypeError(f"Powers require an integer exponent, got {exponent!r}.")
+
+
 def _imul_factor_error(lhs: Any, rhs: Any, factor: Any) -> ValueError:
     """Get an exception for an invalid in-place multiplication due to the resulting factor."""
     return ValueError(
@@ -203,6 +212,11 @@ class Sign(RootOfUnity):
             :meth:`__mul__`
         """
         return self * other
+
+    def __pow__(self, exponent: int | np.integer[Any]) -> Self:
+        """Return this sign raised to an integer power."""
+        exponent = _integer_exponent(exponent)
+        return type(self)(self.phase and exponent % 2)
 
     def __imul__(self, rhs: Coeff) -> Self:
         """Multiply ``self`` by ``rhs``.
@@ -432,6 +446,11 @@ class ComplexSign(RootOfUnity):
             :meth:`__mul__`
         """
         return self * other
+
+    def __pow__(self, exponent: int | np.integer[Any]) -> Self:
+        """Return this sign raised to an integer power."""
+        exponent = _integer_exponent(exponent)
+        return type(self)(self.phase * exponent)
 
     def __imul__(self, rhs: Coeff) -> Self:  # type: ignore[misc]
         """Multiply ``self`` by ``rhs``.
@@ -1063,6 +1082,14 @@ class Coeffs[C: (float, complex, Sign, ComplexSign, Expr)](
                     break
                 self._set_scalar(i, typesafe_mul(self[i], c))
         return self
+
+    def __pow__(self, exponent: int | np.integer[Any]) -> Self:
+        """Return a new collection with each coefficient raised to an integer power."""
+        exponent = _integer_exponent(exponent)
+        out = self._new()
+        for coeff in self:
+            out.append(coeff**exponent)
+        return out
 
     def to_tuple(self) -> tuple[C, ...]:
         """Get a tuple of clones of the elements of ``self``."""

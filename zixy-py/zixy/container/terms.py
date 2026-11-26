@@ -162,6 +162,18 @@ def _coeffs_from_str[C: (float, complex, Sign, ComplexSign, Expr)](
     return coeffs
 
 
+def _positive_power[T](base: T, exponent: int, multiply: Callable[[T, T], T]) -> T:
+    """Compute a validated positive power by repeated squaring."""
+    if exponent < 0:
+        raise ValueError(f"Term powers require a nonnegative integer exponent, got {exponent}.")
+    result = base
+    for bit in bin(exponent)[3:]:
+        result = multiply(result, result)
+        if bit == "1":
+            result = multiply(result, base)
+    return result
+
+
 class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
     ViewableItem[_TermData[ImplT, SpecT, C]],
     Representable,
@@ -286,6 +298,13 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
         out = cls.__new__(cls)
         Term.__init__(out, data, indexer)
         return out
+
+    def _identity(self) -> Self:
+        """Create a multiplicative identity of the same space and configuration as ``self``."""
+        data = self._impl._new()
+        data.resize(1)
+        data.coeffs[0] = unit(self.coeff_type)
+        return self._create(data)
 
     @classmethod
     def from_string(cls, string: String[ImplT, SpecT], coeff: C | None = None) -> Self:
@@ -1596,6 +1615,14 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Expr)](TermSet[ImplT,
         Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
         are not.
     """
+
+    def _identity(self) -> Self:
+        """Create a multiplicative identity of the same space and configuration as ``self``."""
+        out = self._new()
+        term = out._working_term
+        term.coeff = unit(term.coeff_type)
+        out.insert(term)
+        return out
 
     @classmethod
     def from_terms(cls, terms: Terms[ImplT, SpecT, C]) -> Self:

@@ -1226,13 +1226,3 @@ def get_term_type[C: (float, complex, Sign, ComplexSign, Expr)](
         return SymbolicTerm
     else:
         raise TypeError(f"Unsupported coefficient type {coeff_type}.")
-
-
-for _term_type, _sum_type in (
-    (SignTerm, RealTermSum),
-    (ComplexSignTerm, ComplexTermSum),
-    (RealTerm, RealTermSum),
-    (ComplexTerm, ComplexTermSum),
-    (SymbolicTerm, SymbolicTermSum),
-):
-    setattr(_term_type, "_term_sum_type", _sum_type)

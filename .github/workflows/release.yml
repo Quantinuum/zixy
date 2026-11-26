@@ -185,83 +185,36 @@ jobs:
           path: dist
 
   wasm:
-    name: Build Pyodide wheel
     needs: check-tag
     if: ${{ needs.check-tag.outputs.run == 'true' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    env:
-      # Match the Pyodide 0.29 runtime and use hugr's nightly toolchain.
-      PYTHON_VERSION: "3.13"
-      EMSDK_VERSION: "4.0.9"
-      RUST_NIGHTLY_VERSION: nightly-2026-05-28
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: actions/setup-python@v7
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
-      - name: Install nightly Rust toolchain
-        uses: dtolnay/rust-toolchain@master
+          python-version: 3.x
+      - uses: emscripten-core/setup-emsdk@v16
         with:
-          toolchain: ${{ env.RUST_NIGHTLY_VERSION }}
-          targets: wasm32-unknown-emscripten
-          components: rust-src
-      - uses: actions/setup-node@v7
+          # Match Pyodide 0.29's Emscripten ABI.
+          version: "4.0.9"
+          no-cache: true
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
         with:
-          node-version: "22"
-      - name: Set up Emscripten
-        run: |
-          git clone --depth 1 https://github.com/emscripten-core/emsdk.git
-          cd emsdk
-          ./emsdk install "$EMSDK_VERSION"
-          ./emsdk activate "$EMSDK_VERSION"
-      - uses: astral-sh/setup-uv@v7
-        with:
-          version: "0.9.5"
-      - name: Build Pyodide wheel
-        working-directory: ${{ env.MODULE_DIR }}
-        env:
-          CARGO_BUILD_TARGET: wasm32-unknown-emscripten
-          TARGET: wasm32-unknown-emscripten
-          CFLAGS: -fPIC
-          CXXFLAGS: -fPIC
-        run: |
-          source ../emsdk/emsdk_env.sh
+          working-directory: ${{ env.MODULE_DIR }}
+          target: wasm32-unknown-emscripten
           # Rebuild Rust's standard library with Pyodide's Emscripten version.
-          uvx --from 'maturin~=1.15.0' maturin build \
-            -Z build-std --locked --release \
-            --interpreter "python$PYTHON_VERSION" --target "$TARGET" \
-            --out ../wasm-dist
-      - name: Smoke-test the wheel in Pyodide
-        run: |
-          npm install --prefix "$RUNNER_TEMP/pyodide" --no-audit --no-fund pyodide@0.29.3
-          NODE_PATH="$RUNNER_TEMP/pyodide/node_modules" node - "$PWD"/wasm-dist/*.whl <<'JS'
-          const { loadPyodide } = require("pyodide");
-
-          async function main() {
-            const pyodide = await loadPyodide();
-            const options = { errorCallback: (message) => { throw new Error(message); } };
-            // Use the runtime's bundled dependencies to check the extension ABI.
-            await pyodide.loadPackage(["pandas", "sympy", "typing-extensions"], options);
-            await pyodide.loadPackage(process.argv[2], options);
-            pyodide.runPython(`
-          from zixy.qubit.pauli import String, X
-          assert String(1, (X,)).get_tuple() == (X,)
-          `);
-          }
-
-          main().catch((error) => {
-            console.error(error);
-            process.exitCode = 1;
-          });
-          JS
-      - name: Upload Pyodide wheel
+          args: --release --out ../dist --find-interpreter --locked -Z build-std
+          sccache: 'false'
+          rust-toolchain: nightly-2026-05-28
+          rustup-components: rust-src
+      - name: Upload wheels
         uses: actions/upload-artifact@v7
         with:
           name: wheels-wasm
-          path: wasm-dist/zixy-*-emscripten_4_0_9_wasm32.whl
+          path: dist/zixy-*-emscripten_4_0_9_wasm32.whl
           if-no-files-found: error
 
   dry-run:

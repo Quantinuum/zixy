@@ -2087,7 +2087,7 @@ wheels = [
 
 [[package]]
 name = "zixy"
-version = "0.4.4"
+version = "0.4.5"
 source = { directory = "../" }
 dependencies = [
     { name = "numpy" },

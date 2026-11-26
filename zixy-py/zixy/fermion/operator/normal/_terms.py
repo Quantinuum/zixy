@@ -32,6 +32,7 @@ from zixy.container.coeffs import (
     Coeffs,
     ComplexCoeffs,
     ComplexSign,
+    ComplexSignCoeffs,
     RealCoeffs,
     Sign,
     SignCoeffs,
@@ -74,6 +75,7 @@ ElemT = tuple[list[int], list[int]]
 SpecT = StringSpec
 ImplT = NormalFermionOperatorArray
 SignTermSpec = TermSpec[Sign]
+ComplexSignTermSpec = TermSpec[ComplexSign]
 RealTermSpec = TermSpec[float]
 ComplexTermSpec = TermSpec[complex]
 SymbolicTermSpec = TermSpec[Expr]
@@ -221,7 +223,7 @@ class SignTerm(Term[Sign]):
     element in a :class:`~zixy.container.data.TermData` instance, or a view on an element in
     another collection.
 
-    Products with strings or other sign-valued terms return real-coefficient term sums.
+    Products with strings or other :class:`SignTerm` instances return real-coefficient term sums.
     """
 
     coeff_type = Sign
@@ -230,7 +232,7 @@ class SignTerm(Term[Sign]):
     @overload
     def __mul__(self, rhs: Sign) -> SignTerm: ...
     @overload
-    def __mul__(self, rhs: ComplexSign) -> ComplexTerm: ...
+    def __mul__(self, rhs: ComplexSign) -> ComplexSignTerm: ...
     @overload
     def __mul__(self, rhs: float) -> RealTerm: ...
     @overload
@@ -241,6 +243,8 @@ class SignTerm(Term[Sign]):
     def __mul__(self, rhs: String) -> RealTermSum: ...
     @overload
     def __mul__(self, rhs: SignTerm) -> RealTermSum: ...
+    @overload
+    def __mul__(self, rhs: ComplexSignTerm) -> ComplexTermSum: ...
     @overload
     def __mul__(self, rhs: RealTerm) -> RealTermSum: ...
     @overload
@@ -260,7 +264,7 @@ class SignTerm(Term[Sign]):
     @overload
     def __rmul__(self, lhs: Sign) -> SignTerm: ...
     @overload
-    def __rmul__(self, lhs: ComplexSign) -> ComplexTerm: ...
+    def __rmul__(self, lhs: ComplexSign) -> ComplexSignTerm: ...
     @overload
     def __rmul__(self, lhs: float) -> RealTerm: ...
     @overload
@@ -271,6 +275,8 @@ class SignTerm(Term[Sign]):
     def __rmul__(self, lhs: String) -> RealTermSum: ...
     @overload
     def __rmul__(self, lhs: SignTerm) -> RealTermSum: ...
+    @overload
+    def __rmul__(self, lhs: ComplexSignTerm) -> ComplexTermSum: ...
     @overload
     def __rmul__(self, lhs: RealTerm) -> RealTermSum: ...
     @overload
@@ -314,6 +320,109 @@ class SignTermSet(TermSet[Sign]):
     terms_type = SignTerms
 
 
+class ComplexSignTerm(Term[ComplexSign]):
+    """A term consisting of a normal-ordered fermionic string and a complex sign coefficient.
+
+    A single mode-based term consisting of a normal-ordered fermionic string and a
+    :class:`~zixy.container.coeffs.ComplexSign` coefficient that may be an owning instance
+    referencing a single element in a :class:`~zixy.container.data.TermData` instance, or a view
+    on an element in another collection.
+
+    Products with strings or other sign-valued terms return complex-coefficient term sums.
+    """
+
+    coeff_type = ComplexSign
+    coeffs_type = ComplexSignCoeffs
+
+    @overload
+    def __mul__(self, rhs: Sign) -> ComplexSignTerm: ...
+    @overload
+    def __mul__(self, rhs: ComplexSign) -> ComplexSignTerm: ...
+    @overload
+    def __mul__(self, rhs: float) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, rhs: complex) -> ComplexTerm: ...
+    @overload
+    def __mul__(self, rhs: Expr) -> SymbolicTerm: ...
+    @overload
+    def __mul__(self, rhs: String) -> ComplexTermSum: ...
+    @overload
+    def __mul__(self, rhs: SignTerm) -> ComplexTermSum: ...
+    @overload
+    def __mul__(self, rhs: ComplexSignTerm) -> ComplexTermSum: ...
+    @overload
+    def __mul__(self, rhs: RealTerm) -> ComplexTermSum: ...
+    @overload
+    def __mul__(self, rhs: ComplexTerm) -> ComplexTermSum: ...
+    @overload
+    def __mul__(self, rhs: SymbolicTerm) -> SymbolicTermSum: ...
+
+    def __mul__[C: (float, complex, Sign, ComplexSign, Expr)](
+        self, rhs: C | String | Term[C]
+    ) -> Term[Any] | TermSum[Any]:
+        """Multiplication of ``self`` by ``rhs``."""
+        if not isinstance(rhs, Coeff | String | Term):
+            return NotImplemented
+        return _mul(self, rhs)
+
+    @overload
+    def __rmul__(self, lhs: Sign) -> ComplexSignTerm: ...
+    @overload
+    def __rmul__(self, lhs: ComplexSign) -> ComplexSignTerm: ...
+    @overload
+    def __rmul__(self, lhs: float) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, lhs: complex) -> ComplexTerm: ...
+    @overload
+    def __rmul__(self, lhs: Expr) -> SymbolicTerm: ...
+    @overload
+    def __rmul__(self, lhs: String) -> ComplexTermSum: ...
+    @overload
+    def __rmul__(self, lhs: SignTerm) -> ComplexTermSum: ...
+    @overload
+    def __rmul__(self, lhs: ComplexSignTerm) -> ComplexTermSum: ...
+    @overload
+    def __rmul__(self, lhs: RealTerm) -> ComplexTermSum: ...
+    @overload
+    def __rmul__(self, lhs: ComplexTerm) -> ComplexTermSum: ...
+    @overload
+    def __rmul__(self, lhs: SymbolicTerm) -> SymbolicTermSum: ...
+
+    def __rmul__[C: (float, complex, Sign, ComplexSign, Expr)](
+        self, lhs: C | String | Term[C]
+    ) -> Term[Any] | TermSum[Any]:
+        """Multiplication of ``lhs`` by ``self``."""
+        if not isinstance(lhs, Coeff | String | Term):
+            return NotImplemented
+        return _rmul(self, lhs)
+
+
+class ComplexSignTerms(Terms[ComplexSign]):
+    """A collection of terms with normal-ordered fermionic strings and complex sign coefficients.
+
+    An array-like container of mode-based terms consisting of normal-ordered fermionic strings and
+    :class:`~zixy.container.coeffs.ComplexSign` coefficients that may be an owning instance
+    referencing a :class:`~zixy.container.data.TermData` instance, or a view on a slice of the
+    elements in another collection.
+    """
+
+    term_type = ComplexSignTerm
+
+
+class ComplexSignTermSet(TermSet[ComplexSign]):
+    """Unique normal-ordered fermionic strings with complex sign coefficients.
+
+    A set-like container of mode-based terms with :class:`~zixy.container.coeffs.ComplexSign`
+    coefficients that may be used to store unique terms and perform set-like operations on them.
+
+    Note:
+        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
+        are not.
+    """
+
+    terms_type = ComplexSignTerms
+
+
 class RealTerm(Term[float]):
     """A term consisting of a normal-ordered fermionic string and a real coefficient.
 
@@ -340,6 +449,8 @@ class RealTerm(Term[float]):
     def __mul__(self, rhs: String) -> RealTermSum: ...
     @overload
     def __mul__(self, rhs: SignTerm) -> RealTermSum: ...
+    @overload
+    def __mul__(self, rhs: ComplexSignTerm) -> ComplexTermSum: ...
     @overload
     def __mul__(self, rhs: RealTerm) -> RealTermSum: ...
     @overload
@@ -370,6 +481,8 @@ class RealTerm(Term[float]):
     def __rmul__(self, lhs: String) -> RealTermSum: ...
     @overload
     def __rmul__(self, lhs: SignTerm) -> RealTermSum: ...
+    @overload
+    def __rmul__(self, lhs: ComplexSignTerm) -> ComplexTermSum: ...
     @overload
     def __rmul__(self, lhs: RealTerm) -> RealTermSum: ...
     @overload
@@ -622,6 +735,8 @@ class ComplexTerm(Term[complex]):
     @overload
     def __mul__(self, rhs: SignTerm) -> ComplexTermSum: ...
     @overload
+    def __mul__(self, rhs: ComplexSignTerm) -> ComplexTermSum: ...
+    @overload
     def __mul__(self, rhs: RealTerm) -> ComplexTermSum: ...
     @overload
     def __mul__(self, rhs: ComplexTerm) -> ComplexTermSum: ...
@@ -651,6 +766,8 @@ class ComplexTerm(Term[complex]):
     def __rmul__(self, lhs: String) -> ComplexTermSum: ...
     @overload
     def __rmul__(self, lhs: SignTerm) -> ComplexTermSum: ...
+    @overload
+    def __rmul__(self, lhs: ComplexSignTerm) -> ComplexTermSum: ...
     @overload
     def __rmul__(self, lhs: RealTerm) -> ComplexTermSum: ...
     @overload
@@ -903,6 +1020,8 @@ class SymbolicTerm(Term[Expr]):
     @overload
     def __mul__(self, rhs: SignTerm) -> SymbolicTermSum: ...
     @overload
+    def __mul__(self, rhs: ComplexSignTerm) -> SymbolicTermSum: ...
+    @overload
     def __mul__(self, rhs: RealTerm) -> SymbolicTermSum: ...
     @overload
     def __mul__(self, rhs: ComplexTerm) -> SymbolicTermSum: ...
@@ -932,6 +1051,8 @@ class SymbolicTerm(Term[Expr]):
     def __rmul__(self, lhs: String) -> SymbolicTermSum: ...
     @overload
     def __rmul__(self, lhs: SignTerm) -> SymbolicTermSum: ...
+    @overload
+    def __rmul__(self, lhs: ComplexSignTerm) -> SymbolicTermSum: ...
     @overload
     def __rmul__(self, lhs: RealTerm) -> SymbolicTermSum: ...
     @overload
@@ -1131,8 +1252,7 @@ def get_term_type[C: (float, complex, Sign, ComplexSign, Expr)](
     if issubclass(coeff_type, Sign):
         return SignTerm
     elif issubclass(coeff_type, ComplexSign):
-        # FIXME
-        return ComplexTerm  # type: ignore[return-value]
+        return ComplexSignTerm
     if not issubclass(coeff_type, complex) and issubclass(coeff_type, float | int):
         return RealTerm
     if not issubclass(coeff_type, float | int) and issubclass(coeff_type, complex):
@@ -1145,6 +1265,7 @@ def get_term_type[C: (float, complex, Sign, ComplexSign, Expr)](
 
 for _term_type, _sum_type in (
     (SignTerm, RealTermSum),
+    (ComplexSignTerm, ComplexTermSum),
     (RealTerm, RealTermSum),
     (ComplexTerm, ComplexTermSum),
     (SymbolicTerm, SymbolicTermSum),

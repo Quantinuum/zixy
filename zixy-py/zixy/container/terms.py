@@ -444,7 +444,7 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
 
     def __pos__(self) -> Self:
         """Return ``self``."""
-        return self
+        return self.clone()
 
     def __neg__(self) -> Self:
         """Return the negation of ``self``."""
@@ -751,7 +751,7 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
 
     def __pos__(self) -> Self:
         """Return ``self``."""
-        return self
+        return self.clone()
 
     def __neg__(self) -> Self:
         """Return the negation of ``self``."""
@@ -1713,7 +1713,7 @@ class TermSum[ImplT: ImplArray, SpecT, C: (float, complex, Expr)](TermSet[ImplT,
 
     def __pos__(self) -> Self:
         """Return ``self``."""
-        return self
+        return self.clone()
 
     def __neg__(self) -> Self:
         """Return the negation of ``self``."""

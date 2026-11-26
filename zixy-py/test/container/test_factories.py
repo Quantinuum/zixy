@@ -478,7 +478,7 @@ def test_projection_copies_existing_lookup_map(family, part, coefficient, monkey
     assert type(projected) is family.RealTermSum
     assert projected._string_set._map is not source._string_set._map
     assert projected.strings.is_owning()
-    assert projected.coeffs.is_owning()
+    assert not projected.coeffs.is_owning()
     assert projected.to_dict()["space"] == before["space"]
     assert projected.get(specs[0]) == coefficient
     assert projected.get(specs[1]) == 0.0

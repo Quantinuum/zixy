@@ -166,7 +166,7 @@ class TermSet[
     @property
     def qubits(self) -> Qubits:
         """The qubits corresponding to ``self``."""
-        return self.strings.qubits
+        return self._string_set._impl.qubits
 
     def _check_term(self, value: TermBase[ImplT, SpecT, C]) -> None:
         """Check whether a term is defined over the same qubits as ``self``."""

@@ -999,9 +999,9 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             Terms are stored in iteration order, including terms with zero coefficients. The
             string lookup map is not serialized. Term sums use the same representation.
         """
-        data = self.strings.to_dict()
+        data = self._data.strings.to_dict()
         data["container"] = type(self).__name__
-        data["coeffs"] = self.coeffs.to_dict()["coeffs"]
+        data["coeffs"] = self._data.coeffs.to_dict()["coeffs"]
         return data
 
     @classmethod
@@ -1092,8 +1092,8 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
     def coeffs[Cs: Coeffs[Any]](
         self: _TermSetCoeffs[Cs],
     ) -> Cs:
-        """The coefficients of ``self``, preserving their concrete container type."""
-        return cast("Cs", self._data.coeffs)
+        """A fixed-length view supporting write-through coefficient updates."""
+        return cast("Cs", self._data.coeffs.as_view())
 
     @classproperty
     def coeff_type(cls: type[TermSet[ImplT, SpecT, C]]) -> type[C]:
@@ -1120,9 +1120,9 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
     def strings[StringsT: Strings[Any, Any]](
         self: _HasTermsType[_HasTermType[_HasStringsType[StringsT]]],
     ) -> StringsT:
-        """The strings of ``self``, preserving their concrete container type."""
+        """An independent copy of the keys in iteration order."""
         terms = cast("TermSet[Any, Any, Any]", self)
-        return cast("StringsT", terms._impl.strings)
+        return cast("StringsT", terms._impl.strings.clone())
 
     def _bind(self, data: _TermData[ImplT, SpecT, C], map_: Map) -> None:
         """Set the term data and lookup map for ``self``.
@@ -1506,10 +1506,10 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
     def __iter__[TermT: Term[Any, Any, Any]](
         self: _HasTermsType[_HasTermType[TermT]],
     ) -> Iterator[TermT]:
-        """Iterate over the concrete terms of ``self``."""
+        """Yield an independent, owning copy of each term."""
         terms = cast("TermSet[Any, Any, Any]", self)
         for i in range(len(terms)):
-            yield cast("TermT", terms.terms_type.term_type._view(terms._impl, i))
+            yield cast("TermT", terms.terms_type.term_type._create(terms._impl.clone(i)))
 
     def _symbolic_vdot(self: TermSet[ImplT, SpecT, Expr], rhs: TermSet[ImplT, SpecT, Expr]) -> Expr:
         """Compute a sparse symbolic inner product between compatible term sets."""
@@ -1545,9 +1545,8 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
             The resulting generator does not enforce uniqueness of strings.
         """
         for term in self:
-            copy = term.clone()
-            if f(copy):
-                yield copy
+            if f(term):
+                yield term
 
     def filter_map(self, f: Callable[[Term[ImplT, SpecT, C]], bool]) -> Self:
         """Eagerly evaluate a filter-map operation over the terms of ``self``.

@@ -21,7 +21,7 @@ def family(request):
     return request.param
 
 
-def test_component_set_retains_distinct_views(family):
+def test_component_set_yields_independent_strings(family):
     api, specs, kwargs = family
     strings = api.StringSet.from_iterable(specs, 2, **kwargs)
     expected = [str(string) for string in strings]
@@ -34,8 +34,11 @@ def test_component_set_retains_distinct_views(family):
     assert str(first) == saved
     assert [str(string) for string in collected] == expected
     assert len({id(string) for string in collected}) == len(specs)
-    assert all(string._impl is strings._impl for string in collected)
-    assert all(not string.is_owning() for string in collected)
+    assert all(string.is_owning() for string in collected)
+    first.set(specs[1])
+    assert [str(string) for string in strings] == expected
+    assert strings.lookup_index(specs[0]) == 0
+    assert strings.lookup_index(specs[1]) == 1
     assert list(api.StringSet(2, **kwargs)) == []
     single = api.StringSet.from_iterable(specs[:1], 2, **kwargs)
     assert [str(string) for string in single] == expected[:1]
@@ -109,7 +112,7 @@ def test_term_filter_map_retains_distinct_copies(family, as_set):
     assert len(seen) == len(specs)
 
 
-def test_filtered_set_iterator_preserves_views(family):
+def test_filtered_set_iterator_yields_copies(family):
     api, specs, kwargs = family
     array = api.RealTerms.from_iterable([(spec, 1.0) for spec in specs], 2, **kwargs)
     terms = api.RealTermSet.from_terms(array)
@@ -117,5 +120,5 @@ def test_filtered_set_iterator_preserves_views(family):
     assert [str(term.string) for term in collected] == [str(term.string) for term in array]
     assert len({id(term) for term in collected}) == len(specs)
     collected[0].coeff = 2.0
-    assert terms[specs[0]] == 2.0
+    assert terms[specs[0]] == 1.0
     assert [term.coeff for term in collected[1:]] == [1.0, 1.0]

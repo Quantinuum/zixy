@@ -149,7 +149,7 @@ class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign,
     @property
     def modes(self) -> Modes:
         """The modes corresponding to ``self``."""
-        return self.strings.modes
+        return self._string_set._impl.modes
 
     def _check_term(self, value: TermBase[ImplT, SpecT, C]) -> None:
         """Hook to check whether a term is defined over the same modes as ``self``."""

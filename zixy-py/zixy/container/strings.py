@@ -452,10 +452,13 @@ class StringSet[ImplT: ImplArray, SpecT](Representable, SerializableContainer):
     def __iter__[StringT: String[Any, Any]](
         self: _HasStringsType[_HasStringType[StringT]],
     ) -> Iterator[StringT]:
-        """Iterate over the concrete strings of ``self``."""
+        """Yield an independent, owning copy of each key."""
         strings = cast("StringSet[Any, Any]", self)
         for i in range(len(strings)):
-            yield cast("StringT", strings.strings_type.string_type._view(strings._impl, i))
+            yield cast(
+                "StringT",
+                strings.strings_type.string_type._create(strings._impl.strings_clone([i])),
+            )
 
     def iter_filter_map[StringT: String[Any, Any]](
         self: _HasStringsType[_HasStringType[StringT]], f: Callable[[StringT], bool]

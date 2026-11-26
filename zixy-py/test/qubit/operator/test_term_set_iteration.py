@@ -58,23 +58,21 @@ def test_advancing_iterator_preserves_previous_term(terms):
     assert str(first) == saved
 
 
-def test_yielded_terms_are_distinct_views(terms):
-    first, second = list(terms)
-    saved_second = str(second)
-
-    assert first._impl is terms._impl
-    assert second._impl is terms._impl
-    assert not first.is_owning()
-    assert not second.is_owning()
-    first.coeff = -first.coeff
-
-    assert str(second) == saved_second
-    assert terms["X0"] == first.coeff
-    terms["Z0"] = -second.coeff
-    assert second.coeff == terms["Z0"]
-    assert str(second) != saved_second
-    assert terms.lookup_index("X0") == 0
+def test_yielded_terms_and_bulk_strings_are_independent(terms):
+    first, second = terms
+    original = first.coeff
+    assert first.is_owning() and second.is_owning()
+    first.string.set("Z0")
+    first.coeff = -original
+    terms.strings[0].set("Z0")
+    assert [str(term.string) for term in terms] == ["X0", "Z0"]
+    assert terms["X0"] == original
     assert terms.lookup_index("Z0") == 1
+
+    terms.coeffs[1] = -second.coeff
+    assert terms["Z0"] == -second.coeff
+    with pytest.raises(ValueError):
+        terms.coeffs.resize(0)
 
 
 def test_filter_map_still_operates_on_copies(terms):

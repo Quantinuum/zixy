@@ -300,7 +300,7 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
     @property
     def max_string_len(self) -> int:
         """The maximum number of operators per string."""
-        return self.strings.max_string_len
+        return self._string_set._impl.max_string_len
 
     def _get_working_term(
         self,
@@ -342,7 +342,7 @@ class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
         """
         out = cls(modes, max_string_len=max_string_len)
         if isinstance(source, Sequence):
-            out.strings._impl._reserve_string_length(
+            out._string_set._impl._reserve_string_length(
                 max(map(_max_string_len_from_source, source), default=0),
                 warn=False,
             )
@@ -408,8 +408,8 @@ class TermSum[C: (float, complex, Expr)](OperatorTermSum[ImplT, SpecT, C, ElemT]
         )
         out = self.clone()
         if required > out.max_string_len:
-            out.strings._impl._reserve_string_length(required, warn=False)
-            out.strings._impl.refresh_map(out._string_set._map)
+            out._string_set._impl._reserve_string_length(required, warn=False)
+            out._string_set._impl.refresh_map(out._string_set._map)
         terms.TermSum[ImplT, SpecT, C]._scaled_iadd(out, rhs, scalar)
         return out
 
@@ -810,8 +810,8 @@ class RealTermSum(NumericTermSum[GeneralFermionOperatorArray, StringSpec, float]
         """Convert this raw general term sum to the normal-ordered representation."""
         import zixy.fermion.operator.normal as zfon  # noqa: PLC0415
 
-        impl, coeffs, map_ = self.strings._impl.lincomb_to_normal_order_real(
-            self.strings._impl, self.coeffs._impl
+        impl, coeffs, map_ = self._string_set._impl.lincomb_to_normal_order_real(
+            self._string_set._impl, self.coeffs._impl
         )
         term_data = TermData(
             zfon.Strings._create(impl),
@@ -988,8 +988,8 @@ class ComplexTermSum(
         """Convert this raw general term sum to the normal-ordered representation."""
         import zixy.fermion.operator.normal as zfon  # noqa: PLC0415
 
-        impl, coeffs, map_ = self.strings._impl.lincomb_to_normal_order_complex(
-            self.strings._impl, self.coeffs._impl
+        impl, coeffs, map_ = self._string_set._impl.lincomb_to_normal_order_complex(
+            self._string_set._impl, self.coeffs._impl
         )
         term_data = TermData(
             zfon.Strings._create(impl),

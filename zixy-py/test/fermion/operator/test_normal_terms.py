@@ -602,7 +602,7 @@ def test_numeric_operations_retain_rust_map(
     assert type(result) is term_sum_type
     assert result == expected_sum
     assert result.strings.is_owning()
-    assert result.coeffs.is_owning()
+    assert not result.coeffs.is_owning()
     assert len(result._string_set._map) == len(result)
     for term in expected_sum:
         assert result.get(term.string) == term.coeff

@@ -130,7 +130,11 @@ class Strings[ImplT: FermionArray, SpecT, ElemT](BaseStrings[ImplT, SpecT]):
     """
 
     string_type: type[String[ImplT, SpecT, ElemT]]
-    _set_type: type[StringSet[ImplT, SpecT, ElemT]]
+
+    @classmethod
+    @abstractmethod
+    def _set_type(cls) -> type[StringSet[ImplT, SpecT, ElemT]]:
+        """Return the string set class paired with this collection."""
 
     def __init__(self, modes: int | Modes = 0, *, size: int = 0):
         """Initialize the string array.

@@ -224,7 +224,11 @@ class Strings(FermionStrings[ImplT, SpecT, ElemT]):
     """
 
     string_type = String
-    _set_type: type[StringSet]
+
+    @classmethod
+    def _set_type(cls) -> type[StringSet]:
+        """Return the string set class paired with this collection."""
+        return StringSet
 
     def to_dict(self) -> SerializedContainer:
         """Return a JSON-serializable dictionary representation of ``self``.
@@ -308,6 +312,3 @@ class StringSet(FermionStringSet[ImplT, SpecT, ElemT]):
         data["space"] = _serialize_modes(self._impl.modes)
         data["strings"] = [string.get_list() for string in self]
         return data
-
-
-Strings._set_type = StringSet

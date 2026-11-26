@@ -184,9 +184,44 @@ jobs:
           name: wheels-sdist
           path: dist
 
+  wasm:
+    needs: check-tag
+    if: ${{ needs.check-tag.outputs.run == 'true' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: 3.x
+      - uses: emscripten-core/setup-emsdk@v16
+        with:
+          # Match Pyodide 0.29's Emscripten ABI.
+          version: "4.0.9"
+          no-cache: true
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        env:
+          MATURIN_PYEMSCRIPTEN_PLATFORM_VERSION: "2025_0"
+        with:
+          working-directory: ${{ env.MODULE_DIR }}
+          target: wasm32-unknown-emscripten
+          # Rebuild Rust's standard library with Pyodide's Emscripten version.
+          args: --release --out ../dist --find-interpreter --locked -Z build-std
+          sccache: 'false'
+          rust-toolchain: nightly-2026-05-28
+          rustup-components: rust-src
+      - name: Upload wheels
+        uses: actions/upload-artifact@v7
+        with:
+          name: wheels-wasm
+          path: dist/zixy-*-pyemscripten_2025_0_wasm32.whl
+          if-no-files-found: error
+
   dry-run:
     name: Release dry run
-    needs: [check-tag, linux, musllinux, windows, macos, sdist]
+    needs: [check-tag, linux, musllinux, windows, macos, sdist, wasm]
     if: ${{ needs.check-tag.outputs.publish == 'false' }}
     runs-on: ubuntu-24.04
     steps:
@@ -205,7 +240,7 @@ jobs:
   release:
     name: Release to PyPI
     runs-on: ubuntu-24.04
-    needs: [check-tag, linux, musllinux, windows, macos, sdist]
+    needs: [check-tag, linux, musllinux, windows, macos, sdist, wasm]
     if: ${{ needs.check-tag.outputs.publish == 'true' }}
     environment: release
     permissions:

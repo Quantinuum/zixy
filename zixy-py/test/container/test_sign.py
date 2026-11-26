@@ -33,6 +33,16 @@ def test_str():
         assert Sign.from_str(value.to_str()) == value
 
 
+def test_conjugate():
+    for scalar in (1, -1):
+        value = Sign.from_scalar(scalar)
+        conjugate = value.conjugate()
+        assert conjugate == value
+        conjugate *= -1
+        assert int(conjugate) == -scalar
+        assert int(value) == scalar
+
+
 def test_scalar_mul():
     # only Sign * Sign results in Sign
     assert Sign(False) * Sign(False) == Sign(False)

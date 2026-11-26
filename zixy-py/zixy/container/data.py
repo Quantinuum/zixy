@@ -32,6 +32,10 @@ if TYPE_CHECKING:
 class _TermData[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](Protocol):
     """A container for term data, consisting of an array of strings and a vector of coefficients."""
 
+    def _new(self) -> Self: ...
+
+    def clone(self, s: int | slice = slice(None)) -> Self: ...
+
     @property
     def strings(self) -> Strings[ImplT, SpecT]: ...
 
@@ -39,10 +43,6 @@ class _TermData[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, 
     def coeffs(self) -> Coeffs[C]: ...
 
     def __len__(self) -> int: ...
-
-    def _new(self) -> Self: ...
-
-    def clone(self, s: int | slice = slice(None)) -> Self: ...
 
     def resize(self, n: int) -> None: ...
 
@@ -74,55 +74,6 @@ class TermData[StringsT: Strings[Any, Any], Cs: Coeffs[Any]]:
         self._coeffs = coeffs
         self._strings = strings
 
-    @property
-    def strings(self) -> StringsT:
-        """The strings of ``self``."""
-        return self._strings
-
-    @property
-    def coeffs(self) -> Cs:
-        """The coefficients of ``self``."""
-        return self._coeffs
-
-    @property
-    def strings_type(self) -> type[StringsT]:
-        """The string container type of ``self``."""
-        return type(self._strings)
-
-    @property
-    def string_type[StringT: String[Any, Any]](
-        self: _HasStrings[_HasStringType[StringT]],
-    ) -> type[StringT]:
-        """The concrete string type of ``self``."""
-        return self.strings.string_type
-
-    @property
-    def coeffs_type(self) -> type[Cs]:
-        """The coefficient container type of ``self``."""
-        return type(self._coeffs)
-
-    @property
-    def coeff_type[C: (float, complex, Sign, ComplexSign, Expr)](
-        self: _HasCoeffs[_HasCoeffType[C]],
-    ) -> type[C]:
-        """The concrete coefficient type of ``self``."""
-        return self.coeffs.coeff_type
-
-    def __len__(self) -> int:
-        """Get the number of elements in ``self``."""
-        assert len(self.coeffs) == len(self.strings)
-        return len(self.coeffs)
-
-    def __eq__(self, other: object) -> bool:
-        """Return whether ``self`` and ``other`` are equal."""
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return self.strings == other.strings and self.coeffs == other.coeffs
-
-    def __repr__(self) -> str:
-        """Return a string representation of ``self``."""
-        return ", ".join(f"({c}, {s})" for s, c in zip(self.strings, self.coeffs, strict=False))
-
     def _new(self) -> Self:
         """Create an empty instance with the same type and configuration."""
         return type(self)(self.strings._new(), self.coeffs._new())
@@ -143,6 +94,45 @@ class TermData[StringsT: Strings[Any, Any], Cs: Coeffs[Any]]:
         coeffs = self.coeffs[s].clone()
         return cls(strings, coeffs)
 
+    @property
+    def coeff_type[C: (float, complex, Sign, ComplexSign, Expr)](
+        self: _HasCoeffs[_HasCoeffType[C]],
+    ) -> type[C]:
+        """The concrete coefficient type of ``self``."""
+        return self.coeffs.coeff_type
+
+    @property
+    def coeffs_type(self) -> type[Cs]:
+        """The coefficient container type of ``self``."""
+        return type(self._coeffs)
+
+    @property
+    def string_type[StringT: String[Any, Any]](
+        self: _HasStrings[_HasStringType[StringT]],
+    ) -> type[StringT]:
+        """The concrete string type of ``self``."""
+        return self.strings.string_type
+
+    @property
+    def strings_type(self) -> type[StringsT]:
+        """The string container type of ``self``."""
+        return type(self._strings)
+
+    @property
+    def strings(self) -> StringsT:
+        """The strings of ``self``."""
+        return self._strings
+
+    @property
+    def coeffs(self) -> Cs:
+        """The coefficients of ``self``."""
+        return self._coeffs
+
+    def __len__(self) -> int:
+        """Get the number of elements in ``self``."""
+        assert len(self.coeffs) == len(self.strings)
+        return len(self.coeffs)
+
     def resize(self, n: int) -> None:
         """Resize the underlying containers.
 
@@ -157,3 +147,13 @@ class TermData[StringsT: Strings[Any, Any], Cs: Coeffs[Any]]:
         """
         self.strings.resize(n)
         self.coeffs.resize(n)
+
+    def __eq__(self, other: object) -> bool:
+        """Return whether ``self`` and ``other`` are equal."""
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.strings == other.strings and self.coeffs == other.coeffs
+
+    def __repr__(self) -> str:
+        """Return a string representation of ``self``."""
+        return ", ".join(f"({c}, {s})" for s, c in zip(self.strings, self.coeffs, strict=False))

@@ -228,22 +228,6 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](
         else:
             raise TypeError(f"Sort not implemented for coefficient type {type(coeffs)}")
 
-    def conj_clifford_list(self, gates: GateList) -> None:
-        """Conjugate ``self`` by a list of Clifford gates.
-
-        Args:
-            gates: The Clifford gates to conjugate by.
-
-        Note:
-            This method operates in-place.
-
-        See Also:
-            :meth:`~zixy.qubit.operator._terms.Term.conj_clifford_list`
-        """
-        signs = self._data.strings._impl.conj_clifford_list(gates._impl)
-        coeffs = self._impl.coeffs
-        coeffs *= SignCoeffs._create(signs)
-
     def relabel(self, qubits: Qubits) -> Self:
         """Relabel the strings using a new register of qubits.
 
@@ -363,6 +347,22 @@ class Terms[C: (float, complex, Sign, ComplexSign, Expr)](
         else:
             raise TypeError(f"Canonicalization not valid for coefficient type {type(coeffs)}")
 
+    def conj_clifford_list(self, gates: GateList) -> None:
+        """Conjugate ``self`` by a list of Clifford gates.
+
+        Args:
+            gates: The Clifford gates to conjugate by.
+
+        Note:
+            This method operates in-place.
+
+        See Also:
+            :meth:`~zixy.qubit.operator._terms.Term.conj_clifford_list`
+        """
+        signs = self._data.strings._impl.conj_clifford_list(gates._impl)
+        coeffs = self._impl.coeffs
+        coeffs *= SignCoeffs._create(signs)
+
 
 class TermSet[C: (float, complex, Sign, ComplexSign, Expr)](
     TermSetBase[QubitPauliArray, StringSpec, C, PauliMatrix]
@@ -393,15 +393,6 @@ class TermSum[C: (float, complex, Expr)](
         are not.
     """
 
-    def commutator(self, other: TermSum[C]) -> TermSum[Any]:
-        """Compute the commutator of ``self`` with ``other``.
-
-        .. math::
-            [A, B] = AB - BA.
-        """
-        out = cast("Any", self) * other - cast("Any", other) * self
-        return cast("TermSum[Any]", out)
-
     def commutes_with(self, other: TermSum[C], atol: float = DEFAULT_COMMUTES_ATOL) -> bool:
         """Check whether ``self`` commutes with ``other``.
 
@@ -422,6 +413,15 @@ class TermSum[C: (float, complex, Expr)](
         if isinstance(coeffs, RealCoeffs | ComplexCoeffs):
             return not coeffs.any_significant(atol)
         return len(coeffs) == 0
+
+    def commutator(self, other: TermSum[C]) -> TermSum[Any]:
+        """Compute the commutator of ``self`` with ``other``.
+
+        .. math::
+            [A, B] = AB - BA.
+        """
+        out = cast("Any", self) * other - cast("Any", other) * self
+        return cast("TermSum[Any]", out)
 
     def conserves_hamming_weight(self, atol: float = DEFAULT_COMMUTES_ATOL) -> bool:
         """Check whether ``self`` conserves Hamming weight.
@@ -814,24 +814,15 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
 
     terms_type = RealTerms
 
-    def to_sparse_matrix(self, big_endian: bool = False) -> Any:
-        """Convert ``self`` to a sparse matrix.
+    def __iadd__(self, rhs: RealTerm | Self) -> Self:  # type: ignore[override,misc]
+        """In-place addition of ``self`` by ``rhs``."""
+        super().__iadd__(rhs)
+        return self
 
-        Args:
-            big_endian: Whether to use big endian ordering for the resulting matrix. If ``False``,
-                little endian ordering is used. In big (little) endian ordering, the least
-                significant bit in the basis index integer is determined by the last (first) qubit
-                in the register.
-
-        Returns:
-            The resulting sparse matrix.
-        """
-        assert isinstance(self._impl.coeffs, RealCoeffs)
-        return QubitPauliArray.lincomb_to_sparse_real(
-            self._impl.strings._impl,
-            self._impl.coeffs._impl,
-            big_endian,
-        )
+    def __isub__(self, rhs: RealTerm | Self) -> Self:  # type: ignore[override,misc]
+        """In-place subtraction of ``self`` by ``rhs``."""
+        super().__isub__(rhs)
+        return self
 
     @overload  # type: ignore[override]
     def __mul__(self, other: Coeff | Coeffs[float]) -> Self: ...
@@ -870,92 +861,6 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
         if exponent == 1:
             return self.clone()
         return _positive_power(self.into(ComplexTermSum), exponent, lambda lhs, rhs: lhs * rhs)
-
-    def project_into_ortho_subspace(self, subspace: zqs.Strings) -> NDArray[np.float64]:
-        """Project the term into an orthogonal subspace defined by an ordered sequence of states.
-
-        Args:
-            subspace: The subspace to project into.
-
-        Returns:
-            The resulting vector of coefficients in the subspace basis.
-        """
-        assert isinstance(self._impl.coeffs, RealCoeffs)
-        return QubitPauliArray.lincomb_project_into_ortho_subspace_real(
-            self._impl.strings._impl,
-            self._impl.coeffs._impl,
-            subspace._impl,
-        )
-
-    def project_into_nonortho_subspace(
-        self, subspace: Sequence[zqs.RealTermSum]
-    ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
-        """Project the term into a non-orthogonal subspace defined by an ordered sequence of states.
-
-        Args:
-            subspace: The subspace to project into.
-
-        Returns:
-            A tuple containing the resulting vector of coefficients in the subspace basis and the
-            overlap matrix of the subspace states.
-        """
-        assert isinstance(self._impl.coeffs, RealCoeffs)
-        strings = tuple(item._string_set._impl for item in subspace)
-        maps = tuple(item._string_set._map for item in subspace)
-        coeffs = []
-        for item in subspace:
-            assert isinstance(item._impl.coeffs, RealCoeffs)
-            coeffs.append(item._impl.coeffs._impl)
-        return QubitPauliArray.lincomb_project_into_nonortho_subspace_real(
-            self._impl.strings._impl,
-            self._impl.coeffs._impl,
-            strings,
-            maps,
-            tuple(coeffs),
-        )
-
-    def __iadd__(self, rhs: RealTerm | Self) -> Self:  # type: ignore[override,misc]
-        """In-place addition of ``self`` by ``rhs``."""
-        super().__iadd__(rhs)
-        return self
-
-    def __isub__(self, rhs: RealTerm | Self) -> Self:  # type: ignore[override,misc]
-        """In-place subtraction of ``self`` by ``rhs``."""
-        super().__isub__(rhs)
-        return self
-
-    @overload
-    def apply(self, state: NumericState) -> zqs.ComplexTermSum: ...
-    @overload
-    def apply(self, state: zqs.SymbolicTermSum) -> zqs.SymbolicTermSum: ...
-
-    def apply(self, state: State) -> zqs.ComplexTermSum | zqs.SymbolicTermSum:
-        """Apply ``self`` to a state.
-
-        Args:
-            state: The state to apply to.
-
-        Returns:
-            The resulting state.
-        """
-        _check_qubits_compatibility(self.qubits, state.qubits)
-        if isinstance(state, zqs.ComplexTermSum):
-            return self.into(ComplexTermSum).apply(state)
-        if isinstance(state, zqs.SymbolicTermSum):
-            return self.into(SymbolicTermSum).apply(state)
-        out = zqs.ComplexTermSum(self.qubits)
-        assert isinstance(self._impl.coeffs, RealCoeffs)
-        assert isinstance(state._impl.coeffs, RealCoeffs)
-        assert isinstance(out._impl.coeffs, ComplexCoeffs)
-        self._impl.strings._impl.apply_to_state_real(
-            self._impl.coeffs._impl,
-            state._impl.strings._impl,
-            state._impl.coeffs._impl,
-            out._impl.strings._impl,
-            out._string_set._map,
-            out._impl.coeffs._impl,
-        )
-        return out.filter_nonzero()
 
     @overload
     def mat_elem(
@@ -1043,6 +948,101 @@ class RealTermSum(NumericTermSum[QubitPauliArray, StringSpec, float], TermSum[fl
                 raise TypeError("real=True requires a real state.")
             return self.mat_elem(state, state, real=True)
         return self.mat_elem(state, state)
+
+    @overload
+    def apply(self, state: NumericState) -> zqs.ComplexTermSum: ...
+    @overload
+    def apply(self, state: zqs.SymbolicTermSum) -> zqs.SymbolicTermSum: ...
+
+    def apply(self, state: State) -> zqs.ComplexTermSum | zqs.SymbolicTermSum:
+        """Apply ``self`` to a state.
+
+        Args:
+            state: The state to apply to.
+
+        Returns:
+            The resulting state.
+        """
+        _check_qubits_compatibility(self.qubits, state.qubits)
+        if isinstance(state, zqs.ComplexTermSum):
+            return self.into(ComplexTermSum).apply(state)
+        if isinstance(state, zqs.SymbolicTermSum):
+            return self.into(SymbolicTermSum).apply(state)
+        out = zqs.ComplexTermSum(self.qubits)
+        assert isinstance(self._impl.coeffs, RealCoeffs)
+        assert isinstance(state._impl.coeffs, RealCoeffs)
+        assert isinstance(out._impl.coeffs, ComplexCoeffs)
+        self._impl.strings._impl.apply_to_state_real(
+            self._impl.coeffs._impl,
+            state._impl.strings._impl,
+            state._impl.coeffs._impl,
+            out._impl.strings._impl,
+            out._string_set._map,
+            out._impl.coeffs._impl,
+        )
+        return out.filter_nonzero()
+
+    def project_into_ortho_subspace(self, subspace: zqs.Strings) -> NDArray[np.float64]:
+        """Project the term into an orthogonal subspace defined by an ordered sequence of states.
+
+        Args:
+            subspace: The subspace to project into.
+
+        Returns:
+            The resulting vector of coefficients in the subspace basis.
+        """
+        assert isinstance(self._impl.coeffs, RealCoeffs)
+        return QubitPauliArray.lincomb_project_into_ortho_subspace_real(
+            self._impl.strings._impl,
+            self._impl.coeffs._impl,
+            subspace._impl,
+        )
+
+    def project_into_nonortho_subspace(
+        self, subspace: Sequence[zqs.RealTermSum]
+    ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+        """Project the term into a non-orthogonal subspace defined by an ordered sequence of states.
+
+        Args:
+            subspace: The subspace to project into.
+
+        Returns:
+            A tuple containing the resulting vector of coefficients in the subspace basis and the
+            overlap matrix of the subspace states.
+        """
+        assert isinstance(self._impl.coeffs, RealCoeffs)
+        strings = tuple(item._string_set._impl for item in subspace)
+        maps = tuple(item._string_set._map for item in subspace)
+        coeffs = []
+        for item in subspace:
+            assert isinstance(item._impl.coeffs, RealCoeffs)
+            coeffs.append(item._impl.coeffs._impl)
+        return QubitPauliArray.lincomb_project_into_nonortho_subspace_real(
+            self._impl.strings._impl,
+            self._impl.coeffs._impl,
+            strings,
+            maps,
+            tuple(coeffs),
+        )
+
+    def to_sparse_matrix(self, big_endian: bool = False) -> Any:
+        """Convert ``self`` to a sparse matrix.
+
+        Args:
+            big_endian: Whether to use big endian ordering for the resulting matrix. If ``False``,
+                little endian ordering is used. In big (little) endian ordering, the least
+                significant bit in the basis index integer is determined by the last (first) qubit
+                in the register.
+
+        Returns:
+            The resulting sparse matrix.
+        """
+        assert isinstance(self._impl.coeffs, RealCoeffs)
+        return QubitPauliArray.lincomb_to_sparse_real(
+            self._impl.strings._impl,
+            self._impl.coeffs._impl,
+            big_endian,
+        )
 
 
 class ComplexTerm(Term[complex]):
@@ -1195,24 +1195,15 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         data = TermData(self._data.strings.clone(), self._data.coeffs.imag_part)
         return RealTermSum._create(data, map_=self._string_set._map.clone())
 
-    def to_sparse_matrix(self, big_endian: bool = False) -> Any:
-        """Convert ``self`` to a sparse matrix.
+    def __iadd__(self, rhs: ComplexTerm | Self) -> Self:  # type: ignore[override,misc]
+        """In-place addition of ``self`` by ``rhs``."""
+        super().__iadd__(rhs)
+        return self
 
-        Args:
-            big_endian: Whether to use big endian ordering for the resulting matrix. If ``False``,
-                little endian ordering is used. In big (little) endian ordering, the least
-                significant bit in the basis index integer is determined by the last (first) qubit
-                in the register.
-
-        Returns:
-            The resulting sparse matrix.
-        """
-        assert isinstance(self._impl.coeffs, ComplexCoeffs)
-        return QubitPauliArray.lincomb_to_sparse_complex(
-            self._impl.strings._impl,
-            self._impl.coeffs._impl,
-            big_endian,
-        )
+    def __isub__(self, rhs: ComplexTerm | Self) -> Self:  # type: ignore[override,misc]
+        """In-place subtraction of ``self`` by ``rhs``."""
+        super().__isub__(rhs)
+        return self
 
     @overload  # type: ignore[override]
     def __mul__(self, other: Coeff | Coeffs[complex]) -> Self: ...
@@ -1251,65 +1242,6 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
         if exponent == 1:
             return self.clone()
         return _positive_power(self, exponent, ComplexTermSum.__mul__)
-
-    def project_into_ortho_subspace(self, subspace: zqs.Strings) -> NDArray[np.complex128]:
-        """Project the term into an orthogonal subspace defined by a set of states.
-
-        Args:
-            subspace: The subspace to project into.
-
-        Returns:
-            The resulting vector of coefficients in the subspace basis.
-        """
-        assert isinstance(self._impl.coeffs, ComplexCoeffs)
-        return QubitPauliArray.lincomb_project_into_ortho_subspace_complex(
-            self._impl.strings._impl,
-            self._impl.coeffs._impl,
-            subspace._impl,
-        )
-
-    def __iadd__(self, rhs: ComplexTerm | Self) -> Self:  # type: ignore[override,misc]
-        """In-place addition of ``self`` by ``rhs``."""
-        super().__iadd__(rhs)
-        return self
-
-    def __isub__(self, rhs: ComplexTerm | Self) -> Self:  # type: ignore[override,misc]
-        """In-place subtraction of ``self`` by ``rhs``."""
-        super().__isub__(rhs)
-        return self
-
-    @overload
-    def apply(self, state: NumericState) -> zqs.ComplexTermSum: ...
-    @overload
-    def apply(self, state: zqs.SymbolicTermSum) -> zqs.SymbolicTermSum: ...
-
-    def apply(self, state: State) -> zqs.ComplexTermSum | zqs.SymbolicTermSum:
-        """Apply ``self`` to a state.
-
-        Args:
-            state: The state to apply to.
-
-        Returns:
-            The resulting state.
-        """
-        _check_qubits_compatibility(self.qubits, state.qubits)
-        if isinstance(state, zqs.RealTermSum):
-            state = state.into(zqs.ComplexTermSum)
-        elif isinstance(state, zqs.SymbolicTermSum):
-            return self.into(SymbolicTermSum).apply(state)
-        out = zqs.ComplexTermSum(self.qubits)
-        assert isinstance(self._impl.coeffs, ComplexCoeffs)
-        assert isinstance(state._impl.coeffs, ComplexCoeffs)
-        assert isinstance(out._impl.coeffs, ComplexCoeffs)
-        self._impl.strings._impl.apply_to_state_complex(
-            self._impl.coeffs._impl,
-            state._impl.strings._impl,
-            state._impl.coeffs._impl,
-            out._impl.strings._impl,
-            out._string_set._map,
-            out._impl.coeffs._impl,
-        )
-        return out.filter_nonzero()
 
     @overload
     def mat_elem(self, bra: NumericState, ket: NumericState) -> complex: ...
@@ -1363,6 +1295,74 @@ class ComplexTermSum(NumericTermSum[QubitPauliArray, StringSpec, complex], TermS
             The resulting expectation value.
         """
         return self.mat_elem(state, state)
+
+    @overload
+    def apply(self, state: NumericState) -> zqs.ComplexTermSum: ...
+    @overload
+    def apply(self, state: zqs.SymbolicTermSum) -> zqs.SymbolicTermSum: ...
+
+    def apply(self, state: State) -> zqs.ComplexTermSum | zqs.SymbolicTermSum:
+        """Apply ``self`` to a state.
+
+        Args:
+            state: The state to apply to.
+
+        Returns:
+            The resulting state.
+        """
+        _check_qubits_compatibility(self.qubits, state.qubits)
+        if isinstance(state, zqs.RealTermSum):
+            state = state.into(zqs.ComplexTermSum)
+        elif isinstance(state, zqs.SymbolicTermSum):
+            return self.into(SymbolicTermSum).apply(state)
+        out = zqs.ComplexTermSum(self.qubits)
+        assert isinstance(self._impl.coeffs, ComplexCoeffs)
+        assert isinstance(state._impl.coeffs, ComplexCoeffs)
+        assert isinstance(out._impl.coeffs, ComplexCoeffs)
+        self._impl.strings._impl.apply_to_state_complex(
+            self._impl.coeffs._impl,
+            state._impl.strings._impl,
+            state._impl.coeffs._impl,
+            out._impl.strings._impl,
+            out._string_set._map,
+            out._impl.coeffs._impl,
+        )
+        return out.filter_nonzero()
+
+    def project_into_ortho_subspace(self, subspace: zqs.Strings) -> NDArray[np.complex128]:
+        """Project the term into an orthogonal subspace defined by a set of states.
+
+        Args:
+            subspace: The subspace to project into.
+
+        Returns:
+            The resulting vector of coefficients in the subspace basis.
+        """
+        assert isinstance(self._impl.coeffs, ComplexCoeffs)
+        return QubitPauliArray.lincomb_project_into_ortho_subspace_complex(
+            self._impl.strings._impl,
+            self._impl.coeffs._impl,
+            subspace._impl,
+        )
+
+    def to_sparse_matrix(self, big_endian: bool = False) -> Any:
+        """Convert ``self`` to a sparse matrix.
+
+        Args:
+            big_endian: Whether to use big endian ordering for the resulting matrix. If ``False``,
+                little endian ordering is used. In big (little) endian ordering, the least
+                significant bit in the basis index integer is determined by the last (first) qubit
+                in the register.
+
+        Returns:
+            The resulting sparse matrix.
+        """
+        assert isinstance(self._impl.coeffs, ComplexCoeffs)
+        return QubitPauliArray.lincomb_to_sparse_complex(
+            self._impl.strings._impl,
+            self._impl.coeffs._impl,
+            big_endian,
+        )
 
 
 class SymbolicTerm(Term[Expr]):
@@ -1445,6 +1445,19 @@ class SymbolicTerm(Term[Expr]):
             return self.clone()
         return _positive_power(self, exponent, SymbolicTerm.__mul__)
 
+    def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTerm:
+        """Apply a partial substitution of the symbols out of place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Returns:
+            A new contiguously stored instance with the substitution applied.
+        """
+        out = self.clone()
+        out.isubs(values)
+        return out
+
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
         """Apply a partial substitution of the symbols in-place.
 
@@ -1458,19 +1471,6 @@ class SymbolicTerm(Term[Expr]):
             :meth:`~zixy.container.coeffs.SymbolicCoeffs.isubs`
         """
         self.coeff = self.coeff.subs(values)
-
-    def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTerm:
-        """Apply a partial substitution of the symbols out of place.
-
-        Args:
-            values: Map from a symbol or symbol name to its new expression or numeric value.
-
-        Returns:
-            A new contiguously stored instance with the substitution applied.
-        """
-        out = self.clone()
-        out.isubs(values)
-        return out
 
     def try_to_real(self) -> RealTerm:
         """Try to evaluate ``self`` as a term containing a vector of real coefficients.
@@ -1529,17 +1529,6 @@ class SymbolicTerms(Terms[Expr]):
         """
         return self.coeffs.free_symbols
 
-    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
-        """Apply a partial substitution of the symbols in-place.
-
-        Args:
-            values: Map from a symbol or symbol name to its new expression or numeric value.
-
-        Note:
-            This method operates in-place.
-        """
-        self.coeffs.isubs(values)
-
     def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTerms:
         """Apply a partial substitution of the symbols out of place.
 
@@ -1552,17 +1541,16 @@ class SymbolicTerms(Terms[Expr]):
         term_data = TermData(self.strings.clone(), self.coeffs.subs(values))
         return SymbolicTerms._create(term_data)
 
-    def idiff(self, variable: Symbol | str) -> None:
-        """Differentiate partially with respect to ``variable`` in-place.
+    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
+        """Apply a partial substitution of the symbols in-place.
 
         Args:
-            variable: Symbol or name of symbol by which to differentiate the viewed symbolic
-                expressions.
+            values: Map from a symbol or symbol name to its new expression or numeric value.
 
         Note:
             This method operates in-place.
         """
-        self.coeffs.idiff(variable)
+        self.coeffs.isubs(values)
 
     def diff(self, variable: Symbol | str) -> SymbolicTerms:
         """Differentiate partially with respect to ``variable`` out of place.
@@ -1576,6 +1564,18 @@ class SymbolicTerms(Terms[Expr]):
         """
         term_data = TermData(self.strings.clone(), self.coeffs.diff(variable))
         return SymbolicTerms._create(term_data)
+
+    def idiff(self, variable: Symbol | str) -> None:
+        """Differentiate partially with respect to ``variable`` in-place.
+
+        Args:
+            variable: Symbol or name of symbol by which to differentiate the viewed symbolic
+                expressions.
+
+        Note:
+            This method operates in-place.
+        """
+        self.coeffs.idiff(variable)
 
     def try_to_real(self) -> RealTerms:
         """Try to evaluate ``self`` as terms containing a vector of real coefficients.
@@ -1665,28 +1665,6 @@ class SymbolicTermSum(SymbolicTermSumBase[QubitPauliArray, StringSpec], TermSum[
             return self.clone()
         return _positive_power(self, exponent, SymbolicTermSum.__mul__)
 
-    def apply(self, state: State) -> zqs.SymbolicTermSum:
-        """Apply ``self`` to a state.
-
-        Args:
-            state: The state to apply to.
-
-        Returns:
-            The resulting symbolic state.
-        """
-        _check_qubits_compatibility(self.qubits, state.qubits)
-        if not isinstance(state, zqs.SymbolicTermSum):
-            state = state.into(zqs.SymbolicTermSum)
-        out = zqs.SymbolicTermSum(self.qubits)
-        for op_term in self:
-            assert isinstance(op_term, SymbolicTerm)
-            for state_term in state:
-                assert isinstance(state_term, zqs.SymbolicTerm)
-                string = state_term.string.clone()
-                phase = string.imul_get_phase(op_term.string)
-                out += string * (op_term.coeff * state_term.coeff * phase.to_symbolic())
-        return out.filter_nonzero()
-
     def mat_elem(self, bra: State, ket: State) -> Expr:
         """Evaluate the matrix element of ``self`` between a bra and ket state.
 
@@ -1714,6 +1692,28 @@ class SymbolicTermSum(SymbolicTermSumBase[QubitPauliArray, StringSpec], TermSum[
             The resulting symbolic expectation value.
         """
         return self.mat_elem(state, state)
+
+    def apply(self, state: State) -> zqs.SymbolicTermSum:
+        """Apply ``self`` to a state.
+
+        Args:
+            state: The state to apply to.
+
+        Returns:
+            The resulting symbolic state.
+        """
+        _check_qubits_compatibility(self.qubits, state.qubits)
+        if not isinstance(state, zqs.SymbolicTermSum):
+            state = state.into(zqs.SymbolicTermSum)
+        out = zqs.SymbolicTermSum(self.qubits)
+        for op_term in self:
+            assert isinstance(op_term, SymbolicTerm)
+            for state_term in state:
+                assert isinstance(state_term, zqs.SymbolicTerm)
+                string = state_term.string.clone()
+                phase = string.imul_get_phase(op_term.string)
+                out += string * (op_term.coeff * state_term.coeff * phase.to_symbolic())
+        return out.filter_nonzero()
 
 
 def get_term_type[C: (float, complex, Sign, ComplexSign, Expr)](

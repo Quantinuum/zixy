@@ -114,11 +114,6 @@ class Terms[
         data = TermData(strings, coeffs)
         TermsBase.__init__(self, data)
 
-    @property
-    def qubits(self) -> Qubits:
-        """The qubits corresponding to ``self``."""
-        return self.strings.qubits
-
     @classmethod
     def from_iterable(
         cls, source: Iterable[TermSpecT[ImplT, SpecT, C]], qubits: int | Qubits = 0
@@ -135,6 +130,11 @@ class Terms[
         out = cls(qubits)
         out.extend(source)
         return out
+
+    @property
+    def qubits(self) -> Qubits:
+        """The qubits corresponding to ``self``."""
+        return self.strings.qubits
 
 
 class TermSet[
@@ -163,30 +163,6 @@ class TermSet[
         """
         TermSetBase.__init__(self, self.terms_type(qubits))
 
-    @property
-    def qubits(self) -> Qubits:
-        """The qubits corresponding to ``self``."""
-        return self._string_set._impl.qubits
-
-    def _check_term(self, value: TermBase[ImplT, SpecT, C]) -> None:
-        """Check whether a term is defined over the same qubits as ``self``."""
-        if not isinstance(value, self.terms_type.term_type):
-            raise TypeError(
-                f"Expected a {self.terms_type.term_type.__name__} instance, got "
-                f"{type(value).__name__}."
-            )
-        _check_qubits_compatibility(self.qubits, value.qubits)
-
-    def _check_string(self, value: BaseString[ImplT, SpecT]) -> None:
-        """Check whether a string is defined over the same qubits as ``self``."""
-        if not isinstance(value, self.terms_type.term_type.strings_type.string_type):
-            raise TypeError(
-                f"Expected a {self.terms_type.term_type.strings_type.string_type.__name__} "
-                "instance, "
-                f"got {type(value).__name__}."
-            )
-        _check_qubits_compatibility(self.qubits, value.qubits)
-
     @classmethod
     def from_iterable(
         cls, source: Iterable[TermSpecT[ImplT, SpecT, C]], qubits: int | Qubits = 0
@@ -204,6 +180,30 @@ class TermSet[
         out = cls(qubits)
         out.insert_iterable(source)
         return out
+
+    @property
+    def qubits(self) -> Qubits:
+        """The qubits corresponding to ``self``."""
+        return self._string_set._impl.qubits
+
+    def _check_string(self, value: BaseString[ImplT, SpecT]) -> None:
+        """Check whether a string is defined over the same qubits as ``self``."""
+        if not isinstance(value, self.terms_type.term_type.strings_type.string_type):
+            raise TypeError(
+                f"Expected a {self.terms_type.term_type.strings_type.string_type.__name__} "
+                "instance, "
+                f"got {type(value).__name__}."
+            )
+        _check_qubits_compatibility(self.qubits, value.qubits)
+
+    def _check_term(self, value: TermBase[ImplT, SpecT, C]) -> None:
+        """Check whether a term is defined over the same qubits as ``self``."""
+        if not isinstance(value, self.terms_type.term_type):
+            raise TypeError(
+                f"Expected a {self.terms_type.term_type.__name__} instance, got "
+                f"{type(value).__name__}."
+            )
+        _check_qubits_compatibility(self.qubits, value.qubits)
 
 
 class TermSum[

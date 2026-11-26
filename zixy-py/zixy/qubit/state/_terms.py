@@ -413,6 +413,20 @@ class RealTermSum(NumericTermSum[QubitStateArray, StringSpec, float], TermSum[fl
 
     terms_type = RealTerms
 
+    def vdot(self, rhs: RealTermSum) -> float:
+        """Compute the inner product of ``self`` with ``rhs``."""
+        _check_qubits_compatibility(self.qubits, rhs.qubits)
+        assert isinstance(self._impl.coeffs, RealCoeffs)  # TODO: resolve
+        assert isinstance(rhs._impl.coeffs, RealCoeffs)  # TODO: resolve
+        return float(
+            self._impl.strings._impl.vdot_real(
+                self._string_set._map,
+                self._impl.coeffs._impl,
+                rhs._impl.strings._impl,
+                rhs._impl.coeffs._impl,
+            )
+        )
+
     @classmethod
     def from_dense(
         cls,
@@ -459,20 +473,6 @@ class RealTermSum(NumericTermSum[QubitStateArray, StringSpec, float], TermSum[fl
         """
         assert isinstance(self._impl.coeffs, RealCoeffs)  # TODO: resolve
         return self._impl.strings._impl.to_dense_real(self._impl.coeffs._impl, big_endian)
-
-    def vdot(self, rhs: RealTermSum) -> float:
-        """Compute the inner product of ``self`` with ``rhs``."""
-        _check_qubits_compatibility(self.qubits, rhs.qubits)
-        assert isinstance(self._impl.coeffs, RealCoeffs)  # TODO: resolve
-        assert isinstance(rhs._impl.coeffs, RealCoeffs)  # TODO: resolve
-        return float(
-            self._impl.strings._impl.vdot_real(
-                self._string_set._map,
-                self._impl.coeffs._impl,
-                rhs._impl.strings._impl,
-                rhs._impl.coeffs._impl,
-            )
-        )
 
 
 class ComplexTerm(Term[complex]):
@@ -558,6 +558,34 @@ class ComplexTermSum(NumericTermSum[QubitStateArray, StringSpec, complex], TermS
 
     terms_type = ComplexTerms
 
+    @property
+    def real_part(self) -> RealTermSum:
+        """The real part of ``self``."""
+        assert isinstance(self._data.coeffs, ComplexCoeffs)  # TODO: resolve
+        data = TermData(self._data.strings.clone(), self._data.coeffs.real_part)
+        return RealTermSum._create(data, map_=self._string_set._map.clone())
+
+    @property
+    def imag_part(self) -> RealTermSum:
+        """The imaginary part of ``self``."""
+        assert isinstance(self._data.coeffs, ComplexCoeffs)  # TODO: resolve
+        data = TermData(self._data.strings.clone(), self._data.coeffs.imag_part)
+        return RealTermSum._create(data, map_=self._string_set._map.clone())
+
+    def vdot(self, rhs: ComplexTermSum) -> complex:
+        """Compute the inner product of ``self`` with ``rhs``."""
+        _check_qubits_compatibility(self.qubits, rhs.qubits)
+        assert isinstance(self._impl.coeffs, ComplexCoeffs)  # TODO: resolve
+        assert isinstance(rhs._impl.coeffs, ComplexCoeffs)  # TODO: resolve
+        return complex(
+            self._impl.strings._impl.vdot_complex(
+                self._string_set._map,
+                self._impl.coeffs._impl,
+                rhs._impl.strings._impl,
+                rhs._impl.coeffs._impl,
+            )
+        )
+
     @classmethod
     def from_dense(
         cls,
@@ -590,20 +618,6 @@ class ComplexTermSum(NumericTermSum[QubitStateArray, StringSpec, complex], TermS
         )
         return out
 
-    @property
-    def real_part(self) -> RealTermSum:
-        """The real part of ``self``."""
-        assert isinstance(self._data.coeffs, ComplexCoeffs)  # TODO: resolve
-        data = TermData(self._data.strings.clone(), self._data.coeffs.real_part)
-        return RealTermSum._create(data, map_=self._string_set._map.clone())
-
-    @property
-    def imag_part(self) -> RealTermSum:
-        """The imaginary part of ``self``."""
-        assert isinstance(self._data.coeffs, ComplexCoeffs)  # TODO: resolve
-        data = TermData(self._data.strings.clone(), self._data.coeffs.imag_part)
-        return RealTermSum._create(data, map_=self._string_set._map.clone())
-
     def to_dense(self, big_endian: bool = False) -> NDArray[np.complex128]:
         """Convert ``self`` to a dense vector.
 
@@ -618,20 +632,6 @@ class ComplexTermSum(NumericTermSum[QubitStateArray, StringSpec, complex], TermS
         """
         assert isinstance(self._impl.coeffs, ComplexCoeffs)  # TODO: resolve
         return self._impl.strings._impl.to_dense_complex(self._impl.coeffs._impl, big_endian)
-
-    def vdot(self, rhs: ComplexTermSum) -> complex:
-        """Compute the inner product of ``self`` with ``rhs``."""
-        _check_qubits_compatibility(self.qubits, rhs.qubits)
-        assert isinstance(self._impl.coeffs, ComplexCoeffs)  # TODO: resolve
-        assert isinstance(rhs._impl.coeffs, ComplexCoeffs)  # TODO: resolve
-        return complex(
-            self._impl.strings._impl.vdot_complex(
-                self._string_set._map,
-                self._impl.coeffs._impl,
-                rhs._impl.strings._impl,
-                rhs._impl.coeffs._impl,
-            )
-        )
 
 
 class SymbolicTerm(Term[Expr]):
@@ -677,6 +677,19 @@ class SymbolicTerm(Term[Expr]):
         lhs = normalize_scalar(lhs)
         return _rmul(self, lhs)
 
+    def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTerm:
+        """Apply a partial substitution of the symbols out of place.
+
+        Args:
+            values: Map from a symbol or symbol name to its new expression or numeric value.
+
+        Returns:
+            A new contiguously stored instance with the substitution applied.
+        """
+        out = self.clone()
+        out.isubs(values)
+        return out
+
     def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
         """Apply a partial substitution of the symbols in-place.
 
@@ -690,19 +703,6 @@ class SymbolicTerm(Term[Expr]):
             :meth:`~zixy.container.coeffs.SymbolicCoeffs.isubs`
         """
         self.coeff = self.coeff.subs(values)
-
-    def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTerm:
-        """Apply a partial substitution of the symbols out of place.
-
-        Args:
-            values: Map from a symbol or symbol name to its new expression or numeric value.
-
-        Returns:
-            A new contiguously stored instance with the substitution applied.
-        """
-        out = self.clone()
-        out.isubs(values)
-        return out
 
     def try_to_real(self) -> RealTerm:
         """Try to evaluate ``self`` as a term containing a real coefficient.
@@ -761,17 +761,6 @@ class SymbolicTerms(Terms[Expr]):
         """
         return self.coeffs.free_symbols
 
-    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
-        """Apply a partial substitution of the symbols in-place.
-
-        Args:
-            values: Map from a symbol or symbol name to its new expression or numeric value.
-
-        Note:
-            This method operates in-place.
-        """
-        self.coeffs.isubs(values)
-
     def subs(self, values: dict[Symbol | str, Number | Expr]) -> SymbolicTerms:
         """Apply a partial substitution of the symbols out of place.
 
@@ -784,17 +773,16 @@ class SymbolicTerms(Terms[Expr]):
         term_data = TermData(self.strings.clone(), self.coeffs.subs(values))
         return SymbolicTerms._create(term_data)
 
-    def idiff(self, variable: Symbol | str) -> None:
-        """Differentiate partially with respect to ``variable`` in-place.
+    def isubs(self, values: dict[Symbol | str, Number | Expr]) -> None:
+        """Apply a partial substitution of the symbols in-place.
 
         Args:
-            variable: Symbol or name of symbol by which to differentiate the viewed symbolic
-                expressions.
+            values: Map from a symbol or symbol name to its new expression or numeric value.
 
         Note:
             This method operates in-place.
         """
-        self.coeffs.idiff(variable)
+        self.coeffs.isubs(values)
 
     def diff(self, variable: Symbol | str) -> SymbolicTerms:
         """Differentiate partially with respect to ``variable`` out of place.
@@ -808,6 +796,18 @@ class SymbolicTerms(Terms[Expr]):
         """
         term_data = TermData(self.strings.clone(), self.coeffs.diff(variable))
         return SymbolicTerms._create(term_data)
+
+    def idiff(self, variable: Symbol | str) -> None:
+        """Differentiate partially with respect to ``variable`` in-place.
+
+        Args:
+            variable: Symbol or name of symbol by which to differentiate the viewed symbolic
+                expressions.
+
+        Note:
+            This method operates in-place.
+        """
+        self.coeffs.idiff(variable)
 
     def try_to_real(self) -> RealTerms:
         """Try to evaluate ``self`` as terms containing a vector of real coefficients.

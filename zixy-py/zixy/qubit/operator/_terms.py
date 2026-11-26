@@ -42,7 +42,6 @@ from zixy.container.coeffs import (
     SignCoeffs,
     SymbolicCoeffs,
     _integer_exponent,
-    get_coeffs_type,
     normalize_scalar,
     typesafe_mul,
 )
@@ -140,7 +139,6 @@ class Term[C: (float, complex, Sign, ComplexSign, Expr)](
     """
 
     strings_type = Strings
-    coeff_type: type[C]
 
     def __imul__(self, rhs: Coeff | String | Term[C]) -> Self:
         """In-place multiplication of ``self`` by ``rhs``."""
@@ -471,7 +469,6 @@ class SignTerm(Term[Sign]):
     another collection.
     """
 
-    coeff_type = Sign
     coeffs_type = SignCoeffs
 
     @overload
@@ -579,7 +576,6 @@ class ComplexSignTerm(Term[ComplexSign]):
     element in another collection.
     """
 
-    coeff_type = ComplexSign
     coeffs_type = ComplexSignCoeffs
 
     @overload
@@ -688,7 +684,6 @@ class RealTerm(Term[float]):
     collection.
     """
 
-    coeff_type = float
     coeffs_type = RealCoeffs
 
     @overload
@@ -1059,7 +1054,6 @@ class ComplexTerm(Term[complex]):
     collection.
     """
 
-    coeff_type = complex
     coeffs_type = ComplexCoeffs
 
     @overload
@@ -1380,7 +1374,6 @@ class SymbolicTerm(Term[Expr]):
     collection.
     """
 
-    coeff_type = Expr
     coeffs_type = SymbolicCoeffs
 
     @overload
@@ -1493,7 +1486,7 @@ class SymbolicTerm(Term[Expr]):
             :meth:`~zixy.container.coeffs.SymbolicCoeffs.try_to_real`
         """
         strings = RealTerm.strings_type.from_string(self.string.clone())
-        coeffs = get_coeffs_type(RealTerm.coeff_type).from_scalar(float(self.coeff.evalf()))
+        coeffs = RealTerm.coeffs_type.from_scalar(float(self.coeff.evalf()))
         term_data = TermData(strings, coeffs)
         return RealTerm._create(term_data)
 
@@ -1511,7 +1504,7 @@ class SymbolicTerm(Term[Expr]):
             :meth:`~zixy.container.coeffs.SymbolicCoeffs.try_to_complex`
         """
         strings = ComplexTerm.strings_type.from_string(self.string.clone())
-        coeffs = get_coeffs_type(ComplexTerm.coeff_type).from_scalar(complex(self.coeff.evalf()))
+        coeffs = ComplexTerm.coeffs_type.from_scalar(complex(self.coeff.evalf()))
         term_data = TermData(strings, coeffs)
         return ComplexTerm._create(term_data)
 

@@ -73,7 +73,6 @@ def _mock_term_from_str(cls: type[Term[StringsImplArray, str, object]], source: 
 
 class RealMockTerm(Term[StringsImplArray, str, float]):
     strings_type = Strings
-    coeff_type = float
     coeffs_type = RealCoeffs
 
     @classmethod
@@ -101,7 +100,6 @@ class RealMockTermSum(NumericTermSum[StringsImplArray, str, float]):
 
 class ComplexMockTerm(Term[StringsImplArray, str, complex]):
     strings_type = Strings
-    coeff_type = complex
     coeffs_type = ComplexCoeffs
 
     @classmethod
@@ -129,7 +127,6 @@ class ComplexMockTermSum(NumericTermSum[StringsImplArray, str, complex]):
 
 class SymbolicMockTerm(Term[StringsImplArray, str, Expr]):
     strings_type = Strings
-    coeff_type = Expr
     coeffs_type = SymbolicCoeffs
 
     @classmethod
@@ -252,7 +249,6 @@ def test_termsum_subtraction_negates_new_term(term_sum_type, term_type, coeff):
 def test_sign_terms():
     class MockTerm(Term[StringsImplArray, str, Sign]):
         strings_type = Strings
-        coeff_type = Sign
         coeffs_type = SignCoeffs
 
         @classmethod
@@ -378,7 +374,6 @@ def test_sign_terms():
 def test_real_terms():
     class MockTerm(Term[StringsImplArray, str, float]):
         strings_type = Strings
-        coeff_type = float
         coeffs_type = RealCoeffs
 
         @classmethod
@@ -519,7 +514,6 @@ def test_unary_term_algebra():
 def test_terms_vectorised_coeff_multiplication():
     class MockTerm(Term[StringsImplArray, str, float]):
         strings_type = Strings
-        coeff_type = float
         coeffs_type = RealCoeffs
 
         @classmethod
@@ -551,7 +545,6 @@ def test_terms_vectorised_coeff_multiplication():
 def test_sign_terms_vectorised_coeff_multiplication():
     class MockTerm(Term[StringsImplArray, str, Sign]):
         strings_type = Strings
-        coeff_type = Sign
         coeffs_type = SignCoeffs
 
         @classmethod

@@ -67,6 +67,7 @@ from zixy.container.strings import String, Strings
 from zixy.utils import (
     DEFAULT_ATOL,
     DEFAULT_RTOL,
+    classproperty,
     slice_index,
     slice_index_gen,
     slice_of_slice,
@@ -186,7 +187,6 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
     a view on an element in another collection.
     """
 
-    coeff_type: type[C]
     coeffs_type: type[Coeffs[C]]
     strings_type: type[Strings[ImplT, SpecT]]
 
@@ -254,6 +254,11 @@ class Term[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)
     def _data(self) -> _TermData[ImplT, SpecT, C]:
         """The raw term data object underlying ``self``."""
         return self._impl
+
+    @classproperty
+    def coeff_type(cls: type[Term[ImplT, SpecT, C]]) -> type[C]:
+        """The scalar type supplied by the coefficient container."""
+        return cls.coeffs_type.coeff_type
 
     @property
     def string_type[StringT: String[Any, Any]](
@@ -583,10 +588,10 @@ class Terms[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr
         """The concrete coefficient container type of ``self``."""
         return cast("type[Cs]", type(self._data.coeffs))
 
-    @property
-    def coeff_type(self) -> type[C]:
-        """The coefficient type of ``self``."""
-        return self._impl.coeffs.coeff_type
+    @classproperty
+    def coeff_type(cls: type[Terms[ImplT, SpecT, C]]) -> type[C]:
+        """The scalar type supplied by the term class."""
+        return cls.term_type.coeff_type
 
     @property
     def strings_type[StringsT: Strings[Any, Any]](
@@ -1090,10 +1095,10 @@ class TermSet[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Ex
         """The coefficients of ``self``, preserving their concrete container type."""
         return cast("Cs", self._data.coeffs)
 
-    @property
-    def coeff_type(self) -> type[C]:
-        """The coefficient type of ``self``."""
-        return self._data.coeffs.coeff_type
+    @classproperty
+    def coeff_type(cls: type[TermSet[ImplT, SpecT, C]]) -> type[C]:
+        """The scalar type supplied by the term sequence class."""
+        return cls.terms_type.coeff_type
 
     @property
     def strings_type[StringsT: Strings[Any, Any]](

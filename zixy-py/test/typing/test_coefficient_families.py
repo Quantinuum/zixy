@@ -33,6 +33,22 @@ if TYPE_CHECKING:
     from zixy.container.terms import Terms, TermSet
 
 
+def test_term_coeff_type() -> None:
+    def check[ImplT: ImplArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr)](
+        cls: type[TermBase[ImplT, SpecT, C]], term: TermBase[ImplT, SpecT, C]
+    ) -> None:
+        assert assert_type(cls.coeff_type, type[C]) is cls.coeffs_type.coeff_type
+        assert assert_type(term.coeff_type, type[C]) is cls.coeff_type
+
+    assert assert_type(zqo.RealTerm.coeff_type, type[float]) is float
+    term = zqo.ComplexTerm(1)
+    assert assert_type(term.coeff_type, type[complex]) is complex
+    check(zqo.ComplexTerm, term)
+    assert assert_type(zqo.RealTerms.coeff_type, type[float]) is float
+    assert assert_type(zqo.ComplexTermSet.coeff_type, type[complex]) is complex
+    assert assert_type(zqo.SymbolicTermSum.coeff_type, type[Expr]) is Expr
+
+
 def test_coefficient_iterable_inference() -> None:
     class DerivedCoeffs(RealCoeffs):
         pass
@@ -924,6 +940,7 @@ def test_coefficient_storage_matches_factory() -> None:
     assert type(term_set.coeffs) is DerivedCoeffs
     assert terms.coeffs_type is DerivedCoeffs
     assert term_set.coeffs_type is DerivedCoeffs
+    assert assert_type(terms.coeff_type, type[float]) is data.coeffs.coeff_type
 
     # Both normal initialization and internal construction reject inconsistent storage.
     mismatched = TermData(zqo.Strings(2, size=1), RealCoeffs(size=1))
@@ -946,6 +963,7 @@ def test_coefficient_storage_matches_factory() -> None:
     adopted = CustomSet._create(data, map_=term_set._string_set._map)
     assert_type(adopted.coeffs, CustomCoeffs)
     assert adopted.coeffs_type is DerivedCoeffs
+    assert assert_type(adopted.coeff_type, type[float]) is data.coeffs.coeff_type
     assert type(adopted.coeffs) is DerivedCoeffs
 
 

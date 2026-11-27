@@ -2,16 +2,13 @@ import numpy as np
 import pytest
 from sympy import Expr, sympify
 
+from zixy.container.coeff import ComplexSign, Sign, convert, typesafe_mul
 from zixy.container.coeffs import (
     ComplexCoeffs,
-    ComplexSign,
     ComplexSignCoeffs,
     RealCoeffs,
-    Sign,
     SignCoeffs,
     SymbolicCoeffs,
-    convert,
-    typesafe_mul,
 )
 
 

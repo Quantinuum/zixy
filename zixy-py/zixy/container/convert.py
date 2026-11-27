@@ -20,17 +20,13 @@ from typing import TYPE_CHECKING, Any, cast
 
 from sympy import Expr
 
-from zixy.container.coeffs import (
-    Coeffs,
-    ComplexSign,
-    Sign,
-    convert,
-    convert_vec,
-    unit,
-)
+from zixy.container.coeff import ComplexSign, Sign, convert, unit
+from zixy.container.coeffs import Coeffs, convert_vec
 from zixy.container.data import TermData
-from zixy.container.strings import String, Strings
-from zixy.container.terms import Term, Terms
+from zixy.container.string import String
+from zixy.container.strings import Strings
+from zixy.container.term import Term
+from zixy.container.terms import Terms
 
 if TYPE_CHECKING:
     from collections.abc import Sized

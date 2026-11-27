@@ -11,7 +11,7 @@ import zixy.fermion.state as zfs
 import zixy.qubit.operator as zqo
 import zixy.qubit.state as zqs
 from zixy._zixy import Qubits
-from zixy.container.coeffs import ComplexSign, Sign
+from zixy.container.coeff import ComplexSign, Sign
 from zixy.mappings import (
     BravyiKitaevMapper,
     JordanWignerMapper,

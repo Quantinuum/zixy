@@ -12,25 +12,26 @@ import zixy.fermion.operator.normal as zfon
 import zixy.fermion.state as zfs
 import zixy.qubit.operator as zqo
 import zixy.qubit.state as zqs
+from zixy.container.coeff import ComplexSign, RootOfUnity, Sign
 from zixy.container.coeffs import (
     Coeffs,
     ComplexCoeffs,
-    ComplexSign,
     ComplexSignCoeffs,
     RealCoeffs,
-    RootOfUnity,
-    Sign,
     SignCoeffs,
     SymbolicCoeffs,
     convert_vec,
     get_coeffs_type,
 )
 from zixy.container.data import TermData
-from zixy.container.terms import Term as TermBase, Terms as TermsBase, TermSet as TermSetBase
+from zixy.container.term import Term as TermBase
+from zixy.container.term_set import TermSet as TermSetBase
+from zixy.container.terms import Terms as TermsBase
 
 if TYPE_CHECKING:
     from zixy._zixy import ImplArray
-    from zixy.container.terms import Terms, TermSet
+    from zixy.container.term_set import TermSet
+    from zixy.container.terms import Terms
 
 
 def test_term_coeff_type() -> None:

@@ -16,27 +16,25 @@
 
 from __future__ import annotations
 
-from zixy.fermion.state._strings import String, StringSet, Strings, StringSpec
+from zixy.fermion.state._string import String, StringSpec
+from zixy.fermion.state._string_set import StringSet
+from zixy.fermion.state._strings import Strings
+from zixy.fermion.state._term import ComplexTerm, ComplexSignTerm, RealTerm, SignTerm, SymbolicTerm
 from zixy.fermion.state._terms import (
-    ComplexTerm,
     ComplexTerms,
-    ComplexTermSet,
-    ComplexTermSum,
-    ComplexSignTerm,
     ComplexSignTerms,
-    ComplexSignTermSet,
-    RealTerm,
     RealTerms,
-    RealTermSet,
-    RealTermSum,
-    SignTerm,
     SignTerms,
-    SignTermSet,
-    SymbolicTerm,
     SymbolicTerms,
-    SymbolicTermSet,
-    SymbolicTermSum,
 )
+from zixy.fermion.state._term_set import (
+    ComplexTermSet,
+    ComplexSignTermSet,
+    RealTermSet,
+    SignTermSet,
+    SymbolicTermSet,
+)
+from zixy.fermion.state._term_sum import ComplexTermSum, RealTermSum, SymbolicTermSum
 
 __all__ = [
     "StringSpec",

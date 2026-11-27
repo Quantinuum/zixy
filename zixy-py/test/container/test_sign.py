@@ -1,6 +1,7 @@
 import numpy as np
 
-from zixy.container.coeffs import Sign, SignCoeffs
+from zixy.container.coeff import Sign
+from zixy.container.coeffs import SignCoeffs
 
 
 def test_from_phases():

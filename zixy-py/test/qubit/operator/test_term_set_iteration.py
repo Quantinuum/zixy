@@ -1,7 +1,7 @@
 import pytest
 
 import zixy.qubit.operator as zqo
-from zixy.container.coeffs import unit
+from zixy.container.coeff import unit
 
 
 @pytest.fixture(

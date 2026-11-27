@@ -9,7 +9,7 @@ import zixy.qubit.operator as zqo
 import zixy.qubit.state as zqs
 from zixy.container.coeffs import ComplexCoeffs, RealCoeffs
 from zixy.container.data import TermData
-from zixy.container.terms import TermSet
+from zixy.container.term_set import TermSet
 
 DOMAINS = (
     (zqo, ("X0", "Y1", "Z2"), {}),

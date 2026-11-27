@@ -10,12 +10,8 @@ import zixy.fermion.operator.normal as zfon
 import zixy.fermion.state as zfs
 import zixy.qubit.operator as zqo
 import zixy.qubit.state as zqs
-from zixy.container.coeffs import (
-    ComplexSign,
-    RealCoeffs,
-    Sign,
-    SignCoeffs,
-)
+from zixy.container.coeff import ComplexSign, Sign
+from zixy.container.coeffs import RealCoeffs, SignCoeffs
 from zixy.container.data import TermData
 
 if TYPE_CHECKING:

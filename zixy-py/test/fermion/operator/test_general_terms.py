@@ -3,7 +3,7 @@ from sympy import sympify
 
 import zixy.fermion.operator.general as zfog
 import zixy.fermion.operator.normal as zfon
-from zixy.container.terms import TermSet
+from zixy.container.term_set import TermSet
 
 
 @pytest.mark.parametrize("term_sum_type", [zfog.RealTermSum, zfog.ComplexTermSum])

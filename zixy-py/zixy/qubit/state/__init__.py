@@ -16,27 +16,25 @@
 
 from __future__ import annotations
 
-from zixy.qubit.state._strings import String, StringSet, Strings, StringSpec
+from zixy.qubit.state._string import String, StringSpec
+from zixy.qubit.state._string_set import StringSet
+from zixy.qubit.state._strings import Strings
+from zixy.qubit.state._term import SignTerm, ComplexSignTerm, RealTerm, ComplexTerm, SymbolicTerm
 from zixy.qubit.state._terms import (
-    SignTerm,
     SignTerms,
-    SignTermSet,
-    ComplexSignTerm,
     ComplexSignTerms,
-    ComplexSignTermSet,
-    RealTerm,
     RealTerms,
-    RealTermSet,
-    RealTermSum,
-    ComplexTerm,
     ComplexTerms,
-    ComplexTermSet,
-    ComplexTermSum,
-    SymbolicTerm,
     SymbolicTerms,
-    SymbolicTermSet,
-    SymbolicTermSum,
 )
+from zixy.qubit.state._term_set import (
+    SignTermSet,
+    ComplexSignTermSet,
+    RealTermSet,
+    ComplexTermSet,
+    SymbolicTermSet,
+)
+from zixy.qubit.state._term_sum import RealTermSum, ComplexTermSum, SymbolicTermSum
 
 __all__ = [
     "StringSpec",

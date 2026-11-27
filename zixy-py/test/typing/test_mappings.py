@@ -7,7 +7,7 @@ import zixy.fermion.operator.normal as zfon
 import zixy.fermion.state as zfs
 import zixy.qubit.operator as zqo
 import zixy.qubit.state as zqs
-from zixy.container.coeffs import Sign
+from zixy.container.coeff import Sign
 from zixy.mappings._operators import _apply_operator
 
 if TYPE_CHECKING:

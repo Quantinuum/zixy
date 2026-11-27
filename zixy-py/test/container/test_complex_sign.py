@@ -1,6 +1,7 @@
 import numpy as np
 
-from zixy.container.coeffs import ComplexSign, ComplexSignCoeffs, Sign
+from zixy.container.coeff import ComplexSign, Sign
+from zixy.container.coeffs import ComplexSignCoeffs
 
 
 def test_from_phases():

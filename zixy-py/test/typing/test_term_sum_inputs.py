@@ -21,7 +21,7 @@ if TYPE_CHECKING:
         QubitPauliArray,
         QubitStateArray,
     )
-    from zixy.container.terms import TermSpecT
+    from zixy.container.term import TermSpecT
 
 
 def test_zqo_sum_iterable_inputs() -> None:

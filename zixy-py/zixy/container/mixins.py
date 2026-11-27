@@ -21,7 +21,7 @@ from typing import Any, overload
 
 from sympy import Expr
 
-from zixy.container.coeffs import ComplexSign, Sign
+from zixy.container.coeff import ComplexSign, Sign
 
 
 class CoeffMulMixin[C: (float, complex, Sign, ComplexSign, Expr)]:

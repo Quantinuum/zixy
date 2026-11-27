@@ -5,16 +5,13 @@ from typing import Self
 import pytest
 from sympy import Expr, sympify
 
-from zixy.container.coeffs import (
-    ComplexCoeffs,
-    ComplexSign,
-    RealCoeffs,
-    Sign,
-    SignCoeffs,
-    SymbolicCoeffs,
-)
+from zixy.container.coeff import ComplexSign, Sign
+from zixy.container.coeffs import ComplexCoeffs, RealCoeffs, SignCoeffs, SymbolicCoeffs
 from zixy.container.data import TermData
-from zixy.container.terms import NumericTerms, NumericTermSum, Term, Terms, TermSet, TermSum
+from zixy.container.term import Term
+from zixy.container.term_set import TermSet
+from zixy.container.term_sum import NumericTermSum, TermSum
+from zixy.container.terms import NumericTerms, Terms
 
 from .mock_strings import String, Strings, StringSet, StringsImplArray
 

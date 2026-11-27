@@ -5,7 +5,7 @@ import pytest
 import zixy.fermion.operator.general as zfog
 import zixy.fermion.operator.normal as zfon
 import zixy.fermion.state as zfs
-from zixy.container.coeffs import ComplexSign, Sign
+from zixy.container.coeff import ComplexSign, Sign
 from zixy.container.serialization import deserialize, serialize
 
 

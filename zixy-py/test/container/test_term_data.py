@@ -4,11 +4,11 @@ import numpy as np
 from sympy import sympify
 
 from zixy import _zixy
+from zixy.container.coeff import Sign
 from zixy.container.coeffs import (
     ComplexCoeffs,
     ExprListWrapper,
     RealCoeffs,
-    Sign,
     SignCoeffs,
     SymbolicCoeffs,
 )

@@ -19,7 +19,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, overload
 
 import zixy.qubit.operator as zqo
-from zixy.container.coeffs import convert
+from zixy.container.coeff import convert
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator

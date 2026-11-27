@@ -12,63 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Base fermionic ladder-operator terms and collections of such terms."""
+"""Term sequences for fermionic operators."""
 
 from __future__ import annotations
 
-from abc import abstractmethod
-from collections.abc import Callable
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING
 
 from sympy import Expr
 
-import zixy.qubit.operator as zqo
-from zixy._zixy import Qubits
-from zixy.container.coeffs import ComplexSign, Sign, convert
-from zixy.fermion._terms import (
-    Term as FermionTerm,
-    Terms as FermionTerms,
-    TermSet as FermionTermSet,
-    TermSum as FermionTermSum,
-)
-from zixy.mappings.base import Mapper
+from zixy.container.coeff import ComplexSign, Sign
+from zixy.fermion._terms import Terms as FermionTerms
 
 if TYPE_CHECKING:
     from zixy._zixy import FermionArray
-    from zixy.fermion.operator._strings import Strings as OperatorStrings
-
-type MapperType = Callable[[int | Qubits], Mapper]
-
-
-def _product_sign(n_cre: int, n_ann: int) -> Sign:
-    r"""Compute the sign of a product of fermionic ladder operators.
-
-    Args:
-        n_cre: The number of creation operators in the product.
-        n_ann: The number of annihilation operators in the product.
-
-    Returns:
-        The sign of the product of ladder operators.
-    """
-    return Sign(((n_cre * (n_cre - 1) // 2) + (n_ann * (n_ann - 1) // 2)) & 1)
-
-
-class Term[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
-    FermionTerm[ImplT, SpecT, C, ElemT]
-):
-    """A term consisting of a fermionic ladder-operator string and a coefficient."""
-
-    strings_type: type[OperatorStrings[ImplT, SpecT, ElemT]]
-
-    @abstractmethod
-    def dagger(self) -> None:
-        """Take the adjoint of ``self`` in-place."""
-        pass
-
-    @abstractmethod
-    def daggered(self) -> Self:
-        """Return the adjoint of ``self``."""
-        pass
+    from zixy.fermion.operator._term import Term
 
 
 class Terms[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
@@ -77,65 +34,3 @@ class Terms[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, E
     """A collection of terms consisting of fermionic ladder-operator strings and coefficients."""
 
     term_type: type[Term[ImplT, SpecT, C, ElemT]]
-
-
-class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
-    FermionTermSet[ImplT, SpecT, C, ElemT]
-):
-    """A collection of unique terms consisting of fermionic ladder-operator strings."""
-
-    terms_type: type[Terms[ImplT, SpecT, C, ElemT]]
-
-
-class TermSum[ImplT: FermionArray, SpecT, C: (float, complex, Expr), ElemT](
-    FermionTermSum[ImplT, SpecT, C, ElemT],
-    TermSet[ImplT, SpecT, C, ElemT],
-):
-    """A sum of terms consisting of fermionic ladder-operator strings and coefficients."""
-
-    @abstractmethod
-    def dagger(self) -> None:
-        """Take the adjoint of ``self`` in-place."""
-        pass
-
-    @abstractmethod
-    def daggered(self) -> Self:
-        """Return the adjoint of ``self``."""
-        pass
-
-    def to_qubit(
-        self,
-        mapper: MapperType | None = None,
-        qubits: int | Qubits | None = None,
-    ) -> zqo.ComplexTermSum:
-        """Map the term sum to a qubit Pauli term sum.
-
-        Args:
-            mapper: The mapper class to use. If ``None``, use
-                :class:`~zixy.mappings.JordanWignerMapper`.
-            qubits: The qubit register or qubit count. If ``None``, the qubit register is
-                inferred from the number of fermionic modes.
-
-        Returns:
-            The mapped Pauli term sum.
-
-        Note:
-            This function returns a term sum with complex coefficients. In cases where Hermitian
-            operators guarantee a real mapped representation, users may wish to directly use the
-            :class:`~zixy.fermion.mappings.Mapper` classes for finer control.
-        """
-        from zixy.mappings import JordanWignerMapper  # noqa: PLC0415
-
-        mapper_type = JordanWignerMapper if mapper is None else mapper
-        if qubits is None:
-            qubits = Qubits.from_count(len(self.modes))
-        elif isinstance(qubits, int):
-            qubits = Qubits.from_count(qubits)
-        mapper_instance = mapper_type(qubits)
-        out = zqo.ComplexTermSum(qubits)
-        for term in self:
-            string_type = self.terms_type.term_type.strings_type.string_type
-            out += convert(term.coeff, complex) * mapper_instance.apply(
-                term.string.into(string_type)
-            )
-        return out

@@ -3,8 +3,8 @@ from sympy import sympify
 
 import zixy.fermion.operator.general as zfog
 import zixy.fermion.operator.normal as zfon
-from zixy.container.coeffs import ComplexSign, Sign
-from zixy.container.terms import TermSet
+from zixy.container.coeff import ComplexSign, Sign
+from zixy.container.term_set import TermSet
 
 
 @pytest.mark.parametrize(

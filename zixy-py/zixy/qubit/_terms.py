@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Base qubit-based terms and collections of such terms."""
+"""Term sequences for qubit systems."""
 
 from __future__ import annotations
 
@@ -21,70 +21,17 @@ from typing import TYPE_CHECKING, Any
 from sympy import Expr
 
 from zixy._zixy import Qubits  # noqa: TC001 (required for sphinx)
-from zixy.container.coeffs import ComplexSign, Sign
+from zixy.container.coeff import ComplexSign, Sign
 from zixy.container.data import TermData
-from zixy.container.terms import (
-    Term as TermBase,
-    Terms as TermsBase,
-    TermSet as TermSetBase,
-    TermSum as TermSumBase,
-)
-from zixy.qubit._strings import _check_qubits_compatibility
+from zixy.container.terms import Terms as TermsBase
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
     from typing import Self
 
     from zixy._zixy import QubitArray
-    from zixy.container.strings import String as BaseString
-    from zixy.container.terms import TermSpecT
-    from zixy.qubit._strings import Strings
-
-
-class Term[ImplT: QubitArray[Any, Any], SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
-    TermBase[ImplT, SpecT, C]
-):
-    """A term consisting of a string and a coefficient.
-
-    A single qubit-based term consisting of a string and a coefficient that may be an owning
-    instance referencing a single element in a :class:`~zixy.container.data.TermData`
-    instance, or a view on an element in another collection.
-    """
-
-    strings_type: type[Strings[ImplT, SpecT, ElemT]]
-
-    def __init__(
-        self,
-        qubits: int | Qubits = 0,
-        source: TermSpecT[ImplT, SpecT, C] = "",  # type: ignore[assignment]
-    ):
-        """Initialize the term.
-
-        Args:
-            qubits: The qubit register or qubit count.
-            source: The term specifier to use for default qubits and initial value.
-        """
-        strings = self.strings_type(qubits, size=1)
-        coeffs = self.coeffs_type(size=1)
-        term_data = TermData(strings, coeffs)
-        TermBase.__init__(self, term_data)
-        self.set(source)
-
-    @property
-    def qubits(self) -> Qubits:
-        """The qubits corresponding to ``self``."""
-        return self.string._impl.qubits
-
-    def to_sparse_matrix(self, big_endian: bool = False) -> Any:
-        """Return ``self`` as a sparse matrix.
-
-        Args:
-            big_endian: Whether to use big-endian basis ordering.
-
-        Returns:
-            The sparse matrix representation of ``self``.
-        """
-        return self.string.to_sparse_matrix(big_endian) * complex(self.coeff)
+    from zixy.container.term import TermSpecT
+    from zixy.qubit._term import Term
 
 
 class Terms[
@@ -135,113 +82,3 @@ class Terms[
     def qubits(self) -> Qubits:
         """The qubits corresponding to ``self``."""
         return self.strings.qubits
-
-
-class TermSet[
-    ImplT: QubitArray[Any, Any],
-    SpecT,
-    C: (float, complex, Sign, ComplexSign, Expr),
-    ElemT,
-](TermSetBase[ImplT, SpecT, C]):
-    """A collection of unique terms consisting of strings and coefficients.
-
-    A set-like container of qubit-based terms that may be used to store unique terms and perform
-    set-like operations on them.
-
-    Note:
-        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
-        are not.
-    """
-
-    terms_type: type[Terms[ImplT, SpecT, C, ElemT]]
-
-    def __init__(self, qubits: int | Qubits = 0):
-        """Initialize the term set.
-
-        Args:
-            qubits: The qubit register or qubit count.
-        """
-        TermSetBase.__init__(self, self.terms_type(qubits))
-
-    @classmethod
-    def from_iterable(
-        cls, source: Iterable[TermSpecT[ImplT, SpecT, C]], qubits: int | Qubits = 0
-    ) -> Self:
-        """Create an owning collection from an iterable of terms.
-
-        Args:
-            source: Iterable of compatible terms or term specifiers.
-            qubits: The qubit register or qubit count.
-
-        Returns:
-            An independent owning instance of ``cls``.
-            The last coefficient is retained for duplicate strings.
-        """
-        out = cls(qubits)
-        out.insert_iterable(source)
-        return out
-
-    @property
-    def qubits(self) -> Qubits:
-        """The qubits corresponding to ``self``."""
-        return self._string_set._impl.qubits
-
-    def _check_string(self, value: BaseString[ImplT, SpecT]) -> None:
-        """Check whether a string is defined over the same qubits as ``self``."""
-        if not isinstance(value, self.terms_type.term_type.strings_type.string_type):
-            raise TypeError(
-                f"Expected a {self.terms_type.term_type.strings_type.string_type.__name__} "
-                "instance, "
-                f"got {type(value).__name__}."
-            )
-        _check_qubits_compatibility(self.qubits, value.qubits)
-
-    def _check_term(self, value: TermBase[ImplT, SpecT, C]) -> None:
-        """Check whether a term is defined over the same qubits as ``self``."""
-        if not isinstance(value, self.terms_type.term_type):
-            raise TypeError(
-                f"Expected a {self.terms_type.term_type.__name__} instance, got "
-                f"{type(value).__name__}."
-            )
-        _check_qubits_compatibility(self.qubits, value.qubits)
-
-
-class TermSum[
-    ImplT: QubitArray[Any, Any],
-    SpecT,
-    C: (float, complex, Expr),
-    ElemT,
-](TermSet[ImplT, SpecT, C, ElemT], TermSumBase[ImplT, SpecT, C]):
-    """A sum of terms consisting of strings and coefficients.
-
-    A set-like container of qubit-based terms that may be used to store unique terms and perform
-    linear combination operations on them.
-
-    Note:
-        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
-        are not.
-    """
-
-    def __init__(self, qubits: int | Qubits = 0):
-        """Initialize the term set.
-
-        Args:
-            qubits: The qubit register or qubit count.
-        """
-        TermSumBase.__init__(self, self.terms_type(qubits))
-
-    @classmethod
-    def from_iterable(
-        cls, source: Iterable[TermSpecT[ImplT, SpecT, C]], qubits: int | Qubits = 0
-    ) -> Self:
-        """Create an owning collection from an iterable of terms.
-
-        Args:
-            source: Iterable of compatible terms or term specifiers.
-            qubits: The qubit register or qubit count.
-
-        Returns:
-            An independent owning instance of ``cls``.
-            Coefficients of duplicate strings are added together.
-        """
-        return cls.from_terms(cls.terms_type.from_iterable(source, qubits))

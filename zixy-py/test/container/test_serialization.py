@@ -44,13 +44,8 @@ from zixy.container.terms import Term
             [1 + 2j, 3 - 4j, 0j, -1j],
             [[1, 2], [3, -4], [0, 0], [0, -1]],
         ),
-        (
-            SymbolicCoeffs,
-            [sympify(x) for x in ["x", "y + 1", "2", "x**2"]],
-            ["x", "y + 1", "2", "x**2"],
-        ),
     ],
-    ids=["sign", "complex-sign", "real", "complex", "symbolic"],
+    ids=["sign", "complex-sign", "real", "complex"],
 )
 def coefficient_case(request):
     coeffs_type, values, encoded = request.param
@@ -489,7 +484,7 @@ def test_fermion_serialization_invalid_space(space):
 _COEFFICIENT_FAMILIES = [
     (family, prefix)
     for family in (zqo, zqs, zfs, zfon, zfog)
-    for prefix in ("Sign", "ComplexSign", "Real", "Complex", "Symbolic")
+    for prefix in ("Sign", "ComplexSign", "Real", "Complex")
     if hasattr(family, f"{prefix}Terms")
 ]
 
@@ -504,7 +499,6 @@ def _make_term_case(family, prefix, container, space_kind):
         ),
         "Real": ([1.25, 0.0, -2.5], [1.25, 0.0, -2.5]),
         "Complex": ([1 + 2j, 0j, -3 + 4j], [[1, 2], [0, 0], [-3, 4]]),
-        "Symbolic": ([sympify(x) for x in ["x", "0", "y + 1"]], ["x", "0", "y + 1"]),
     }[prefix]
     terms_type = getattr(family, f"{prefix}Terms")
     coeffs = terms_type.term_type.coeffs_type.from_iterable(values)
@@ -523,7 +517,6 @@ def _make_term_case(family, prefix, container, space_kind):
                 encoded_coeffs = {
                     "Real": [-1.25],
                     "Complex": [[-2, 6]],
-                    "Symbolic": ["x + y + 1"],
                 }[prefix]
             else:
                 encoded_coeffs = encoded_coeffs[-1:]
@@ -700,7 +693,7 @@ def test_term_serialization_rebuilds_map(family, prefix, container, term_space_k
 
 
 @pytest.mark.parametrize("family", [zqo, zqs, zfs, zfon, zfog])
-@pytest.mark.parametrize("prefix", ["Real", "Complex", "Symbolic"])
+@pytest.mark.parametrize("prefix", ["Real", "Complex"])
 @pytest.mark.parametrize("container", ["TermSet", "TermSum"])
 @pytest.mark.parametrize("format_", ["dict", "json", "dispatch"])
 def test_term_deserialization_duplicate_strings(family, prefix, container, format_):
@@ -880,3 +873,28 @@ def test_deserialize_mismatched_lengths():
     payload["coeffs"].pop()
     with pytest.raises(ValueError, match="equal lengths"):
         deserialize(json.dumps(payload))
+
+
+@pytest.mark.parametrize("family", [zqo, zqs, zfs, zfon, zfog])
+@pytest.mark.parametrize("kind", ["Term", "Terms", "TermSet", "TermSum"])
+def test_symbolic_term_json_is_unsupported(family, kind):
+    cls = getattr(family, "Symbolic" + kind)
+    obj = cls(1)
+    with pytest.raises(TypeError, match="symbolic coefficients"):
+        serialize(obj)
+    payload = getattr(family, "Real" + kind)(1).to_dict()
+    payload.update(container=cls.__name__, coeffs=["x"] * len(payload["coeffs"]))
+    for load in (cls.from_json, deserialize):
+        with pytest.raises(TypeError, match="symbolic coefficients"):
+            load(json.dumps(payload))
+
+
+def test_symbolic_coeffs_json_is_unsupported():
+    coeffs = SymbolicCoeffs.from_iterable([sympify("x")])
+    with pytest.raises(TypeError, match="symbolic coefficients"):
+        serialize(coeffs)
+    payload = RealCoeffs().to_dict()
+    payload.update(container="SymbolicCoeffs", coeffs=["x"])
+    for load in (SymbolicCoeffs.from_json, deserialize):
+        with pytest.raises(TypeError, match="symbolic coefficients"):
+            load(json.dumps(payload))

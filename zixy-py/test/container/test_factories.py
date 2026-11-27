@@ -10,17 +10,15 @@ import zixy.fermion.state as zfs
 import zixy.qubit.operator as zqo
 import zixy.qubit.state as zqs
 from zixy._zixy import Modes, Qubits
+from zixy.container.coeff import ComplexSign, Sign, unit
 from zixy.container.coeffs import (
     ComplexCoeffs,
-    ComplexSign,
     ComplexSignCoeffs,
     RealCoeffs,
-    Sign,
     SignCoeffs,
     SymbolicCoeffs,
-    unit,
 )
-from zixy.container.terms import TermSet
+from zixy.container.term_set import TermSet
 
 
 @pytest.fixture(params=[zqo, zqs, zfog, zfon, zfs], ids=lambda family: family.__name__)

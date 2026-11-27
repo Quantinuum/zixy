@@ -16,27 +16,25 @@
 
 from __future__ import annotations
 
-from zixy.qubit.operator._strings import String, StringSet, Strings, StringSpec
+from zixy.qubit.operator._string import String, StringSpec
+from zixy.qubit.operator._string_set import StringSet
+from zixy.qubit.operator._strings import Strings
+from zixy.qubit.operator._term import SignTerm, ComplexSignTerm, RealTerm, ComplexTerm, SymbolicTerm
 from zixy.qubit.operator._terms import (
-    SignTerm,
     SignTerms,
-    SignTermSet,
-    ComplexSignTerm,
     ComplexSignTerms,
-    ComplexSignTermSet,
-    RealTerm,
     RealTerms,
-    RealTermSet,
-    RealTermSum,
-    ComplexTerm,
     ComplexTerms,
-    ComplexTermSet,
-    ComplexTermSum,
-    SymbolicTerm,
     SymbolicTerms,
-    SymbolicTermSet,
-    SymbolicTermSum,
 )
+from zixy.qubit.operator._term_set import (
+    SignTermSet,
+    ComplexSignTermSet,
+    RealTermSet,
+    ComplexTermSet,
+    SymbolicTermSet,
+)
+from zixy.qubit.operator._term_sum import RealTermSum, ComplexTermSum, SymbolicTermSum
 from zixy._zixy import PauliMatrix, PauliSprings, SymplecticPart
 
 I = PauliMatrix.I  # noqa: E741

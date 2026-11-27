@@ -2,7 +2,7 @@ import pytest
 
 import zixy.qubit.operator as zqo
 import zixy.qubit.state as zqs
-from zixy.container.coeffs import ComplexSign
+from zixy.container.coeff import ComplexSign
 from zixy.qubit.operator import I, X, Y
 
 

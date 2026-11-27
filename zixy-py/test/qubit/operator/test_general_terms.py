@@ -3,7 +3,7 @@ from sympy import Expr, Symbol, sympify
 
 import zixy.qubit.operator as zqo
 import zixy.qubit.state as zqs
-from zixy.container.coeffs import ComplexSign, Sign
+from zixy.container.coeff import ComplexSign, Sign
 from zixy.qubit.operator import I, X, Y, Z
 
 
@@ -173,18 +173,16 @@ def test_real_term():
     with pytest.raises(ValueError) as err:
         lhs *= rhs.string
     assert (
-        str(err.value)
-        == "Cannot multiply <class 'zixy.qubit.operator._terms.RealTerm'> (2.0, X0 Y1 Z2 X3 Y4 Z5) "
-        "in-place by <class 'zixy.qubit.operator._strings.String'> Y0 Y1 X2 Y3 Z4 Y5. Pauli string "
+        str(err.value) == f"Cannot multiply {zqo.RealTerm} (2.0, X0 Y1 Z2 X3 Y4 Z5) "
+        f"in-place by {zqo.String} Y0 Y1 X2 Y3 Z4 Y5. Pauli string "
         "multiplication gives a ComplexSign factor that is not <class 'float'> representable."
     )
     assert lhs.string.get_tuple() == (X, Y, Z, X, Y, Z)
     with pytest.raises(ValueError) as err:
         lhs *= rhs
     assert (
-        str(err.value)
-        == "Cannot multiply <class 'zixy.qubit.operator._terms.RealTerm'> (2.0, X0 Y1 Z2 X3 Y4 Z5) "
-        "in-place by <class 'zixy.qubit.operator._terms.RealTerm'> (4.0, Y0 Y1 X2 Y3 Z4 Y5). Pauli "
+        str(err.value) == f"Cannot multiply {zqo.RealTerm} (2.0, X0 Y1 Z2 X3 Y4 Z5) "
+        f"in-place by {zqo.RealTerm} (4.0, Y0 Y1 X2 Y3 Z4 Y5). Pauli "
         "string multiplication gives a ComplexSign factor that is not <class 'float'> representable."
     )
     assert lhs.string.get_tuple() == (X, Y, Z, X, Y, Z)
@@ -192,9 +190,8 @@ def test_real_term():
     with pytest.raises(ValueError) as err:
         lhs *= ComplexSign(3)
     assert (
-        str(err.value)
-        == "Cannot multiply <class 'zixy.qubit.operator._terms.RealTerm'> (2.0, X0 Y1 Z2 X3 Y4 Z5) "
-        "in-place by <class 'zixy.container.coeffs.ComplexSign'> -i. Coefficient -i is not "
+        str(err.value) == f"Cannot multiply {zqo.RealTerm} (2.0, X0 Y1 Z2 X3 Y4 Z5) "
+        f"in-place by {ComplexSign} -i. Coefficient -i is not "
         "<class 'float'> representable."
     )
     assert lhs.string.get_tuple() == (X, Y, Z, X, Y, Z)

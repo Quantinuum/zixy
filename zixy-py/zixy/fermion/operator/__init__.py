@@ -20,27 +20,31 @@ from zixy._zixy import (
     Modes,
     NormalFermionOperatorArray,
 )
-from zixy.fermion.operator.normal._strings import String, Strings, StringSet, StringSpec
-from zixy.fermion.operator.normal._terms import (
+from zixy.fermion.operator.normal._string import String, StringSpec
+from zixy.fermion.operator.normal._strings import Strings
+from zixy.fermion.operator.normal._string_set import StringSet
+from zixy.fermion.operator.normal._term import (
     SignTerm,
-    SignTerms,
-    SignTermSet,
     ComplexSignTerm,
-    ComplexSignTerms,
-    ComplexSignTermSet,
     RealTerm,
-    RealTerms,
-    RealTermSet,
-    RealTermSum,
     ComplexTerm,
-    ComplexTerms,
-    ComplexTermSet,
-    ComplexTermSum,
     SymbolicTerm,
-    SymbolicTerms,
-    SymbolicTermSet,
-    SymbolicTermSum,
 )
+from zixy.fermion.operator.normal._terms import (
+    SignTerms,
+    ComplexSignTerms,
+    RealTerms,
+    ComplexTerms,
+    SymbolicTerms,
+)
+from zixy.fermion.operator.normal._term_set import (
+    SignTermSet,
+    ComplexSignTermSet,
+    RealTermSet,
+    ComplexTermSet,
+    SymbolicTermSet,
+)
+from zixy.fermion.operator.normal._term_sum import RealTermSum, ComplexTermSum, SymbolicTermSum
 
 __all__ = [
     "Modes",

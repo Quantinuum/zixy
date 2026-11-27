@@ -15,27 +15,31 @@
 """Raw, non-normal-ordered fermionic ladder-operator strings and terms."""
 
 from zixy._zixy import FermionSprings, GeneralFermionOperatorArray, Modes
-from zixy.fermion.operator.general._strings import String, Strings, StringSet, StringSpec
-from zixy.fermion.operator.general._terms import (
+from zixy.fermion.operator.general._string import String, StringSpec
+from zixy.fermion.operator.general._strings import Strings
+from zixy.fermion.operator.general._string_set import StringSet
+from zixy.fermion.operator.general._term import (
     ComplexTerm,
-    ComplexTerms,
-    ComplexTermSet,
-    ComplexTermSum,
     SignTerm,
-    SignTerms,
-    SignTermSet,
     ComplexSignTerm,
-    ComplexSignTerms,
-    ComplexSignTermSet,
     RealTerm,
-    RealTerms,
-    RealTermSet,
-    RealTermSum,
     SymbolicTerm,
-    SymbolicTerms,
-    SymbolicTermSet,
-    SymbolicTermSum,
 )
+from zixy.fermion.operator.general._terms import (
+    ComplexTerms,
+    SignTerms,
+    ComplexSignTerms,
+    RealTerms,
+    SymbolicTerms,
+)
+from zixy.fermion.operator.general._term_set import (
+    ComplexTermSet,
+    SignTermSet,
+    ComplexSignTermSet,
+    RealTermSet,
+    SymbolicTermSet,
+)
+from zixy.fermion.operator.general._term_sum import ComplexTermSum, RealTermSum, SymbolicTermSum
 
 __all__ = [
     "Modes",

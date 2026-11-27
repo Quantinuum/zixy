@@ -100,6 +100,16 @@ def resolve_imported_types(app, doctree):
         if node.get("refdomain") != "py" or "." in target:
             continue
         module = sys.modules.get(node.get("py:module"))
+        # Inherited signatures use the globals of the module defining the method.
+        signature = node.parent
+        while signature is not None and not isinstance(signature, addnodes.desc_signature):
+            signature = signature.parent
+        if signature is not None and (cls := getattr(module, signature.get("class", ""), None)):
+            member = signature.get("fullname", "").rsplit(".", 1)[-1]
+            for base in cls.__mro__:
+                if member in vars(base):
+                    module = sys.modules[base.__module__]
+                    break
         obj = getattr(module, target, None)
         if (
             isinstance(obj, type)

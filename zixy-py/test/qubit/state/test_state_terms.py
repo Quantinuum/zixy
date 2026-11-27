@@ -5,7 +5,7 @@ from sympy import Expr, I as imaginary_unit, S, symbols
 
 import zixy.qubit.operator as zqo
 import zixy.qubit.state as zqs
-from zixy.container.coeffs import Sign
+from zixy.container.coeff import Sign
 from zixy.qubit.operator import I, X
 
 

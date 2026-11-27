@@ -1,7 +1,7 @@
 import pytest
 
 import zixy.qubit.operator as zqo
-from zixy.container.coeffs import ComplexSign, Sign
+from zixy.container.coeff import ComplexSign, Sign
 from zixy.qubit.operator import I, X, Y, Z
 
 

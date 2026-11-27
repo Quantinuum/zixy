@@ -3,11 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from zixy.container.serialization import check_schema_version
-from zixy.container.strings import (
-    String as BaseString,
-    Strings as BaseStrings,
-    StringSet as BaseStringSet,
-)
+from zixy.container.string import String as BaseString
+from zixy.container.string_set import StringSet as BaseStringSet
+from zixy.container.strings import Strings as BaseStrings
 
 if TYPE_CHECKING:
     from collections.abc import Sequence

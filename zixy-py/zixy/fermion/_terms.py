@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Base fermionic mode-based terms and collections of such terms."""
+"""Term sequences for fermionic systems."""
 
 from __future__ import annotations
 
@@ -21,59 +21,17 @@ from typing import TYPE_CHECKING
 from sympy import Expr
 
 from zixy._zixy import Modes  # noqa: TC001 (required for sphinx)
-from zixy.container.coeffs import ComplexSign, Sign
+from zixy.container.coeff import ComplexSign, Sign
 from zixy.container.data import TermData
-from zixy.container.terms import (
-    Term as TermBase,
-    Terms as TermsBase,
-    TermSet as TermSetBase,
-    TermSum as TermSumBase,
-)
-from zixy.fermion._strings import _check_modes_compatibility
+from zixy.container.terms import Terms as TermsBase
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
     from typing import Self
 
     from zixy._zixy import FermionArray
-    from zixy.container.strings import String as BaseString
-    from zixy.container.terms import TermSpecT
-    from zixy.fermion._strings import Strings
-
-
-class Term[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
-    TermBase[ImplT, SpecT, C]
-):
-    """A term consisting of a fermionic string and a coefficient.
-
-    A single mode-based term consisting of a string and a coefficient that may be an owning
-    instance referencing a single element in a :class:`~zixy.container.data.TermData`
-    instance, or a view on an element in another collection.
-    """
-
-    strings_type: type[Strings[ImplT, SpecT, ElemT]]
-
-    def __init__(
-        self,
-        modes: int | Modes = 0,
-        source: TermSpecT[ImplT, SpecT, C] = "",  # type: ignore[assignment]
-    ):
-        """Initialize the term.
-
-        Args:
-            modes: The mode space or number of modes.
-            source: The term specifier to use for initial value.
-        """
-        strings = self.strings_type(modes, size=1)
-        coeffs = self.coeffs_type(size=1)
-        term_data = TermData(strings, coeffs)
-        TermBase.__init__(self, term_data)
-        self.set(source)
-
-    @property
-    def modes(self) -> Modes:
-        """The modes corresponding to ``self``."""
-        return self.string.modes
+    from zixy.container.term import TermSpecT
+    from zixy.fermion._term import Term
 
 
 class Terms[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
@@ -121,107 +79,3 @@ class Terms[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, E
     def modes(self) -> Modes:
         """The modes corresponding to ``self``."""
         return self.strings.modes
-
-
-class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
-    TermSetBase[ImplT, SpecT, C]
-):
-    """A collection of unique terms consisting of fermionic strings and coefficients.
-
-    A set-like container of mode-based terms that may be used to store unique terms and perform
-    set-like operations on them.
-
-    Note:
-        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
-        are not.
-    """
-
-    terms_type: type[Terms[ImplT, SpecT, C, ElemT]]
-
-    def __init__(self, modes: int | Modes = 0):
-        """Initialize the term set.
-
-        Args:
-            modes: The mode space or number of modes.
-        """
-        TermSetBase.__init__(self, self.terms_type(modes))
-
-    @classmethod
-    def from_iterable(
-        cls, source: Iterable[TermSpecT[ImplT, SpecT, C]], modes: int | Modes = 0
-    ) -> Self:
-        """Create an owning collection from an iterable of terms.
-
-        Args:
-            source: Iterable of compatible terms or term specifiers.
-            modes: The mode space or number of modes.
-
-        Returns:
-            An independent owning instance of ``cls``.
-            The last coefficient is retained for duplicate strings.
-        """
-        out = cls(modes)
-        out.insert_iterable(source)
-        return out
-
-    @property
-    def modes(self) -> Modes:
-        """The modes corresponding to ``self``."""
-        return self._string_set._impl.modes
-
-    def _check_string(self, value: BaseString[ImplT, SpecT]) -> None:
-        """Hook to check whether a string is valid for insertion into ``self``."""
-        if not isinstance(value, self.terms_type.term_type.strings_type.string_type):
-            raise TypeError(
-                f"Expected a {self.terms_type.term_type.strings_type.string_type.__name__} "
-                "instance, "
-                f"got {type(value).__name__}."
-            )
-        _check_modes_compatibility(self.modes, value.modes)
-
-    def _check_term(self, value: TermBase[ImplT, SpecT, C]) -> None:
-        """Hook to check whether a term is defined over the same modes as ``self``."""
-        if not isinstance(value, self.terms_type.term_type):
-            raise TypeError(
-                f"Expected a {self.terms_type.term_type.__name__} instance, got "
-                f"{type(value).__name__}."
-            )
-        _check_modes_compatibility(self.modes, value.modes)
-
-
-class TermSum[ImplT: FermionArray, SpecT, C: (float, complex, Expr), ElemT](
-    TermSet[ImplT, SpecT, C, ElemT], TermSumBase[ImplT, SpecT, C]
-):
-    """A sum of terms consisting of fermionic strings and coefficients.
-
-    A set-like container of mode-based terms that may be used to store unique terms and perform
-    linear combination operations on them.
-
-    Note:
-        Coefficients are mutable in-place, but strings are the keys of a hashmap and therefore
-        are not.
-    """
-
-    def __init__(self, modes: int | Modes = 0):
-        """Initialize the term set.
-
-        Args:
-            modes: The mode space or number of modes.
-        """
-        TermSumBase.__init__(self, self.terms_type(modes))
-
-    @classmethod
-    def from_iterable(
-        cls, source: Iterable[TermSpecT[ImplT, SpecT, C]], modes: int | Modes = 0
-    ) -> Self:
-        """Create an owning collection from an iterable of terms.
-
-        Args:
-            source: Iterable of compatible terms or term specifiers.
-            modes: The mode space or number of modes.
-
-        Returns:
-            An independent owning instance of ``cls``.
-            Coefficients of duplicate strings are added together.
-        """
-        return cls.from_terms(cls.terms_type.from_iterable(source, modes))

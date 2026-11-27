@@ -20,8 +20,10 @@ from typing import TYPE_CHECKING, Any, Protocol, Self
 
 from sympy import Expr
 
-from zixy.container.coeffs import Coeffs, ComplexSign, Sign
-from zixy.container.strings import String, Strings
+from zixy.container.coeff import ComplexSign, Sign
+from zixy.container.coeffs import Coeffs
+from zixy.container.string import String
+from zixy.container.strings import Strings
 from zixy.utils import slice_single_item
 
 if TYPE_CHECKING:

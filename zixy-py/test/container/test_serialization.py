@@ -11,19 +11,17 @@ import zixy.qubit.operator as zqo
 import zixy.qubit.state as zqs
 from zixy import __version__, deserialize, serialize
 from zixy._zixy import Modes, Qubits
+from zixy.container.coeff import ComplexSign, Sign, unit
 from zixy.container.coeffs import (
     ComplexCoeffs,
-    ComplexSign,
     ComplexSignCoeffs,
     RealCoeffs,
-    Sign,
     SignCoeffs,
     SymbolicCoeffs,
-    unit,
 )
 from zixy.container.data import TermData
 from zixy.container.serialization import __schema_version__
-from zixy.container.terms import Term
+from zixy.container.term import Term
 
 
 @pytest.fixture(

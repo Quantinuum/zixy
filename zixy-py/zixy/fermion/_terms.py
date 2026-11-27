@@ -100,11 +100,6 @@ class Terms[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, E
         term_data = TermData(strings, coeffs)
         TermsBase.__init__(self, term_data)
 
-    @property
-    def modes(self) -> Modes:
-        """The modes corresponding to ``self``."""
-        return self.strings.modes
-
     @classmethod
     def from_iterable(
         cls, source: Iterable[TermSpecT[ImplT, SpecT, C]], modes: int | Modes = 0
@@ -121,6 +116,11 @@ class Terms[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, E
         out = cls(modes)
         out.extend(source)
         return out
+
+    @property
+    def modes(self) -> Modes:
+        """The modes corresponding to ``self``."""
+        return self.strings.modes
 
 
 class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign, Expr), ElemT](
@@ -146,30 +146,6 @@ class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign,
         """
         TermSetBase.__init__(self, self.terms_type(modes))
 
-    @property
-    def modes(self) -> Modes:
-        """The modes corresponding to ``self``."""
-        return self._string_set._impl.modes
-
-    def _check_term(self, value: TermBase[ImplT, SpecT, C]) -> None:
-        """Hook to check whether a term is defined over the same modes as ``self``."""
-        if not isinstance(value, self.terms_type.term_type):
-            raise TypeError(
-                f"Expected a {self.terms_type.term_type.__name__} instance, got "
-                f"{type(value).__name__}."
-            )
-        _check_modes_compatibility(self.modes, value.modes)
-
-    def _check_string(self, value: BaseString[ImplT, SpecT]) -> None:
-        """Hook to check whether a string is valid for insertion into ``self``."""
-        if not isinstance(value, self.terms_type.term_type.strings_type.string_type):
-            raise TypeError(
-                f"Expected a {self.terms_type.term_type.strings_type.string_type.__name__} "
-                "instance, "
-                f"got {type(value).__name__}."
-            )
-        _check_modes_compatibility(self.modes, value.modes)
-
     @classmethod
     def from_iterable(
         cls, source: Iterable[TermSpecT[ImplT, SpecT, C]], modes: int | Modes = 0
@@ -187,6 +163,30 @@ class TermSet[ImplT: FermionArray, SpecT, C: (float, complex, Sign, ComplexSign,
         out = cls(modes)
         out.insert_iterable(source)
         return out
+
+    @property
+    def modes(self) -> Modes:
+        """The modes corresponding to ``self``."""
+        return self._string_set._impl.modes
+
+    def _check_string(self, value: BaseString[ImplT, SpecT]) -> None:
+        """Hook to check whether a string is valid for insertion into ``self``."""
+        if not isinstance(value, self.terms_type.term_type.strings_type.string_type):
+            raise TypeError(
+                f"Expected a {self.terms_type.term_type.strings_type.string_type.__name__} "
+                "instance, "
+                f"got {type(value).__name__}."
+            )
+        _check_modes_compatibility(self.modes, value.modes)
+
+    def _check_term(self, value: TermBase[ImplT, SpecT, C]) -> None:
+        """Hook to check whether a term is defined over the same modes as ``self``."""
+        if not isinstance(value, self.terms_type.term_type):
+            raise TypeError(
+                f"Expected a {self.terms_type.term_type.__name__} instance, got "
+                f"{type(value).__name__}."
+            )
+        _check_modes_compatibility(self.modes, value.modes)
 
 
 class TermSum[ImplT: FermionArray, SpecT, C: (float, complex, Expr), ElemT](

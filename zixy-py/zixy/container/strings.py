@@ -65,20 +65,6 @@ class String[ImplT: ImplArray, SpecT](ViewableItem[ImplT], Representable, Serial
     _impl: ImplT
     _index: int | None
 
-    @classmethod
-    @abstractmethod
-    def from_dict(cls, source: SerializedContainer) -> Self:
-        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
-
-        Args:
-            source: JSON-serializable dictionary representation to parse.
-
-        Returns:
-            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
-            the source dictionary and any existing containers.
-        """
-        pass
-
     def __init__(self, impl: ImplT, indexer: int | None = None):
         """Initialize the string.
 
@@ -93,6 +79,23 @@ class String[ImplT: ImplArray, SpecT](ViewableItem[ImplT], Representable, Serial
         self._impl = impl
         self._index = indexer
         self._check_bounds()
+
+    def _check_bounds(self) -> None:
+        """Validate that ``self`` references a valid element in its implementation array.
+
+        Raises:
+            IndexError: The index of ``self`` is out of bounds for the implementation array it
+                views.
+        """
+        if len(self._impl) != 1 and self.is_owning():
+            raise IndexError("Owning String must have exactly one element in the impl array.")
+        index = self.index
+        if index < 0:
+            index += len(self._impl)
+        if index < 0 or index >= len(self._impl):
+            raise IndexError(
+                f"Index {self.index} is out of bounds for an array of length {len(self._impl)}"
+            )
 
     @classmethod
     def _create(cls, impl: ImplT) -> Self:
@@ -133,22 +136,17 @@ class String[ImplT: ImplArray, SpecT](ViewableItem[ImplT], Representable, Serial
         """Return a deep copy of ``self``."""
         return type(self)._create(self._impl.strings_clone([self.index]))
 
-    def aliases(self, other: String[ImplT, SpecT]) -> bool:
-        """Determine whether ``self`` is a view of the same string as ``other``."""
-        if type(self) is not type(other) or self.is_owning():
-            # owners never alias other objects
-            return False
-        return self._impl.same_as(other._impl) and self.index == other.index
+    @classmethod
+    def raise_spec_type_error(cls, source: Any) -> None:
+        """Raise a ``TypeError`` for unsupported string specifiers.
 
-    def __eq__(self, other: object) -> bool:
-        """Return whether ``self`` and ``other`` are equal."""
-        if not isinstance(other, String):
-            return NotImplemented
-        return self._impl.strings_eq([self.index], other._impl, [other.index])
-
-    def __repr__(self) -> str:
-        """Return a string representation of ``self``."""
-        return self._impl.string_to_string(self.index)
+        Raises:
+            TypeError: The specifier supplied to set the value of ``self`` is of an unsupported
+                type.
+        """
+        raise TypeError(
+            f"Cannot set value of a {cls} instance with a variable of type {type(source)}"
+        )
 
     def set(self, source: SpecT | String[ImplT, SpecT]) -> None:
         """Set the value of the string.
@@ -188,34 +186,36 @@ class String[ImplT: ImplArray, SpecT](ViewableItem[ImplT], Representable, Serial
         """
         self.set(self._clear_spec)
 
+    def __eq__(self, other: object) -> bool:
+        """Return whether ``self`` and ``other`` are equal."""
+        if not isinstance(other, String):
+            return NotImplemented
+        return self._impl.strings_eq([self.index], other._impl, [other.index])
+
+    def aliases(self, other: String[ImplT, SpecT]) -> bool:
+        """Determine whether ``self`` is a view of the same string as ``other``."""
+        if type(self) is not type(other) or self.is_owning():
+            # owners never alias other objects
+            return False
+        return self._impl.same_as(other._impl) and self.index == other.index
+
+    def __repr__(self) -> str:
+        """Return a string representation of ``self``."""
+        return self._impl.string_to_string(self.index)
+
     @classmethod
-    def raise_spec_type_error(cls, source: Any) -> None:
-        """Raise a ``TypeError`` for unsupported string specifiers.
+    @abstractmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
 
-        Raises:
-            TypeError: The specifier supplied to set the value of ``self`` is of an unsupported
-                type.
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
+            the source dictionary and any existing containers.
         """
-        raise TypeError(
-            f"Cannot set value of a {cls} instance with a variable of type {type(source)}"
-        )
-
-    def _check_bounds(self) -> None:
-        """Validate that ``self`` references a valid element in its implementation array.
-
-        Raises:
-            IndexError: The index of ``self`` is out of bounds for the implementation array it
-                views.
-        """
-        if len(self._impl) != 1 and self.is_owning():
-            raise IndexError("Owning String must have exactly one element in the impl array.")
-        index = self.index
-        if index < 0:
-            index += len(self._impl)
-        if index < 0 or index >= len(self._impl):
-            raise IndexError(
-                f"Index {self.index} is out of bounds for an array of length {len(self._impl)}"
-            )
+        pass
 
 
 class StringSet[ImplT: ImplArray, SpecT](Representable, SerializableContainer):
@@ -230,19 +230,6 @@ class StringSet[ImplT: ImplArray, SpecT](Representable, SerializableContainer):
 
     _impl: ImplT
     _map: Map
-
-    @classmethod
-    def from_dict(cls, source: SerializedContainer) -> Self:
-        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
-
-        Args:
-            source: JSON-serializable dictionary representation to parse.
-
-        Returns:
-            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
-            the source dictionary and any existing containers.
-        """
-        return cls.from_strings(cls.strings_type.from_dict(source))
 
     def __init__(self, impl: ImplT):
         """Initialize the string set.
@@ -283,6 +270,10 @@ class StringSet[ImplT: ImplArray, SpecT](Representable, SerializableContainer):
         out._bind(impl, map_)
         return out
 
+    def _new(self) -> Self:
+        """Create an empty instance with the same type and configuration."""
+        return self._create(self._impl.strings_clone([]), map_=self.map_type())
+
     @classmethod
     def from_strings(cls, strings: Strings[ImplT, SpecT]) -> Self:
         """Create a new instance of ``cls`` from the strings in ``strings``.
@@ -298,23 +289,25 @@ class StringSet[ImplT: ImplArray, SpecT](Representable, SerializableContainer):
         return out
 
     @classmethod
-    def from_str(cls, source: str, *args: Any, **kwargs: Any) -> Self:
-        """Create an instance of ``cls`` from a string.
+    def from_iterable(
+        cls,
+        source: Iterable[SpecT | String[ImplT, SpecT]],
+        *args: Any,
+        **kwargs: Any,
+    ) -> Self:
+        """Create a new instance of ``cls`` from an iterable.
 
         Args:
-            source: String to parse.
-            *args: Positional arguments to forward to the string constructor.
-            **kwargs: Keyword arguments to forward to the string constructor.
+            source: Iterable returning specifiers of all the strings to be appended.
+            args: Positional arguments to forward to the constructor of ``cls``.
+            kwargs: Keyword arguments to forward to the constructor of ``cls``.
 
         Returns:
-            An instance of ``cls`` parsed from ``source``.
+            New instance of ``cls`` containing the strings specified by ``source``.
         """
-        strings = cls.strings_type.from_str(source, *args, **kwargs)
-        return cls.from_strings(strings)
-
-    def _new(self) -> Self:
-        """Create an empty instance with the same type and configuration."""
-        return self._create(self._impl.strings_clone([]), map_=self.map_type())
+        out = cls(*args, **kwargs)
+        out.insert_iterable(source)
+        return out
 
     def clone(self) -> Self:
         """Return a deep copy of ``self``."""
@@ -322,26 +315,52 @@ class StringSet[ImplT: ImplArray, SpecT](Representable, SerializableContainer):
         out.insert_iterable(self)
         return out
 
-    def to_strings[StringsT: Strings[Any, Any]](
-        self: _HasStringsType[StringsT],
-    ) -> StringsT:
-        """Create a new array of strings owning copies of all those contained in ``self``.
-
-        Returns:
-            New :class:`~zixy.container.strings.Strings` instance containing copies of the strings
-            in ``self``. The
-            type is determined by :attr:`~zixy.container.strings.StringSet.strings_type`.
-        """
-        strings = cast("StringSet[Any, Any]", self)
-        return self.strings_type._create(strings._impl.strings_clone(None))
-
-    def __repr__(self) -> str:
-        """Return a string representation of ``self``."""
-        return ", ".join(str(s) for s in self)
-
     def __len__(self) -> int:
         """Get the number of elements in ``self``."""
         return len(self._impl)
+
+    def __iter__[StringT: String[Any, Any]](
+        self: _HasStringsType[_HasStringType[StringT]],
+    ) -> Iterator[StringT]:
+        """Yield an independent, owning copy of each key."""
+        strings = cast("StringSet[Any, Any]", self)
+        for i in range(len(strings)):
+            yield cast(
+                "StringT",
+                strings.strings_type.string_type._create(strings._impl.strings_clone([i])),
+            )
+
+    def __contains__(self, value: object) -> bool:
+        """Check whether ``value`` is stored in ``self``.
+
+        Args:
+            value: String or string specifier to look up.
+
+        Returns:
+            Whether the string is present. Unsupported objects, out-of-range string
+            specifiers, and strings from incompatible families or spaces return ``False``.
+        """
+        try:
+            return self.lookup_index(cast("SpecT | String[ImplT, SpecT]", value)) is not None
+        except (TypeError, ValueError, IndexError):
+            return False
+
+    def lookup_index(self, key: SpecT | String[ImplT, SpecT]) -> int | None:
+        """Try to find the storage index of ``key`` in ``self``.
+
+        Args:
+            key: String or string specifier to look up.
+
+        Returns:
+            The current storage index, or ``None`` if the string is absent. Indices
+            may change when strings are removed.
+
+        Raises:
+            TypeError: The key is unsupported or belongs to an incompatible family.
+            ValueError: The key is invalid or belongs to an incompatible space.
+        """
+        value = self._get_working_string(key)
+        return self._impl.mapped_lookup(self._map, value._impl, value.index)
 
     def _get_working_string(self, value: SpecT | String[ImplT, SpecT]) -> String[ImplT, SpecT]:
         """Prepare a string containing ``value``.
@@ -393,38 +412,6 @@ class StringSet[ImplT: ImplArray, SpecT](Representable, SerializableContainer):
         for item in source:
             self.insert(item)
 
-    def lookup_index(self, key: SpecT | String[ImplT, SpecT]) -> int | None:
-        """Try to find the storage index of ``key`` in ``self``.
-
-        Args:
-            key: String or string specifier to look up.
-
-        Returns:
-            The current storage index, or ``None`` if the string is absent. Indices
-            may change when strings are removed.
-
-        Raises:
-            TypeError: The key is unsupported or belongs to an incompatible family.
-            ValueError: The key is invalid or belongs to an incompatible space.
-        """
-        value = self._get_working_string(key)
-        return self._impl.mapped_lookup(self._map, value._impl, value.index)
-
-    def __contains__(self, value: object) -> bool:
-        """Check whether ``value`` is stored in ``self``.
-
-        Args:
-            value: String or string specifier to look up.
-
-        Returns:
-            Whether the string is present. Unsupported objects, out-of-range string
-            specifiers, and strings from incompatible families or spaces return ``False``.
-        """
-        try:
-            return self.lookup_index(cast("SpecT | String[ImplT, SpecT]", value)) is not None
-        except (TypeError, ValueError, IndexError):
-            return False
-
     def remove(self, value: SpecT | String[ImplT, SpecT]) -> int:
         """Try to remove ``value`` from ``self``.
 
@@ -448,17 +435,6 @@ class StringSet[ImplT: ImplArray, SpecT](Representable, SerializableContainer):
         if not isinstance(other, StringSet):
             return NotImplemented
         return self._impl.mapped_equal(self._map, other._impl)
-
-    def __iter__[StringT: String[Any, Any]](
-        self: _HasStringsType[_HasStringType[StringT]],
-    ) -> Iterator[StringT]:
-        """Yield an independent, owning copy of each key."""
-        strings = cast("StringSet[Any, Any]", self)
-        for i in range(len(strings)):
-            yield cast(
-                "StringT",
-                strings.strings_type.string_type._create(strings._impl.strings_clone([i])),
-            )
 
     def iter_filter_map[StringT: String[Any, Any]](
         self: _HasStringsType[_HasStringType[StringT]], f: Callable[[StringT], bool]
@@ -502,26 +478,50 @@ class StringSet[ImplT: ImplArray, SpecT](Representable, SerializableContainer):
         out.insert_iterable(self.iter_filter_map(f))
         return out
 
+    def __repr__(self) -> str:
+        """Return a string representation of ``self``."""
+        return ", ".join(str(s) for s in self)
+
     @classmethod
-    def from_iterable(
-        cls,
-        source: Iterable[SpecT | String[ImplT, SpecT]],
-        *args: Any,
-        **kwargs: Any,
-    ) -> Self:
-        """Create a new instance of ``cls`` from an iterable.
+    def from_str(cls, source: str, *args: Any, **kwargs: Any) -> Self:
+        """Create an instance of ``cls`` from a string.
 
         Args:
-            source: Iterable returning specifiers of all the strings to be appended.
-            args: Positional arguments to forward to the constructor of ``cls``.
-            kwargs: Keyword arguments to forward to the constructor of ``cls``.
+            source: String to parse.
+            *args: Positional arguments to forward to the string constructor.
+            **kwargs: Keyword arguments to forward to the string constructor.
 
         Returns:
-            New instance of ``cls`` containing the strings specified by ``source``.
+            An instance of ``cls`` parsed from ``source``.
         """
-        out = cls(*args, **kwargs)
-        out.insert_iterable(source)
-        return out
+        strings = cls.strings_type.from_str(source, *args, **kwargs)
+        return cls.from_strings(strings)
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
+            the source dictionary and any existing containers.
+        """
+        return cls.from_strings(cls.strings_type.from_dict(source))
+
+    def to_strings[StringsT: Strings[Any, Any]](
+        self: _HasStringsType[StringsT],
+    ) -> StringsT:
+        """Create a new array of strings owning copies of all those contained in ``self``.
+
+        Returns:
+            New :class:`~zixy.container.strings.Strings` instance containing copies of the strings
+            in ``self``. The
+            type is determined by :attr:`~zixy.container.strings.StringSet.strings_type`.
+        """
+        strings = cast("StringSet[Any, Any]", self)
+        return self.strings_type._create(strings._impl.strings_clone(None))
 
 
 class Strings[ImplT: ImplArray, SpecT](
@@ -536,25 +536,6 @@ class Strings[ImplT: ImplArray, SpecT](
     string_type: type[String[ImplT, SpecT]]
 
     _impl: ImplT
-
-    @classmethod
-    @abstractmethod
-    def _set_type(cls) -> type[StringSet[ImplT, SpecT]]:
-        """Return the string set class paired with this collection."""
-
-    @classmethod
-    @abstractmethod
-    def from_dict(cls, source: SerializedContainer) -> Self:
-        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
-
-        Args:
-            source: JSON-serializable dictionary representation to parse.
-
-        Returns:
-            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
-            the source dictionary and any existing containers.
-        """
-        pass
 
     def __init__(self, impl: ImplT, indexer: slice = slice(None)):
         """Initialize the string array.
@@ -602,6 +583,10 @@ class Strings[ImplT: ImplArray, SpecT](
         Strings.__init__(out, impl, indexer)
         return out
 
+    def _new(self) -> Self:
+        """Create an empty instance with the same type and configuration."""
+        return self._create(self._impl.strings_clone([]))
+
     @classmethod
     def from_string(cls, string: String[ImplT, SpecT]) -> Self:
         """Create a new one-element instance from a single string.
@@ -616,22 +601,48 @@ class Strings[ImplT: ImplArray, SpecT](
             cls.string_type.raise_spec_type_error(string)
         return cls._create(string.clone()._impl)
 
+    @classmethod
+    def from_iterable(
+        cls,
+        source: Iterable[SpecT | String[ImplT, SpecT]],
+        *args: Any,
+        **kwargs: Any,
+    ) -> Self:
+        """Create a new instance of ``cls`` from an iterable.
+
+        Args:
+            source: Iterable returning specifiers of all the strings to be appended.
+            args: Positional arguments to forward to the constructor of ``cls``.
+            kwargs: Keyword arguments to forward to the constructor of ``cls``.
+
+        Returns:
+            New instance of ``cls`` containing the strings specified by ``source``.
+        """
+        out = cls(*args, **kwargs)
+        out.extend(source)
+        return out
+
+    def new_string[StringT: String[Any, Any]](
+        self: _HasStringType[StringT],
+    ) -> StringT:
+        """Create an independent string with the same space and configuration.
+
+        Returns:
+            An owning instance of ``self.string_type`` with independent storage.
+        """
+        strings = cast("Strings[Any, Any]", self)
+        data = strings._new().resize(1)
+        return cast("StringT", strings.string_type._create(data._impl))
+
     def clone(self) -> Self:
         """Return a deep copy of ``self``."""
         inds = slice_to_tuple(self.slice, len(self._impl))
         return self._create(self._impl.strings_clone(inds))
 
-    def __eq__(self, other: object) -> bool:
-        """Return whether ``self`` and ``other`` are equal."""
-        if not isinstance(other, Strings):
-            return NotImplemented
-        inds = slice_to_tuple(self.slice, len(self._impl))
-        other_inds = slice_to_tuple(other.slice, len(other._impl))
-        return self._impl.strings_eq(inds, other._impl, other_inds)
-
-    def __repr__(self) -> str:
-        """Return a string representation of ``self``."""
-        return ", ".join(str(s) for s in self)
+    @classmethod
+    @abstractmethod
+    def _set_type(cls) -> type[StringSet[ImplT, SpecT]]:
+        """Return the string set class paired with this collection."""
 
     @overload
     def __getitem__[StringT: String[Any, Any]](
@@ -704,38 +715,65 @@ class Strings[ImplT: ImplArray, SpecT](
                 )
             self[indexer].set(source)
 
-    def _new(self) -> Self:
-        """Create an empty instance with the same type and configuration."""
-        return self._create(self._impl.strings_clone([]))
-
-    def reordered(self, inds: Sequence[int]) -> Self:
-        """Get a new instance with the elements of ``self`` in a new order.
+    @requires_ownership
+    def append(self, source: SpecT | String[ImplT, SpecT]) -> Self:
+        """Append ``source`` to the end of ``self``.
 
         Args:
-            inds: Sequence of indices defining the new order. Should be a permutation of
-                ``range(len(self))``.
+            source: Value to append.
+
+        Note:
+            This method operates in-place.
+        """
+        return self.append_n(1, source)
+
+    @requires_ownership
+    def append_n(self, n: int, source: SpecT | String[ImplT, SpecT]) -> Self:
+        """Append ``source`` to the end of ``self`` ``n`` times.
+
+        Args:
+            n: Number of times to repeatedly append ``source``.
+            source: Specification for the value to append.
+
+        Note:
+            This method operates in-place.
+        """
+        if source is None:
+            source = self.string_type._clear_spec
+        n_old = len(self)
+        self.resize(len(self) + n)
+        for i in range(n_old, len(self)):
+            self[i] = source
+        return self
+
+    @requires_ownership
+    def extend(self, source: Iterable[SpecT | String[ImplT, SpecT]] = tuple()) -> Self:
+        """Append the elements of ``source`` to the end of ``self``.
+
+        Args:
+            source: Iterable of compatible strings or string specifiers.
 
         Returns:
-            A new instance with the reordered elements.
-        """
-        if not all(i < len(self) for i in inds):
-            raise IndexError("Index out of bounds in reorder.")
-        out = self._new()
-        for i in inds:
-            out.append(self[i])
-        return out
+            ``self`` with the source elements appended in iteration order.
 
-    def new_string[StringT: String[Any, Any]](
-        self: _HasStringType[StringT],
-    ) -> StringT:
-        """Create an independent string with the same space and configuration.
+        Raises:
+            ValueError: If ``self`` is a non-owning view, including for an empty source.
 
-        Returns:
-            An owning instance of ``self.string_type`` with independent storage.
+        Note:
+            This method operates in-place. Extending from ``self`` or an overlapping
+            view appends the original visible elements once, in source order.
         """
-        strings = cast("Strings[Any, Any]", self)
-        data = strings._new().resize(1)
-        return cast("StringT", strings.string_type._create(data._impl))
+        for item in source:
+            self.append(item)
+        return self
+
+    def __eq__(self, other: object) -> bool:
+        """Return whether ``self`` and ``other`` are equal."""
+        if not isinstance(other, Strings):
+            return NotImplemented
+        inds = slice_to_tuple(self.slice, len(self._impl))
+        other_inds = slice_to_tuple(other.slice, len(other._impl))
+        return self._impl.strings_eq(inds, other._impl, other_inds)
 
     def iter_filter_map[StringT: String[Any, Any]](
         self: _HasStringType[StringT], f: Callable[[StringT], bool]
@@ -779,11 +817,6 @@ class Strings[ImplT: ImplArray, SpecT](
         out.extend(self.iter_filter_map(f))
         return out
 
-    def filter_unique(self) -> Self:
-        """Create a new collection containing the unique strings of ``self``."""
-        unique = self._set_type().from_strings(self)
-        return self._create(unique._impl.strings_clone(None))
-
     def iter_filter_populated[StringT: String[Any, Any]](
         self: _HasStringType[StringT],
     ) -> Iterator[StringT]:
@@ -800,75 +833,42 @@ class Strings[ImplT: ImplArray, SpecT](
         out.extend(self.iter_filter_populated())
         return out
 
-    @requires_ownership
-    def append_n(self, n: int, source: SpecT | String[ImplT, SpecT]) -> Self:
-        """Append ``source`` to the end of ``self`` ``n`` times.
+    def filter_unique(self) -> Self:
+        """Create a new collection containing the unique strings of ``self``."""
+        unique = self._set_type().from_strings(self)
+        return self._create(unique._impl.strings_clone(None))
+
+    def reordered(self, inds: Sequence[int]) -> Self:
+        """Get a new instance with the elements of ``self`` in a new order.
 
         Args:
-            n: Number of times to repeatedly append ``source``.
-            source: Specification for the value to append.
-
-        Note:
-            This method operates in-place.
-        """
-        if source is None:
-            source = self.string_type._clear_spec
-        n_old = len(self)
-        self.resize(len(self) + n)
-        for i in range(n_old, len(self)):
-            self[i] = source
-        return self
-
-    @requires_ownership
-    def append(self, source: SpecT | String[ImplT, SpecT]) -> Self:
-        """Append ``source`` to the end of ``self``.
-
-        Args:
-            source: Value to append.
-
-        Note:
-            This method operates in-place.
-        """
-        return self.append_n(1, source)
-
-    @requires_ownership
-    def extend(self, source: Iterable[SpecT | String[ImplT, SpecT]] = tuple()) -> Self:
-        """Append the elements of ``source`` to the end of ``self``.
-
-        Args:
-            source: Iterable of compatible strings or string specifiers.
+            inds: Sequence of indices defining the new order. Should be a permutation of
+                ``range(len(self))``.
 
         Returns:
-            ``self`` with the source elements appended in iteration order.
-
-        Raises:
-            ValueError: If ``self`` is a non-owning view, including for an empty source.
-
-        Note:
-            This method operates in-place. Extending from ``self`` or an overlapping
-            view appends the original visible elements once, in source order.
+            A new instance with the reordered elements.
         """
-        for item in source:
-            self.append(item)
-        return self
+        if not all(i < len(self) for i in inds):
+            raise IndexError("Index out of bounds in reorder.")
+        out = self._new()
+        for i in inds:
+            out.append(self[i])
+        return out
+
+    def __repr__(self) -> str:
+        """Return a string representation of ``self``."""
+        return ", ".join(str(s) for s in self)
 
     @classmethod
-    def from_iterable(
-        cls,
-        source: Iterable[SpecT | String[ImplT, SpecT]],
-        *args: Any,
-        **kwargs: Any,
-    ) -> Self:
-        """Create a new instance of ``cls`` from an iterable.
+    @abstractmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
 
         Args:
-            source: Iterable returning specifiers of all the strings to be appended.
-            args: Positional arguments to forward to the constructor of ``cls``.
-            kwargs: Keyword arguments to forward to the constructor of ``cls``.
+            source: JSON-serializable dictionary representation to parse.
 
         Returns:
-            New instance of ``cls`` containing the strings specified by ``source``.
+            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
+            the source dictionary and any existing containers.
         """
-        out = cls(*args, **kwargs)
-        out.extend(source)
-        return out
+        pass

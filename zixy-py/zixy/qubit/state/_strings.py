@@ -72,58 +72,10 @@ class String(StringBase[ImplT, SpecT, ElemT]):
     _clear_spec = ""
     _springs_type = BinarySprings
 
-    def to_dict(self) -> SerializedContainer:
-        """Return a JSON-serializable dictionary representation of ``self``.
-
-        Returns:
-            A dictionary containing container metadata, the string, and the full qubit register.
-        """
-        data = super().to_dict()
-        data["family"] = "qubit.state"
-        data["space"] = {"qubits": self.qubits.get_inds()}
-        data["strings"] = [self.get_list()]
-        return data
-
-    @classmethod
-    def from_dict(cls, source: SerializedContainer) -> Self:
-        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
-
-        Args:
-            source: JSON-serializable dictionary representation to parse.
-
-        Returns:
-            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
-            the source dictionary and any existing containers.
-        """
-        check_schema_version(source)
-        if len(source["strings"]) != 1:
-            raise ValueError("A serialized String must contain exactly one string.")
-        strings = Strings.from_dict(source)
-        return cls._create(strings._impl)
-
     @staticmethod
     def _get_default_qubits(source: SpecT) -> Qubits:
         """Get the default qubit space for ``source``."""
         return _default_qubits(source)
-
-    @classmethod
-    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> String:
-        """Create an instance of ``cls`` from a string.
-
-        Args:
-            source: String to parse.
-            qubits: The qubit register or qubit count. If ``None``, the qubit register is
-                inferred from the string specifier.
-
-        Returns:
-            An instance of ``cls`` parsed from ``source``.
-        """
-        if not source.strip():
-            return cls(qubits, "")
-        n = len(BinarySprings(source))
-        if n != 1:
-            raise ValueError(f"Source string should contain one state string, got {n}.")
-        return cls(qubits, source)
 
     def __getitem__(self, i: int) -> bool:
         """Return the bit value of the string at index ``i``."""
@@ -157,17 +109,6 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         else:
             super()._set_spec(source)
 
-    def hamming_weight(self) -> int:
-        r"""Get the Hamming weight of this bit string.
-
-        The Hamming weight is defined as
-
-        .. math:: \sum_i s_i
-
-        where :math:`s_i` is the value of the bit at index :math:`i` in the string.
-        """
-        return self.count(True)
-
     def is_vacuum(self) -> bool:
         r"""Check whether the string is the vacuum state (:math:`\left[0, 0, \ldots, 0\right]`)."""
         return self.count(True) == 0
@@ -192,14 +133,73 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         term_type = get_term_type(type(lhs))
         return term_type.from_string(self, lhs)
 
+    def imul_get_phase(self, op: zqo.String) -> ComplexSign:
+        """In-place multiplication of ``self`` by ``op``, returning the phase."""
+        return ComplexSign(self._impl.string_pauli_string_imul(self.index, op._impl, op.index))
+
     def vdot(self, other: String) -> int:
         """Compute the inner product of this string with another."""
         _check_qubits_compatibility(self.qubits, other.qubits)
         return int(self == other)
 
-    def imul_get_phase(self, op: zqo.String) -> ComplexSign:
-        """In-place multiplication of ``self`` by ``op``, returning the phase."""
-        return ComplexSign(self._impl.string_pauli_string_imul(self.index, op._impl, op.index))
+    def hamming_weight(self) -> int:
+        r"""Get the Hamming weight of this bit string.
+
+        The Hamming weight is defined as
+
+        .. math:: \sum_i s_i
+
+        where :math:`s_i` is the value of the bit at index :math:`i` in the string.
+        """
+        return self.count(True)
+
+    @classmethod
+    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> String:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        if not source.strip():
+            return cls(qubits, "")
+        n = len(BinarySprings(source))
+        if n != 1:
+            raise ValueError(f"Source string should contain one state string, got {n}.")
+        return cls(qubits, source)
+
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            A dictionary containing container metadata, the string, and the full qubit register.
+        """
+        data = super().to_dict()
+        data["family"] = "qubit.state"
+        data["space"] = {"qubits": self.qubits.get_inds()}
+        data["strings"] = [self.get_list()]
+        return data
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
+            the source dictionary and any existing containers.
+        """
+        check_schema_version(source)
+        if len(source["strings"]) != 1:
+            raise ValueError("A serialized String must contain exactly one string.")
+        strings = Strings.from_dict(source)
+        return cls._create(strings._impl)
 
 
 class Strings(StringsBase[ImplT, SpecT, ElemT]):
@@ -215,6 +215,10 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
     def _set_type(cls) -> type[StringSet]:
         """Return the string set class paired with this collection."""
         return StringSet
+
+    def get_sets(self) -> tuple[set[int], ...]:
+        """Get the strings as a list of sets of the indices of bits with value 1."""
+        return tuple(self[i].get_set() for i in range(len(self)))
 
     def to_dict(self) -> SerializedContainer:
         """Return a JSON-serializable dictionary representation of ``self``.
@@ -250,10 +254,6 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
             if row:
                 out[i].set(row)
         return out
-
-    def get_sets(self) -> tuple[set[int], ...]:
-        """Get the strings as a list of sets of the indices of bits with value 1."""
-        return tuple(self[i].get_set() for i in range(len(self)))
 
 
 class StringSet(StringSetBase[ImplT, SpecT, ElemT]):

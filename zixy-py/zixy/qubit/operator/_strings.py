@@ -93,58 +93,10 @@ class String(StringBase[ImplT, SpecT, ElemT]):
     _clear_spec = ""
     _springs_type = PauliSprings
 
-    def to_dict(self) -> SerializedContainer:
-        """Return a JSON-serializable dictionary representation of ``self``.
-
-        Returns:
-            A dictionary containing container metadata, the string, and the full qubit register.
-        """
-        data = super().to_dict()
-        data["family"] = "qubit.operator"
-        data["space"] = {"qubits": self.qubits.get_inds()}
-        data["strings"] = [[str(p) for p in self.get_list()]]
-        return data
-
-    @classmethod
-    def from_dict(cls, source: SerializedContainer) -> Self:
-        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
-
-        Args:
-            source: JSON-serializable dictionary representation to parse.
-
-        Returns:
-            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
-            the source dictionary and any existing containers.
-        """
-        check_schema_version(source)
-        if len(source["strings"]) != 1:
-            raise ValueError("A serialized String must contain exactly one string.")
-        strings = Strings.from_dict(source)
-        return cls._create(strings._impl)
-
     @staticmethod
     def _get_default_qubits(source: SpecT) -> Qubits:
         """Get the default qubit space for ``source``."""
         return _default_qubits(source)
-
-    @classmethod
-    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> String:
-        """Create an instance of ``cls`` from a string.
-
-        Args:
-            source: String to parse.
-            qubits: The qubit register or qubit count. If ``None``, the qubit register is
-                inferred from the string specifier.
-
-        Returns:
-            An instance of ``cls`` parsed from ``source``.
-        """
-        if not source.strip():
-            return cls(qubits, "")
-        n = len(PauliSprings(source))
-        if n != 1:
-            raise ValueError(f"Source string should contain one Pauli string, got {n}.")
-        return cls(qubits, source)
 
     def __getitem__(self, i: int) -> PauliMatrix:
         """Return the element of the string at index ``i``."""
@@ -237,6 +189,34 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         """Get the phase resulting from the multiplication of ``self`` and ``rhs``."""
         return ComplexSign(self._impl.string_phase_of_mul(self.index, rhs._impl, rhs.index))
 
+    def set_mul(self, lhs: String, rhs: String) -> ComplexSign:
+        """Set ``self`` to the product of ``lhs`` and ``rhs``, and return the phase.
+
+        Args:
+            lhs: Left hand side of the product.
+            rhs: Right hand side of the product.
+
+        Returns:
+            The phase factor of the multiplication.
+        """
+        self._set_copy(lhs)
+        return self.imul_get_phase(rhs)
+
+    def imul_get_phase(self, rhs: String) -> ComplexSign:
+        """In-place multiplication of ``self`` by ``rhs``, returning the phase.
+
+        See Also:
+            :meth:`~zixy.qubit.operator._strings.String.imul_ignore_phase` for in-place
+            multiplication that ignores the phase.
+        """
+        if type(rhs) is not String:
+            raise TypeError(f"Cannot right-multiply String in-place by type {type(rhs)}")
+        if self._impl.same_as(rhs._impl):
+            phase = self._impl.string_imul_internal(self.index, rhs.index)
+        else:
+            phase = self._impl.string_imul_external(self.index, rhs._impl, rhs.index)
+        return ComplexSign(phase)
+
     def imul_ignore_phase(self, rhs: String) -> None:
         """In-place multiplication of ``self`` by ``rhs``, ignoring the scalar phase."""
         from zixy.qubit.operator._terms import Term  # noqa: PLC0415
@@ -255,37 +235,57 @@ class String(StringBase[ImplT, SpecT, ElemT]):
         else:
             self._impl.string_matrices_imul_external(self.index, rhs._impl, rhs.index)
 
-    def imul_get_phase(self, rhs: String) -> ComplexSign:
-        """In-place multiplication of ``self`` by ``rhs``, returning the phase.
-
-        See Also:
-            :meth:`~zixy.qubit.operator._strings.String.imul_ignore_phase` for in-place
-            multiplication that ignores the phase.
-        """
-        if type(rhs) is not String:
-            raise TypeError(f"Cannot right-multiply String in-place by type {type(rhs)}")
-        if self._impl.same_as(rhs._impl):
-            phase = self._impl.string_imul_internal(self.index, rhs.index)
-        else:
-            phase = self._impl.string_imul_external(self.index, rhs._impl, rhs.index)
-        return ComplexSign(phase)
-
-    def set_mul(self, lhs: String, rhs: String) -> ComplexSign:
-        """Set ``self`` to the product of ``lhs`` and ``rhs``, and return the phase.
-
-        Args:
-            lhs: Left hand side of the product.
-            rhs: Right hand side of the product.
-
-        Returns:
-            The phase factor of the multiplication.
-        """
-        self._set_copy(lhs)
-        return self.imul_get_phase(rhs)
-
     def commutes_with(self, rhs: String) -> bool:
         """Check whether ``self`` commutes with ``rhs``."""
         return self._impl.string_commutes_with(self.index, rhs._impl, rhs.index)
+
+    @classmethod
+    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> String:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        if not source.strip():
+            return cls(qubits, "")
+        n = len(PauliSprings(source))
+        if n != 1:
+            raise ValueError(f"Source string should contain one Pauli string, got {n}.")
+        return cls(qubits, source)
+
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            A dictionary containing container metadata, the string, and the full qubit register.
+        """
+        data = super().to_dict()
+        data["family"] = "qubit.operator"
+        data["space"] = {"qubits": self.qubits.get_inds()}
+        data["strings"] = [[str(p) for p in self.get_list()]]
+        return data
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
+            the source dictionary and any existing containers.
+        """
+        check_schema_version(source)
+        if len(source["strings"]) != 1:
+            raise ValueError("A serialized String must contain exactly one string.")
+        strings = Strings.from_dict(source)
+        return cls._create(strings._impl)
 
 
 class Strings(StringsBase[ImplT, SpecT, ElemT]):
@@ -301,6 +301,46 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
     def _set_type(cls) -> type[StringSet]:
         """Return the string set class paired with this collection."""
         return StringSet
+
+    def get_dicts(self) -> tuple[dict[int, PauliMatrix], ...]:
+        """Get the strings as a list of dictionaries of their elements."""
+        return tuple(self[i].get_dict() for i in range(len(self)))
+
+    def iter_filter_non_identity[StringT: String](
+        self: _FilterableStrings[Any, StringT],
+    ) -> Iterator[StringT]:
+        """Lazily filter strings of ``self``, retaining only those different to identity."""
+        return self.iter_filter_populated()
+
+    def filter_non_identity(self) -> Self:
+        """Eagerly filter strings of ``self``, retaining only those different to identity."""
+        return self.filter_populated()
+
+    def compatibility_matrix(self) -> NDArray[np.uint8]:
+        """Form the compatibility matrix for the strings in ``self``.
+
+        Returns:
+            Matrix with 1 where the strings represented by the row and column commute, 0 elsewhere.
+        """
+        if slice_equal(self.slice, slice(None, len(self._impl)), len(self._impl)):
+            return self._impl.compatibility_matrix()
+        else:
+            # todo: have rust binding take inds to preclude this copy in this non-contiguous case.
+            return self.clone()._impl.compatibility_matrix()
+
+    def centralizer_and_remainder(self) -> tuple[Strings, Strings]:
+        """Get the centralizer and remainder of ``self``.
+
+        The centralizer of a set :math:`S` of Pauli strings is the set of strings :math:`C` that
+        commute with all others in :math:`S`. The remainder is the set of Pauli strings that are in
+        :math:`S` but not in :math:`C`.
+
+        Returns:
+            The centralizer and remainder as a pair of
+            :class:`~zixy.qubit.operator._strings.Strings` instances.
+        """
+        c, r = self._impl.centralizer_and_remainder()
+        return Strings._create(c), Strings._create(r)
 
     def to_dict(self) -> SerializedContainer:
         """Return a JSON-serializable dictionary representation of ``self``.
@@ -341,46 +381,6 @@ class Strings(StringsBase[ImplT, SpecT, ElemT]):
             if values:
                 out[i].set(values)
         return out
-
-    def get_dicts(self) -> tuple[dict[int, PauliMatrix], ...]:
-        """Get the strings as a list of dictionaries of their elements."""
-        return tuple(self[i].get_dict() for i in range(len(self)))
-
-    def compatibility_matrix(self) -> NDArray[np.uint8]:
-        """Form the compatibility matrix for the strings in ``self``.
-
-        Returns:
-            Matrix with 1 where the strings represented by the row and column commute, 0 elsewhere.
-        """
-        if slice_equal(self.slice, slice(None, len(self._impl)), len(self._impl)):
-            return self._impl.compatibility_matrix()
-        else:
-            # todo: have rust binding take inds to preclude this copy in this non-contiguous case.
-            return self.clone()._impl.compatibility_matrix()
-
-    def iter_filter_non_identity[StringT: String](
-        self: _FilterableStrings[Any, StringT],
-    ) -> Iterator[StringT]:
-        """Lazily filter strings of ``self``, retaining only those different to identity."""
-        return self.iter_filter_populated()
-
-    def filter_non_identity(self) -> Self:
-        """Eagerly filter strings of ``self``, retaining only those different to identity."""
-        return self.filter_populated()
-
-    def centralizer_and_remainder(self) -> tuple[Strings, Strings]:
-        """Get the centralizer and remainder of ``self``.
-
-        The centralizer of a set :math:`S` of Pauli strings is the set of strings :math:`C` that
-        commute with all others in :math:`S`. The remainder is the set of Pauli strings that are in
-        :math:`S` but not in :math:`C`.
-
-        Returns:
-            The centralizer and remainder as a pair of
-            :class:`~zixy.qubit.operator._strings.Strings` instances.
-        """
-        c, r = self._impl.centralizer_and_remainder()
-        return Strings._create(c), Strings._create(r)
 
 
 class StringSet(StringSetBase[ImplT, SpecT, ElemT]):

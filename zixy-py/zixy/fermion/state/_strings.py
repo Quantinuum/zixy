@@ -69,54 +69,6 @@ class String(FermionString[ImplT, SpecT, ElemT]):
     _clear_spec = ""
     _get_default_modes = staticmethod(_default_modes)
 
-    def to_dict(self) -> SerializedContainer:
-        """Return a JSON-serializable dictionary representation of ``self``.
-
-        Returns:
-            A dictionary containing container metadata, the string, and the full mode space.
-        """
-        data = super().to_dict()
-        data["family"] = "fermion.state"
-        data["space"] = _serialize_modes(self.modes)
-        data["strings"] = [self.get_list()]
-        return data
-
-    @classmethod
-    def from_dict(cls, source: SerializedContainer) -> Self:
-        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
-
-        Args:
-            source: JSON-serializable dictionary representation to parse.
-
-        Returns:
-            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
-            the source dictionary and any existing containers.
-        """
-        check_schema_version(source)
-        if len(source["strings"]) != 1:
-            raise ValueError("A serialized String must contain exactly one string.")
-        strings = Strings.from_dict(source)
-        return cls._create(strings._impl)
-
-    @classmethod
-    def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
-        """Create an instance of ``cls`` from a string.
-
-        Args:
-            source: String to parse.
-            modes: The mode space or mode count. If ``None``, the mode space is inferred from
-                the string specifier.
-
-        Returns:
-            An instance of ``cls`` parsed from ``source``.
-        """
-        if not source.strip():
-            return cls(modes, "")
-        n = len(BinarySprings(source))
-        if n != 1:
-            raise ValueError(f"Source string should contain one state string, got {n}.")
-        return cls(modes, source)
-
     def __getitem__(self, i: int) -> bool:
         """Return the occupation value of the string at index ``i``."""
         return self._impl.string_get_bit(self.index, i)
@@ -131,6 +83,14 @@ class String(FermionString[ImplT, SpecT, ElemT]):
             raise TypeError("Bit argument should be bool or 0 or 1")
         self._impl.string_set_bit(self.index, i, bit)
 
+    def count(self, bit: bool) -> int:
+        """Return the number of occurrences of ``bit`` in the string."""
+        return self._impl.string_count(self.index, bit)
+
+    def get_set(self) -> set[int]:
+        """Get the string as a set of occupied mode indices."""
+        return self._impl.string_get_set(self.index)
+
     def get_list(self) -> list[bool]:
         """Get the string as a list of occupation flags."""
         return self._impl.string_get_list(self.index)
@@ -138,10 +98,6 @@ class String(FermionString[ImplT, SpecT, ElemT]):
     def get_tuple(self) -> tuple[bool, ...]:
         """Get the string as a tuple of occupation flags."""
         return tuple(self.get_list())
-
-    def get_set(self) -> set[int]:
-        """Get the string as a set of occupied mode indices."""
-        return self._impl.string_get_set(self.index)
 
     def _set_spec(self, source: SpecT) -> None:
         """Set the value of the string.
@@ -169,21 +125,6 @@ class String(FermionString[ImplT, SpecT, ElemT]):
                 raise ValueError("Input represents more than one string.")
         else:
             self.raise_spec_type_error(source)
-
-    def count(self, bit: bool) -> int:
-        """Return the number of occurrences of ``bit`` in the string."""
-        return self._impl.string_count(self.index, bit)
-
-    def hamming_weight(self) -> int:
-        r"""Get the Hamming weight of this bit string.
-
-        The Hamming weight is defined as
-
-        .. math:: \sum_i s_i
-
-        where :math:`s_i` is the occupation value at index :math:`i` in the string.
-        """
-        return self.count(True)
 
     def is_vacuum(self) -> bool:
         r"""Check whether the string is the vacuum state (:math:`\left[0, 0, \ldots, 0\right]`)."""
@@ -214,6 +155,65 @@ class String(FermionString[ImplT, SpecT, ElemT]):
         _check_modes_compatibility(self.modes, other.modes)
         return int(self == other)
 
+    def hamming_weight(self) -> int:
+        r"""Get the Hamming weight of this bit string.
+
+        The Hamming weight is defined as
+
+        .. math:: \sum_i s_i
+
+        where :math:`s_i` is the occupation value at index :math:`i` in the string.
+        """
+        return self.count(True)
+
+    @classmethod
+    def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+            modes: The mode space or mode count. If ``None``, the mode space is inferred from
+                the string specifier.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        if not source.strip():
+            return cls(modes, "")
+        n = len(BinarySprings(source))
+        if n != 1:
+            raise ValueError(f"Source string should contain one state string, got {n}.")
+        return cls(modes, source)
+
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            A dictionary containing container metadata, the string, and the full mode space.
+        """
+        data = super().to_dict()
+        data["family"] = "fermion.state"
+        data["space"] = _serialize_modes(self.modes)
+        data["strings"] = [self.get_list()]
+        return data
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
+            the source dictionary and any existing containers.
+        """
+        check_schema_version(source)
+        if len(source["strings"]) != 1:
+            raise ValueError("A serialized String must contain exactly one string.")
+        strings = Strings.from_dict(source)
+        return cls._create(strings._impl)
+
 
 class Strings(FermionStrings[ImplT, SpecT, ElemT]):
     """A collection of fermionic occupation-number state strings.
@@ -229,6 +229,32 @@ class Strings(FermionStrings[ImplT, SpecT, ElemT]):
     def _set_type(cls) -> type[StringSet]:
         """Return the string set class paired with this collection."""
         return StringSet
+
+    def get_sets(self) -> tuple[set[int], ...]:
+        """Get the strings as a list of sets of occupied mode indices."""
+        return tuple(self[i].get_set() for i in range(len(self)))
+
+    @classmethod
+    def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
+        """Create an instance of ``cls`` from a string.
+
+        Args:
+            source: String to parse.
+            modes: The mode space or mode count. If ``None``, the mode space is inferred from
+                the string specifier.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        if modes is None:
+            modes = Modes.from_count(0)
+        elif isinstance(modes, int):
+            modes = Modes.from_count(modes)
+        if not source.strip():
+            out = cls(modes)
+            out.resize(0)
+            return out
+        return cls._create(cls.string_type.impl_type(modes, BinarySprings(source)))
 
     def to_dict(self) -> SerializedContainer:
         """Return a JSON-serializable dictionary representation of ``self``.
@@ -264,32 +290,6 @@ class Strings(FermionStrings[ImplT, SpecT, ElemT]):
             if row:
                 out[i].set(row)
         return out
-
-    @classmethod
-    def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
-        """Create an instance of ``cls`` from a string.
-
-        Args:
-            source: String to parse.
-            modes: The mode space or mode count. If ``None``, the mode space is inferred from
-                the string specifier.
-
-        Returns:
-            An instance of ``cls`` parsed from ``source``.
-        """
-        if modes is None:
-            modes = Modes.from_count(0)
-        elif isinstance(modes, int):
-            modes = Modes.from_count(modes)
-        if not source.strip():
-            out = cls(modes)
-            out.resize(0)
-            return out
-        return cls._create(cls.string_type.impl_type(modes, BinarySprings(source)))
-
-    def get_sets(self) -> tuple[set[int], ...]:
-        """Get the strings as a list of sets of occupied mode indices."""
-        return tuple(self[i].get_set() for i in range(len(self)))
 
 
 class StringSet(FermionStringSet[ImplT, SpecT, ElemT]):

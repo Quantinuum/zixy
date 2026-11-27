@@ -86,12 +86,6 @@ class String[ImplT: FermionArray, SpecT, ElemT](BaseString[ImplT, SpecT]):
     Rust-bound data object, or a view on an element in another collection.
     """
 
-    @staticmethod
-    @abstractmethod
-    def _get_default_modes(source: SpecT) -> Modes:
-        """Get the default modes for this string type based on a string specifier."""
-        pass
-
     def __init__(
         self,
         modes: int | Modes | None = None,
@@ -116,6 +110,12 @@ class String[ImplT: FermionArray, SpecT, ElemT](BaseString[ImplT, SpecT]):
         super().__init__(impl)
         self.set(source)
 
+    @staticmethod
+    @abstractmethod
+    def _get_default_modes(source: SpecT) -> Modes:
+        """Get the default modes for this string type based on a string specifier."""
+        pass
+
     @property
     def modes(self) -> Modes:
         """The modes corresponding to ``self``."""
@@ -131,11 +131,6 @@ class Strings[ImplT: FermionArray, SpecT, ElemT](BaseStrings[ImplT, SpecT]):
 
     string_type: type[String[ImplT, SpecT, ElemT]]
 
-    @classmethod
-    @abstractmethod
-    def _set_type(cls) -> type[StringSet[ImplT, SpecT, ElemT]]:
-        """Return the string set class paired with this collection."""
-
     def __init__(self, modes: int | Modes = 0, *, size: int = 0):
         """Initialize the string array.
 
@@ -147,11 +142,6 @@ class Strings[ImplT: FermionArray, SpecT, ElemT](BaseStrings[ImplT, SpecT]):
             self.string_type.impl_type(Modes.from_count(modes) if isinstance(modes, int) else modes)
         )
         self.resize(size)
-
-    @property
-    def modes(self) -> Modes:
-        """The modes corresponding to ``self``."""
-        return self._impl.modes
 
     @classmethod
     def from_iterable(
@@ -167,6 +157,16 @@ class Strings[ImplT: FermionArray, SpecT, ElemT](BaseStrings[ImplT, SpecT]):
             An independent owning instance of ``cls``.
         """
         return super().from_iterable(source, modes)
+
+    @classmethod
+    @abstractmethod
+    def _set_type(cls) -> type[StringSet[ImplT, SpecT, ElemT]]:
+        """Return the string set class paired with this collection."""
+
+    @property
+    def modes(self) -> Modes:
+        """The modes corresponding to ``self``."""
+        return self._impl.modes
 
 
 class StringSet[ImplT: FermionArray, SpecT, ElemT](BaseStringSet[ImplT, SpecT]):

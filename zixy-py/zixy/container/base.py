@@ -39,12 +39,12 @@ if TYPE_CHECKING:
 class _Indexable[T](Protocol):
     """An integer-indexed container whose element type can be inferred independently."""
 
-    def __getitem__(self, indexer: int) -> T:
-        """Get an element by index."""
-        ...
-
     def __len__(self) -> int:
         """Get the number of elements."""
+        ...
+
+    def __getitem__(self, indexer: int) -> T:
+        """Get an element by index."""
         ...
 
 
@@ -131,10 +131,10 @@ class _TermCoeffsView[Cs](_HasTermType[_HasCoeffsType[Cs]], Protocol):
     """A term-array factory and the storage and slice needed to access its coefficients."""
 
     @property
-    def _data(self) -> _HasCoeffs[Coeffs[Any]]: ...
+    def slice(self) -> slice: ...
 
     @property
-    def slice(self) -> slice: ...
+    def _data(self) -> _HasCoeffs[Coeffs[Any]]: ...
 
 
 class _TermSetCoeffs[Cs](_HasTermsType[_HasTermType[_HasCoeffsType[Cs]]], Protocol):
@@ -147,12 +147,12 @@ class _TermSetCoeffs[Cs](_HasTermsType[_HasTermType[_HasCoeffsType[Cs]]], Protoc
 class SupportsOwnership(Protocol):
     """Protocol for classes supporting the ownership model."""
 
-    def is_owning(self) -> bool:
-        """Check if ``self`` is owning (i.e. not a view)."""
-        ...
-
     def clone(self) -> Self:
         """Return a deep copy of ``self``."""
+        ...
+
+    def is_owning(self) -> bool:
+        """Check if ``self`` is owning (i.e. not a view)."""
         ...
 
 
@@ -231,13 +231,13 @@ class ViewableBase[ImplT: Resizable, IndexerT: (int, slice)]:
         pass
 
     @abstractmethod
-    def is_owning(self) -> bool:
-        """Check if ``self`` is owning (i.e. not a view)."""
+    def clone(self) -> Self:
+        """Return a deep copy of ``self``."""
         pass
 
     @abstractmethod
-    def clone(self) -> Self:
-        """Return a deep copy of ``self``."""
+    def is_owning(self) -> bool:
+        """Check if ``self`` is owning (i.e. not a view)."""
         pass
 
     def into[T: ViewableBase[Any, Any]](self, t: type[T]) -> T:
@@ -274,10 +274,40 @@ class ViewableSequence[T, ImplT: Resizable](ViewableBase[ImplT, slice], Sequence
 
     _slice: slice
 
+    @abstractmethod
+    def _new(self) -> Self:
+        """Create an empty instance with the same type and configuration."""
+        pass
+
+    def as_view(self) -> Self:
+        """Return a view of ``self``.
+
+        Returns:
+            If ``self`` is owning, a new view on the same underlying data, otherwise
+            ``self``.
+        """
+        if self.is_owning():
+            return self._view(self._impl, self.slice)
+        else:
+            return self
+
+    def is_owning(self) -> bool:
+        """Check if ``self`` is owning (i.e. not a view)."""
+        return self.slice == slice(None)
+
     @property
     def slice(self) -> builtins.slice:
         """The slice of the underlying data that ``self`` views."""
         return self._slice
+
+    def __len__(self) -> int:
+        """Get the number of elements in ``self``."""
+        return slice_len(self._slice, len(self._impl))
+
+    def __iter__[ElemT](self: _Indexable[ElemT]) -> Iterator[ElemT]:
+        """Iterate over the elements of ``self``."""
+        for i in range(len(self)):
+            yield self[i]
 
     def map_index(self, i: int) -> int:
         """Map an index in ``self`` to an index in the underlying data.
@@ -307,36 +337,6 @@ class ViewableSequence[T, ImplT: Resizable](ViewableBase[ImplT, slice], Sequence
         """
         raise NotImplementedError
 
-    def __iter__[ElemT](self: _Indexable[ElemT]) -> Iterator[ElemT]:
-        """Iterate over the elements of ``self``."""
-        for i in range(len(self)):
-            yield self[i]
-
-    @abstractmethod
-    def _new(self) -> Self:
-        """Create an empty instance with the same type and configuration."""
-        pass
-
-    def __len__(self) -> int:
-        """Get the number of elements in ``self``."""
-        return slice_len(self._slice, len(self._impl))
-
-    def as_view(self) -> Self:
-        """Return a view of ``self``.
-
-        Returns:
-            If ``self`` is owning, a new view on the same underlying data, otherwise
-            ``self``.
-        """
-        if self.is_owning():
-            return self._view(self._impl, self.slice)
-        else:
-            return self
-
-    def is_owning(self) -> bool:
-        """Check if ``self`` is owning (i.e. not a view)."""
-        return self.slice == slice(None)
-
     @requires_ownership
     def resize(self, n: int) -> Self:
         """Resize the underlying container.
@@ -363,13 +363,13 @@ class Representable(ABC):
         """Return a string representation of ``self``."""
         pass
 
-    def to_str(self) -> str:
-        """Return the canonical string representation of ``self``."""
-        return repr(self)
-
     def __str__(self) -> str:
         """Return a string representation of ``self``."""
         return self.to_str()
+
+    def to_str(self) -> str:
+        """Return the canonical string representation of ``self``."""
+        return repr(self)
 
     @classmethod
     @abstractmethod

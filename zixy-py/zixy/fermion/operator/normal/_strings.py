@@ -72,53 +72,48 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
     impl_type = ImplT
     _clear_spec = ""
 
-    def to_dict(self) -> SerializedContainer:
-        """Return a JSON-serializable dictionary representation of ``self``.
-
-        Returns:
-            A dictionary containing container metadata, the string, and the full mode space.
-        """
-        data = super().to_dict()
-        data["family"] = "fermion.operator.normal"
-        data["space"] = _serialize_modes(self.modes)
-        data["strings"] = [[list(indices) for indices in self.get_sets()]]
-        return data
-
-    @classmethod
-    def from_dict(cls, source: SerializedContainer) -> Self:
-        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
-
-        Args:
-            source: JSON-serializable dictionary representation to parse.
-
-        Returns:
-            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
-            the source dictionary and any existing containers.
-        """
-        check_schema_version(source)
-        if len(source["strings"]) != 1:
-            raise ValueError("A serialized String must contain exactly one string.")
-        strings = Strings.from_dict(source)
-        return cls._create(strings._impl)
-
     @staticmethod
     def _get_default_modes(source: SpecT) -> Modes:
         """Get the default modes for this string type based on a string specifier."""
         return _default_modes(source)
 
-    @classmethod
-    def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
-        """Create an instance of ``cls`` by parsing an input string.
+    def __getitem__(self, item: LadderOp) -> bool:
+        """Return whether an operator is present on a mode.
 
         Args:
-            source: String to parse.
-            modes: The mode space or mode count. If ``None``, the mode space is inferred from
-                the string specifier.
-
-        Returns:
-            An instance of ``cls`` parsed from ``source``.
+            item: Pair of ``(mode, is_creation)``, where ``is_creation`` is ``True`` for a
+                creation operator and ``False`` for an annihilation operator.
         """
-        return cls(modes, source)
+        mode, is_creation = item
+        if not isinstance(is_creation, bool):
+            raise KeyError(is_creation)
+        if is_creation:
+            return self._impl.string_get_cre(self.index, mode)
+        return self._impl.string_get_ann(self.index, mode)
+
+    def __setitem__(self, item: LadderOp, value: bool) -> None:
+        """Set whether an operator is present on a mode.
+
+        Args:
+            item: Pair of ``(mode, is_creation)``, where ``is_creation`` is ``True`` for a
+                creation operator and ``False`` for an annihilation operator.
+            value: Whether the operator is present.
+        """
+        mode, is_creation = item
+        if not isinstance(is_creation, bool):
+            raise KeyError(is_creation)
+        if is_creation:
+            self._impl.string_set_cre(self.index, mode, value)
+        self._impl.string_set_ann(self.index, mode, value)
+
+    def get_ops(self) -> list[LadderOp]:
+        """Get the normal-ordered ladder-operator product as ``(mode, is_creation)`` pairs."""
+        cre, ann = self.get_sets()
+        return [(i, True) for i in cre] + [(i, False) for i in ann]
+
+    def get_sets(self) -> tuple[list[int], list[int]]:
+        """Get the creation and annihilation mode sets."""
+        return self._impl.string_get_sets(self.index)
 
     def _set_spec(self, source: SpecT) -> None:
         """Set the value of the string.
@@ -150,55 +145,6 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
                 self._impl.string_set_from_sets(self.index, set(cre), set(ann))
         else:
             self.raise_spec_type_error(source)
-
-    def get_ops(self) -> list[LadderOp]:
-        """Get the normal-ordered ladder-operator product as ``(mode, is_creation)`` pairs."""
-        cre, ann = self.get_sets()
-        return [(i, True) for i in cre] + [(i, False) for i in ann]
-
-    def get_sets(self) -> tuple[list[int], list[int]]:
-        """Get the creation and annihilation mode sets."""
-        return self._impl.string_get_sets(self.index)
-
-    def __getitem__(self, item: LadderOp) -> bool:
-        """Return whether an operator is present on a mode.
-
-        Args:
-            item: Pair of ``(mode, is_creation)``, where ``is_creation`` is ``True`` for a
-                creation operator and ``False`` for an annihilation operator.
-        """
-        mode, is_creation = item
-        if not isinstance(is_creation, bool):
-            raise KeyError(is_creation)
-        if is_creation:
-            return self._impl.string_get_cre(self.index, mode)
-        return self._impl.string_get_ann(self.index, mode)
-
-    def __setitem__(self, item: LadderOp, value: bool) -> None:
-        """Set whether an operator is present on a mode.
-
-        Args:
-            item: Pair of ``(mode, is_creation)``, where ``is_creation`` is ``True`` for a
-                creation operator and ``False`` for an annihilation operator.
-            value: Whether the operator is present.
-        """
-        mode, is_creation = item
-        if not isinstance(is_creation, bool):
-            raise KeyError(is_creation)
-        if is_creation:
-            self._impl.string_set_cre(self.index, mode, value)
-        self._impl.string_set_ann(self.index, mode, value)
-
-    def dagger(self) -> None:
-        """Take the adjoint of ``self`` in-place, ignoring the scalar sign."""
-        cre, ann = self.get_sets()
-        self.set((ann, cre))
-
-    def daggered(self) -> Self:
-        """Return the adjoint of ``self``, ignoring the scalar sign."""
-        out = self.clone()
-        out.dagger()
-        return out
 
     @overload
     def __mul__(self, rhs: String) -> RealTermSum: ...
@@ -237,6 +183,60 @@ class String(OperatorString[ImplT, SpecT, ElemT]):
             return NotImplemented
         return self * lhs
 
+    def dagger(self) -> None:
+        """Take the adjoint of ``self`` in-place, ignoring the scalar sign."""
+        cre, ann = self.get_sets()
+        self.set((ann, cre))
+
+    def daggered(self) -> Self:
+        """Return the adjoint of ``self``, ignoring the scalar sign."""
+        out = self.clone()
+        out.dagger()
+        return out
+
+    @classmethod
+    def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
+        """Create an instance of ``cls`` by parsing an input string.
+
+        Args:
+            source: String to parse.
+            modes: The mode space or mode count. If ``None``, the mode space is inferred from
+                the string specifier.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        return cls(modes, source)
+
+    def to_dict(self) -> SerializedContainer:
+        """Return a JSON-serializable dictionary representation of ``self``.
+
+        Returns:
+            A dictionary containing container metadata, the string, and the full mode space.
+        """
+        data = super().to_dict()
+        data["family"] = "fermion.operator.normal"
+        data["space"] = _serialize_modes(self.modes)
+        data["strings"] = [[list(indices) for indices in self.get_sets()]]
+        return data
+
+    @classmethod
+    def from_dict(cls, source: SerializedContainer) -> Self:
+        """Create an instance of ``cls`` from a JSON-serializable dictionary representation.
+
+        Args:
+            source: JSON-serializable dictionary representation to parse.
+
+        Returns:
+            A new owning instance of ``cls`` parsed from ``source``, with storage independent of
+            the source dictionary and any existing containers.
+        """
+        check_schema_version(source)
+        if len(source["strings"]) != 1:
+            raise ValueError("A serialized String must contain exactly one string.")
+        strings = Strings.from_dict(source)
+        return cls._create(strings._impl)
+
 
 class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
     """A collection of normal-ordered fermionic ladder-operator strings.
@@ -252,6 +252,26 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
     def _set_type(cls) -> type[StringSet]:
         """Return the string set class paired with this collection."""
         return StringSet
+
+    @classmethod
+    def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
+        """Create an instance of ``cls`` by parsing an input string.
+
+        Args:
+            source: String to parse.
+            modes: The mode space or mode count. If ``None``, the mode space is inferred from
+                the string specifier.
+
+        Returns:
+            An instance of ``cls`` parsed from ``source``.
+        """
+        if isinstance(modes, int):
+            modes = Modes.from_count(modes)
+        if not source.strip():
+            out = cls(modes or 0)
+            out.resize(0)
+            return out
+        return cls._create(cls.string_type.impl_type(modes, FermionSprings(source)))
 
     def to_dict(self) -> SerializedContainer:
         """Return a JSON-serializable dictionary representation of ``self``.
@@ -304,26 +324,6 @@ class Strings(OperatorStrings[ImplT, SpecT, ElemT]):
             if cre or ann:
                 out[i].set((cre, ann))
         return out
-
-    @classmethod
-    def from_str(cls, source: str, modes: int | Modes | None = None) -> Self:
-        """Create an instance of ``cls`` by parsing an input string.
-
-        Args:
-            source: String to parse.
-            modes: The mode space or mode count. If ``None``, the mode space is inferred from
-                the string specifier.
-
-        Returns:
-            An instance of ``cls`` parsed from ``source``.
-        """
-        if isinstance(modes, int):
-            modes = Modes.from_count(modes)
-        if not source.strip():
-            out = cls(modes or 0)
-            out.resize(0)
-            return out
-        return cls._create(cls.string_type.impl_type(modes, FermionSprings(source)))
 
 
 class StringSet(OperatorStringSet[ImplT, SpecT, ElemT]):

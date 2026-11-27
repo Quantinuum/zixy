@@ -56,11 +56,6 @@ class String[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseString[ImplT, SpecT]
 
     _springs_type: type[Springs]
 
-    @staticmethod
-    def _get_default_qubits(source: SpecT) -> Qubits:
-        """Get the default qubits for this string type based on a string specifier."""
-        return _default_qubits(source)
-
     def __init__(
         self,
         qubits: int | Qubits | None = None,
@@ -86,6 +81,11 @@ class String[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseString[ImplT, SpecT]
         self.set(source)
         assert len(self._impl) == 1
 
+    @staticmethod
+    def _get_default_qubits(source: SpecT) -> Qubits:
+        """Get the default qubits for this string type based on a string specifier."""
+        return _default_qubits(source)
+
     @property
     def qubits(self) -> Qubits:
         """The qubits corresponding to ``self``."""
@@ -100,6 +100,17 @@ class String[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseString[ImplT, SpecT]
     def __setitem__(self, i: int, elem: ElemT | Any) -> None:
         """Set the element of the string at index ``i``."""
         pass
+
+    def count(self, elem: ElemT) -> int:
+        """Return the number of occurrences of ``elem`` in the string.
+
+        Args:
+            elem: The element to count.
+
+        Returns:
+            The number of occurrences of ``elem`` in the string.
+        """
+        return self._impl.string_count(self.index, elem)
 
     def get_list(self) -> list[ElemT]:
         """Get the string as a list of its elements."""
@@ -138,17 +149,6 @@ class String[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseString[ImplT, SpecT]
         else:
             raise TypeError("Source object is of an unsupported type.")
 
-    def count(self, elem: ElemT) -> int:
-        """Return the number of occurrences of ``elem`` in the string.
-
-        Args:
-            elem: The element to count.
-
-        Returns:
-            The number of occurrences of ``elem`` in the string.
-        """
-        return self._impl.string_count(self.index, elem)
-
     def to_sparse_matrix(self, big_endian: bool = False) -> Any:
         """Return ``self`` as a sparse matrix.
 
@@ -185,29 +185,32 @@ class Strings[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseStrings[ImplT, Spec
         self.resize(size)
 
     @classmethod
-    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Self:
-        """Create an instance of ``cls`` from a string.
+    def from_iterable(
+        cls, source: Iterable[SpecT | BaseString[ImplT, SpecT]], qubits: int | Qubits = 0
+    ) -> Self:
+        """Create an owning collection from an iterable of strings.
 
         Args:
-            source: String to parse.
-            qubits: The qubit register or qubit count. If ``None``, the qubit register is
-                inferred from the string specifier.
+            source: Iterable of compatible strings or string specifiers.
+            qubits: The qubit register or qubit count.
 
         Returns:
-            An instance of ``cls`` parsed from ``source``.
+            An independent owning instance of ``cls``.
         """
-        if isinstance(qubits, int):
-            qubits = Qubits.from_count(qubits)
-        if not source.strip():
-            out = cls._create(cls.string_type.impl_type(qubits))
-            out.resize(0)
-            return out
-        return cls._create(cls.string_type.impl_type(qubits, cls.string_type._springs_type(source)))
+        return super().from_iterable(source, qubits)
 
     @property
     def qubits(self) -> Qubits:
         """The qubits corresponding to ``self``."""
         return self._impl.qubits
+
+    def get_list(self) -> list[list[ElemT]]:
+        """Get all the strings as a list of lists of their elements."""
+        return [self[i].get_list() for i in range(len(self))]
+
+    def get_tuples(self) -> tuple[tuple[ElemT, ...], ...]:
+        """Get all the strings as a list of tuples of their elements."""
+        return tuple(self[i].get_tuple() for i in range(len(self)))
 
     def relabel(self, qubits: Qubits) -> Self:
         """Relabel the contents of the strings according to a new qubit register.
@@ -277,28 +280,25 @@ class Strings[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseStrings[ImplT, Spec
         out._impl = out._impl.standardized(n_qubit)
         return out
 
-    def get_list(self) -> list[list[ElemT]]:
-        """Get all the strings as a list of lists of their elements."""
-        return [self[i].get_list() for i in range(len(self))]
-
-    def get_tuples(self) -> tuple[tuple[ElemT, ...], ...]:
-        """Get all the strings as a list of tuples of their elements."""
-        return tuple(self[i].get_tuple() for i in range(len(self)))
-
     @classmethod
-    def from_iterable(
-        cls, source: Iterable[SpecT | BaseString[ImplT, SpecT]], qubits: int | Qubits = 0
-    ) -> Self:
-        """Create an owning collection from an iterable of strings.
+    def from_str(cls, source: str, qubits: int | Qubits | None = None) -> Self:
+        """Create an instance of ``cls`` from a string.
 
         Args:
-            source: Iterable of compatible strings or string specifiers.
-            qubits: The qubit register or qubit count.
+            source: String to parse.
+            qubits: The qubit register or qubit count. If ``None``, the qubit register is
+                inferred from the string specifier.
 
         Returns:
-            An independent owning instance of ``cls``.
+            An instance of ``cls`` parsed from ``source``.
         """
-        return super().from_iterable(source, qubits)
+        if isinstance(qubits, int):
+            qubits = Qubits.from_count(qubits)
+        if not source.strip():
+            out = cls._create(cls.string_type.impl_type(qubits))
+            out.resize(0)
+            return out
+        return cls._create(cls.string_type.impl_type(qubits, cls.string_type._springs_type(source)))
 
 
 class StringSet[ImplT: QubitArray[Any, Any], SpecT, ElemT](BaseStringSet[ImplT, SpecT]):
